@@ -7,7 +7,7 @@ import {
   Clock,
   BarChart3,
   Settings,
-  Zap,
+  
   ChevronLeft,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
@@ -52,14 +52,9 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg gradient-brand">
-            <Zap className="h-5 w-5 text-brand-foreground" />
-          </div>
+          <img src="/logo-bebright.webp" alt="BeBright" className="h-9 w-auto shrink-0 invert brightness-200" />
           {!collapsed && (
-            <div className="flex flex-col">
-              <span className="text-sm font-bold tracking-tight text-foreground">BeBright</span>
-              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">Planner</span>
-            </div>
+            <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">Planner</span>
           )}
         </div>
       </SidebarHeader>
