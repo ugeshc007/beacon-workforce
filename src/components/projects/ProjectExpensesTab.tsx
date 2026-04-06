@@ -281,7 +281,7 @@ export function ProjectExpensesTab({ projectId, expenses }: Props) {
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Date</Label>
-                <Input type="date" value={expenseDate} onChange={(e) => setExpenseDate(e.target.value)} />
+                <DateInput value={expenseDate} onChange={setExpenseDate} />
               </div>
             </div>
 

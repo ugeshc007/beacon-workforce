@@ -227,7 +227,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
               <FormField control={form.control} name="join_date" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Join Date</FormLabel>
-                  <FormControl><Input type="date" {...field} /></FormControl>
+                  <FormControl><DateInput value={field.value ?? ""} onChange={field.onChange} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />

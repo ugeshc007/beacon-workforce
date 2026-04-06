@@ -594,8 +594,8 @@ function AssignmentAuditLogSection() {
       </CardHeader>
       <CardContent>
         <div className="flex gap-2 mb-3">
-          <Input type="date" className="h-8 w-[140px] text-xs" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
-          <Input type="date" className="h-8 w-[140px] text-xs" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+          <DateInput value={dateFrom} onChange={setDateFrom} placeholder="From" className="w-[150px]" />
+          <DateInput value={dateTo} onChange={setDateTo} placeholder="To" className="w-[150px]" />
         </div>
 
         {isLoading ? <Skeleton className="h-40 rounded-lg" /> : !data?.length ? (

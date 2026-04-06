@@ -55,7 +55,7 @@ export function TeamAssignDialog({ open, onOpenChange, projectId, existingEmploy
         <div className="grid grid-cols-3 gap-3">
           <div className="space-y-1">
             <Label className="text-xs">Date</Label>
-            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            <DateInput value={date} onChange={setDate} />
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Shift Start</Label>

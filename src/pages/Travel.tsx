@@ -69,7 +69,7 @@ export default function Travel() {
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button variant="outline" size="sm" className="text-xs" onClick={() => setDate(today)}>Today</Button>
-          <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-[140px] h-8 text-xs" />
+          <DateInput value={date} onChange={setDate} className="w-[150px]" />
           <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => shiftDate(1)}>
             <ChevronRight className="h-4 w-4" />
           </Button>

@@ -360,7 +360,7 @@ export default function Schedule() {
               </div>
               <div>
                 <Label className="text-xs">End Date</Label>
-                <Input type="date" value={rangeEnd} onChange={(e) => setRangeEnd(e.target.value)} className="mt-1" />
+                <DateInput value={rangeEnd} onChange={setRangeEnd} className="mt-1" />
               </div>
             </div>
             <div className="flex items-center gap-2">

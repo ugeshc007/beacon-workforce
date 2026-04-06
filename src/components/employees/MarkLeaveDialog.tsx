@@ -67,7 +67,7 @@ export function MarkLeaveDialog({ open, onOpenChange, employeeId, employeeName }
             </div>
             <div className="space-y-2">
               <Label>End Date</Label>
-              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} required />
+              <DateInput value={endDate} onChange={setEndDate} required />
             </div>
           </div>
           <div className="space-y-2">

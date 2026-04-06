@@ -230,8 +230,8 @@ export function ProjectFormDialog({ open, onOpenChange, editProject, prefill }: 
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><Label>Start Date</Label><Input type="date" value={form.start_date} onChange={(e) => set("start_date", e.target.value)} /></div>
-                <div><Label>End Date</Label><Input type="date" value={form.end_date} onChange={(e) => set("end_date", e.target.value)} /></div>
+                <div><Label>Start Date</Label><DateInput value={form.start_date} onChange={(v) => set("start_date", v)} /></div>
+                <div><Label>End Date</Label><DateInput value={form.end_date} onChange={(v) => set("end_date", v)} /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div><Label>Budget (AED)</Label><Input type="number" value={form.budget} onChange={(e) => set("budget", e.target.value)} /></div>
