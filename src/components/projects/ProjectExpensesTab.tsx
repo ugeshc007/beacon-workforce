@@ -252,24 +252,39 @@ export function ProjectExpensesTab({ projectId, expenses }: Props) {
                       </td>
                       {canApprove && (
                         <td className="py-2.5 text-right">
-                          {e.status === "pending" ? (
-                            <div className="flex items-center justify-end gap-1">
-                              <Button size="icon" variant="ghost" className="h-7 w-7 text-status-present hover:bg-status-present/10"
-                                disabled={approveMutation.isPending}
-                                onClick={() => handleApprove(e.id, "approved")}
-                              >
-                                <Check className="h-3.5 w-3.5" />
-                              </Button>
+                          <div className="flex items-center justify-end gap-1">
+                            {e.status === "pending" && (
+                              <>
+                                <Button size="icon" variant="ghost" className="h-7 w-7 text-status-present hover:bg-status-present/10"
+                                  disabled={approveMutation.isPending}
+                                  onClick={() => handleApprove(e.id, "approved")}
+                                >
+                                  <Check className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:bg-destructive/10"
+                                  disabled={approveMutation.isPending}
+                                  onClick={() => handleApprove(e.id, "rejected")}
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </Button>
+                              </>
+                            )}
+                            {isAdmin && (
                               <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:bg-destructive/10"
-                                disabled={approveMutation.isPending}
-                                onClick={() => handleApprove(e.id, "rejected")}
+                                disabled={deleteMutation.isPending}
+                                onClick={() => {
+                                  if (confirm("Delete this expense?")) {
+                                    deleteMutation.mutate(
+                                      { expenseId: e.id, projectId },
+                                      { onSuccess: () => toast({ title: "Expense deleted" }) }
+                                    );
+                                  }
+                                }}
                               >
-                                <X className="h-3.5 w-3.5" />
+                                <Trash2 className="h-3.5 w-3.5" />
                               </Button>
-                            </div>
-                          ) : (
-                            <span className="text-[10px] text-muted-foreground">—</span>
-                          )}
+                            )}
+                          </div>
                         </td>
                       )}
                     </tr>
