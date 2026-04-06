@@ -56,7 +56,7 @@ export function PurchaseInvoiceDialog({ projectId, open, onOpenChange }: Props) 
     setExchangeRate(c ? String(c.rate) : "1");
   };
 
-  const addLine = () => setLines([...lines, { category: "material", amount: "", description: "" }]);
+  const addLine = () => setLines([...lines, { category: "material", quantity: "", unitRate: "", description: "" }]);
 
   const updateLine = (i: number, field: keyof LineItem, value: string) => {
     const updated = [...lines];
