@@ -48,6 +48,7 @@ export function DayAssignmentPanel({
   conflicts,
 }: Props) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const { data: employees, isLoading: empLoading } = useAvailableEmployees(date, projectId);
   const addAssignment = useAddAssignment();
   const removeAssignment = useRemoveAssignment();
