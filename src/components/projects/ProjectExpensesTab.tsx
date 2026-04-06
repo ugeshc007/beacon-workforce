@@ -204,7 +204,7 @@ export function ProjectExpensesTab({ projectId, expenses }: Props) {
                       <td className="py-2.5 text-xs text-muted-foreground">{(e as any).invoice_number ?? "—"}</td>
                       <td className="py-2.5 text-xs text-muted-foreground">{(e as any).supplier_name ?? "—"}</td>
                       <td className="py-2.5 text-right font-mono text-xs">
-                        {e.currency !== "AED" ? `${e.currency} ${Number(e.amount).toLocaleString()}` : "—"}
+                        {e.currency !== "AED" ? `${e.currency} ${Number(e.amount).toLocaleString()}` : `AED ${Number(e.amount).toLocaleString()}`}
                       </td>
                       <td className="py-2.5 text-right font-mono font-medium">
                         AED {Number(e.amount_aed ?? e.amount).toLocaleString()}
