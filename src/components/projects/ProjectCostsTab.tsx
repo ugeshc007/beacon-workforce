@@ -57,7 +57,7 @@ export function ProjectCostsTab({ project, costs }: Props) {
 
   // Profitability
   const profitability = useMemo(() => {
-    if (!project.project_value) return null;
+    if (!costs || !project.project_value) return null;
     const grossMargin = project.project_value - costs.totalCost;
     const marginPct = (grossMargin / project.project_value) * 100;
     return { grossMargin: Math.round(grossMargin), marginPct: Math.round(marginPct) };
