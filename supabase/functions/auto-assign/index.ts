@@ -1,4 +1,4 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, todayDate } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse } from "../_shared/helpers.ts";
 
 interface AssignedEmployee {
   employeeId: string;
@@ -11,6 +11,25 @@ interface AssignedEmployee {
     recency: number;
     total: number;
   };
+}
+
+// Seeded shuffle for deterministic round-robin when scores tie
+function shuffleTied<T extends { breakdown: { total: number } }>(arr: T[]): T[] {
+  if (arr.length <= 1) return arr;
+  const result = [...arr];
+  // Group by score, shuffle within groups
+  let i = 0;
+  while (i < result.length) {
+    let j = i;
+    while (j < result.length && result[j].breakdown.total === result[i].breakdown.total) j++;
+    // Fisher-Yates shuffle the tied block
+    for (let k = j - 1; k > i; k--) {
+      const r = i + Math.floor(Math.random() * (k - i + 1));
+      [result[k], result[r]] = [result[r], result[k]];
+    }
+    i = j;
+  }
+  return result;
 }
 
 Deno.serve(async (req) => {
@@ -51,55 +70,30 @@ Deno.serve(async (req) => {
       return jsonResponse({ assigned: [], unfilled: Object.entries(requiredByRole).map(([role, count]) => ({ role, needed: count })) });
     }
 
-    // Get employees on leave on this date
-    const { data: leaveData } = await supabase
-      .from("employee_leave")
-      .select("employee_id")
-      .lte("start_date", date)
-      .gte("end_date", date);
-    const onLeave = new Set((leaveData ?? []).map((l) => l.employee_id));
+    // Parallel data fetches
+    const [leaveRes, busyRes, monthAssignRes, monthAttendRes, lastAssignRes] = await Promise.all([
+      supabase.from("employee_leave").select("employee_id").lte("start_date", date).gte("end_date", date),
+      supabase.from("project_assignments").select("employee_id").eq("date", date).neq("project_id", projectId),
+      supabase.from("project_assignments").select("employee_id").gte("date", firstOfMonth).lte("date", lastOfMonth),
+      supabase.from("attendance_logs").select("employee_id, total_work_minutes").gte("date", firstOfMonth).lte("date", lastOfMonth),
+      supabase.from("project_assignments").select("employee_id, date").lte("date", date).order("date", { ascending: false }),
+    ]);
 
-    // Get employees already assigned elsewhere on this date
-    const { data: busyData } = await supabase
-      .from("project_assignments")
-      .select("employee_id")
-      .eq("date", date)
-      .neq("project_id", projectId);
-    const busy = new Set((busyData ?? []).map((b) => b.employee_id));
-
-    // Get assignment counts this month per employee
-    const { data: monthAssignments } = await supabase
-      .from("project_assignments")
-      .select("employee_id")
-      .gte("date", firstOfMonth)
-      .lte("date", lastOfMonth);
+    const onLeave = new Set((leaveRes.data ?? []).map((l) => l.employee_id));
+    const busy = new Set((busyRes.data ?? []).map((b) => b.employee_id));
 
     const assignmentCounts: Record<string, number> = {};
-    for (const a of monthAssignments ?? []) {
+    for (const a of monthAssignRes.data ?? []) {
       assignmentCounts[a.employee_id] = (assignmentCounts[a.employee_id] ?? 0) + 1;
     }
 
-    // Get hours this month per employee
-    const { data: monthAttendance } = await supabase
-      .from("attendance_logs")
-      .select("employee_id, total_work_minutes")
-      .gte("date", firstOfMonth)
-      .lte("date", lastOfMonth);
-
     const hourCounts: Record<string, number> = {};
-    for (const a of monthAttendance ?? []) {
+    for (const a of monthAttendRes.data ?? []) {
       hourCounts[a.employee_id] = (hourCounts[a.employee_id] ?? 0) + (a.total_work_minutes ?? 0);
     }
 
-    // Get last assignment date per employee
-    const { data: lastAssignments } = await supabase
-      .from("project_assignments")
-      .select("employee_id, date")
-      .lte("date", date)
-      .order("date", { ascending: false });
-
     const lastAssigned: Record<string, string> = {};
-    for (const a of lastAssignments ?? []) {
+    for (const a of lastAssignRes.data ?? []) {
       if (!lastAssigned[a.employee_id]) {
         lastAssigned[a.employee_id] = a.date;
       }
@@ -109,14 +103,13 @@ Deno.serve(async (req) => {
     const maxDays = Math.max(1, ...Object.values(assignmentCounts));
     const maxHours = Math.max(1, ...Object.values(hourCounts));
 
-    // Score and rank available employees per role
-    function scoreEmployee(empId: string): { utilization_balance: number; hours_balance: number; recency: number; total: number } {
+    function scoreEmployee(empId: string) {
       const days = assignmentCounts[empId] ?? 0;
       const hours = hourCounts[empId] ?? 0;
       const lastDate = lastAssigned[empId];
       const daysSinceLast = lastDate
         ? Math.max(0, (dateObj.getTime() - new Date(lastDate).getTime()) / 86400000)
-        : 30; // never assigned = high recency score
+        : 30;
 
       const utilization_balance = Math.round((maxDays - days) * 3);
       const hours_balance = Math.round(((maxHours - hours) / 60) * 2);
@@ -140,7 +133,6 @@ Deno.serve(async (req) => {
       const needed = requiredByRole[roleKey] ?? 0;
       if (needed <= 0) continue;
 
-      // Count locked employees of this role already assigned
       const lockedOfRole = locked.filter((lid) => {
         const emp = allEmployees.find((e) => e.id === lid);
         return emp?.skill_type === skillType;
@@ -149,7 +141,6 @@ Deno.serve(async (req) => {
       const remaining = needed - lockedOfRole.length;
       if (remaining <= 0) continue;
 
-      // Filter eligible employees
       const eligible = allEmployees
         .filter((e) =>
           e.skill_type === skillType &&
@@ -157,13 +148,12 @@ Deno.serve(async (req) => {
           !busy.has(e.id) &&
           !usedIds.has(e.id)
         )
-        .map((e) => ({
-          ...e,
-          breakdown: scoreEmployee(e.id),
-        }))
+        .map((e) => ({ ...e, breakdown: scoreEmployee(e.id) }))
         .sort((a, b) => b.breakdown.total - a.breakdown.total);
 
-      const selected = eligible.slice(0, remaining);
+      // Shuffle tied scores for round-robin fairness
+      const shuffled = shuffleTied(eligible);
+      const selected = shuffled.slice(0, remaining);
 
       for (const emp of selected) {
         assigned.push({
@@ -179,6 +169,27 @@ Deno.serve(async (req) => {
       if (selected.length < remaining) {
         unfilled.push({ role: skillType, needed: remaining - selected.length });
       }
+    }
+
+    // Log to assignment_audit_log
+    if (assigned.length > 0) {
+      await supabase.from("assignment_audit_log").insert({
+        project_id: projectId,
+        date,
+        change_type: "auto_assign",
+        reason: `Auto-assigned ${assigned.length} employee(s) via allocation engine`,
+        before_state: { locked_ids: locked },
+        after_state: {
+          assigned: assigned.map((a) => ({
+            employeeId: a.employeeId,
+            name: a.name,
+            role: a.skillType,
+            score: a.score,
+            scoreBreakdown: a.scoreBreakdown,
+          })),
+          unfilled,
+        },
+      });
     }
 
     return jsonResponse({ assigned, unfilled });
