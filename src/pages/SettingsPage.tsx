@@ -396,6 +396,9 @@ export default function SettingsPage() {
                         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditingBranch(b); setBranchDialogOpen(true); }}>
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeletingBranch({ id: b.id, name: b.name })}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -408,6 +411,31 @@ export default function SettingsPage() {
             open={branchDialogOpen}
             onOpenChange={(open) => { setBranchDialogOpen(open); if (!open) setEditingBranch(null); }}
           />
+          <AlertDialog open={!!deletingBranch} onOpenChange={(open) => { if (!open) setDeletingBranch(null); }}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete branch "{deletingBranch?.name}"?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently remove the branch. Deletion is blocked if the branch has active employees or projects.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  disabled={deleteBranch.isPending}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (deletingBranch) {
+                      deleteBranch.mutate(deletingBranch.id, { onSuccess: () => setDeletingBranch(null) });
+                    }
+                  }}
+                >
+                  {deleteBranch.isPending ? "Deleting…" : "Delete"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </TabsContent>
 
         {/* ── Permissions ─────────────────── */}
