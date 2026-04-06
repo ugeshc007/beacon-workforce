@@ -624,3 +624,267 @@ export function useProfitabilityData() {
     },
   });
 }
+
+// ─── Attendance Report ──────────────────────────────────────
+export function useAttendanceReport(month: string, filters?: { branchId?: string }) {
+  return useQuery({
+    queryKey: ["report-attendance", month, filters],
+    queryFn: async () => {
+      const { start, end, lastDay } = monthRange(month);
+      const [y, m] = month.split("-").map(Number);
+
+      let workingDays = 0;
+      for (let d = 1; d <= lastDay; d++) {
+        if (new Date(y, m - 1, d).getDay() !== 5) workingDays++;
+      }
+
+      let empQuery = supabase.from("employees").select("id, name, branch_id, standard_hours_per_day").eq("is_active", true);
+      if (filters?.branchId && filters.branchId !== "all") empQuery = empQuery.eq("branch_id", filters.branchId);
+
+      const [empRes, logsRes, branchRes] = await Promise.all([
+        empQuery,
+        supabase.from("attendance_logs")
+          .select("employee_id, date, total_work_minutes, office_punch_in, work_start_time")
+          .gte("date", start).lte("date", end),
+        supabase.from("branches").select("id, name").order("name"),
+      ]);
+
+      const employees = empRes.data ?? [];
+      const logs = logsRes.data ?? [];
+      const branches = branchRes.data ?? [];
+
+      const logMap = new Map<string, { days: Set<string>; totalMin: number; lateDays: number; punchInDays: number }>();
+      const dailyCount = new Map<string, number>();
+
+      for (const l of logs) {
+        if (!logMap.has(l.employee_id)) logMap.set(l.employee_id, { days: new Set(), totalMin: 0, lateDays: 0, punchInDays: 0 });
+        const entry = logMap.get(l.employee_id)!;
+        entry.days.add(l.date);
+        entry.totalMin += l.total_work_minutes ?? 0;
+        if (l.office_punch_in) entry.punchInDays++;
+        dailyCount.set(l.date, (dailyCount.get(l.date) ?? 0) + 1);
+      }
+
+      const rows = employees.map((e) => {
+        const entry = logMap.get(e.id);
+        const daysWorked = entry?.days.size ?? 0;
+        const avgHours = daysWorked > 0 ? Math.round((entry!.totalMin / daysWorked) / 60 * 10) / 10 : 0;
+        const lateDays = entry?.lateDays ?? 0;
+        const onTimePct = daysWorked > 0 ? Math.round(((daysWorked - lateDays) / daysWorked) * 100) : 100;
+        const punchInRate = workingDays > 0 ? Math.round(((entry?.punchInDays ?? 0) / workingDays) * 100) : 0;
+        return { id: e.id, name: e.name, daysWorked, avgHours, lateDays, onTimePct, punchInRate };
+      }).sort((a, b) => b.daysWorked - a.daysWorked);
+
+      const totalEmployees = employees.length;
+      const avgAttendanceRate = totalEmployees > 0 && workingDays > 0
+        ? Math.round((rows.reduce((s, r) => s + r.daysWorked, 0) / (totalEmployees * workingDays)) * 100) : 0;
+      const avgHoursPerDay = rows.length > 0 ? Math.round(rows.reduce((s, r) => s + r.avgHours, 0) / rows.length * 10) / 10 : 0;
+      const totalLateDays = rows.reduce((s, r) => s + r.lateDays, 0);
+
+      const dailyTrend = [...dailyCount.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([d, c]) => ({ day: d.split("-")[2], present: c }));
+      const onTimeCount = rows.filter((r) => r.onTimePct >= 90).length;
+      const lateCount = rows.filter((r) => r.onTimePct < 90 && r.onTimePct >= 50).length;
+      const poorCount = rows.filter((r) => r.onTimePct < 50).length;
+      const punctualityDist = [
+        { name: "On Time (≥90%)", value: onTimeCount },
+        { name: "Sometimes Late", value: lateCount },
+        { name: "Frequently Late", value: poorCount },
+      ].filter((d) => d.value > 0);
+
+      return { rows, totalEmployees, avgAttendanceRate, avgHoursPerDay, totalLateDays, dailyTrend, punctualityDist, branches };
+    },
+  });
+}
+
+// ─── Overtime Report ────────────────────────────────────────
+export function useOvertimeReport(month: string, filters?: { branchId?: string }) {
+  return useQuery({
+    queryKey: ["report-overtime", month, filters],
+    queryFn: async () => {
+      const { start, end } = monthRange(month);
+
+      let empQuery = supabase.from("employees").select("id, name, skill_type, branch_id, hourly_rate, overtime_rate").eq("is_active", true);
+      if (filters?.branchId && filters.branchId !== "all") empQuery = empQuery.eq("branch_id", filters.branchId);
+
+      const [empRes, logsRes, branchRes] = await Promise.all([
+        empQuery,
+        supabase.from("attendance_logs")
+          .select("employee_id, date, total_work_minutes, overtime_minutes, overtime_cost")
+          .gte("date", start).lte("date", end),
+        supabase.from("branches").select("id, name").order("name"),
+      ]);
+
+      const employees = empRes.data ?? [];
+      const logs = logsRes.data ?? [];
+      const branches = branchRes.data ?? [];
+
+      const logMap = new Map<string, { regularMin: number; otMin: number; otCost: number; otDays: Set<string>; dailyOt: Map<string, number> }>();
+      for (const l of logs) {
+        if (!logMap.has(l.employee_id)) logMap.set(l.employee_id, { regularMin: 0, otMin: 0, otCost: 0, otDays: new Set(), dailyOt: new Map() });
+        const entry = logMap.get(l.employee_id)!;
+        const ot = l.overtime_minutes ?? 0;
+        entry.regularMin += (l.total_work_minutes ?? 0) - ot;
+        entry.otMin += ot;
+        entry.otCost += Number(l.overtime_cost ?? 0);
+        if (ot > 0) entry.otDays.add(l.date);
+        entry.dailyOt.set(l.date, (entry.dailyOt.get(l.date) ?? 0) + ot);
+      }
+
+      const rows = employees.map((e) => {
+        const entry = logMap.get(e.id);
+        const regularHours = Math.round((entry?.regularMin ?? 0) / 60);
+        const otHours = Math.round((entry?.otMin ?? 0) / 60);
+        const otCost = Math.round(entry?.otCost ?? 0);
+        const otDays = entry?.otDays.size ?? 0;
+        const totalHours = regularHours + otHours;
+        const otRatio = totalHours > 0 ? Math.round((otHours / totalHours) * 100) : 0;
+        return { id: e.id, name: e.name, skill: e.skill_type, regularHours, otHours, otCost, otDays, otRatio };
+      }).filter((r) => r.otHours > 0 || r.regularHours > 0).sort((a, b) => b.otHours - a.otHours);
+
+      const totalOtHours = rows.reduce((s, r) => s + r.otHours, 0);
+      const totalOtCost = rows.reduce((s, r) => s + r.otCost, 0);
+      const employeesWithOt = rows.filter((r) => r.otHours > 0).length;
+      const avgOtPerEmployee = employeesWithOt > 0 ? Math.round(totalOtHours / employeesWithOt) : 0;
+
+      // Daily trend
+      const dailyOtMap = new Map<string, number>();
+      for (const l of logs) {
+        if (l.overtime_minutes && l.overtime_minutes > 0) {
+          dailyOtMap.set(l.date, (dailyOtMap.get(l.date) ?? 0) + l.overtime_minutes);
+        }
+      }
+      const dailyTrend = [...dailyOtMap.entries()].sort(([a], [b]) => a.localeCompare(b))
+        .map(([d, m]) => ({ day: d.split("-")[2], otHours: Math.round(m / 60) }));
+
+      return { rows, totalOtHours, totalOtCost, employeesWithOt, avgOtPerEmployee, dailyTrend, branches };
+    },
+  });
+}
+
+// ─── Manpower Report ────────────────────────────────────────
+export function useManpowerReport(month: string, filters?: { branchId?: string }) {
+  return useQuery({
+    queryKey: ["report-manpower", month, filters],
+    queryFn: async () => {
+      let projQuery = supabase.from("projects")
+        .select("id, name, status, branch_id, required_technicians, required_helpers, required_supervisors")
+        .in("status", ["assigned", "in_progress"]);
+      if (filters?.branchId && filters.branchId !== "all") projQuery = projQuery.eq("branch_id", filters.branchId);
+
+      const todayStr = new Date(Date.now() + 4 * 3600000).toISOString().slice(0, 10);
+
+      const [projRes, assignRes, branchRes] = await Promise.all([
+        projQuery,
+        supabase.from("project_assignments")
+          .select("project_id, employee_id, employees(skill_type)")
+          .eq("date", todayStr),
+        supabase.from("branches").select("id, name").order("name"),
+      ]);
+
+      const projects = projRes.data ?? [];
+      const assignments = assignRes.data ?? [];
+      const branches = branchRes.data ?? [];
+
+      const rows = projects.map((p) => {
+        const projAssigns = assignments.filter((a) => a.project_id === p.id);
+        const required = p.required_technicians + p.required_helpers + p.required_supervisors;
+        const assigned = projAssigns.length;
+        const technicians = projAssigns.filter((a: any) => a.employees?.skill_type === "technician").length;
+        const helpers = projAssigns.filter((a: any) => a.employees?.skill_type === "helper").length;
+        const supervisors = projAssigns.filter((a: any) => a.employees?.skill_type === "supervisor").length;
+        const fillRate = required > 0 ? Math.round((assigned / required) * 100) : assigned > 0 ? 100 : 0;
+        return { id: p.id, name: p.name, status: p.status, required, assigned, fillRate, technicians, helpers, supervisors };
+      }).sort((a, b) => a.fillRate - b.fillRate);
+
+      const totalProjects = rows.length;
+      const totalRequired = rows.reduce((s, r) => s + r.required, 0);
+      const avgFillRate = totalProjects > 0 ? Math.round(rows.reduce((s, r) => s + r.fillRate, 0) / totalProjects) : 0;
+      const understaffed = rows.filter((r) => r.fillRate < 100).length;
+
+      return { rows, totalProjects, totalRequired, avgFillRate, understaffed, branches };
+    },
+  });
+}
+
+// ─── Absentee Report ────────────────────────────────────────
+export function useAbsenteeReport(month: string, filters?: { branchId?: string }) {
+  return useQuery({
+    queryKey: ["report-absentee", month, filters],
+    queryFn: async () => {
+      const { start, end, lastDay } = monthRange(month);
+      const [y, m] = month.split("-").map(Number);
+
+      let workingDays = 0;
+      for (let d = 1; d <= lastDay; d++) {
+        if (new Date(y, m - 1, d).getDay() !== 5) workingDays++;
+      }
+
+      let empQuery = supabase.from("employees").select("id, name, skill_type, branch_id").eq("is_active", true);
+      if (filters?.branchId && filters.branchId !== "all") empQuery = empQuery.eq("branch_id", filters.branchId);
+
+      const [empRes, logsRes, leaveRes, branchRes] = await Promise.all([
+        empQuery,
+        supabase.from("attendance_logs")
+          .select("employee_id, date")
+          .gte("date", start).lte("date", end),
+        supabase.from("employee_leave")
+          .select("employee_id, start_date, end_date")
+          .lte("start_date", end).gte("end_date", start),
+        supabase.from("branches").select("id, name").order("name"),
+      ]);
+
+      const employees = empRes.data ?? [];
+      const logs = logsRes.data ?? [];
+      const leaves = leaveRes.data ?? [];
+      const branches = branchRes.data ?? [];
+
+      const attendedDays = new Map<string, Set<string>>();
+      for (const l of logs) {
+        if (!attendedDays.has(l.employee_id)) attendedDays.set(l.employee_id, new Set());
+        attendedDays.get(l.employee_id)!.add(l.date);
+      }
+
+      const leaveDaysMap = new Map<string, number>();
+      for (const l of leaves) {
+        const s = new Date(Math.max(new Date(l.start_date).getTime(), new Date(start).getTime()));
+        const e = new Date(Math.min(new Date(l.end_date).getTime(), new Date(end).getTime()));
+        let count = 0;
+        for (let d = new Date(s); d <= e; d.setDate(d.getDate() + 1)) {
+          if (d.getDay() !== 5) count++;
+        }
+        leaveDaysMap.set(l.employee_id, (leaveDaysMap.get(l.employee_id) ?? 0) + count);
+      }
+
+      const dayOfWeekTotals = [0, 0, 0, 0, 0, 0, 0];
+      const rows = employees.map((e) => {
+        const attended = attendedDays.get(e.id)?.size ?? 0;
+        const leaveDays = leaveDaysMap.get(e.id) ?? 0;
+        const absentDays = Math.max(0, workingDays - attended);
+        const unexcusedDays = Math.max(0, absentDays - leaveDays);
+        const absenceRate = workingDays > 0 ? Math.round((absentDays / workingDays) * 100) : 0;
+
+        // Day of week analysis for absences
+        for (let d = 1; d <= lastDay; d++) {
+          const dt = new Date(y, m - 1, d);
+          if (dt.getDay() === 5) continue;
+          const dateStr = `${month}-${String(d).padStart(2, "0")}`;
+          if (!attendedDays.get(e.id)?.has(dateStr)) {
+            dayOfWeekTotals[dt.getDay()]++;
+          }
+        }
+
+        return { id: e.id, name: e.name, skill: e.skill_type, absentDays, leaveDays, unexcusedDays, absenceRate };
+      }).filter((r) => r.absentDays > 0).sort((a, b) => b.absentDays - a.absentDays);
+
+      const totalAbsentDays = rows.reduce((s, r) => s + r.absentDays, 0);
+      const totalLeaveDays = rows.reduce((s, r) => s + r.leaveDays, 0);
+      const totalUnexcused = rows.reduce((s, r) => s + r.unexcusedDays, 0);
+      const avgAbsenceRate = rows.length > 0 ? Math.round(rows.reduce((s, r) => s + r.absenceRate, 0) / rows.length) : 0;
+
+      const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      const dayOfWeekData = dayOfWeekTotals.map((c, i) => ({ day: dayNames[i], absences: c })).filter((d) => d.day !== "Fri");
+
+      return { rows, totalAbsentDays, totalLeaveDays, totalUnexcused, avgAbsenceRate, dayOfWeekData, branches };
+    },
+  });
+}
