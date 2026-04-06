@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./useAuth";
+import { useMemo } from "react";
 
 export interface RolePermission {
   id: string;
@@ -24,6 +26,35 @@ export function useRolePermissions() {
       return (data ?? []) as RolePermission[];
     },
   });
+}
+
+/** Returns the current user's permissions as a Map<module, RolePermission> */
+export function useMyPermissions() {
+  const { user } = useAuth();
+  const { data: allPerms, isLoading } = useRolePermissions();
+
+  const perms = useMemo(() => {
+    const map = new Map<string, RolePermission>();
+    if (!user?.role || !allPerms) return map;
+    for (const p of allPerms) {
+      if (p.role === user.role) map.set(p.module, p);
+    }
+    return map;
+  }, [allPerms, user?.role]);
+
+  return { permissions: perms, isLoading };
+}
+
+/** Check if the current user can perform an action on a module */
+export function useCanAccess(module: string, action: "can_view" | "can_create" | "can_edit" | "can_delete" = "can_view") {
+  const { user } = useAuth();
+  const { permissions, isLoading } = useMyPermissions();
+
+  // Admins always have full access
+  if (user?.role === "admin") return { allowed: true, isLoading };
+
+  const perm = permissions.get(module);
+  return { allowed: perm?.[action] ?? false, isLoading };
 }
 
 export function useUpdatePermission() {
