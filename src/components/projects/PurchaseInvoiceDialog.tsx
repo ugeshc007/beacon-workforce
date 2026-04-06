@@ -47,7 +47,7 @@ export function PurchaseInvoiceDialog({ projectId, open, onOpenChange }: Props) 
   const [currency, setCurrency] = useState("AED");
   const [exchangeRate, setExchangeRate] = useState("1");
   const [lines, setLines] = useState<LineItem[]>([
-    { category: "material", amount: "", description: "" },
+    { category: "material", quantity: "", unitRate: "", description: "" },
   ]);
 
   const handleCurrencyChange = (code: string) => {
