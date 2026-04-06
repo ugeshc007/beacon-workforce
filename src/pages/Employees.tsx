@@ -170,15 +170,13 @@ export default function Employees() {
                   >
                     <TableCell className="font-mono text-xs">{emp.employee_code}</TableCell>
                     <TableCell>
-                      <div>
-                        <p className="font-medium text-sm">{emp.name}</p>
-                        {emp.designation && (
-                          <p className="text-xs text-muted-foreground">{emp.designation}</p>
-                        )}
-                      </div>
+                      <p className="font-medium text-sm">{emp.name}</p>
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
                       {emp.phone || "—"}
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
+                      {emp.designation || "—"}
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className={`text-xs ${skillColors[emp.skill_type]}`}>
@@ -193,6 +191,9 @@ export default function Employees() {
                     </TableCell>
                     <TableCell className="text-right font-mono text-sm hidden sm:table-cell">
                       {Number(emp.overtime_rate).toFixed(0)}
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-sm hidden xl:table-cell">
+                      {Number(emp.standard_hours_per_day)}
                     </TableCell>
                     <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
                       <Switch
