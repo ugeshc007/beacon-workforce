@@ -500,6 +500,62 @@ export function DayAssignmentPanel({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Reassign / Split dialog */}
+      <AlertDialog open={!!reassignId} onOpenChange={(open) => { if (!open) setReassignId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reassign {reassignEmpName}</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                <p className="text-sm">Move to another project or split shift time across sites.</p>
+
+                <div className="space-y-2">
+                  <Label className="text-xs">Target Project</Label>
+                  <Select value={reassignProject} onValueChange={setReassignProject}>
+                    <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select project" /></SelectTrigger>
+                    <SelectContent>
+                      {activeProjects.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Switch id="keep-old" checked={reassignKeepOld} onCheckedChange={setReassignKeepOld} />
+                  <Label htmlFor="keep-old" className="text-xs">Keep on {projectName} (split shift)</Label>
+                </div>
+
+                {reassignKeepOld && (
+                  <div className="space-y-1.5 rounded-lg bg-accent/20 p-2.5">
+                    <p className="text-xs font-medium">{projectName}</p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">Ends at:</span>
+                      <Input type="time" value={reassignOldEnd} onChange={(e) => { setReassignOldEnd(e.target.value); setReassignStart(e.target.value); }} className="h-7 text-xs w-24" />
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-1.5 rounded-lg bg-brand/5 border border-brand/20 p-2.5">
+                  <p className="text-xs font-medium">New project shift</p>
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                    <Input type="time" value={reassignStart} onChange={(e) => setReassignStart(e.target.value)} className="h-7 text-xs w-24" />
+                    <span className="text-xs text-muted-foreground">to</span>
+                    <Input type="time" value={reassignEnd} onChange={(e) => setReassignEnd(e.target.value)} className="h-7 text-xs w-24" />
+                  </div>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleReassign} disabled={!reassignProject}>
+              <ArrowRightLeft className="h-3.5 w-3.5 mr-1" />
+              {reassignKeepOld ? "Split Shift" : "Reassign"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
