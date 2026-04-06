@@ -83,10 +83,11 @@ export default function Utilization() {
           <h1 className="text-xl font-bold text-foreground">Staff Utilization</h1>
           <p className="text-sm text-muted-foreground">{monthLabel}</p>
         </div>
+        <div className="flex items-center gap-1 flex-wrap">
           <ReportDateFilter value={dateRange} onChange={setDateRange} />
           {data && (<>
             <Button variant="outline" size="sm" className="text-xs ml-2" onClick={() => {
-              downloadCsv(`utilization-${month}.csv`,
+              downloadCsv(`utilization-${dateRange.start}-${dateRange.end}.csv`,
                 ["Employee", "Skill", "Days Worked", "Hours", "OT Hours", "Idle Hours", "Capacity", "Utilization %"],
                 data.rows.map((r) => [r.name, r.skill_type, r.daysWorked, r.totalHours, r.otHours, r.idleHours, r.capacity, r.utilization])
               );
