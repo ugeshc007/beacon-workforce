@@ -69,7 +69,7 @@ export default function Schedule() {
 
   const { user } = useAuth();
   const { data: projects } = useProjects({ status: "all", userRole: user?.role, userId: user?.id });
-  const activeProjects = (projects ?? []).filter((p) => ["assigned", "in_progress"].includes(p.status));
+  const activeProjects = (projects ?? []).filter((p) => ["planned", "assigned", "in_progress"].includes(p.status));
   const { data: assignments, isLoading } = useWeekAssignments(weekStart, weekEnd, selectedProjectId);
   const conflicts = useDetectConflicts(assignments ?? []);
 
