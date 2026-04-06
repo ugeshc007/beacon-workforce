@@ -9,36 +9,123 @@ function monthRange(month: string) {
   return { start, end, lastDay };
 }
 
-export function useUtilizationData(month: string) {
+export interface UtilizationRow {
+  id: string;
+  name: string;
+  skill_type: string;
+  branch_id: string;
+  daysWorked: number;
+  totalHours: number;
+  otHours: number;
+  idleHours: number;
+  capacity: number;
+  utilization: number;
+  dailyMinutes: Record<string, number>;
+  dailyOtMinutes: Record<string, number>;
+}
+
+export interface AbsenceRow {
+  id: string;
+  name: string;
+  skill_type: string;
+  absentDays: number;
+  dayOfWeekCounts: number[]; // [Sun, Mon, Tue, Wed, Thu, Fri, Sat]
+}
+
+export function useUtilizationData(month: string, filters?: {
+  employeeIds?: string[];
+  skillType?: string;
+  branchId?: string;
+}) {
   return useQuery({
-    queryKey: ["report-utilization", month],
+    queryKey: ["report-utilization", month, filters],
     queryFn: async () => {
       const { start, end, lastDay } = monthRange(month);
-      const workingDays = 22;
+      const [y, m] = month.split("-").map(Number);
 
-      const [empRes, logsRes] = await Promise.all([
-        supabase.from("employees").select("id, name, skill_type, standard_hours_per_day").eq("is_active", true).order("name"),
-        supabase.from("attendance_logs").select("employee_id, date, total_work_minutes").gte("date", start).lte("date", end),
+      // Count working days (exclude Fri in UAE)
+      let workingDays = 0;
+      for (let d = 1; d <= lastDay; d++) {
+        const dow = new Date(y, m - 1, d).getDay();
+        if (dow !== 5) workingDays++; // 5 = Friday
+      }
+
+      let empQuery = supabase
+        .from("employees")
+        .select("id, name, skill_type, branch_id, standard_hours_per_day")
+        .eq("is_active", true)
+        .order("name");
+
+      if (filters?.branchId && filters.branchId !== "all") {
+        empQuery = empQuery.eq("branch_id", filters.branchId);
+      }
+      if (filters?.skillType && filters.skillType !== "all") {
+        empQuery = empQuery.eq("skill_type", filters.skillType as "technician" | "helper" | "supervisor");
+      }
+
+      const [empRes, logsRes, leaveRes, branchRes] = await Promise.all([
+        empQuery,
+        supabase
+          .from("attendance_logs")
+          .select("employee_id, date, total_work_minutes, overtime_minutes")
+          .gte("date", start)
+          .lte("date", end),
+        supabase
+          .from("employee_leave")
+          .select("employee_id, start_date, end_date")
+          .lte("start_date", end)
+          .gte("end_date", start),
+        supabase.from("branches").select("id, name").order("name"),
       ]);
 
       const employees = empRes.data ?? [];
       const logs = logsRes.data ?? [];
+      const leaves = leaveRes.data ?? [];
+      const branches = branchRes.data ?? [];
 
-      const logMap = new Map<string, { days: Set<string>; totalMin: number }>();
+      // Apply employee filter
+      let filteredEmps = employees;
+      if (filters?.employeeIds?.length) {
+        filteredEmps = employees.filter((e) => filters.employeeIds!.includes(e.id));
+      }
+
+      // Build log map per employee
+      const logMap = new Map<string, { days: Set<string>; totalMin: number; otMin: number; dailyMin: Record<string, number>; dailyOtMin: Record<string, number> }>();
       for (const l of logs) {
-        if (!logMap.has(l.employee_id)) logMap.set(l.employee_id, { days: new Set(), totalMin: 0 });
+        if (!logMap.has(l.employee_id)) logMap.set(l.employee_id, { days: new Set(), totalMin: 0, otMin: 0, dailyMin: {}, dailyOtMin: {} });
         const entry = logMap.get(l.employee_id)!;
         entry.days.add(l.date);
         entry.totalMin += l.total_work_minutes ?? 0;
+        entry.otMin += l.overtime_minutes ?? 0;
+        entry.dailyMin[l.date] = (entry.dailyMin[l.date] ?? 0) + (l.total_work_minutes ?? 0);
+        entry.dailyOtMin[l.date] = (entry.dailyOtMin[l.date] ?? 0) + (l.overtime_minutes ?? 0);
       }
 
-      const rows = employees.map((e) => {
+      // Leave days per employee
+      const leaveDaysMap = new Map<string, Set<string>>();
+      for (const lv of leaves) {
+        if (!leaveDaysMap.has(lv.employee_id)) leaveDaysMap.set(lv.employee_id, new Set());
+        const lvStart = new Date(lv.start_date) < new Date(start) ? new Date(start) : new Date(lv.start_date);
+        const lvEnd = new Date(lv.end_date) > new Date(end) ? new Date(end) : new Date(lv.end_date);
+        for (let d = new Date(lvStart); d <= lvEnd; d.setDate(d.getDate() + 1)) {
+          leaveDaysMap.get(lv.employee_id)!.add(d.toISOString().slice(0, 10));
+        }
+      }
+
+      const rows: UtilizationRow[] = filteredEmps.map((e) => {
         const entry = logMap.get(e.id);
         const daysWorked = entry?.days.size ?? 0;
         const totalHours = Math.round(((entry?.totalMin ?? 0) / 60) * 10) / 10;
+        const otHours = Math.round(((entry?.otMin ?? 0) / 60) * 10) / 10;
         const capacity = workingDays * Number(e.standard_hours_per_day);
+        const idleHours = Math.max(0, Math.round((capacity - totalHours) * 10) / 10);
         const utilization = capacity > 0 ? Math.round((totalHours / capacity) * 100) : 0;
-        return { name: e.name, skill_type: e.skill_type, daysWorked, totalHours, capacity, utilization };
+        return {
+          id: e.id, name: e.name, skill_type: e.skill_type, branch_id: e.branch_id,
+          daysWorked, totalHours, otHours, idleHours, capacity, utilization,
+          dailyMinutes: entry?.dailyMin ?? {},
+          dailyOtMinutes: entry?.dailyOtMin ?? {},
+        };
       });
 
       // By skill type
@@ -48,16 +135,78 @@ export function useUtilizationData(month: string) {
         return { skill, count: group.length, avgUtilization: avgUtil };
       });
 
-      // Daily trend
-      const dailyMap = new Map<string, number>();
+      // Weekly trend
+      const weeklyMap = new Map<string, { regular: number; ot: number }>();
       for (const l of logs) {
-        dailyMap.set(l.date, (dailyMap.get(l.date) ?? 0) + (l.total_work_minutes ?? 0));
+        const dt = new Date(l.date);
+        // Week start (Sunday)
+        const sun = new Date(dt);
+        sun.setDate(dt.getDate() - dt.getDay());
+        const weekKey = sun.toISOString().slice(0, 10);
+        if (!weeklyMap.has(weekKey)) weeklyMap.set(weekKey, { regular: 0, ot: 0 });
+        const w = weeklyMap.get(weekKey)!;
+        const otMin = l.overtime_minutes ?? 0;
+        const regMin = Math.max(0, (l.total_work_minutes ?? 0) - otMin);
+        w.regular += regMin;
+        w.ot += otMin;
       }
-      const dailyTrend = Array.from(dailyMap.entries())
+      const weeklyTrend = Array.from(weeklyMap.entries())
         .sort(([a], [b]) => a.localeCompare(b))
-        .map(([date, min]) => ({ date, hours: Math.round((min / 60) * 10) / 10 }));
+        .map(([week, v]) => ({
+          week,
+          weekLabel: `W${Math.ceil((new Date(week).getDate()) / 7)}`,
+          regular: Math.round((v.regular / 60) * 10) / 10,
+          ot: Math.round((v.ot / 60) * 10) / 10,
+          total: Math.round(((v.regular + v.ot) / 60) * 10) / 10,
+        }));
 
-      return { rows, bySkill, dailyTrend, avgUtilization: rows.length ? Math.round(rows.reduce((s, r) => s + r.utilization, 0) / rows.length) : 0 };
+      // Heatmap data: employee × day-of-month
+      const heatmapDays: string[] = [];
+      for (let d = 1; d <= lastDay; d++) {
+        heatmapDays.push(`${month}-${String(d).padStart(2, "0")}`);
+      }
+
+      // Absenteeism analytics
+      const absenceRows: AbsenceRow[] = filteredEmps.map((e) => {
+        const workedDays = logMap.get(e.id)?.days ?? new Set<string>();
+        const onLeave = leaveDaysMap.get(e.id) ?? new Set<string>();
+        const dayOfWeekCounts = [0, 0, 0, 0, 0, 0, 0];
+        let absentDays = 0;
+
+        for (let d = 1; d <= lastDay; d++) {
+          const dt = new Date(y, m - 1, d);
+          const dow = dt.getDay();
+          if (dow === 5) continue; // Friday off
+          const dateStr = `${month}-${String(d).padStart(2, "0")}`;
+          const isToday = new Date().toISOString().slice(0, 10) === dateStr;
+          const isFuture = new Date(dateStr) > new Date();
+          if (isFuture && !isToday) continue;
+          if (!workedDays.has(dateStr) && !onLeave.has(dateStr)) {
+            absentDays++;
+            dayOfWeekCounts[dow]++;
+          }
+        }
+        return { id: e.id, name: e.name, skill_type: e.skill_type, absentDays, dayOfWeekCounts };
+      }).filter((r) => r.absentDays > 0).sort((a, b) => b.absentDays - a.absentDays);
+
+      // Day-of-week absence totals
+      const dowTotals = [0, 0, 0, 0, 0, 0, 0];
+      for (const r of absenceRows) {
+        for (let i = 0; i < 7; i++) dowTotals[i] += r.dayOfWeekCounts[i];
+      }
+
+      const totalWorkedHours = Math.round(rows.reduce((s, r) => s + r.totalHours, 0));
+      const totalOtHours = Math.round(rows.reduce((s, r) => s + r.otHours, 0) * 10) / 10;
+      const totalIdleHours = Math.round(rows.reduce((s, r) => s + r.idleHours, 0));
+      const avgUtilization = rows.length ? Math.round(rows.reduce((s, r) => s + r.utilization, 0) / rows.length) : 0;
+
+      return {
+        rows, bySkill, weeklyTrend, heatmapDays, absenceRows, dowTotals,
+        avgUtilization, totalWorkedHours, totalOtHours, totalIdleHours,
+        branches: branches.map((b) => ({ id: b.id, name: b.name })),
+        employees: filteredEmps.map((e) => ({ id: e.id, name: e.name })),
+        workingDays,
+      };
     },
   });
 }
@@ -78,7 +227,6 @@ export function useCostData(month: string) {
       const expenses = expensesRes.data ?? [];
       const projects = projectsRes.data ?? [];
 
-      // By project
       const projMap = new Map<string, { name: string; budget: number; laborCost: number; otCost: number; expenses: number }>();
       for (const p of projects) {
         projMap.set(p.id, { name: p.name, budget: Number(p.budget ?? 0), laborCost: 0, otCost: 0, expenses: 0 });
@@ -104,7 +252,6 @@ export function useCostData(month: string) {
         budget: Math.round(p.budget),
       }));
 
-      // By category
       const catMap = new Map<string, number>();
       catMap.set("labor", logs.reduce((s, l) => s + Number(l.regular_cost ?? 0), 0));
       catMap.set("overtime", logs.reduce((s, l) => s + Number(l.overtime_cost ?? 0), 0));
@@ -140,7 +287,6 @@ export function useExecutiveData(month: string) {
       const uniqueWorkers = new Set(logs.map((l) => l.employee_id)).size;
       const totalBudget = (projRes.data ?? []).reduce((s, p) => s + Number(p.budget ?? 0), 0);
 
-      // Daily cost trend
       const dailyCost = new Map<string, number>();
       for (const l of logs) {
         const cost = Number(l.regular_cost ?? 0) + Number(l.overtime_cost ?? 0);
