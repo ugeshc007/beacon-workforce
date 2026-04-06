@@ -382,70 +382,7 @@ export default function ProjectDetail() {
 
         {/* ── Costs ── */}
         <TabsContent value="costs">
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[
-                { label: "Labor", value: costs?.totalLabor ?? 0, color: "text-brand" },
-                { label: "Overtime", value: costs?.totalOT ?? 0, color: "text-status-overtime" },
-                { label: "Expenses (Approved)", value: costs?.totalApprovedExpenses ?? 0, color: "text-status-present" },
-                { label: "Total Cost", value: costs?.totalCost ?? 0, color: "text-foreground" },
-              ].map((c) => (
-                <Card key={c.label} className="glass-card">
-                  <CardContent className="p-4">
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{c.label}</p>
-                    <p className={cn("text-lg font-bold font-mono", c.color)}>AED {c.value.toLocaleString()}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            {/* Budget progress */}
-            {project.budget && (
-              <Card className="glass-card">
-                <CardContent className="p-4 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Budget Utilization</span>
-                    <span className="font-mono font-medium">
-                      AED {(costs?.totalCost ?? 0).toLocaleString()} / {project.budget.toLocaleString()}
-                    </span>
-                  </div>
-                  {(() => {
-                    const pct = Math.min(((costs?.totalCost ?? 0) / project.budget!) * 100, 100);
-                    const over = (costs?.totalCost ?? 0) > project.budget!;
-                    return (
-                      <div className="space-y-1">
-                        <Progress value={pct} className={cn("h-2", over && "[&>div]:bg-destructive")} />
-                        <p className={cn("text-xs font-mono text-right", over ? "text-destructive" : "text-muted-foreground")}>
-                          {Math.round(pct)}% {over && "— Over budget!"}
-                        </p>
-                      </div>
-                    );
-                  })()}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Expense categories breakdown */}
-            {costs?.byCategory && Object.keys(costs.byCategory).length > 0 && (
-              <Card className="glass-card">
-                <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><BarChart3 className="h-4 w-4" /> Expense Breakdown</CardTitle></CardHeader>
-                <CardContent className="space-y-2">
-                  {Object.entries(costs.byCategory).sort(([, a], [, b]) => b - a).map(([cat, amount]) => (
-                    <div key={cat} className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-[10px] capitalize">{cat}</Badge>
-                      </div>
-                      <span className="font-mono text-muted-foreground">AED {amount.toLocaleString()}</span>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
-
-            {costs?.totalPendingExpenses ? (
-              <p className="text-xs text-status-traveling">⚠ AED {costs.totalPendingExpenses.toLocaleString()} in pending expenses awaiting approval</p>
-            ) : null}
-          </div>
+          <ProjectCostsTab project={project} costs={costs} />
         </TabsContent>
 
         {/* ── Expenses ── */}
