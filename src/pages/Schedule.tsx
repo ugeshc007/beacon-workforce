@@ -74,6 +74,19 @@ export default function Schedule() {
   const activeProjects = (projects ?? []).filter((p) => ["planned", "assigned", "in_progress"].includes(p.status));
   const { data: assignments, isLoading } = useWeekAssignments(weekStart, weekEnd, selectedProjectId);
   const conflicts = useDetectConflicts(assignments ?? []);
+  const queryClient = useQueryClient();
+
+  // Realtime subscription for assignment changes
+  useEffect(() => {
+    const channel = supabase
+      .channel("schedule-assignments-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "project_assignments" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["schedule-assignments"] });
+        queryClient.invalidateQueries({ queryKey: ["available-employees"] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
 
   const selectedProject = activeProjects.find((p) => p.id === selectedProjectId);
   const today = new Date().toISOString().split("T")[0];
