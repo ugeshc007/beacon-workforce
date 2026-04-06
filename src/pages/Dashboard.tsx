@@ -136,11 +136,6 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card className="glass-card mt-4">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold text-foreground">Active Projects</CardTitle>
-            </CardHeader>
-
           <TravelMapCard />
 
           <Card className="glass-card mt-4">
