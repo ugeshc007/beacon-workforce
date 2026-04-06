@@ -45,8 +45,8 @@ export default function ProjectDetail() {
       setUploadingExpenseId(null);
       return;
     }
-    const { data: urlData } = supabase.storage.from("receipts").getPublicUrl(path);
-    await supabase.from("project_expenses").update({ receipt_url: urlData.publicUrl }).eq("id", expenseId);
+    // Store the path (bucket is private, we'll use signed URLs to view)
+    await supabase.from("project_expenses").update({ receipt_url: path }).eq("id", expenseId);
     toast({ title: "Receipt uploaded" });
     setUploadingExpenseId(null);
     // Refresh expenses
