@@ -185,7 +185,7 @@ export default function SettingsPage() {
         {/* ── Attendance / OT ─────────────── */}
         <TabsContent value="attendance">
           <SectionCard icon={Clock} title="Working Hours & Overtime" desc="Define standard hours, OT multiplier, break duration, and travel rules."
-            onSave={() => saveSection(["standard_work_hours", "overtime_multiplier", "friday_off", "late_threshold_minutes", "break_duration_minutes", "travel_time_paid"])} saving={save.isPending}>
+            onSave={() => saveSection(["standard_work_hours", "overtime_multiplier", "friday_off", "late_threshold_minutes", "late_work_start_threshold_minutes", "break_duration_minutes", "travel_time_paid"])} saving={save.isPending}>
             <div className="grid sm:grid-cols-2 gap-4">
               <Field label="Standard Work Hours / Day">
                 <Input type="number" value={form.standard_work_hours ?? "8"} onChange={(e) => set("standard_work_hours", e.target.value)} />
@@ -195,6 +195,9 @@ export default function SettingsPage() {
               </Field>
               <Field label="Late Threshold (minutes)" hint="Minutes after shift start before marked late.">
                 <Input type="number" value={form.late_threshold_minutes ?? "15"} onChange={(e) => set("late_threshold_minutes", e.target.value)} />
+              </Field>
+              <Field label="Late Work Start Threshold (minutes)" hint="Minutes after shift start before a late-work-start alert is sent to managers.">
+                <Input type="number" value={form.late_work_start_threshold_minutes ?? "15"} onChange={(e) => set("late_work_start_threshold_minutes", e.target.value)} />
               </Field>
               <Field label="Break Duration (minutes)">
                 <Input type="number" value={form.break_duration_minutes ?? "60"} onChange={(e) => set("break_duration_minutes", e.target.value)} />
