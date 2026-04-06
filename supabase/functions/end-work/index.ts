@@ -1,4 +1,4 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, todayDate, nowTimestamp } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, todayDate, nowTimestamp, notifyBranchManagers } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
     // Get employee rates
     const { data: emp } = await supabase
       .from("employees")
-      .select("hourly_rate, overtime_rate, standard_hours_per_day")
+      .select("hourly_rate, overtime_rate, standard_hours_per_day, name, branch_id")
       .eq("id", employee_id)
       .single();
 
@@ -51,6 +51,34 @@ Deno.serve(async (req) => {
       .eq("id", log.id);
 
     if (error) return errorResponse(error.message, 500);
+
+    // OT threshold alert — notify managers when overtime is detected
+    if (overtimeMinutes > 0) {
+      try {
+        // Get OT warning threshold from settings
+        const { data: setting } = await supabase
+          .from("settings")
+          .select("value")
+          .eq("key", "notification_ot_warning_hours")
+          .maybeSingle();
+        const otWarningHours = parseFloat(setting?.value ?? "2");
+        const otHours = overtimeMinutes / 60;
+
+        // Always notify on OT; high priority if exceeds warning threshold
+        const priority = otHours >= otWarningHours ? "critical" : "high";
+
+        await notifyBranchManagers(supabase, emp.branch_id, {
+          type: "overtime_alert",
+          title: "Overtime Recorded",
+          message: `${emp.name} logged ${Math.round(otHours * 10) / 10}h overtime (AED ${Math.round(overtimeCost)})`,
+          priority,
+          reference_id: log.id,
+          reference_type: "attendance_log",
+        });
+      } catch (_) {
+        // Non-critical
+      }
+    }
 
     return jsonResponse({
       success: true,
