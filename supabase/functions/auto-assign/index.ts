@@ -178,6 +178,8 @@ Deno.serve(async (req) => {
         project_id: projectId,
         employee_id: a.employeeId,
         date,
+        shift_start: assignShiftStart,
+        shift_end: assignShiftEnd,
         assignment_mode: "auto" as const,
         auto_score: a.scoreBreakdown,
       }));
