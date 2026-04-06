@@ -112,6 +112,9 @@ export default function Projects() {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
+          <Button variant="outline" size="sm" className="gap-1" onClick={() => navigate("/projects/gantt")}>
+            <GanttChart className="h-4 w-4" /> Gantt
+          </Button>
           <Button onClick={handleAdd} size="sm"><Plus className="h-4 w-4 mr-1" /> New Project</Button>
         </div>
       </div>
