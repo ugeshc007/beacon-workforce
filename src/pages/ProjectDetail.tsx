@@ -1,14 +1,16 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useProject, useProjectStats, useProjectTeam, useProjectExpenses } from "@/hooks/useProjects";
+import { useProject, useProjectStats, useProjectTeam, useProjectExpenses, useRemoveAssignment } from "@/hooks/useProjects";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { ArrowLeft, MapPin, Phone, Mail, Users, DollarSign, Clock, Wrench } from "lucide-react";
+import { ArrowLeft, MapPin, Phone, Mail, Users, DollarSign, Clock, Wrench, UserPlus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { ProjectFormDialog } from "@/components/projects/ProjectFormDialog";
+import { TeamAssignDialog } from "@/components/projects/TeamAssignDialog";
+import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
 const statusMap: Record<string, "planned" | "present" | "traveling" | "absent" | "overtime"> = {
