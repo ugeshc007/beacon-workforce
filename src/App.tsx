@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { ModuleGuard } from "@/components/auth/ModuleGuard";
 import { AppLayout } from "@/components/layout/AppLayout";
 import Login from "./pages/Login";
 import Index from "./pages/Index";
@@ -42,19 +43,19 @@ const App = () => (
                 </ProtectedRoute>
               }
             >
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/projects" element={<Projects />} />
-              <Route path="/projects/:id" element={<ProjectDetail />} />
-              <Route path="/employees" element={<Employees />} />
-              <Route path="/schedule" element={<Schedule />} />
-              <Route path="/attendance" element={<Attendance />} />
-              <Route path="/timesheets" element={<Timesheets />} />
-              <Route path="/reports" element={<Reports />} />
-              <Route path="/reports/utilization" element={<Utilization />} />
-              <Route path="/reports/costs" element={<CostReports />} />
-              <Route path="/reports/profitability" element={<Profitability />} />
-              <Route path="/reports/executive" element={<Executive />} />
-              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/dashboard" element={<ModuleGuard module="dashboard"><Dashboard /></ModuleGuard>} />
+              <Route path="/projects" element={<ModuleGuard module="projects"><Projects /></ModuleGuard>} />
+              <Route path="/projects/:id" element={<ModuleGuard module="projects"><ProjectDetail /></ModuleGuard>} />
+              <Route path="/employees" element={<ModuleGuard module="employees"><Employees /></ModuleGuard>} />
+              <Route path="/schedule" element={<ModuleGuard module="schedule"><Schedule /></ModuleGuard>} />
+              <Route path="/attendance" element={<ModuleGuard module="attendance"><Attendance /></ModuleGuard>} />
+              <Route path="/timesheets" element={<ModuleGuard module="timesheets"><Timesheets /></ModuleGuard>} />
+              <Route path="/reports" element={<ModuleGuard module="reports"><Reports /></ModuleGuard>} />
+              <Route path="/reports/utilization" element={<ModuleGuard module="reports"><Utilization /></ModuleGuard>} />
+              <Route path="/reports/costs" element={<ModuleGuard module="reports"><CostReports /></ModuleGuard>} />
+              <Route path="/reports/profitability" element={<ModuleGuard module="reports"><Profitability /></ModuleGuard>} />
+              <Route path="/reports/executive" element={<ModuleGuard module="reports"><Executive /></ModuleGuard>} />
+              <Route path="/settings" element={<ModuleGuard module="settings"><SettingsPage /></ModuleGuard>} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
