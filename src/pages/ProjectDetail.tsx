@@ -13,7 +13,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Progress } from "@/components/ui/progress";
 import {
   ArrowLeft, MapPin, Phone, Mail, Users, DollarSign, Clock, Wrench,
-  UserPlus, Trash2, Paperclip, ExternalLink, Check, CalendarDays, BarChart3,
+  UserPlus, Trash2, Check, CalendarDays,
 } from "lucide-react";
 import { useState } from "react";
 import { ProjectFormDialog } from "@/components/projects/ProjectFormDialog";
