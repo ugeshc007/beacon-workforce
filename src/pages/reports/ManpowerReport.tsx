@@ -41,7 +41,7 @@ export default function ManpowerReport() {
               </SelectContent>
             </Select>
           )}
-          {data && (
+          {data && (<>
             <Button variant="outline" size="sm" className="text-xs ml-1" onClick={() => {
               downloadCsv(`manpower-${month}.csv`,
                 ["Project", "Status", "Required", "Assigned", "Fill Rate %", "Tech", "Helpers", "Supervisors"],
