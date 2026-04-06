@@ -13,7 +13,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useProjects } from "@/hooks/useProjects";
-import { exportCsv } from "@/lib/csv-export";
+import { downloadCsv } from "@/lib/csv-export";
 import {
   Clock, Search, ChevronLeft, ChevronRight, Download,
   CheckCircle2, XCircle, AlertTriangle, DollarSign, Users, Timer,
