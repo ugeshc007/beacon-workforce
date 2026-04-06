@@ -235,7 +235,25 @@ Deno.serve(async (req) => {
       });
     }
 
-    return jsonResponse({ assigned, unfilled });
+    // Build reason summary
+    const reasons: string[] = [];
+    if (assigned.length === 0) {
+      const onLeaveCount = allEmployees.filter((e) => onLeave.has(e.id)).length;
+      const alreadyCount = alreadyOnProject.size;
+      if (onLeaveCount > 0) reasons.push(`${onLeaveCount} on leave`);
+      if (alreadyCount > 0) reasons.push(`${alreadyCount} already on this project`);
+      if (assignedElsewhere.size > 0) reasons.push(`${assignedElsewhere.size} assigned to other projects`);
+      if (!reasons.length) reasons.push("No eligible employees available");
+    }
+    const doubleBookedList = assigned.filter((a) => a.doubleBooked);
+    if (doubleBookedList.length > 0) {
+      reasons.push(`${doubleBookedList.length} double-booked (no free alternatives)`);
+    }
+    if (unfilled.length > 0) {
+      reasons.push(`Short: ${unfilled.map((u) => `${u.needed} ${u.role}(s)`).join(", ")}`);
+    }
+
+    return jsonResponse({ assigned, unfilled, reason: reasons.length ? reasons.join(". ") : undefined });
   } catch (err) {
     return errorResponse(err.message, 500);
   }
