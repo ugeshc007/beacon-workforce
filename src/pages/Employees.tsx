@@ -50,6 +50,9 @@ export default function Employees() {
   const { data: branches } = useBranches();
   const toggleStatus = useToggleEmployeeStatus();
   const { toast } = useToast();
+  const { allowed: canCreate } = useCanAccess("employees", "can_create");
+  const { allowed: canEdit } = useCanAccess("employees", "can_edit");
+  const { allowed: canDelete } = useCanAccess("employees", "can_delete");
 
   const employees = data?.data ?? [];
   const totalCount = data?.count ?? 0;
