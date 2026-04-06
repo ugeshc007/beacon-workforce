@@ -64,7 +64,7 @@ export default function CostReports() {
           <ReportDateFilter value={dateRange} onChange={setDateRange} />
           {data && (<>
             <Button variant="outline" size="sm" className="text-xs ml-2" onClick={() => {
-              downloadCsv(`project-costs-${month}.csv`,
+              downloadCsv(`project-costs-${dateRange.start}-${dateRange.end}.csv`,
                 ["Project", "Status", "Budget", "Labor", "OT", "Expenses", "Total", "Variance", "% Used", "Forecasted Final", "Value", "Margin %"],
                 data.byProject.map((p) => [p.name, p.status, p.budget, p.laborCost, p.otCost, p.expenses, p.totalCost, p.variance, p.pctUsed, p.forecastedFinal, p.projectValue, p.margin])
               );
