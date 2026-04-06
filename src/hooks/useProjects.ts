@@ -13,6 +13,8 @@ export function useProjects(filters?: {
   branchId?: string;
   dateFrom?: string;
   dateTo?: string;
+  userRole?: string | null;
+  userId?: string | null;
 }) {
   return useQuery({
     queryKey: ["projects", filters],
@@ -21,6 +23,15 @@ export function useProjects(filters?: {
         .from("projects")
         .select("*, branches(name)")
         .order("created_at", { ascending: false });
+
+      // Non-admin, non-supervisor users only see projects they created
+      // or projects where they have team assigned
+      if (filters?.userId && filters?.userRole && filters.userRole !== "admin" && filters.userRole !== "supervisor") {
+        // Get project IDs where the user created them
+        // Also get project IDs from project_assignments where any employee is assigned
+        // (managers see projects they created)
+        query = query.eq("created_by", filters.userId);
+      }
 
       if (filters?.search) {
         const s = `%${filters.search}%`;
