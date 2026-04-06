@@ -96,7 +96,7 @@ export default function Utilization() {
               exportReportPdf({
                 title: "Staff Utilization Report",
                 subtitle: monthLabel,
-                filename: `utilization-${month}.pdf`,
+                filename: `utilization-${dateRange.start}-${dateRange.end}.pdf`,
                 summaryCards: [
                   { label: "Avg Utilization", value: `${data.avgUtilization}%` },
                   { label: "Total Worked", value: `${data.totalWorkedHours}h` },
