@@ -294,11 +294,19 @@ export function useAvailableEmployees(date: string, projectId: string) {
         .eq("is_active", true)
         .order("name");
 
-      // Get already-assigned employees for this date
-      const { data: assigned } = await supabase
+      // Get employees already assigned to THIS project on this date
+      const { data: assignedToProject } = await supabase
         .from("project_assignments")
         .select("employee_id")
-        .eq("date", date);
+        .eq("date", date)
+        .eq("project_id", projectId);
+
+      // Get all assignments for this date (to show as info, not block)
+      const { data: allAssigned } = await supabase
+        .from("project_assignments")
+        .select("employee_id")
+        .eq("date", date)
+        .neq("project_id", projectId);
 
       // Get employees on leave
       const { data: onLeave } = await supabase
@@ -307,14 +315,15 @@ export function useAvailableEmployees(date: string, projectId: string) {
         .lte("start_date", date)
         .gte("end_date", date);
 
-      const assignedIds = new Set((assigned ?? []).map((a) => a.employee_id));
+      const assignedToProjectIds = new Set((assignedToProject ?? []).map((a) => a.employee_id));
+      const assignedElsewhereIds = new Set((allAssigned ?? []).map((a) => a.employee_id));
       const leaveIds = new Set((onLeave ?? []).map((l) => l.employee_id));
 
       return (employees ?? []).map((e) => ({
         ...e,
-        available: !assignedIds.has(e.id) && !leaveIds.has(e.id),
+        available: !assignedToProjectIds.has(e.id) && !leaveIds.has(e.id),
         on_leave: leaveIds.has(e.id),
-        assigned_elsewhere: assignedIds.has(e.id) && !leaveIds.has(e.id),
+        assigned_elsewhere: assignedElsewhereIds.has(e.id) && !leaveIds.has(e.id),
       }));
     },
   });
