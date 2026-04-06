@@ -903,6 +903,69 @@ export type Database = {
           },
         ]
       }
+      timesheet_approvals: {
+        Row: {
+          approval_notes: string | null
+          approved_by: string | null
+          created_at: string
+          days_worked: number | null
+          employee_id: string
+          id: string
+          month: string
+          status: string
+          total_hours: number | null
+          total_ot_cost: number | null
+          total_ot_hours: number | null
+          total_regular_cost: number | null
+          updated_at: string
+        }
+        Insert: {
+          approval_notes?: string | null
+          approved_by?: string | null
+          created_at?: string
+          days_worked?: number | null
+          employee_id: string
+          id?: string
+          month: string
+          status?: string
+          total_hours?: number | null
+          total_ot_cost?: number | null
+          total_ot_hours?: number | null
+          total_regular_cost?: number | null
+          updated_at?: string
+        }
+        Update: {
+          approval_notes?: string | null
+          approved_by?: string | null
+          created_at?: string
+          days_worked?: number | null
+          employee_id?: string
+          id?: string
+          month?: string
+          status?: string
+          total_hours?: number | null
+          total_ot_cost?: number | null
+          total_ot_hours?: number | null
+          total_regular_cost?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timesheet_approvals_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timesheet_approvals_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
