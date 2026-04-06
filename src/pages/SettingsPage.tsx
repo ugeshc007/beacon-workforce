@@ -62,43 +62,55 @@ function SectionCard({ icon: Icon, title, desc, children, onSave, saving }: {
 }
 
 // ─── Branch dialog ──────────────────────────────────────────
-function BranchDialog({ branch, onClose }: {
+function BranchDialog({ branch, open, onOpenChange }: {
   branch?: { id: string; name: string; city: string | null; address: string | null } | null;
-  onClose: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }) {
-  const [name, setName] = useState(branch?.name ?? "");
-  const [city, setCity] = useState(branch?.city ?? "");
-  const [address, setAddress] = useState(branch?.address ?? "");
+  const [name, setName] = useState("");
+  const [city, setCity] = useState("");
+  const [address, setAddress] = useState("");
   const create = useCreateBranch();
   const update = useUpdateBranch();
   const saving = create.isPending || update.isPending;
+
+  // Sync form fields when branch changes or dialog opens
+  useEffect(() => {
+    if (open) {
+      setName(branch?.name ?? "");
+      setCity(branch?.city ?? "");
+      setAddress(branch?.address ?? "");
+    }
+  }, [open, branch]);
 
   const handleSave = () => {
     if (!name.trim()) return;
     const payload = { name: name.trim(), city: city.trim() || undefined, address: address.trim() || undefined };
     if (branch) {
-      update.mutate({ id: branch.id, ...payload }, { onSuccess: onClose });
+      update.mutate({ id: branch.id, ...payload }, { onSuccess: () => onOpenChange(false) });
     } else {
-      create.mutate(payload, { onSuccess: onClose });
+      create.mutate(payload, { onSuccess: () => onOpenChange(false) });
     }
   };
 
   return (
-    <DialogContent className="sm:max-w-md">
-      <DialogHeader>
-        <DialogTitle className="text-sm">{branch ? "Edit Branch" : "New Branch"}</DialogTitle>
-      </DialogHeader>
-      <div className="space-y-4 py-2">
-        <Field label="Branch Name"><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Dubai Main" /></Field>
-        <Field label="City"><Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Dubai" /></Field>
-        <Field label="Address"><Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Street address" /></Field>
-      </div>
-      <DialogFooter>
-        <Button size="sm" onClick={handleSave} disabled={saving || !name.trim()}>
-          {saving ? "Saving…" : "Save"}
-        </Button>
-      </DialogFooter>
-    </DialogContent>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-sm">{branch ? "Edit Branch" : "New Branch"}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <Field label="Branch Name"><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Dubai Main" /></Field>
+          <Field label="City"><Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Dubai" /></Field>
+          <Field label="Address"><Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Street address" /></Field>
+        </div>
+        <DialogFooter>
+          <Button size="sm" onClick={handleSave} disabled={saving || !name.trim()}>
+            {saving ? "Saving…" : "Save"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -352,14 +364,9 @@ export default function SettingsPage() {
                 </CardTitle>
                 <CardDescription className="text-xs mt-1">Manage company branches and locations.</CardDescription>
               </div>
-              <Dialog open={branchDialogOpen} onOpenChange={(open) => { setBranchDialogOpen(open); if (!open) setEditingBranch(null); }}>
-                <DialogTrigger asChild>
-                  <Button size="sm" variant="outline" onClick={() => { setEditingBranch(null); setBranchDialogOpen(true); }}>
-                    <Plus className="h-3.5 w-3.5 mr-1" /> Add Branch
-                  </Button>
-                </DialogTrigger>
-                <BranchDialog branch={editingBranch} onClose={() => setBranchDialogOpen(false)} />
-              </Dialog>
+              <Button size="sm" variant="outline" onClick={() => { setEditingBranch(null); setBranchDialogOpen(true); }}>
+                <Plus className="h-3.5 w-3.5 mr-1" /> Add Branch
+              </Button>
             </CardHeader>
             <CardContent>
               {branchesLoading ? (
@@ -380,14 +387,9 @@ export default function SettingsPage() {
                         <Badge variant="outline" className="text-[10px]">
                           {new Date(b.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
                         </Badge>
-                        <Dialog open={branchDialogOpen && editingBranch?.id === b.id} onOpenChange={(open) => { setBranchDialogOpen(open); if (!open) setEditingBranch(null); }}>
-                          <DialogTrigger asChild>
-                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditingBranch(b); setBranchDialogOpen(true); }}>
-                              <Pencil className="h-3.5 w-3.5" />
-                            </Button>
-                          </DialogTrigger>
-                          <BranchDialog branch={editingBranch} onClose={() => setBranchDialogOpen(false)} />
-                        </Dialog>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditingBranch(b); setBranchDialogOpen(true); }}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -395,6 +397,11 @@ export default function SettingsPage() {
               )}
             </CardContent>
           </Card>
+          <BranchDialog
+            branch={editingBranch}
+            open={branchDialogOpen}
+            onOpenChange={(open) => { setBranchDialogOpen(open); if (!open) setEditingBranch(null); }}
+          />
         </TabsContent>
 
         {/* ── Permissions ─────────────────── */}
