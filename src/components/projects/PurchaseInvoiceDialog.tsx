@@ -185,6 +185,9 @@ export function PurchaseInvoiceDialog({ projectId, open, onOpenChange }: Props) 
             </div>
 
             <div className="space-y-2">
+              <div className="grid grid-cols-[110px_70px_80px_80px_1fr_32px] gap-2 text-[10px] text-muted-foreground uppercase tracking-wider px-1">
+                <span>Category</span><span>Qty</span><span>Unit Rate</span><span>Amount</span><span>Description</span><span></span>
+              </div>
               {lines.map((line, i) => (
                 <div key={i} className="grid grid-cols-[110px_70px_80px_80px_1fr_32px] gap-2 items-end">
                   <Select value={line.category} onValueChange={(v) => updateLine(i, "category", v)}>
