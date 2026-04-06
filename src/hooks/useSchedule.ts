@@ -116,6 +116,57 @@ export function useRemoveAssignment() {
   });
 }
 
+export function useUpdateAssignment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, shift_start, shift_end }: { id: string; shift_start?: string; shift_end?: string }) => {
+      const updates: Record<string, string> = {};
+      if (shift_start !== undefined) updates.shift_start = shift_start;
+      if (shift_end !== undefined) updates.shift_end = shift_end;
+      const { error } = await supabase.from("project_assignments").update(updates).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["schedule-assignments"] }),
+  });
+}
+
+export function useReassignEmployee() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ oldAssignmentId, newProjectId, employeeId, date, shiftStart, shiftEnd, keepOld, oldShiftEnd }: {
+      oldAssignmentId: string;
+      newProjectId: string;
+      employeeId: string;
+      date: string;
+      shiftStart: string;
+      shiftEnd: string;
+      keepOld: boolean;
+      oldShiftEnd?: string;
+    }) => {
+      if (keepOld && oldShiftEnd) {
+        const { error } = await supabase.from("project_assignments").update({ shift_end: oldShiftEnd }).eq("id", oldAssignmentId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("project_assignments").delete().eq("id", oldAssignmentId);
+        if (error) throw error;
+      }
+      const { error: insertErr } = await supabase.from("project_assignments").insert({
+        project_id: newProjectId,
+        employee_id: employeeId,
+        date,
+        shift_start: shiftStart,
+        shift_end: shiftEnd,
+        assignment_mode: "manual" as const,
+      });
+      if (insertErr) throw insertErr;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["schedule-assignments"] });
+      qc.invalidateQueries({ queryKey: ["available-employees"] });
+    },
+  });
+}
+
 export function useToggleLock() {
   const qc = useQueryClient();
   return useMutation({
