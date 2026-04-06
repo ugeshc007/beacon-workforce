@@ -19,6 +19,7 @@ import ProjectGantt from "./pages/ProjectGantt";
 import Employees from "./pages/Employees";
 import Schedule from "./pages/Schedule";
 import Attendance from "./pages/Attendance";
+import DailyTeam from "./pages/DailyTeam";
 import Timesheets from "./pages/Timesheets";
 import Reports from "./pages/Reports";
 import Utilization from "./pages/reports/Utilization";
@@ -55,6 +56,7 @@ const App = () => (
               <Route path="/employees" element={<ModuleGuard module="employees"><Employees /></ModuleGuard>} />
               <Route path="/schedule" element={<ModuleGuard module="schedule"><Schedule /></ModuleGuard>} />
               <Route path="/attendance" element={<ModuleGuard module="attendance"><Attendance /></ModuleGuard>} />
+              <Route path="/attendance/daily" element={<ModuleGuard module="attendance"><DailyTeam /></ModuleGuard>} />
               <Route path="/timesheets" element={<ModuleGuard module="timesheets"><Timesheets /></ModuleGuard>} />
               <Route path="/reports" element={<ModuleGuard module="reports"><Reports /></ModuleGuard>} />
               <Route path="/reports/utilization" element={<ModuleGuard module="reports"><Utilization /></ModuleGuard>} />
