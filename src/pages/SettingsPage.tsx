@@ -214,6 +214,9 @@ export default function SettingsPage() {
                   <span className="text-xs text-muted-foreground">{isOn("travel_time_paid") ? "Travel hours counted" : "Travel not counted"}</span>
                 </div>
               </Field>
+              <Field label="Expense Approval Threshold (AED)" hint="Expenses above this amount require manager approval. Set 0 to auto-approve all.">
+                <Input type="number" value={form.expense_approval_threshold ?? "500"} onChange={(e) => set("expense_approval_threshold", e.target.value)} />
+              </Field>
             </div>
           </SectionCard>
         </TabsContent>
