@@ -68,7 +68,7 @@ export default function AbsenteeReport() {
                 }],
               });
             }}><Download className="h-3.5 w-3.5 mr-1" />PDF</Button>
-          )}
+          </>)}
         </div>
       </div>
 
