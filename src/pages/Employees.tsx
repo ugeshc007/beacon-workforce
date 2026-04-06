@@ -151,10 +151,12 @@ export default function Employees() {
                   <TableHead className="w-[100px]">Code</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead className="hidden md:table-cell">Phone</TableHead>
+                  <TableHead className="hidden lg:table-cell">Designation</TableHead>
                   <TableHead>Skill</TableHead>
                   <TableHead className="hidden lg:table-cell">Branch</TableHead>
                   <TableHead className="text-right hidden sm:table-cell">Rate (AED)</TableHead>
                   <TableHead className="text-right hidden sm:table-cell">OT (AED)</TableHead>
+                  <TableHead className="text-right hidden xl:table-cell">Std Hrs</TableHead>
                   <TableHead className="text-center">Active</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
