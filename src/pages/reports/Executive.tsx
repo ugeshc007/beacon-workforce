@@ -28,15 +28,9 @@ const ALERT_LABELS: Record<string, string> = {
 
 export default function Executive() {
   const navigate = useNavigate();
-  const now = new Date();
-  const [monthOffset, setMonthOffset] = useState(0);
-  const target = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
-  const month = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, "0")}`;
-  const monthLabel = target.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+  const [dateRange, setDateRange] = useReportDateRange("This Month");
 
-  const startDate = `${month}-01`;
-  const endDate = new Date(target.getFullYear(), target.getMonth() + 1, 0).toISOString().slice(0, 10);
-  const { data, isLoading } = useExecutiveData(startDate, endDate);
+  const { data, isLoading } = useExecutiveData(dateRange.start, dateRange.end);
 
   return (
     <div className="space-y-6">
