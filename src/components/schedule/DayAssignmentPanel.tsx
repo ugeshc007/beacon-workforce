@@ -53,6 +53,7 @@ export function DayAssignmentPanel({
   requiredHelp,
   requiredSup,
   conflicts,
+  readOnly = false,
 }: Props) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
