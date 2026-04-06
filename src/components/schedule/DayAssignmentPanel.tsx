@@ -12,6 +12,10 @@ import {
   type ScheduleAssignment,
 } from "@/hooks/useSchedule";
 import { Lock, LockOpen, Plus, Trash2, AlertTriangle, Zap, User } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -49,10 +53,16 @@ export function DayAssignmentPanel({
   const toggleLock = useToggleLock();
   const [addingSkill, setAddingSkill] = useState<string | null>(null);
   const [autoLoading, setAutoLoading] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const techCount = assignments.filter((a) => a.employee_skill === "technician").length;
   const helpCount = assignments.filter((a) => a.employee_skill === "helper").length;
   const supCount = assignments.filter((a) => a.employee_skill === "supervisor").length;
+
+  const needTech = Math.max(0, requiredTech - techCount);
+  const needHelp = Math.max(0, requiredHelp - helpCount);
+  const needSup = Math.max(0, requiredSup - supCount);
+  const totalToFill = needTech + needHelp + needSup;
 
   const handleAdd = async (employeeId: string) => {
     try {
@@ -116,7 +126,7 @@ export function DayAssignmentPanel({
             <CardTitle className="text-sm font-semibold">{dayLabel}</CardTitle>
             <p className="text-xs text-muted-foreground mt-0.5">{projectName}</p>
           </div>
-          <Button size="sm" variant="outline" onClick={handleAutoAssign} disabled={autoLoading}>
+          <Button size="sm" variant="outline" onClick={() => setConfirmOpen(true)} disabled={autoLoading || totalToFill === 0}>
             <Zap className="h-3.5 w-3.5 mr-1" />
             {autoLoading ? "Assigning…" : "Auto-fill"}
           </Button>
@@ -217,6 +227,31 @@ export function DayAssignmentPanel({
           </div>
         )}
       </CardContent>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Auto-fill assignments?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>The engine will assign up to <strong>{totalToFill}</strong> employees for <strong>{projectName}</strong> on {new Date(date + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" })}:</p>
+                <ul className="list-disc pl-5 space-y-0.5 text-sm">
+                  {needTech > 0 && <li>{needTech} technician{needTech > 1 ? "s" : ""}</li>}
+                  {needHelp > 0 && <li>{needHelp} helper{needHelp > 1 ? "s" : ""}</li>}
+                  {needSup > 0 && <li>{needSup} supervisor{needSup > 1 ? "s" : ""}</li>}
+                </ul>
+                <p className="text-xs text-muted-foreground">Locked employees will be kept. Scoring considers utilization balance, hours, and recency.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setConfirmOpen(false); handleAutoAssign(); }}>
+              <Zap className="h-3.5 w-3.5 mr-1" /> Assign {totalToFill} employees
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
