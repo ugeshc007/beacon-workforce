@@ -275,6 +275,8 @@ export default function Projects() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => navigate(`/projects/${p.id}`)}><Eye className="h-3.5 w-3.5 mr-2" />View</DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleEdit(p as Tables<"projects">)}><Pencil className="h-3.5 w-3.5 mr-2" />Edit</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleDuplicate(p)}><Copy className="h-3.5 w-3.5 mr-2" />Duplicate</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </td>
