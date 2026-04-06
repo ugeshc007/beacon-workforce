@@ -112,7 +112,63 @@ export function DayAssignmentPanel({
     }
   };
 
-  const handleRemove = async (id: string) => {
+  const handleEditTime = (a: ScheduleAssignment) => {
+    setEditingId(a.id);
+    setEditStart(formatTime(a.shift_start) || "08:00");
+    setEditEnd(formatTime(a.shift_end) || "17:00");
+  };
+
+  const handleSaveTime = async () => {
+    if (!editingId) return;
+    try {
+      await updateAssignment.mutateAsync({ id: editingId, shift_start: editStart, shift_end: editEnd });
+      toast({ title: "Shift time updated" });
+      setEditingId(null);
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+  };
+
+  const openReassign = (a: ScheduleAssignment) => {
+    setReassignId(a.id);
+    setReassignEmpId(a.employee_id);
+    setReassignEmpName(a.employee_name);
+    const currentEnd = formatTime(a.shift_end) || "17:00";
+    const currentStart = formatTime(a.shift_start) || "08:00";
+    // Default: split at midpoint
+    const [sh, sm] = currentStart.split(":").map(Number);
+    const [eh, em] = currentEnd.split(":").map(Number);
+    const midMin = Math.round((sh * 60 + sm + eh * 60 + em) / 2);
+    const midH = String(Math.floor(midMin / 60)).padStart(2, "0");
+    const midM = String(midMin % 60).padStart(2, "0");
+    const mid = `${midH}:${midM}`;
+    setReassignOldEnd(mid);
+    setReassignStart(mid);
+    setReassignEnd(currentEnd);
+    setReassignKeepOld(true);
+    setReassignProject("");
+  };
+
+  const handleReassign = async () => {
+    if (!reassignId || !reassignProject) return;
+    try {
+      await reassignEmployee.mutateAsync({
+        oldAssignmentId: reassignId,
+        newProjectId: reassignProject,
+        employeeId: reassignEmpId,
+        date,
+        shiftStart: reassignStart,
+        shiftEnd: reassignEnd,
+        keepOld: reassignKeepOld,
+        oldShiftEnd: reassignKeepOld ? reassignOldEnd : undefined,
+      });
+      toast({ title: reassignKeepOld ? "Employee split across projects" : "Employee reassigned" });
+      setReassignId(null);
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+  };
+
     try {
       await removeAssignment.mutateAsync(id);
       toast({ title: "Assignment removed" });
