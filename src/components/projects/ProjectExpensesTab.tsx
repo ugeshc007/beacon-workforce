@@ -305,7 +305,7 @@ export function ProjectExpensesTab({ projectId, expenses }: Props) {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-4 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">Currency</Label>
                 <Select value={currency} onValueChange={handleCurrencyChange}>
@@ -318,8 +318,12 @@ export function ProjectExpensesTab({ projectId, expenses }: Props) {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Amount</Label>
-                <Input type="number" step="0.01" min="0" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} />
+                <Label className="text-xs">Quantity</Label>
+                <Input type="number" step="1" min="0" placeholder="1" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Unit Rate</Label>
+                <Input type="number" step="0.01" min="0" placeholder="0.00" value={unitRate} onChange={(e) => setUnitRate(e.target.value)} />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Rate → AED</Label>
@@ -330,10 +334,19 @@ export function ProjectExpensesTab({ projectId, expenses }: Props) {
               </div>
             </div>
 
-            {currency !== "AED" && amount && (
-              <p className="text-xs text-muted-foreground">
-                ≈ AED {(parseFloat(amount) * parseFloat(exchangeRate || "1")).toFixed(2)}
-              </p>
+            {computedAmount > 0 && (
+              <div className="rounded-lg bg-muted/30 border border-border p-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Amount</span>
+                  <span className="font-mono font-medium">{currency} {computedAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                </div>
+                {currency !== "AED" && (
+                  <div className="flex justify-between mt-1">
+                    <span className="text-muted-foreground">≈ AED</span>
+                    <span className="font-mono font-medium">AED {(computedAmount * (parseFloat(exchangeRate) || 1)).toFixed(2)}</span>
+                  </div>
+                )}
+              </div>
             )}
 
             <div className="space-y-1.5">
