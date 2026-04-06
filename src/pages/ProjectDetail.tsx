@@ -28,7 +28,9 @@ export default function ProjectDetail() {
   const { data: team } = useProjectTeam(id ?? null);
   const { data: expenses } = useProjectExpenses(id ?? null);
   const [editOpen, setEditOpen] = useState(false);
-
+  const [assignOpen, setAssignOpen] = useState(false);
+  const removeMutation = useRemoveAssignment();
+  const { toast } = useToast();
   if (isLoading) return <div className="space-y-4"><Skeleton className="h-10 w-48" /><Skeleton className="h-64 w-full" /></div>;
   if (!project) return <div className="text-center py-12 text-muted-foreground">Project not found</div>;
 
