@@ -55,7 +55,7 @@ export default function Executive() {
                 ["Total Hours", data.totalHours],
                 ["OT Hours", data.totalOtHours],
               ];
-              downloadCsv(`executive-${month}.csv`, ["Metric", "Value"], rows);
+              downloadCsv(`executive-${dateRange.start}-${dateRange.end}.csv`, ["Metric", "Value"], rows);
             }}><Download className="h-3.5 w-3.5 mr-1" />CSV</Button>
             <Button variant="outline" size="sm" className="text-xs" onClick={() => {
               exportReportPdf({
