@@ -89,7 +89,7 @@ export function PurchaseInvoiceDialog({ projectId, open, onOpenChange }: Props) 
       toast({ title: "Invoice number required", variant: "destructive" });
       return;
     }
-    const validLines = lines.filter((l) => parseFloat(l.amount) > 0);
+    const validLines = lines.filter((l) => (parseFloat(l.quantity) || 0) * (parseFloat(l.unitRate) || 0) > 0);
     if (!validLines.length) {
       toast({ title: "Add at least one line with an amount", variant: "destructive" });
       return;
