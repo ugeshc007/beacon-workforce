@@ -1,12 +1,13 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useAttendanceReport } from "@/hooks/useReports";
+import { ReportDateFilter, useReportDateRange } from "@/components/reports/ReportDateFilter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatCard } from "@/components/ui/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Download, Users, Clock, MapPin, CheckCircle } from "lucide-react";
+import { Download, Users, Clock, MapPin, CheckCircle } from "lucide-react";
 import { downloadCsv } from "@/lib/csv-export";
 import { exportReportPdf } from "@/lib/pdf-export";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend } from "recharts";
@@ -14,26 +15,20 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 const STATUS_COLORS = ["hsl(var(--status-present))", "hsl(var(--status-traveling))", "hsl(var(--status-absent))", "hsl(var(--brand))"];
 
 export default function AttendanceReport() {
-  const now = new Date();
-  const [monthOffset, setMonthOffset] = useState(0);
+  const [dateRange, setDateRange] = useReportDateRange("This Month");
   const [branchFilter, setBranchFilter] = useState("all");
-  const target = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
-  const month = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, "0")}`;
-  const monthLabel = target.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
 
-  const { data, isLoading } = useAttendanceReport(month, { branchId: branchFilter });
+  const { data, isLoading } = useAttendanceReport(dateRange.start, dateRange.end, { branchId: branchFilter });
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-xl font-bold text-foreground">Attendance Report</h1>
-          <p className="text-sm text-muted-foreground">{monthLabel}</p>
+          <p className="text-sm text-muted-foreground">{dateRange.label}</p>
         </div>
         <div className="flex items-center gap-1 flex-wrap">
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setMonthOffset((m) => m - 1)}><ChevronLeft className="h-4 w-4" /></Button>
-          <Button variant="outline" size="sm" className="text-xs" onClick={() => setMonthOffset(0)}>This Month</Button>
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setMonthOffset((m) => m + 1)}><ChevronRight className="h-4 w-4" /></Button>
+          <ReportDateFilter value={dateRange} onChange={setDateRange} />
           {data && (
             <Select value={branchFilter} onValueChange={setBranchFilter}>
               <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue /></SelectTrigger>
@@ -43,9 +38,9 @@ export default function AttendanceReport() {
               </SelectContent>
             </Select>
           )}
-{data && (<>
+          {data && (<>
             <Button variant="outline" size="sm" className="text-xs ml-1" onClick={() => {
-              downloadCsv(`attendance-${month}.csv`,
+              downloadCsv(`attendance-${dateRange.start}.csv`,
                 ["Employee", "Days Worked", "Avg Hours", "Late Days", "On Time %", "Punch-in Rate"],
                 data.rows.map((r) => [r.name, r.daysWorked, r.avgHours, r.lateDays, r.onTimePct, r.punchInRate])
               );
@@ -53,8 +48,8 @@ export default function AttendanceReport() {
             <Button variant="outline" size="sm" className="text-xs" onClick={() => {
               exportReportPdf({
                 title: "Attendance Report",
-                subtitle: monthLabel,
-                filename: `attendance-${month}.pdf`,
+                subtitle: dateRange.label,
+                filename: `attendance-${dateRange.start}.pdf`,
                 summaryCards: [
                   { label: "Total Employees", value: String(data.totalEmployees) },
                   { label: "Avg Attendance", value: `${data.avgAttendanceRate}%` },
@@ -68,9 +63,7 @@ export default function AttendanceReport() {
                 }],
               });
             }}><Download className="h-3.5 w-3.5 mr-1" />PDF</Button>
-          </>
-          
-          )}
+          </>)}
         </div>
       </div>
 

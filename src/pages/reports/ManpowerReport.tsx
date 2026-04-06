@@ -1,37 +1,32 @@
 import { useState } from "react";
 import { useManpowerReport } from "@/hooks/useReports";
+import { ReportDateFilter, useReportDateRange } from "@/components/reports/ReportDateFilter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatCard } from "@/components/ui/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Download, Users, Briefcase, AlertTriangle, CheckCircle } from "lucide-react";
+import { Download, Users, Briefcase, AlertTriangle, CheckCircle } from "lucide-react";
 import { downloadCsv } from "@/lib/csv-export";
 import { exportReportPdf } from "@/lib/pdf-export";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 
 export default function ManpowerReport() {
-  const now = new Date();
-  const [monthOffset, setMonthOffset] = useState(0);
+  const [dateRange, setDateRange] = useReportDateRange("This Month");
   const [branchFilter, setBranchFilter] = useState("all");
-  const target = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
-  const month = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, "0")}`;
-  const monthLabel = target.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
 
-  const { data, isLoading } = useManpowerReport(month, { branchId: branchFilter });
+  const { data, isLoading } = useManpowerReport(dateRange.start, dateRange.end, { branchId: branchFilter });
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-xl font-bold text-foreground">Project Manpower</h1>
-          <p className="text-sm text-muted-foreground">{monthLabel}</p>
+          <p className="text-sm text-muted-foreground">{dateRange.label}</p>
         </div>
         <div className="flex items-center gap-1 flex-wrap">
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setMonthOffset((m) => m - 1)}><ChevronLeft className="h-4 w-4" /></Button>
-          <Button variant="outline" size="sm" className="text-xs" onClick={() => setMonthOffset(0)}>This Month</Button>
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setMonthOffset((m) => m + 1)}><ChevronRight className="h-4 w-4" /></Button>
+          <ReportDateFilter value={dateRange} onChange={setDateRange} />
           {data && (
             <Select value={branchFilter} onValueChange={setBranchFilter}>
               <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue /></SelectTrigger>
@@ -43,7 +38,7 @@ export default function ManpowerReport() {
           )}
           {data && (<>
             <Button variant="outline" size="sm" className="text-xs ml-1" onClick={() => {
-              downloadCsv(`manpower-${month}.csv`,
+              downloadCsv(`manpower-${dateRange.start}.csv`,
                 ["Project", "Status", "Required", "Assigned", "Fill Rate %", "Tech", "Helpers", "Supervisors"],
                 data.rows.map((r) => [r.name, r.status, r.required, r.assigned, r.fillRate, r.technicians, r.helpers, r.supervisors])
               );
@@ -51,8 +46,8 @@ export default function ManpowerReport() {
             <Button variant="outline" size="sm" className="text-xs" onClick={() => {
               exportReportPdf({
                 title: "Project Manpower Report",
-                subtitle: monthLabel,
-                filename: `manpower-${month}.pdf`,
+                subtitle: dateRange.label,
+                filename: `manpower-${dateRange.start}.pdf`,
                 summaryCards: [
                   { label: "Active Projects", value: String(data.totalProjects) },
                   { label: "Total Required", value: String(data.totalRequired) },
