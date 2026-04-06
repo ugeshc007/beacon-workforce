@@ -186,7 +186,7 @@ export function PurchaseInvoiceDialog({ projectId, open, onOpenChange }: Props) 
 
             <div className="space-y-2">
               {lines.map((line, i) => (
-                <div key={i} className="grid grid-cols-[120px_100px_1fr_32px] gap-2 items-end">
+                <div key={i} className="grid grid-cols-[110px_70px_80px_80px_1fr_32px] gap-2 items-end">
                   <Select value={line.category} onValueChange={(v) => updateLine(i, "category", v)}>
                     <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -195,9 +195,15 @@ export function PurchaseInvoiceDialog({ projectId, open, onOpenChange }: Props) 
                       ))}
                     </SelectContent>
                   </Select>
-                  <Input type="number" step="0.01" min="0" placeholder="0.00"
-                    className="h-9 text-xs" value={line.amount}
-                    onChange={(e) => updateLine(i, "amount", e.target.value)} />
+                  <Input type="number" step="1" min="0" placeholder="Qty"
+                    className="h-9 text-xs" value={line.quantity}
+                    onChange={(e) => updateLine(i, "quantity", e.target.value)} />
+                  <Input type="number" step="0.01" min="0" placeholder="Rate"
+                    className="h-9 text-xs" value={line.unitRate}
+                    onChange={(e) => updateLine(i, "unitRate", e.target.value)} />
+                  <div className="h-9 flex items-center text-xs font-mono text-muted-foreground px-1">
+                    {((parseFloat(line.quantity) || 0) * (parseFloat(line.unitRate) || 0)).toFixed(2)}
+                  </div>
                   <Input placeholder="Description" className="h-9 text-xs"
                     value={line.description}
                     onChange={(e) => updateLine(i, "description", e.target.value)} />
