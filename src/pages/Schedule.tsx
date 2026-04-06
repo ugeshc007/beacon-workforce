@@ -356,7 +356,7 @@ export default function Schedule() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs">Start Date</Label>
-                <Input type="date" value={rangeStart} onChange={(e) => setRangeStart(e.target.value)} className="mt-1" />
+                <DateInput value={rangeStart} onChange={setRangeStart} className="mt-1" />
               </div>
               <div>
                 <Label className="text-xs">End Date</Label>
