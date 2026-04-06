@@ -122,6 +122,7 @@ export default function ProjectDetail() {
                       <th className="text-left py-2 font-medium">Skill</th>
                       <th className="text-left py-2 font-medium">Phone</th>
                       <th className="text-left py-2 font-medium">Shift</th>
+                      <th className="text-left py-2 font-medium">Last Assigned</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -133,6 +134,7 @@ export default function ProjectDetail() {
                           <td className="py-2.5"><Badge variant="outline" className="text-[10px]">{emp?.skill_type}</Badge></td>
                           <td className="py-2.5 text-muted-foreground font-mono text-xs">{emp?.phone ?? "—"}</td>
                           <td className="py-2.5 text-muted-foreground font-mono text-xs">{t.shift_start ?? "—"} – {t.shift_end ?? "—"}</td>
+                          <td className="py-2.5 text-muted-foreground font-mono text-xs">{(t as any).date ?? "—"}</td>
                         </tr>
                       );
                     })}
