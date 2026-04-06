@@ -41,6 +41,9 @@ export default function Employees() {
   const [editEmployee, setEditEmployee] = useState<Tables<"employees"> | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [csvOpen, setCsvOpen] = useState(false);
+  const [leaveOpen, setLeaveOpen] = useState(false);
+  const [leaveEmployee, setLeaveEmployee] = useState<{ id: string; name: string } | null>(null);
 
   const { data, isLoading } = useEmployees({ search, skillType, branchId, status, page, pageSize });
   const { data: branches } = useBranches();
