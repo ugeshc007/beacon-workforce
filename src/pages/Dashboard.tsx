@@ -140,6 +140,13 @@ export default function Dashboard() {
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-semibold text-foreground">Active Projects</CardTitle>
             </CardHeader>
+
+          <TravelMapCard />
+
+          <Card className="glass-card mt-4">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold text-foreground">Active Projects</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-3">
               {!projects?.length ? (
                 <p className="text-xs text-muted-foreground py-4 text-center">No active projects</p>
