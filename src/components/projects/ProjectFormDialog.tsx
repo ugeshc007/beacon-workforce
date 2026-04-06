@@ -83,6 +83,13 @@ export function ProjectFormDialog({ open, onOpenChange, editProject, prefill }: 
     }
   }, [open, editProject, prefill]);
 
+  // Auto-select branch if only one exists
+  useEffect(() => {
+    if (branches?.length === 1 && !form.branch_id) {
+      set("branch_id", branches[0].id);
+    }
+  }, [branches, form.branch_id]);
+
   const set = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
 
   const applyTemplate = (tpl: Tables<"project_templates">) => {
@@ -198,14 +205,16 @@ export function ProjectFormDialog({ open, onOpenChange, editProject, prefill }: 
           {step === 0 && (
             <>
               <div><Label>Project Name *</Label><Input value={form.name} onChange={(e) => set("name", e.target.value)} /></div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Branch *</Label>
-                  <Select value={form.branch_id} onValueChange={(v) => set("branch_id", v)}>
-                    <SelectTrigger><SelectValue placeholder="Select branch" /></SelectTrigger>
-                    <SelectContent>{branches?.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
+              <div className={`grid ${(branches?.length ?? 0) > 1 ? "grid-cols-2" : "grid-cols-1"} gap-3`}>
+                {(branches?.length ?? 0) > 1 && (
+                  <div>
+                    <Label>Branch *</Label>
+                    <Select value={form.branch_id} onValueChange={(v) => set("branch_id", v)}>
+                      <SelectTrigger><SelectValue placeholder="Select branch" /></SelectTrigger>
+                      <SelectContent>{branches?.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div>
                   <Label>Status</Label>
                   <Select value={form.status} onValueChange={(v) => set("status", v)}>
