@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useEmployees, useBranches, useToggleEmployeeStatus } from "@/hooks/useEmployees";
 import { EmployeeFormDialog } from "@/components/employees/EmployeeFormDialog";
 import { EmployeeDetailDrawer } from "@/components/employees/EmployeeDetailDrawer";
+import { MarkLeaveDialog } from "@/components/employees/MarkLeaveDialog";
+import { CsvImportDialog } from "@/components/employees/CsvImportDialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,9 +17,9 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Users, Plus, Search, MoreHorizontal, Pencil, Eye, ChevronLeft, ChevronRight } from "lucide-react";
+import { Users, Plus, Search, MoreHorizontal, Pencil, Eye, ChevronLeft, ChevronRight, Upload, CalendarOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -39,6 +41,9 @@ export default function Employees() {
   const [editEmployee, setEditEmployee] = useState<Tables<"employees"> | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [csvOpen, setCsvOpen] = useState(false);
+  const [leaveOpen, setLeaveOpen] = useState(false);
+  const [leaveEmployee, setLeaveEmployee] = useState<{ id: string; name: string } | null>(null);
 
   const { data, isLoading } = useEmployees({ search, skillType, branchId, status, page, pageSize });
   const { data: branches } = useBranches();
@@ -81,9 +86,14 @@ export default function Employees() {
           <h2 className="text-lg font-semibold">Employees</h2>
           <p className="text-sm text-muted-foreground">{totalCount} team members</p>
         </div>
-        <Button onClick={handleAdd} size="sm">
-          <Plus className="h-4 w-4 mr-1" /> Add Employee
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setCsvOpen(true)} size="sm" variant="outline">
+            <Upload className="h-4 w-4 mr-1" /> CSV Import
+          </Button>
+          <Button onClick={handleAdd} size="sm">
+            <Plus className="h-4 w-4 mr-1" /> Add Employee
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -151,10 +161,12 @@ export default function Employees() {
                   <TableHead className="w-[100px]">Code</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead className="hidden md:table-cell">Phone</TableHead>
+                  <TableHead className="hidden lg:table-cell">Designation</TableHead>
                   <TableHead>Skill</TableHead>
                   <TableHead className="hidden lg:table-cell">Branch</TableHead>
                   <TableHead className="text-right hidden sm:table-cell">Rate (AED)</TableHead>
                   <TableHead className="text-right hidden sm:table-cell">OT (AED)</TableHead>
+                  <TableHead className="text-right hidden xl:table-cell">Std Hrs</TableHead>
                   <TableHead className="text-center">Active</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
@@ -168,15 +180,13 @@ export default function Employees() {
                   >
                     <TableCell className="font-mono text-xs">{emp.employee_code}</TableCell>
                     <TableCell>
-                      <div>
-                        <p className="font-medium text-sm">{emp.name}</p>
-                        {emp.designation && (
-                          <p className="text-xs text-muted-foreground">{emp.designation}</p>
-                        )}
-                      </div>
+                      <p className="font-medium text-sm">{emp.name}</p>
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
                       {emp.phone || "—"}
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
+                      {emp.designation || "—"}
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className={`text-xs ${skillColors[emp.skill_type]}`}>
@@ -191,6 +201,9 @@ export default function Employees() {
                     </TableCell>
                     <TableCell className="text-right font-mono text-sm hidden sm:table-cell">
                       {Number(emp.overtime_rate).toFixed(0)}
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-sm hidden xl:table-cell">
+                      {Number(emp.standard_hours_per_day)}
                     </TableCell>
                     <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
                       <Switch
@@ -212,6 +225,10 @@ export default function Employees() {
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleEdit(emp)}>
                             <Pencil className="mr-2 h-4 w-4" /> Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => { setLeaveEmployee({ id: emp.id, name: emp.name }); setLeaveOpen(true); }}>
+                            <CalendarOff className="mr-2 h-4 w-4" /> Mark on Leave
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -260,6 +277,17 @@ export default function Employees() {
         open={drawerOpen}
         onOpenChange={setDrawerOpen}
       />
+
+      <CsvImportDialog open={csvOpen} onOpenChange={setCsvOpen} />
+
+      {leaveEmployee && (
+        <MarkLeaveDialog
+          open={leaveOpen}
+          onOpenChange={setLeaveOpen}
+          employeeId={leaveEmployee.id}
+          employeeName={leaveEmployee.name}
+        />
+      )}
     </div>
   );
 }
