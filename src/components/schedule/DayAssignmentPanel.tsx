@@ -359,7 +359,7 @@ export function DayAssignmentPanel({
                 {a.assignment_mode !== "manual" && (
                   <Badge variant="secondary" className="text-[10px]">{a.assignment_mode}</Badge>
                 )}
-                {!isEditing && (
+                {!isEditing && !readOnly && (
                   <>
                     <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100" title="Edit time"
                       onClick={() => handleEditTime(a)} disabled={a.is_locked}>
@@ -371,14 +371,18 @@ export function DayAssignmentPanel({
                     </Button>
                   </>
                 )}
-                <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100"
-                  onClick={() => toggleLock.mutate({ id: a.id, is_locked: !a.is_locked })}>
-                  {a.is_locked ? <Lock className="h-3 w-3 text-brand" /> : <LockOpen className="h-3 w-3 text-muted-foreground" />}
-                </Button>
-                <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 text-destructive"
-                  onClick={() => handleRemove(a.id)} disabled={a.is_locked}>
-                  <Trash2 className="h-3 w-3" />
-                </Button>
+                {!readOnly && (
+                  <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                    onClick={() => toggleLock.mutate({ id: a.id, is_locked: !a.is_locked })}>
+                    {a.is_locked ? <Lock className="h-3 w-3 text-brand" /> : <LockOpen className="h-3 w-3 text-muted-foreground" />}
+                  </Button>
+                )}
+                {!readOnly && (
+                  <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 text-destructive"
+                    onClick={() => handleRemove(a.id)} disabled={a.is_locked}>
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                )}
               </div>
             </div>
             );
