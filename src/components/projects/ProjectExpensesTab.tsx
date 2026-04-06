@@ -155,9 +155,17 @@ export function ProjectExpensesTab({ projectId, expenses }: Props) {
             <span className="ml-2 text-xs">(Auto-approve ≤ AED {threshold.toLocaleString()})</span>
           )}
         </div>
-        <Button size="sm" className="gap-1.5" onClick={() => setAddOpen(true)}>
-          <Plus className="h-3.5 w-3.5" /> Add Expense
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setInvoiceOpen(true)}>
+            <Receipt className="h-3.5 w-3.5" /> Purchase Invoice
+          </Button>
+          <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setBulkOpen(true)}>
+            <Upload className="h-3.5 w-3.5" /> Bulk Add
+          </Button>
+          <Button size="sm" className="gap-1.5" onClick={() => setAddOpen(true)}>
+            <Plus className="h-3.5 w-3.5" /> Add Expense
+          </Button>
+        </div>
       </div>
 
       {/* Table */}
