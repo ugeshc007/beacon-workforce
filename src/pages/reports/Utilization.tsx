@@ -83,14 +83,7 @@ export default function Utilization() {
           <h1 className="text-xl font-bold text-foreground">Staff Utilization</h1>
           <p className="text-sm text-muted-foreground">{monthLabel}</p>
         </div>
-        <div className="flex items-center gap-1 flex-wrap">
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setMonthOffset((m) => m - 1)}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="sm" className="text-xs" onClick={() => setMonthOffset(0)}>This Month</Button>
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setMonthOffset((m) => m + 1)}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+          <ReportDateFilter value={dateRange} onChange={setDateRange} />
           {data && (<>
             <Button variant="outline" size="sm" className="text-xs ml-2" onClick={() => {
               downloadCsv(`utilization-${month}.csv`,
