@@ -322,6 +322,7 @@ export default function Schedule() {
                   conflicts={dayConflicts(selectedDay).filter((c) =>
                     c.projects.includes(p.name)
                   )}
+                  readOnly={!canEdit}
                 />
               ))
           )}
