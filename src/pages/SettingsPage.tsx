@@ -196,6 +196,9 @@ export default function SettingsPage() {
               <Field label="Late Threshold (minutes)" hint="Minutes after shift start before marked late.">
                 <Input type="number" value={form.late_threshold_minutes ?? "15"} onChange={(e) => set("late_threshold_minutes", e.target.value)} />
               </Field>
+              <Field label="Late Work Start Threshold (minutes)" hint="Minutes after shift start before a late-work-start alert is sent to managers.">
+                <Input type="number" value={form.late_work_start_threshold_minutes ?? "15"} onChange={(e) => set("late_work_start_threshold_minutes", e.target.value)} />
+              </Field>
               <Field label="Break Duration (minutes)">
                 <Input type="number" value={form.break_duration_minutes ?? "60"} onChange={(e) => set("break_duration_minutes", e.target.value)} />
               </Field>
