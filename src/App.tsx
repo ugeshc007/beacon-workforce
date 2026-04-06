@@ -20,6 +20,7 @@ import Employees from "./pages/Employees";
 import Schedule from "./pages/Schedule";
 import Attendance from "./pages/Attendance";
 import DailyTeam from "./pages/DailyTeam";
+import Travel from "./pages/Travel";
 import Timesheets from "./pages/Timesheets";
 import Reports from "./pages/Reports";
 import Utilization from "./pages/reports/Utilization";
