@@ -325,41 +325,57 @@ export function DayAssignmentPanel({
           )}
           {assignments.map((a) => {
             const countdown = getCountdown(a.shift_start, a.shift_end);
+            const isEditing = editingId === a.id;
             return (
-            <div key={a.id} className="flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-accent/30 transition-colors group">
-              <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <span className="text-sm flex-1 truncate">{a.employee_name}</span>
-              <span className={`text-[9px] flex items-center gap-0.5 ${countdownColor[countdown.status]}`}>
-                <Timer className="h-2.5 w-2.5" />
-                {countdown.label}
-              </span>
-              <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                <Clock className="h-2.5 w-2.5" />
-                {formatTime(a.shift_start) || "08:00"}–{formatTime(a.shift_end) || "17:00"}
-              </span>
-              <Badge variant="outline" className={`text-[10px] ${skillColors[a.employee_skill] ?? ""}`}>
-                {a.employee_skill}
-              </Badge>
-              {a.assignment_mode !== "manual" && (
-                <Badge variant="secondary" className="text-[10px]">{a.assignment_mode}</Badge>
-              )}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 opacity-0 group-hover:opacity-100"
-                onClick={() => toggleLock.mutate({ id: a.id, is_locked: !a.is_locked })}
-              >
-                {a.is_locked ? <Lock className="h-3 w-3 text-brand" /> : <LockOpen className="h-3 w-3 text-muted-foreground" />}
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 opacity-0 group-hover:opacity-100 text-destructive"
-                onClick={() => handleRemove(a.id)}
-                disabled={a.is_locked}
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
+            <div key={a.id} className="space-y-1">
+              <div className="flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-accent/30 transition-colors group">
+                <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <span className="text-sm flex-1 truncate">{a.employee_name}</span>
+                <span className={`text-[9px] flex items-center gap-0.5 ${countdownColor[countdown.status]}`}>
+                  <Timer className="h-2.5 w-2.5" />
+                  {countdown.label}
+                </span>
+                {isEditing ? (
+                  <div className="flex items-center gap-1">
+                    <Input type="time" value={editStart} onChange={(e) => setEditStart(e.target.value)} className="h-6 text-[10px] w-20" />
+                    <span className="text-[10px] text-muted-foreground">–</span>
+                    <Input type="time" value={editEnd} onChange={(e) => setEditEnd(e.target.value)} className="h-6 text-[10px] w-20" />
+                    <Button variant="ghost" size="icon" className="h-5 w-5 text-status-present" onClick={handleSaveTime}><Check className="h-3 w-3" /></Button>
+                    <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setEditingId(null)}><X className="h-3 w-3" /></Button>
+                  </div>
+                ) : (
+                  <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                    <Clock className="h-2.5 w-2.5" />
+                    {formatTime(a.shift_start) || "08:00"}–{formatTime(a.shift_end) || "17:00"}
+                  </span>
+                )}
+                <Badge variant="outline" className={`text-[10px] ${skillColors[a.employee_skill] ?? ""}`}>
+                  {a.employee_skill}
+                </Badge>
+                {a.assignment_mode !== "manual" && (
+                  <Badge variant="secondary" className="text-[10px]">{a.assignment_mode}</Badge>
+                )}
+                {!isEditing && (
+                  <>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100" title="Edit time"
+                      onClick={() => handleEditTime(a)} disabled={a.is_locked}>
+                      <Pencil className="h-3 w-3 text-muted-foreground" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100" title="Reassign / Split"
+                      onClick={() => openReassign(a)} disabled={a.is_locked}>
+                      <ArrowRightLeft className="h-3 w-3 text-brand" />
+                    </Button>
+                  </>
+                )}
+                <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                  onClick={() => toggleLock.mutate({ id: a.id, is_locked: !a.is_locked })}>
+                  {a.is_locked ? <Lock className="h-3 w-3 text-brand" /> : <LockOpen className="h-3 w-3 text-muted-foreground" />}
+                </Button>
+                <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 text-destructive"
+                  onClick={() => handleRemove(a.id)} disabled={a.is_locked}>
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
             </div>
             );
           })}
