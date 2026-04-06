@@ -218,13 +218,34 @@ export default function SettingsPage() {
         {/* ── Notifications ───────────────── */}
         <TabsContent value="notifications">
           <SectionCard icon={Bell} title="Notification Rules" desc="Configure alert timing and thresholds."
-            onSave={() => saveSection(["notification_morning_briefing", "notification_absent_alert_delay", "notification_ot_warning_hours"])} saving={save.isPending}>
+            onSave={async () => {
+              await saveSection(["notification_morning_briefing", "notification_absent_alert_delay", "notification_ot_warning_hours", "cron_absent_check_time"]);
+              // Update the cron schedule if time changed
+              const timeVal = form.cron_absent_check_time;
+              if (timeVal && /^\d{2}:\d{2}$/.test(timeVal)) {
+                try {
+                  const { supabase } = await import("@/integrations/supabase/client");
+                  const { data: sessionData } = await supabase.auth.getSession();
+                  const token = sessionData?.session?.access_token;
+                  if (token) {
+                    await supabase.functions.invoke("update-cron-schedule", {
+                      body: { time_uae: timeVal },
+                    });
+                  }
+                } catch (err) {
+                  console.error("Failed to update cron schedule:", err);
+                }
+              }
+            }} saving={save.isPending}>
             <div className="grid sm:grid-cols-2 gap-4">
               <Field label="Morning Briefing">
                 <div className="flex items-center gap-2 pt-1">
                   <Switch checked={isOn("notification_morning_briefing")} onCheckedChange={() => toggle("notification_morning_briefing")} />
                   <span className="text-xs text-muted-foreground">{isOn("notification_morning_briefing") ? "Enabled" : "Disabled"}</span>
                 </div>
+              </Field>
+              <Field label="Absent Check Time (UAE)" hint="Daily time to run absence check and notify managers. 24h format HH:MM.">
+                <Input type="time" value={form.cron_absent_check_time ?? "09:00"} onChange={(e) => set("cron_absent_check_time", e.target.value)} />
               </Field>
               <Field label="Absent Alert Delay (min)" hint="Minutes after shift start to send absence alerts.">
                 <Input type="number" value={form.notification_absent_alert_delay ?? "30"} onChange={(e) => set("notification_absent_alert_delay", e.target.value)} />
