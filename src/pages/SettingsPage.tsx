@@ -123,10 +123,12 @@ export default function SettingsPage() {
   const { data: settings, isLoading } = useSettings();
   const save = useSaveSettings();
   const { data: branches, isLoading: branchesLoading } = useBranchList();
+  const deleteBranch = useDeleteBranch();
 
   const [form, setForm] = useState<SettingsMap>({});
   const [branchDialogOpen, setBranchDialogOpen] = useState(false);
   const [editingBranch, setEditingBranch] = useState<typeof branches extends (infer T)[] ? T : never | null>(null);
+  const [deletingBranch, setDeletingBranch] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     if (settings) setForm(settings);
