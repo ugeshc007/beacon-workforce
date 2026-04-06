@@ -1090,6 +1090,10 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      update_absent_check_cron: {
+        Args: { cron_expr: string }
+        Returns: undefined
+      }
     }
     Enums: {
       assignment_mode: "manual" | "auto" | "hybrid"
