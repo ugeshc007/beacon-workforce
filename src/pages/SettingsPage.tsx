@@ -325,3 +325,73 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+// ─── Permission Matrix ──────────────────────────────────────
+const MODULES = ["dashboard", "projects", "employees", "schedule", "attendance", "timesheets", "reports", "settings"];
+const ACTIONS = ["can_view", "can_create", "can_edit", "can_delete"] as const;
+const ROLES = ["admin", "manager", "supervisor"];
+
+function PermissionMatrix() {
+  const { data: permissions, isLoading } = useRolePermissions();
+  const updatePerm = useUpdatePermission();
+
+  if (isLoading) return <Skeleton className="h-64 rounded-xl" />;
+
+  const getPermission = (role: string, module: string) =>
+    permissions?.find((p) => p.role === role && p.module === module);
+
+  return (
+    <Card className="glass-card">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm flex items-center gap-2">
+          <Shield className="h-4 w-4 text-brand" /> Permission Matrix
+        </CardTitle>
+        <CardDescription className="text-xs">Configure what each role can do per module. Changes take effect immediately.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto">
+          {ROLES.map((role) => (
+            <div key={role} className="mb-6 last:mb-0">
+              <h3 className="text-sm font-semibold capitalize text-foreground mb-3 flex items-center gap-2">
+                <Badge variant={role === "admin" ? "default" : "outline"} className="text-[10px]">{role}</Badge>
+              </h3>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-xs text-muted-foreground border-b border-border">
+                    <th className="text-left py-2 font-medium w-40">Module</th>
+                    <th className="text-center py-2 font-medium">View</th>
+                    <th className="text-center py-2 font-medium">Create</th>
+                    <th className="text-center py-2 font-medium">Edit</th>
+                    <th className="text-center py-2 font-medium">Delete</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {MODULES.map((mod) => {
+                    const perm = getPermission(role, mod);
+                    if (!perm) return null;
+                    return (
+                      <tr key={mod} className="border-b border-border/50 last:border-0">
+                        <td className="py-2 capitalize font-medium">{mod}</td>
+                        {ACTIONS.map((action) => (
+                          <td key={action} className="py-2 text-center">
+                            <Checkbox
+                              checked={perm[action]}
+                              disabled={role === "admin" || updatePerm.isPending}
+                              onCheckedChange={(checked) => {
+                                updatePerm.mutate({ id: perm.id, field: action, value: !!checked });
+                              }}
+                            />
+                          </td>
+                        ))}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
