@@ -5,7 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEmployee, useEmployeeStats } from "@/hooks/useEmployees";
-import { User, Phone, Mail, MapPin, Clock, Briefcase, TrendingUp, DollarSign } from "lucide-react";
+import { useEmployeeLeave, useDeleteLeave, useEmployeeProjectHistory } from "@/hooks/useLeave";
+import { User, Phone, Mail, MapPin, Clock, Briefcase, TrendingUp, DollarSign, FolderKanban, CalendarOff, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 interface Props {
   employeeId: string | null;
@@ -30,11 +33,25 @@ function StatItem({ icon: Icon, label, value }: { icon: any; label: string; valu
 export function EmployeeDetailDrawer({ employeeId, open, onOpenChange }: Props) {
   const { data: employee, isLoading } = useEmployee(employeeId);
   const { data: stats, isLoading: statsLoading } = useEmployeeStats(employeeId);
+  const { data: leaves } = useEmployeeLeave(employeeId);
+  const { data: projectHistory } = useEmployeeProjectHistory(employeeId);
+  const deleteLeave = useDeleteLeave();
+  const { toast } = useToast();
 
   const skillColors: Record<string, string> = {
     technician: "bg-blue-500/15 text-blue-400 border-blue-500/30",
     helper: "bg-amber-500/15 text-amber-400 border-amber-500/30",
     supervisor: "bg-purple-500/15 text-purple-400 border-purple-500/30",
+  };
+
+  const handleDeleteLeave = async (leaveId: string) => {
+    if (!employeeId) return;
+    try {
+      await deleteLeave.mutateAsync({ id: leaveId, employeeId });
+      toast({ title: "Leave cancelled" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
   };
 
   return (
@@ -140,6 +157,71 @@ export function EmployeeDetailDrawer({ employeeId, open, onOpenChange }: Props) 
                 </div>
               </>
             )}
+
+            {/* Project History */}
+            {projectHistory && projectHistory.length > 0 && (
+              <>
+                <Separator />
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Project History</h4>
+                  <div className="space-y-2">
+                    {projectHistory.map((p) => (
+                      <div key={p.projectId} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/50">
+                        <div className="flex items-center gap-2">
+                          <FolderKanban className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm font-medium">{p.projectName}</span>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-muted-foreground">{p.count} day{p.count > 1 ? "s" : ""}</p>
+                          <p className="text-[10px] text-muted-foreground/70">Last: {p.lastDate}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Leave Calendar */}
+            <Separator />
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Leave Records</h4>
+              {!leaves?.length ? (
+                <p className="text-xs text-muted-foreground">No leave records</p>
+              ) : (
+                <div className="space-y-2">
+                  {leaves.map((l) => {
+                    const isPast = new Date(l.end_date) < new Date();
+                    const isCurrent = new Date(l.start_date) <= new Date() && new Date(l.end_date) >= new Date();
+                    return (
+                      <div key={l.id} className={`flex items-center justify-between p-2.5 rounded-lg border ${isCurrent ? "border-amber-500/30 bg-amber-500/5" : "border-border bg-muted/30"}`}>
+                        <div className="flex items-center gap-2">
+                          <CalendarOff className={`h-4 w-4 ${isCurrent ? "text-amber-400" : "text-muted-foreground"}`} />
+                          <div>
+                            <p className="text-sm font-mono">{l.start_date} → {l.end_date}</p>
+                            {l.reason && <p className="text-xs text-muted-foreground">{l.reason}</p>}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {isCurrent && <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-400 border-amber-500/30">Active</Badge>}
+                          {isPast && <Badge variant="secondary" className="text-[10px]">Past</Badge>}
+                          {!isPast && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                              onClick={() => handleDeleteLeave(l.id)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
 
             {/* Rates */}
             <Separator />
