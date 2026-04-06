@@ -30,17 +30,12 @@ const PIE_COLORS = [
 ];
 
 export default function CostReports() {
-  const now = new Date();
-  const [monthOffset, setMonthOffset] = useState(0);
-  const target = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
-  const month = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, "0")}`;
-  const monthLabel = target.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
-
+  const [dateRange, setDateRange] = useReportDateRange("This Month");
   const [statusFilter, setStatusFilter] = useState("all");
   const [branchFilter, setBranchFilter] = useState("all");
   const [drillProject, setDrillProject] = useState<CostProjectRow | null>(null);
 
-  const { data, isLoading } = useCostData(month, {
+  const { data, isLoading } = useCostData(dateRange.start, dateRange.end, {
     status: statusFilter,
     branchId: branchFilter,
   });
