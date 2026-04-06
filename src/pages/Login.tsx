@@ -42,11 +42,9 @@ export default function Login() {
       <div className="w-full max-w-md space-y-8">
         {/* Logo */}
         <div className="flex flex-col items-center gap-3">
-          <div className="h-14 w-14 rounded-xl gradient-brand flex items-center justify-center glow-brand">
-            <Zap className="h-7 w-7 text-primary-foreground" />
-          </div>
+          <img src="/logo-bebright.webp" alt="BeBright" className="h-12 w-auto invert brightness-200" />
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-gradient-brand">BeBright Planner</h1>
+            <h1 className="text-2xl font-bold text-gradient-brand">Planner</h1>
             <p className="text-sm text-muted-foreground mt-1">
               Workforce & Project Management
             </p>
