@@ -364,14 +364,9 @@ export default function SettingsPage() {
                 </CardTitle>
                 <CardDescription className="text-xs mt-1">Manage company branches and locations.</CardDescription>
               </div>
-              <Dialog open={branchDialogOpen} onOpenChange={(open) => { setBranchDialogOpen(open); if (!open) setEditingBranch(null); }}>
-                <DialogTrigger asChild>
-                  <Button size="sm" variant="outline" onClick={() => { setEditingBranch(null); setBranchDialogOpen(true); }}>
-                    <Plus className="h-3.5 w-3.5 mr-1" /> Add Branch
-                  </Button>
-                </DialogTrigger>
-                <BranchDialog branch={editingBranch} onClose={() => setBranchDialogOpen(false)} />
-              </Dialog>
+              <Button size="sm" variant="outline" onClick={() => { setEditingBranch(null); setBranchDialogOpen(true); }}>
+                <Plus className="h-3.5 w-3.5 mr-1" /> Add Branch
+              </Button>
             </CardHeader>
             <CardContent>
               {branchesLoading ? (
@@ -392,14 +387,9 @@ export default function SettingsPage() {
                         <Badge variant="outline" className="text-[10px]">
                           {new Date(b.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
                         </Badge>
-                        <Dialog open={branchDialogOpen && editingBranch?.id === b.id} onOpenChange={(open) => { setBranchDialogOpen(open); if (!open) setEditingBranch(null); }}>
-                          <DialogTrigger asChild>
-                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditingBranch(b); setBranchDialogOpen(true); }}>
-                              <Pencil className="h-3.5 w-3.5" />
-                            </Button>
-                          </DialogTrigger>
-                          <BranchDialog branch={editingBranch} onClose={() => setBranchDialogOpen(false)} />
-                        </Dialog>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditingBranch(b); setBranchDialogOpen(true); }}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -407,6 +397,11 @@ export default function SettingsPage() {
               )}
             </CardContent>
           </Card>
+          <BranchDialog
+            branch={editingBranch}
+            open={branchDialogOpen}
+            onOpenChange={(open) => { setBranchDialogOpen(open); if (!open) setEditingBranch(null); }}
+          />
         </TabsContent>
 
         {/* ── Permissions ─────────────────── */}
