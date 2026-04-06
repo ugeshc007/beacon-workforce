@@ -3,8 +3,9 @@ import { useAttendanceLogs, useAttendanceSummary, type AttendanceLog } from "@/h
 import { useProjects } from "@/hooks/useProjects";
 import { AttendanceTimeline } from "@/components/attendance/AttendanceTimeline";
 import { AttendanceOverrideDialog } from "@/components/attendance/AttendanceOverrideDialog";
+import { AttendanceDetailDrawer } from "@/components/attendance/AttendanceDetailDrawer";
 import { StatCard } from "@/components/ui/stat-card";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,16 +13,37 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Users, UserCheck, Wrench, Clock, DollarSign, Search,
-  ChevronLeft, ChevronRight, MapPin, MapPinOff, ShieldAlert, Pencil,
+  ChevronLeft, ChevronRight, MapPin, MapPinOff, ShieldAlert, Pencil, Eye,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const fmt = (ts: string | null) => {
   if (!ts) return "—";
   return new Date(ts).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false });
+};
+
+function deriveStatus(log: AttendanceLog): string {
+  if (log.office_punch_out) return "completed";
+  if (log.work_end_time) return "work_ended";
+  if (log.work_start_time) return "working";
+  if (log.site_arrival_time) return "on_site";
+  if (log.travel_start_time) return "traveling";
+  if (log.office_punch_in) return "punched_in";
+  return "pending";
+}
+
+const statusLabel: Record<string, { text: string; className: string }> = {
+  completed: { text: "Completed", className: "bg-muted text-muted-foreground" },
+  work_ended: { text: "Work Ended", className: "bg-status-overtime/20 text-status-overtime border-status-overtime/30" },
+  working: { text: "Working", className: "bg-status-present/20 text-status-present border-status-present/30" },
+  on_site: { text: "On Site", className: "bg-status-present/20 text-status-present border-status-present/30" },
+  traveling: { text: "Traveling", className: "bg-status-traveling/20 text-status-traveling border-status-traveling/30" },
+  punched_in: { text: "Punched In", className: "bg-primary/20 text-primary border-primary/30" },
+  pending: { text: "Pending", className: "bg-muted text-muted-foreground" },
 };
 
 export default function Attendance() {
@@ -29,11 +51,21 @@ export default function Attendance() {
   const [date, setDate] = useState(today);
   const [search, setSearch] = useState("");
   const [projectId, setProjectId] = useState("all");
+  const [gpsFilter, setGpsFilter] = useState("all");
   const [overrideLog, setOverrideLog] = useState<AttendanceLog | null>(null);
+  const [detailLog, setDetailLog] = useState<AttendanceLog | null>(null);
 
   const { data: logs, isLoading } = useAttendanceLogs({ date, search, projectId });
   const { data: summary } = useAttendanceSummary(date);
   const { data: projects } = useProjects({});
+
+  // Apply GPS filter client-side
+  const filteredLogs = (logs ?? []).filter((log) => {
+    if (gpsFilter === "valid") return log.office_punch_in_valid === true;
+    if (gpsFilter === "invalid") return log.office_punch_in_valid === false;
+    if (gpsFilter === "spoofed") return log.office_punch_in_spoofed === true;
+    return true;
+  });
 
   const shiftDate = (delta: number) => {
     const d = new Date(date + "T00:00:00");
@@ -53,15 +85,20 @@ export default function Attendance() {
           <h1 className="text-xl font-bold text-foreground">Attendance</h1>
           <p className="text-sm text-muted-foreground">{dateLabel}</p>
         </div>
-        <div className="flex items-center gap-1">
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => shiftDate(-1)}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="sm" className="text-xs" onClick={() => setDate(today)}>Today</Button>
-          <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-[140px] h-8 text-xs" />
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => shiftDate(1)}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+        <div className="flex items-center gap-2">
+          <Link to="/attendance/daily">
+            <Button variant="outline" size="sm" className="text-xs"><Users className="h-3.5 w-3.5 mr-1" />Daily Team</Button>
+          </Link>
+          <div className="flex items-center gap-1">
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => shiftDate(-1)}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="sm" className="text-xs" onClick={() => setDate(today)}>Today</Button>
+            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-[140px] h-8 text-xs" />
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => shiftDate(1)}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -87,12 +124,21 @@ export default function Attendance() {
             {projects?.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
           </SelectContent>
         </Select>
+        <Select value={gpsFilter} onValueChange={setGpsFilter}>
+          <SelectTrigger className="w-[160px]"><SelectValue placeholder="GPS Status" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All GPS</SelectItem>
+            <SelectItem value="valid">GPS Valid</SelectItem>
+            <SelectItem value="invalid">GPS Invalid</SelectItem>
+            <SelectItem value="spoofed">Spoofed</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Table */}
       {isLoading ? (
         <div className="space-y-2">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
-      ) : !logs?.length ? (
+      ) : !filteredLogs.length ? (
         <div className="text-center py-12 text-muted-foreground">
           <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
           <p className="text-sm">No attendance records for this date</p>
@@ -110,31 +156,38 @@ export default function Attendance() {
                     <th className="text-left py-2 font-medium">Punch In</th>
                     <th className="text-left py-2 font-medium">On Site</th>
                     <th className="text-left py-2 font-medium">Work</th>
+                    <th className="text-left py-2 font-medium">Break</th>
                     <th className="text-left py-2 font-medium">Out</th>
                     <th className="text-left py-2 font-medium min-w-[180px]">Timeline</th>
+                    <th className="text-right py-2 font-medium">Total</th>
                     <th className="text-right py-2 font-medium">OT</th>
+                    <th className="text-left py-2 font-medium">Status</th>
                     <th className="text-right py-2 font-medium">Cost</th>
                     <th className="w-8"></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {logs.map((log) => {
+                  {filteredLogs.map((log) => {
                     const otH = ((log.overtime_minutes ?? 0) / 60).toFixed(1);
+                    const totalH = log.total_work_minutes != null ? (log.total_work_minutes / 60).toFixed(1) : "—";
                     const cost = Number(log.regular_cost ?? 0) + Number(log.overtime_cost ?? 0);
+                    const status = deriveStatus(log);
+                    const sl = statusLabel[status];
+                    const breakMin = log.break_minutes ?? 0;
 
                     return (
-                      <tr key={log.id} className="border-b border-border/50 last:border-0 hover:bg-accent/30 transition-colors">
+                      <tr key={log.id} className="border-b border-border/50 last:border-0 hover:bg-accent/30 transition-colors cursor-pointer" onClick={() => setDetailLog(log)}>
                         <td className="py-2.5">
                           <div>
                             <span className="font-medium text-foreground">{log.employees?.name ?? "—"}</span>
                             {log.is_manual_override && (
-                              <Badge variant="outline" className="ml-1.5 text-[9px] border-status-traveling/50 text-status-traveling">Override</Badge>
+                              <Badge variant="outline" className="ml-1.5 text-[9px] border-amber-500/50 text-amber-400">Override</Badge>
                             )}
                           </div>
                           <span className="text-[10px] text-muted-foreground">{log.employees?.employee_code}</span>
                         </td>
                         <td className="py-2.5 text-muted-foreground text-xs">{log.projects?.name ?? "—"}</td>
-                        <td className="py-2.5">
+                        <td className="py-2.5" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center gap-1">
                             {log.office_punch_in_valid === true ? (
                               <span title="GPS valid"><MapPin className="h-3.5 w-3.5 text-status-present" /></span>
@@ -144,7 +197,7 @@ export default function Attendance() {
                               <span className="text-muted-foreground text-xs">—</span>
                             )}
                             {log.office_punch_in_spoofed && (
-                              <span title="GPS spoofing detected"><ShieldAlert className="h-3.5 w-3.5 text-status-absent" /></span>
+                              <span title="GPS spoofing detected"><ShieldAlert className="h-3.5 w-3.5 text-amber-400" /></span>
                             )}
                             {log.office_punch_in_distance_m != null && (
                               <span className="text-[10px] text-muted-foreground font-mono">{Math.round(Number(log.office_punch_in_distance_m))}m</span>
@@ -157,10 +210,14 @@ export default function Attendance() {
                           {fmt(log.work_start_time)}
                           {log.work_end_time && <span className="text-muted-foreground/50"> – {fmt(log.work_end_time)}</span>}
                         </td>
+                        <td className="py-2.5 font-mono text-xs text-muted-foreground">
+                          {breakMin > 0 ? `${breakMin}m` : "—"}
+                        </td>
                         <td className="py-2.5 font-mono text-xs text-muted-foreground">{fmt(log.office_punch_out)}</td>
                         <td className="py-2.5 pb-6">
                           <AttendanceTimeline log={log} />
                         </td>
+                        <td className="py-2.5 text-right font-mono text-xs text-muted-foreground">{totalH}h</td>
                         <td className="py-2.5 text-right font-mono text-xs">
                           {Number(otH) > 0 ? (
                             <span className="text-status-overtime">{otH}h</span>
@@ -168,10 +225,13 @@ export default function Attendance() {
                             <span className="text-muted-foreground">0h</span>
                           )}
                         </td>
+                        <td className="py-2.5">
+                          <Badge variant="outline" className={`text-[9px] ${sl.className}`}>{sl.text}</Badge>
+                        </td>
                         <td className="py-2.5 text-right font-mono text-xs text-muted-foreground">
                           {cost > 0 ? `AED ${Math.round(cost)}` : "—"}
                         </td>
-                        <td className="py-2.5">
+                        <td className="py-2.5" onClick={(e) => e.stopPropagation()}>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-7 w-7">
@@ -179,6 +239,9 @@ export default function Attendance() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => setDetailLog(log)}>
+                                <Eye className="h-3.5 w-3.5 mr-2" />View Details
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => setOverrideLog(log)}>
                                 <Pencil className="h-3.5 w-3.5 mr-2" />Override
                               </DropdownMenuItem>
@@ -199,6 +262,12 @@ export default function Attendance() {
         log={overrideLog}
         open={!!overrideLog}
         onOpenChange={(v) => { if (!v) setOverrideLog(null); }}
+      />
+
+      <AttendanceDetailDrawer
+        log={detailLog}
+        open={!!detailLog}
+        onOpenChange={(v) => { if (!v) setDetailLog(null); }}
       />
     </div>
   );
