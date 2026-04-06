@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface Props {
   date: string;
