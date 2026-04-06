@@ -1,14 +1,16 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useProject, useProjectStats, useProjectTeam, useProjectExpenses } from "@/hooks/useProjects";
+import { useProject, useProjectStats, useProjectTeam, useProjectExpenses, useRemoveAssignment } from "@/hooks/useProjects";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { ArrowLeft, MapPin, Phone, Mail, Users, DollarSign, Clock, Wrench } from "lucide-react";
+import { ArrowLeft, MapPin, Phone, Mail, Users, DollarSign, Clock, Wrench, UserPlus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { ProjectFormDialog } from "@/components/projects/ProjectFormDialog";
+import { TeamAssignDialog } from "@/components/projects/TeamAssignDialog";
+import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
 const statusMap: Record<string, "planned" | "present" | "traveling" | "absent" | "overtime"> = {
@@ -26,7 +28,9 @@ export default function ProjectDetail() {
   const { data: team } = useProjectTeam(id ?? null);
   const { data: expenses } = useProjectExpenses(id ?? null);
   const [editOpen, setEditOpen] = useState(false);
-
+  const [assignOpen, setAssignOpen] = useState(false);
+  const removeMutation = useRemoveAssignment();
+  const { toast } = useToast();
   if (isLoading) return <div className="space-y-4"><Skeleton className="h-10 w-48" /><Skeleton className="h-64 w-full" /></div>;
   if (!project) return <div className="text-center py-12 text-muted-foreground">Project not found</div>;
 
@@ -112,8 +116,15 @@ export default function ProjectDetail() {
         <TabsContent value="team">
           <Card className="glass-card">
             <CardContent className="pt-4">
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-sm text-muted-foreground">{team?.length ?? 0} team member{(team?.length ?? 0) !== 1 ? "s" : ""}</p>
+                <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setAssignOpen(true)}>
+                  <UserPlus className="h-3.5 w-3.5" />
+                  Assign Employee
+                </Button>
+              </div>
               {!team?.length ? (
-                <p className="text-sm text-muted-foreground text-center py-8">No team assigned today</p>
+                <p className="text-sm text-muted-foreground text-center py-8">No team assigned yet. Click "Assign Employee" to add team members.</p>
               ) : (
                 <table className="w-full text-sm">
                   <thead>
@@ -123,6 +134,7 @@ export default function ProjectDetail() {
                       <th className="text-left py-2 font-medium">Phone</th>
                       <th className="text-left py-2 font-medium">Shift</th>
                       <th className="text-left py-2 font-medium">Last Assigned</th>
+                      <th className="text-right py-2 font-medium">Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -135,6 +147,24 @@ export default function ProjectDetail() {
                           <td className="py-2.5 text-muted-foreground font-mono text-xs">{emp?.phone ?? "—"}</td>
                           <td className="py-2.5 text-muted-foreground font-mono text-xs">{t.shift_start ?? "—"} – {t.shift_end ?? "—"}</td>
                           <td className="py-2.5 text-muted-foreground font-mono text-xs">{(t as any).date ?? "—"}</td>
+                          <td className="py-2.5 text-right">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                              disabled={removeMutation.isPending}
+                              onClick={async () => {
+                                try {
+                                  await removeMutation.mutateAsync({ assignmentId: t.id, projectId: id! });
+                                  toast({ title: "Removed", description: `${emp?.name ?? "Employee"} removed from team.` });
+                                } catch (err: any) {
+                                  toast({ title: "Failed to remove", description: err.message, variant: "destructive" });
+                                }
+                              }}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </td>
                         </tr>
                       );
                     })}
@@ -180,6 +210,12 @@ export default function ProjectDetail() {
       </Tabs>
 
       <ProjectFormDialog open={editOpen} onOpenChange={setEditOpen} editProject={project as Tables<"projects">} />
+      <TeamAssignDialog
+        open={assignOpen}
+        onOpenChange={setAssignOpen}
+        projectId={id!}
+        existingEmployeeIds={(team ?? []).map((t) => t.employee_id)}
+      />
     </div>
   );
 }
