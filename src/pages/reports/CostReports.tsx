@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatCard } from "@/components/ui/stat-card";
-import { ChevronLeft, ChevronRight, DollarSign, TrendingDown } from "lucide-react";
+import { ChevronLeft, ChevronRight, DollarSign, TrendingDown, Download } from "lucide-react";
+import { downloadCsv } from "@/lib/csv-export";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 
 const PIE_COLORS = [
@@ -37,6 +38,14 @@ export default function CostReports() {
           <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setMonthOffset((m) => m - 1)}><ChevronLeft className="h-4 w-4" /></Button>
           <Button variant="outline" size="sm" className="text-xs" onClick={() => setMonthOffset(0)}>This Month</Button>
           <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setMonthOffset((m) => m + 1)}><ChevronRight className="h-4 w-4" /></Button>
+          {data && (
+            <Button variant="outline" size="sm" className="text-xs ml-2" onClick={() => {
+              downloadCsv(`project-costs-${month}.csv`,
+                ["Project", "Budget (AED)", "Labor (AED)", "OT (AED)", "Expenses (AED)", "Total (AED)", "Variance (AED)"],
+                data.byProject.map((p) => [p.name, p.budget, p.laborCost, p.otCost, p.expenses, p.totalCost, p.budget - p.totalCost])
+              );
+            }}><Download className="h-3.5 w-3.5 mr-1" />Export CSV</Button>
+          )}
         </div>
       </div>
 
