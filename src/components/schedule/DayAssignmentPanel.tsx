@@ -12,6 +12,10 @@ import {
   type ScheduleAssignment,
 } from "@/hooks/useSchedule";
 import { Lock, LockOpen, Plus, Trash2, AlertTriangle, Zap, User } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
