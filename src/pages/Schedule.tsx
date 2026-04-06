@@ -173,29 +173,31 @@ export default function Schedule() {
         </div>
         <div className="flex items-center gap-3">
           {/* Bulk actions menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="text-xs">
-                <MoreVertical className="h-3.5 w-3.5 mr-1" />Bulk Actions
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setBulkDialog("copy")}>
-                <Copy className="h-3.5 w-3.5 mr-2" />Copy from Previous Week
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {
-                if (!selectedDay) { toast.error("Select a day first to use as source"); return; }
-                setRangeStart(weekStart);
-                setRangeEnd(weekEnd);
-                setBulkDialog("apply");
-              }}>
-                <CalendarRange className="h-3.5 w-3.5 mr-2" />Apply to Date Range
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setBulkDialog("recurring")}>
-                <Repeat className="h-3.5 w-3.5 mr-2" />Recurring Schedule
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {canEdit && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="text-xs">
+                  <MoreVertical className="h-3.5 w-3.5 mr-1" />Bulk Actions
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setBulkDialog("copy")}>
+                  <Copy className="h-3.5 w-3.5 mr-2" />Copy from Previous Week
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {
+                  if (!selectedDay) { toast.error("Select a day first to use as source"); return; }
+                  setRangeStart(weekStart);
+                  setRangeEnd(weekEnd);
+                  setBulkDialog("apply");
+                }}>
+                  <CalendarRange className="h-3.5 w-3.5 mr-2" />Apply to Date Range
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setBulkDialog("recurring")}>
+                  <Repeat className="h-3.5 w-3.5 mr-2" />Recurring Schedule
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
 
           <Select value={selectedProjectId} onValueChange={(v) => { setSelectedProjectId(v); setSelectedDay(null); }}>
             <SelectTrigger className="w-[220px]"><SelectValue placeholder="All Projects" /></SelectTrigger>
