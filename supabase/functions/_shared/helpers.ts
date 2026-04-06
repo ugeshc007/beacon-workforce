@@ -58,3 +58,38 @@ export function todayDate(): string {
 export function nowTimestamp(): string {
   return new Date().toISOString();
 }
+
+/** Insert a notification for all managers/admins of a branch */
+export async function notifyBranchManagers(
+  supabase: ReturnType<typeof createSupabaseAdmin>,
+  branchId: string,
+  notification: { type: string; title: string; message: string; priority?: string; reference_id?: string; reference_type?: string }
+) {
+  // Get all users in the branch who are admin or manager
+  const { data: users } = await supabase
+    .from("users")
+    .select("id")
+    .eq("branch_id", branchId)
+    .eq("is_active", true);
+
+  if (!users?.length) return;
+
+  const userIds = users.map((u: { id: string }) => u.id);
+
+  // Filter to those with admin/manager roles
+  const { data: roleUsers } = await supabase
+    .from("user_roles")
+    .select("user_id")
+    .in("user_id", userIds)
+    .in("role", ["admin", "manager"]);
+
+  if (!roleUsers?.length) return;
+
+  const notifications = roleUsers.map((ru: { user_id: string }) => ({
+    user_id: ru.user_id,
+    ...notification,
+    priority: notification.priority ?? "normal",
+  }));
+
+  await supabase.from("notifications").insert(notifications);
+}
