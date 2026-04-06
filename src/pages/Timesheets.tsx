@@ -385,16 +385,20 @@ export default function Timesheets() {
                               )}
                             </td>
                             <td className="text-center py-2 px-2">
-                              <div className="flex items-center justify-center gap-1">
-                                <Button variant="ghost" size="icon" className="h-6 w-6 text-status-present hover:text-status-present"
-                                  onClick={() => { setApproveRow(row); setApproveAction("approved"); }} title="Approve">
-                                  <CheckCircle2 className="h-3.5 w-3.5" />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="h-6 w-6 text-status-absent hover:text-status-absent"
-                                  onClick={() => { setApproveRow(row); setApproveAction("rejected"); }} title="Reject">
-                                  <XCircle className="h-3.5 w-3.5" />
-                                </Button>
-                              </div>
+                              {canEdit ? (
+                                <div className="flex items-center justify-center gap-1">
+                                  <Button variant="ghost" size="icon" className="h-6 w-6 text-status-present hover:text-status-present"
+                                    onClick={() => { setApproveRow(row); setApproveAction("approved"); }} title="Approve">
+                                    <CheckCircle2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-6 w-6 text-status-absent hover:text-status-absent"
+                                    onClick={() => { setApproveRow(row); setApproveAction("rejected"); }} title="Reject">
+                                    <XCircle className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">—</span>
+                              )}
                             </td>
                           </tr>
                         ))}
