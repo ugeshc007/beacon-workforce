@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useCostData, type CostProjectRow } from "@/hooks/useReports";
+import { ReportDateFilter, useReportDateRange } from "@/components/reports/ReportDateFilter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import {
-  ChevronLeft, ChevronRight, DollarSign, TrendingDown, TrendingUp,
+  DollarSign, TrendingDown, TrendingUp,
   Download, Percent, Building2,
 } from "lucide-react";
 import { downloadCsv } from "@/lib/csv-export";
@@ -29,17 +30,12 @@ const PIE_COLORS = [
 ];
 
 export default function CostReports() {
-  const now = new Date();
-  const [monthOffset, setMonthOffset] = useState(0);
-  const target = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
-  const month = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, "0")}`;
-  const monthLabel = target.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
-
+  const [dateRange, setDateRange] = useReportDateRange("This Month");
   const [statusFilter, setStatusFilter] = useState("all");
   const [branchFilter, setBranchFilter] = useState("all");
   const [drillProject, setDrillProject] = useState<CostProjectRow | null>(null);
 
-  const { data, isLoading } = useCostData(month, {
+  const { data, isLoading } = useCostData(dateRange.start, dateRange.end, {
     status: statusFilter,
     branchId: branchFilter,
   });
@@ -62,16 +58,10 @@ export default function CostReports() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-xl font-bold text-foreground">Project Costs</h1>
-          <p className="text-sm text-muted-foreground">{monthLabel}</p>
+          <p className="text-sm text-muted-foreground">{dateRange.label}</p>
         </div>
         <div className="flex items-center gap-1 flex-wrap">
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setMonthOffset((m) => m - 1)}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="sm" className="text-xs" onClick={() => setMonthOffset(0)}>This Month</Button>
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setMonthOffset((m) => m + 1)}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+          <ReportDateFilter value={dateRange} onChange={setDateRange} />
           {data && (<>
             <Button variant="outline" size="sm" className="text-xs ml-2" onClick={() => {
               downloadCsv(`project-costs-${month}.csv`,

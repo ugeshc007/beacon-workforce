@@ -1,12 +1,28 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-function monthRange(month: string) {
-  const [y, m] = month.split("-").map(Number);
-  const start = `${month}-01`;
-  const lastDay = new Date(y, m, 0).getDate();
-  const end = `${month}-${String(lastDay).padStart(2, "0")}`;
-  return { start, end, lastDay };
+/** Count working days between two ISO dates (excludes Fridays for UAE) */
+function countWorkingDays(start: string, end: string) {
+  let count = 0;
+  const cur = new Date(start);
+  const endDate = new Date(end);
+  while (cur <= endDate) {
+    if (cur.getDay() !== 5) count++; // 5 = Friday
+    cur.setDate(cur.getDate() + 1);
+  }
+  return count;
+}
+
+/** Generate all dates between start and end (inclusive) */
+function allDates(start: string, end: string): string[] {
+  const dates: string[] = [];
+  const cur = new Date(start);
+  const endDate = new Date(end);
+  while (cur <= endDate) {
+    dates.push(cur.toISOString().slice(0, 10));
+    cur.setDate(cur.getDate() + 1);
+  }
+  return dates;
 }
 
 export interface UtilizationRow {
@@ -32,23 +48,16 @@ export interface AbsenceRow {
   dayOfWeekCounts: number[]; // [Sun, Mon, Tue, Wed, Thu, Fri, Sat]
 }
 
-export function useUtilizationData(month: string, filters?: {
+export function useUtilizationData(start: string, end: string, filters?: {
   employeeIds?: string[];
   skillType?: string;
   branchId?: string;
 }) {
   return useQuery({
-    queryKey: ["report-utilization", month, filters],
+    queryKey: ["report-utilization", start, end, filters],
     queryFn: async () => {
-      const { start, end, lastDay } = monthRange(month);
-      const [y, m] = month.split("-").map(Number);
-
-      // Count working days (exclude Fri in UAE)
-      let workingDays = 0;
-      for (let d = 1; d <= lastDay; d++) {
-        const dow = new Date(y, m - 1, d).getDay();
-        if (dow !== 5) workingDays++; // 5 = Friday
-      }
+      const workingDays = countWorkingDays(start, end);
+      const allDays = allDates(start, end);
 
       let empQuery = supabase
         .from("employees")
@@ -83,13 +92,11 @@ export function useUtilizationData(month: string, filters?: {
       const leaves = leaveRes.data ?? [];
       const branches = branchRes.data ?? [];
 
-      // Apply employee filter
       let filteredEmps = employees;
       if (filters?.employeeIds?.length) {
         filteredEmps = employees.filter((e) => filters.employeeIds!.includes(e.id));
       }
 
-      // Build log map per employee
       const logMap = new Map<string, { days: Set<string>; totalMin: number; otMin: number; dailyMin: Record<string, number>; dailyOtMin: Record<string, number> }>();
       for (const l of logs) {
         if (!logMap.has(l.employee_id)) logMap.set(l.employee_id, { days: new Set(), totalMin: 0, otMin: 0, dailyMin: {}, dailyOtMin: {} });
@@ -101,7 +108,6 @@ export function useUtilizationData(month: string, filters?: {
         entry.dailyOtMin[l.date] = (entry.dailyOtMin[l.date] ?? 0) + (l.overtime_minutes ?? 0);
       }
 
-      // Leave days per employee
       const leaveDaysMap = new Map<string, Set<string>>();
       for (const lv of leaves) {
         if (!leaveDaysMap.has(lv.employee_id)) leaveDaysMap.set(lv.employee_id, new Set());
@@ -128,18 +134,15 @@ export function useUtilizationData(month: string, filters?: {
         };
       });
 
-      // By skill type
       const bySkill = ["technician", "helper", "supervisor"].map((skill) => {
         const group = rows.filter((r) => r.skill_type === skill);
         const avgUtil = group.length > 0 ? Math.round(group.reduce((s, r) => s + r.utilization, 0) / group.length) : 0;
         return { skill, count: group.length, avgUtilization: avgUtil };
       });
 
-      // Weekly trend
       const weeklyMap = new Map<string, { regular: number; ot: number }>();
       for (const l of logs) {
         const dt = new Date(l.date);
-        // Week start (Sunday)
         const sun = new Date(dt);
         sun.setDate(dt.getDate() - dt.getDay());
         const weekKey = sun.toISOString().slice(0, 10);
@@ -152,19 +155,15 @@ export function useUtilizationData(month: string, filters?: {
       }
       const weeklyTrend = Array.from(weeklyMap.entries())
         .sort(([a], [b]) => a.localeCompare(b))
-        .map(([week, v]) => ({
+        .map(([week, v], i) => ({
           week,
-          weekLabel: `W${Math.ceil((new Date(week).getDate()) / 7)}`,
+          weekLabel: `W${i + 1}`,
           regular: Math.round((v.regular / 60) * 10) / 10,
           ot: Math.round((v.ot / 60) * 10) / 10,
           total: Math.round(((v.regular + v.ot) / 60) * 10) / 10,
         }));
 
-      // Heatmap data: employee × day-of-month
-      const heatmapDays: string[] = [];
-      for (let d = 1; d <= lastDay; d++) {
-        heatmapDays.push(`${month}-${String(d).padStart(2, "0")}`);
-      }
+      const heatmapDays = allDays;
 
       // Absenteeism analytics
       const absenceRows: AbsenceRow[] = filteredEmps.map((e) => {
@@ -173,14 +172,11 @@ export function useUtilizationData(month: string, filters?: {
         const dayOfWeekCounts = [0, 0, 0, 0, 0, 0, 0];
         let absentDays = 0;
 
-        for (let d = 1; d <= lastDay; d++) {
-          const dt = new Date(y, m - 1, d);
+        for (const dateStr of allDays) {
+          const dt = new Date(dateStr);
           const dow = dt.getDay();
           if (dow === 5) continue; // Friday off
-          const dateStr = `${month}-${String(d).padStart(2, "0")}`;
-          const isToday = new Date().toISOString().slice(0, 10) === dateStr;
-          const isFuture = new Date(dateStr) > new Date();
-          if (isFuture && !isToday) continue;
+          if (new Date(dateStr) > new Date()) continue;
           if (!workedDays.has(dateStr) && !onLeave.has(dateStr)) {
             absentDays++;
             dayOfWeekCounts[dow]++;
@@ -189,7 +185,6 @@ export function useUtilizationData(month: string, filters?: {
         return { id: e.id, name: e.name, skill_type: e.skill_type, absentDays, dayOfWeekCounts };
       }).filter((r) => r.absentDays > 0).sort((a, b) => b.absentDays - a.absentDays);
 
-      // Day-of-week absence totals
       const dowTotals = [0, 0, 0, 0, 0, 0, 0];
       for (const r of absenceRows) {
         for (let i = 0; i < 7; i++) dowTotals[i] += r.dayOfWeekCounts[i];
@@ -231,16 +226,14 @@ export interface CostProjectRow {
   dailyCosts: { date: string; labor: number; ot: number; expenses: number }[];
 }
 
-export function useCostData(month: string, filters?: {
+export function useCostData(start: string, end: string, filters?: {
   projectIds?: string[];
   status?: string;
   branchId?: string;
 }) {
   return useQuery({
-    queryKey: ["report-costs", month, filters],
+    queryKey: ["report-costs", start, end, filters],
     queryFn: async () => {
-      const { start, end, lastDay } = monthRange(month);
-
       let projQuery = supabase
         .from("projects")
         .select("id, name, budget, project_value, status, branch_id, start_date, end_date");
@@ -320,7 +313,6 @@ export function useCostData(month: string, filters?: {
         const pctUsed = budget > 0 ? Math.round((totalCost / budget) * 100) : 0;
         const daysWithCost = p.dailyCosts.size;
 
-        // Forecast: avg daily cost × remaining project days
         let forecastedFinal = totalCost;
         if (daysWithCost > 0 && p.endDate) {
           const today = new Date();
@@ -352,7 +344,6 @@ export function useCostData(month: string, filters?: {
         };
       }).sort((a, b) => b.totalCost - a.totalCost);
 
-      // Category breakdown
       const catMap = new Map<string, number>();
       catMap.set("labor", logs.reduce((s, l) => {
         if (l.project_id && projMap.has(l.project_id)) return s + Number(l.regular_cost ?? 0);
@@ -369,7 +360,6 @@ export function useCostData(month: string, filters?: {
         .map(([category, amount]) => ({ category, amount: Math.round(amount) }))
         .filter((c) => c.amount > 0);
 
-      // Daily cost trend (aggregated)
       const dailyTrend = new Map<string, { labor: number; ot: number; expenses: number }>();
       for (const p of byProject) {
         for (const dc of p.dailyCosts) {
@@ -405,22 +395,26 @@ export function useCostData(month: string, filters?: {
   });
 }
 
-export function useExecutiveData(month: string) {
+export function useExecutiveData(start: string, end: string) {
   return useQuery({
-    queryKey: ["report-executive", month],
+    queryKey: ["report-executive", start, end],
     queryFn: async () => {
-      const { start, end, lastDay } = monthRange(month);
-      const [y, m] = month.split("-").map(Number);
+      const workingDays = countWorkingDays(start, end);
 
-      // Previous month for comparison
-      const prevTarget = new Date(y, m - 2, 1);
-      const prevMonth = `${prevTarget.getFullYear()}-${String(prevTarget.getMonth() + 1).padStart(2, "0")}`;
-      const prevRange = monthRange(prevMonth);
+      // Previous period for comparison (same length before start)
+      const startDate = new Date(start);
+      const endDate = new Date(end);
+      const rangeDays = Math.ceil((endDate.getTime() - startDate.getTime()) / 86400000) + 1;
+      const prevEnd = new Date(startDate);
+      prevEnd.setDate(prevEnd.getDate() - 1);
+      const prevStart = new Date(prevEnd);
+      prevStart.setDate(prevStart.getDate() - rangeDays + 1);
+      const prevStartStr = prevStart.toISOString().slice(0, 10);
+      const prevEndStr = prevEnd.toISOString().slice(0, 10);
 
-      // Today's date for "deployed today"
       const todayStr = new Date(Date.now() + 4 * 3600000).toISOString().slice(0, 10);
 
-      // 12-week utilization trend: go back 12 weeks
+      // 12-week utilization trend
       const weekStarts: string[] = [];
       const now = new Date();
       for (let w = 11; w >= 0; w--) {
@@ -441,7 +435,7 @@ export function useExecutiveData(month: string) {
           .gte("date", start).lte("date", end),
         supabase.from("attendance_logs")
           .select("regular_cost, overtime_cost")
-          .gte("date", prevRange.start).lte("date", prevRange.end),
+          .gte("date", prevStartStr).lte("date", prevEndStr),
         supabase.from("project_assignments")
           .select("employee_id", { count: "exact" })
           .eq("date", todayStr),
@@ -470,15 +464,9 @@ export function useExecutiveData(month: string) {
       const totalBudget = projects.reduce((s, p) => s + Number(p.budget ?? 0), 0);
       const deployedToday = assignTodayRes.count ?? 0;
 
-      // Company utilization %
-      let workingDays = 0;
-      for (let d = 1; d <= lastDay; d++) {
-        if (new Date(y, m - 1, d).getDay() !== 5) workingDays++;
-      }
       const totalCapacity = employees.reduce((s, e) => s + workingDays * Number(e.standard_hours_per_day), 0);
       const companyUtilization = totalCapacity > 0 ? Math.round((totalHours / totalCapacity) * 100) : 0;
 
-      // Top 5 projects by cost
       const projCostMap = new Map<string, { name: string; cost: number; labor: number; ot: number }>();
       for (const p of projects) {
         projCostMap.set(p.id, { name: p.name, cost: 0, labor: 0, ot: 0 });
@@ -501,19 +489,15 @@ export function useExecutiveData(month: string) {
           total: Math.round(p.cost),
         }));
 
-      // 12-week utilization trend
       const weeklyUtilization = weekStarts.map((ws, i) => {
         const weekEnd = i < weekStarts.length - 1 ? weekStarts[i + 1] : new Date(new Date(ws).getTime() + 7 * 86400000).toISOString().slice(0, 10);
-        const weekLogs = weeklyLogs.filter((l) => l.date >= ws && l.date < weekEnd);
-        const weekHours = weekLogs.reduce((s, l) => s + (l.total_work_minutes ?? 0), 0) / 60;
-        // Capacity: active employees × ~5 working days × 8h (approximate)
+        const wLogs = weeklyLogs.filter((l) => l.date >= ws && l.date < weekEnd);
+        const weekHours = wLogs.reduce((s, l) => s + (l.total_work_minutes ?? 0), 0) / 60;
         const weekCapacity = employees.length * 5 * 8;
         const util = weekCapacity > 0 ? Math.round((weekHours / weekCapacity) * 100) : 0;
-        const weekLabel = `W${i + 1}`;
-        return { week: ws, weekLabel, utilization: Math.min(util, 100), hours: Math.round(weekHours) };
+        return { week: ws, weekLabel: `W${i + 1}`, utilization: Math.min(util, 100), hours: Math.round(weekHours) };
       });
 
-      // Branch comparison
       const branchStats = branches.map((b) => {
         const branchEmps = employees.filter((e) => e.branch_id === b.id);
         const branchEmpIds = new Set(branchEmps.map((e) => e.id));
@@ -529,7 +513,6 @@ export function useExecutiveData(month: string) {
         };
       }).filter((b) => b.employees > 0);
 
-      // Unresolved alerts by type
       const alertsByType = new Map<string, number>();
       for (const n of unreadNotifs) {
         alertsByType.set(n.type, (alertsByType.get(n.type) ?? 0) + 1);
@@ -538,7 +521,6 @@ export function useExecutiveData(month: string) {
         .map(([type, count]) => ({ type, count }))
         .sort((a, b) => b.count - a.count);
 
-      // Daily cost trend
       const dailyCost = new Map<string, number>();
       for (const l of logs) {
         const cost = Number(l.regular_cost ?? 0) + Number(l.overtime_cost ?? 0);
@@ -626,17 +608,11 @@ export function useProfitabilityData() {
 }
 
 // ─── Attendance Report ──────────────────────────────────────
-export function useAttendanceReport(month: string, filters?: { branchId?: string }) {
+export function useAttendanceReport(start: string, end: string, filters?: { branchId?: string }) {
   return useQuery({
-    queryKey: ["report-attendance", month, filters],
+    queryKey: ["report-attendance", start, end, filters],
     queryFn: async () => {
-      const { start, end, lastDay } = monthRange(month);
-      const [y, m] = month.split("-").map(Number);
-
-      let workingDays = 0;
-      for (let d = 1; d <= lastDay; d++) {
-        if (new Date(y, m - 1, d).getDay() !== 5) workingDays++;
-      }
+      const workingDays = countWorkingDays(start, end);
 
       let empQuery = supabase.from("employees").select("id, name, branch_id, standard_hours_per_day").eq("is_active", true);
       if (filters?.branchId && filters.branchId !== "all") empQuery = empQuery.eq("branch_id", filters.branchId);
@@ -697,12 +673,10 @@ export function useAttendanceReport(month: string, filters?: { branchId?: string
 }
 
 // ─── Overtime Report ────────────────────────────────────────
-export function useOvertimeReport(month: string, filters?: { branchId?: string }) {
+export function useOvertimeReport(start: string, end: string, filters?: { branchId?: string }) {
   return useQuery({
-    queryKey: ["report-overtime", month, filters],
+    queryKey: ["report-overtime", start, end, filters],
     queryFn: async () => {
-      const { start, end } = monthRange(month);
-
       let empQuery = supabase.from("employees").select("id, name, skill_type, branch_id, hourly_rate, overtime_rate").eq("is_active", true);
       if (filters?.branchId && filters.branchId !== "all") empQuery = empQuery.eq("branch_id", filters.branchId);
 
@@ -746,7 +720,6 @@ export function useOvertimeReport(month: string, filters?: { branchId?: string }
       const employeesWithOt = rows.filter((r) => r.otHours > 0).length;
       const avgOtPerEmployee = employeesWithOt > 0 ? Math.round(totalOtHours / employeesWithOt) : 0;
 
-      // Daily trend
       const dailyOtMap = new Map<string, number>();
       for (const l of logs) {
         if (l.overtime_minutes && l.overtime_minutes > 0) {
@@ -762,9 +735,9 @@ export function useOvertimeReport(month: string, filters?: { branchId?: string }
 }
 
 // ─── Manpower Report ────────────────────────────────────────
-export function useManpowerReport(month: string, filters?: { branchId?: string }) {
+export function useManpowerReport(start: string, end: string, filters?: { branchId?: string }) {
   return useQuery({
-    queryKey: ["report-manpower", month, filters],
+    queryKey: ["report-manpower", start, end, filters],
     queryFn: async () => {
       let projQuery = supabase.from("projects")
         .select("id, name, status, branch_id, required_technicians, required_helpers, required_supervisors")
@@ -807,17 +780,12 @@ export function useManpowerReport(month: string, filters?: { branchId?: string }
 }
 
 // ─── Absentee Report ────────────────────────────────────────
-export function useAbsenteeReport(month: string, filters?: { branchId?: string }) {
+export function useAbsenteeReport(start: string, end: string, filters?: { branchId?: string }) {
   return useQuery({
-    queryKey: ["report-absentee", month, filters],
+    queryKey: ["report-absentee", start, end, filters],
     queryFn: async () => {
-      const { start, end, lastDay } = monthRange(month);
-      const [y, m] = month.split("-").map(Number);
-
-      let workingDays = 0;
-      for (let d = 1; d <= lastDay; d++) {
-        if (new Date(y, m - 1, d).getDay() !== 5) workingDays++;
-      }
+      const workingDays = countWorkingDays(start, end);
+      const allDays = allDates(start, end);
 
       let empQuery = supabase.from("employees").select("id, name, skill_type, branch_id").eq("is_active", true);
       if (filters?.branchId && filters.branchId !== "all") empQuery = empQuery.eq("branch_id", filters.branchId);
@@ -863,11 +831,9 @@ export function useAbsenteeReport(month: string, filters?: { branchId?: string }
         const unexcusedDays = Math.max(0, absentDays - leaveDays);
         const absenceRate = workingDays > 0 ? Math.round((absentDays / workingDays) * 100) : 0;
 
-        // Day of week analysis for absences
-        for (let d = 1; d <= lastDay; d++) {
-          const dt = new Date(y, m - 1, d);
+        for (const dateStr of allDays) {
+          const dt = new Date(dateStr);
           if (dt.getDay() === 5) continue;
-          const dateStr = `${month}-${String(d).padStart(2, "0")}`;
           if (!attendedDays.get(e.id)?.has(dateStr)) {
             dayOfWeekTotals[dt.getDay()]++;
           }
