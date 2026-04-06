@@ -65,6 +65,7 @@ export function ProjectCostsTab({ project, costs }: Props) {
 
   // Pie data
   const pieData = useMemo(() => {
+    if (!costs) return [];
     const items: { name: string; value: number }[] = [];
     if (costs.totalLabor > 0) items.push({ name: "Labor", value: Math.round(costs.totalLabor) });
     if (costs.totalOT > 0) items.push({ name: "Overtime", value: Math.round(costs.totalOT) });
