@@ -114,19 +114,13 @@ export default function Timesheets() {
 
   const handleExport = () => {
     if (!filtered.length) return;
-    const csvRows = filtered.map((r) => ({
-      "Employee Code": r.employee_code,
-      "Employee Name": r.employee_name,
-      "Skill": r.skill_type,
-      "Days Worked": r.daysWorked,
-      "Total Hours": r.totalHours,
-      "OT Hours": r.totalOt,
-      "Regular Cost (AED)": r.regularCost,
-      "OT Cost (AED)": r.otCost,
-      "Total Cost (AED)": r.regularCost + r.otCost,
-      "Status": r.approvalStatus ?? "pending",
-    }));
-    exportCsv(csvRows, `timesheet-${month}`);
+    const headers = ["Employee Code", "Employee Name", "Skill", "Days Worked", "Total Hours", "OT Hours", "Regular Cost (AED)", "OT Cost (AED)", "Total Cost (AED)", "Status"];
+    const rows = filtered.map((r) => [
+      r.employee_code, r.employee_name, r.skill_type, r.daysWorked,
+      r.totalHours, r.totalOt, r.regularCost, r.otCost,
+      r.regularCost + r.otCost, r.approvalStatus ?? "pending",
+    ]);
+    downloadCsv(`timesheet-${month}.csv`, headers, rows);
     toast.success("Exported to CSV");
   };
 
