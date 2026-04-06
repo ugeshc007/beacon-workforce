@@ -523,8 +523,8 @@ function SystemAuditLogSection() {
               ))}
             </SelectContent>
           </Select>
-          <Input type="date" className="h-8 w-[140px] text-xs" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} placeholder="From" />
-          <Input type="date" className="h-8 w-[140px] text-xs" value={dateTo} onChange={(e) => setDateTo(e.target.value)} placeholder="To" />
+          <DateInput value={dateFrom} onChange={setDateFrom} placeholder="From" className="w-[150px]" />
+          <DateInput value={dateTo} onChange={setDateTo} placeholder="To" className="w-[150px]" />
         </div>
 
         {isLoading ? <Skeleton className="h-40 rounded-lg" /> : !data?.length ? (
