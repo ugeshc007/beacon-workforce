@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
-import { useProjects } from "@/hooks/useProjects";
+import { useProjects, useTemplates } from "@/hooks/useProjects";
 import { useBranches } from "@/hooks/useEmployees";
-import { ProjectFormDialog } from "@/components/projects/ProjectFormDialog";
+import { ProjectFormDialog, type ProjectPrefill } from "@/components/projects/ProjectFormDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,10 +17,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Progress } from "@/components/ui/progress";
 import {
   FolderKanban, Plus, Search, LayoutGrid, List, MapPin, Users, DollarSign,
-  MoreHorizontal, Eye, Pencil, CalendarIcon, X,
+  MoreHorizontal, Eye, Pencil, CalendarIcon, X, Copy, FileText,
 } from "lucide-react";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
@@ -40,6 +40,7 @@ export default function Projects() {
   const [view, setView] = useState<"card" | "table">("card");
   const [formOpen, setFormOpen] = useState(false);
   const [editProject, setEditProject] = useState<Tables<"projects"> | null>(null);
+  const [prefill, setPrefill] = useState<ProjectPrefill | null>(null);
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
 
@@ -49,9 +50,41 @@ export default function Projects() {
     dateTo: dateTo ? format(dateTo, "yyyy-MM-dd") : undefined,
   });
   const { data: branches } = useBranches();
+  const { data: templates } = useTemplates();
 
-  const handleEdit = (p: Tables<"projects">) => { setEditProject(p); setFormOpen(true); };
-  const handleAdd = () => { setEditProject(null); setFormOpen(true); };
+  const handleEdit = (p: Tables<"projects">) => { setEditProject(p); setPrefill(null); setFormOpen(true); };
+  const handleAdd = () => { setEditProject(null); setPrefill(null); setFormOpen(true); };
+  const handleDuplicate = (p: any) => {
+    setEditProject(null);
+    setPrefill({
+      name: `${p.name} (Copy)`,
+      branch_id: p.branch_id,
+      client_name: p.client_name,
+      client_phone: p.client_phone,
+      client_email: p.client_email,
+      site_address: p.site_address,
+      site_latitude: p.site_latitude,
+      site_longitude: p.site_longitude,
+      site_gps_radius: p.site_gps_radius,
+      budget: p.budget,
+      project_value: p.project_value,
+      notes: p.notes,
+      required_technicians: p.required_technicians,
+      required_helpers: p.required_helpers,
+      required_supervisors: p.required_supervisors,
+    });
+    setFormOpen(true);
+  };
+  const handleFromTemplate = (tpl: Tables<"project_templates">) => {
+    setEditProject(null);
+    setPrefill({
+      name: "",
+      required_technicians: tpl.required_technicians,
+      required_helpers: tpl.required_helpers,
+      required_supervisors: tpl.required_supervisors,
+    });
+    setFormOpen(true);
+  };
 
   const hasDateFilter = dateFrom || dateTo;
 
@@ -63,7 +96,24 @@ export default function Projects() {
           <h1 className="text-xl font-bold text-foreground">Projects</h1>
           <p className="text-sm text-muted-foreground">{projects?.length ?? 0} projects</p>
         </div>
-        <Button onClick={handleAdd} size="sm"><Plus className="h-4 w-4 mr-1" /> New Project</Button>
+        <div className="flex gap-2">
+          {templates && templates.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1"><FileText className="h-4 w-4" /> From Template</Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {templates.map((t) => (
+                  <DropdownMenuItem key={t.id} onClick={() => handleFromTemplate(t)}>
+                    {t.name}
+                    <span className="ml-auto text-[10px] text-muted-foreground">{t.required_technicians}T/{t.required_helpers}H/{t.required_supervisors}S</span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          <Button onClick={handleAdd} size="sm"><Plus className="h-4 w-4 mr-1" /> New Project</Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -225,6 +275,8 @@ export default function Projects() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => navigate(`/projects/${p.id}`)}><Eye className="h-3.5 w-3.5 mr-2" />View</DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleEdit(p as Tables<"projects">)}><Pencil className="h-3.5 w-3.5 mr-2" />Edit</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleDuplicate(p)}><Copy className="h-3.5 w-3.5 mr-2" />Duplicate</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </td>
@@ -237,7 +289,7 @@ export default function Projects() {
         </Card>
       )}
 
-      <ProjectFormDialog open={formOpen} onOpenChange={setFormOpen} editProject={editProject} />
+      <ProjectFormDialog open={formOpen} onOpenChange={setFormOpen} editProject={editProject} prefill={prefill} />
     </div>
   );
 }

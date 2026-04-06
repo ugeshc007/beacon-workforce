@@ -1,53 +1,117 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useCreateProject, useUpdateProject } from "@/hooks/useProjects";
+import { useCreateProject, useUpdateProject, useTemplates, useSaveTemplate } from "@/hooks/useProjects";
 import { useBranches } from "@/hooks/useEmployees";
 import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
-import { ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, FileText, Save } from "lucide-react";
 
 const steps = ["Basic Info", "Client", "Location & GPS", "Staffing"];
+
+export type ProjectPrefill = Partial<{
+  name: string;
+  status: string;
+  branch_id: string;
+  start_date: string;
+  end_date: string;
+  budget: number;
+  project_value: number;
+  notes: string;
+  client_name: string;
+  client_phone: string;
+  client_email: string;
+  site_address: string;
+  site_latitude: number;
+  site_longitude: number;
+  site_gps_radius: number;
+  required_technicians: number;
+  required_helpers: number;
+  required_supervisors: number;
+}>;
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editProject?: Tables<"projects"> | null;
+  prefill?: ProjectPrefill | null;
 }
 
-export function ProjectFormDialog({ open, onOpenChange, editProject }: Props) {
+function makeForm(src?: Tables<"projects"> | null, prefill?: ProjectPrefill | null) {
+  const s = src ?? prefill;
+  return {
+    name: (s as any)?.name ?? "",
+    status: (s as any)?.status ?? "planned",
+    branch_id: (s as any)?.branch_id ?? "",
+    start_date: (s as any)?.start_date ?? "",
+    end_date: (s as any)?.end_date ?? "",
+    budget: (s as any)?.budget?.toString() ?? "",
+    project_value: (s as any)?.project_value?.toString() ?? "",
+    notes: (s as any)?.notes ?? "",
+    client_name: (s as any)?.client_name ?? "",
+    client_phone: (s as any)?.client_phone ?? "",
+    client_email: (s as any)?.client_email ?? "",
+    site_address: (s as any)?.site_address ?? "",
+    site_latitude: (s as any)?.site_latitude?.toString() ?? "",
+    site_longitude: (s as any)?.site_longitude?.toString() ?? "",
+    site_gps_radius: (s as any)?.site_gps_radius?.toString() ?? "100",
+    required_technicians: (s as any)?.required_technicians?.toString() ?? "0",
+    required_helpers: (s as any)?.required_helpers?.toString() ?? "0",
+    required_supervisors: (s as any)?.required_supervisors?.toString() ?? "0",
+  };
+}
+
+export function ProjectFormDialog({ open, onOpenChange, editProject, prefill }: Props) {
   const { toast } = useToast();
   const create = useCreateProject();
   const update = useUpdateProject();
+  const saveTemplate = useSaveTemplate();
   const { data: branches } = useBranches();
+  const { data: templates } = useTemplates();
   const [step, setStep] = useState(0);
+  const [form, setForm] = useState(() => makeForm(editProject, prefill));
 
-  const [form, setForm] = useState({
-    name: editProject?.name ?? "",
-    status: editProject?.status ?? "planned",
-    branch_id: editProject?.branch_id ?? "",
-    start_date: editProject?.start_date ?? "",
-    end_date: editProject?.end_date ?? "",
-    budget: editProject?.budget?.toString() ?? "",
-    project_value: editProject?.project_value?.toString() ?? "",
-    notes: editProject?.notes ?? "",
-    client_name: editProject?.client_name ?? "",
-    client_phone: editProject?.client_phone ?? "",
-    client_email: editProject?.client_email ?? "",
-    site_address: editProject?.site_address ?? "",
-    site_latitude: editProject?.site_latitude?.toString() ?? "",
-    site_longitude: editProject?.site_longitude?.toString() ?? "",
-    site_gps_radius: editProject?.site_gps_radius?.toString() ?? "100",
-    required_technicians: editProject?.required_technicians?.toString() ?? "0",
-    required_helpers: editProject?.required_helpers?.toString() ?? "0",
-    required_supervisors: editProject?.required_supervisors?.toString() ?? "0",
-  });
+  // Reset form when dialog opens with different data
+  useEffect(() => {
+    if (open) {
+      setForm(makeForm(editProject, prefill));
+      setStep(0);
+    }
+  }, [open, editProject, prefill]);
 
   const set = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
+
+  const applyTemplate = (tpl: Tables<"project_templates">) => {
+    setForm((prev) => ({
+      ...prev,
+      required_technicians: tpl.required_technicians.toString(),
+      required_helpers: tpl.required_helpers.toString(),
+      required_supervisors: tpl.required_supervisors.toString(),
+    }));
+    toast({ title: `Template "${tpl.name}" applied`, description: "Staffing requirements loaded." });
+  };
+
+  const handleSaveAsTemplate = async () => {
+    if (!form.name) {
+      toast({ title: "Enter a project name first", variant: "destructive" });
+      return;
+    }
+    try {
+      await saveTemplate.mutateAsync({
+        name: form.name,
+        required_technicians: parseInt(form.required_technicians) || 0,
+        required_helpers: parseInt(form.required_helpers) || 0,
+        required_supervisors: parseInt(form.required_supervisors) || 0,
+      });
+      toast({ title: "Template saved", description: `"${form.name}" saved as template.` });
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+  };
 
   const handleSubmit = async () => {
     if (!form.name || !form.branch_id) {
@@ -83,18 +147,37 @@ export function ProjectFormDialog({ open, onOpenChange, editProject }: Props) {
         toast({ title: "Project created" });
       }
       onOpenChange(false);
-      setStep(0);
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     }
   };
 
+  const isNew = !editProject;
+  const dialogTitle = editProject
+    ? "Edit Project"
+    : prefill
+    ? "Duplicate Project"
+    : "Create Project";
+
   return (
-    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) setStep(0); }}>
+    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); }}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{editProject ? "Edit" : "Create"} Project</DialogTitle>
+          <DialogTitle>{dialogTitle}</DialogTitle>
         </DialogHeader>
+
+        {/* Template selector — only for new projects */}
+        {isNew && !prefill && templates && templates.length > 0 && step === 0 && (
+          <div className="flex items-center gap-2 pb-1">
+            <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">From template:</span>
+            {templates.map((t) => (
+              <Button key={t.id} variant="outline" size="sm" className="h-7 text-xs" onClick={() => applyTemplate(t)}>
+                {t.name}
+              </Button>
+            ))}
+          </div>
+        )}
 
         {/* Step indicator */}
         <div className="flex gap-1 mb-2">
@@ -177,9 +260,16 @@ export function ProjectFormDialog({ open, onOpenChange, editProject }: Props) {
         </div>
 
         <div className="flex justify-between pt-2">
-          <Button variant="outline" disabled={step === 0} onClick={() => setStep((s) => s - 1)}>
-            <ChevronLeft className="h-4 w-4 mr-1" /> Back
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" disabled={step === 0} onClick={() => setStep((s) => s - 1)}>
+              <ChevronLeft className="h-4 w-4 mr-1" /> Back
+            </Button>
+            {isNew && step === 3 && (
+              <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={handleSaveAsTemplate} disabled={saveTemplate.isPending}>
+                <Save className="h-3.5 w-3.5" /> Save as Template
+              </Button>
+            )}
+          </div>
           {step < steps.length - 1 ? (
             <Button onClick={() => setStep((s) => s + 1)}>
               Next <ChevronRight className="h-4 w-4 ml-1" />
