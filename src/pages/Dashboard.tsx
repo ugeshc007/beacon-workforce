@@ -15,6 +15,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TravelMapCard } from "@/components/dashboard/TravelMapCard";
 import {
   useDashboardStats,
   useTodayTeam,
@@ -134,6 +135,8 @@ export default function Dashboard() {
               )}
             </CardContent>
           </Card>
+
+          <TravelMapCard />
 
           <Card className="glass-card mt-4">
             <CardHeader className="pb-3">

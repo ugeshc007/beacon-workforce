@@ -2,6 +2,7 @@ import {
   LayoutDashboard,
   FolderKanban,
   Users,
+  Car,
   CalendarDays,
   ClipboardCheck,
   Clock,
@@ -32,6 +33,7 @@ const mainNav = [
   { title: "Employees", url: "/employees", icon: Users, module: "employees" },
   { title: "Schedule", url: "/schedule", icon: CalendarDays, module: "schedule" },
   { title: "Attendance", url: "/attendance", icon: ClipboardCheck, module: "attendance" },
+  { title: "Travel", url: "/travel", icon: Car, module: "attendance" },
   { title: "Timesheets", url: "/timesheets", icon: Clock, module: "timesheets" },
 ];
 
