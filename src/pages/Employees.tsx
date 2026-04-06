@@ -277,6 +277,17 @@ export default function Employees() {
         open={drawerOpen}
         onOpenChange={setDrawerOpen}
       />
+
+      <CsvImportDialog open={csvOpen} onOpenChange={setCsvOpen} />
+
+      {leaveEmployee && (
+        <MarkLeaveDialog
+          open={leaveOpen}
+          onOpenChange={setLeaveOpen}
+          employeeId={leaveEmployee.id}
+          employeeName={leaveEmployee.name}
+        />
+      )}
     </div>
   );
 }
