@@ -223,9 +223,17 @@ export default function ProjectDetail() {
                         <td className="py-2.5"><Badge variant={e.status === "approved" ? "default" : e.status === "rejected" ? "destructive" : "secondary"} className="text-[10px]">{e.status}</Badge></td>
                         <td className="py-2.5">
                           {e.receipt_url ? (
-                            <a href={e.receipt_url} target="_blank" rel="noopener noreferrer" className="text-brand hover:underline inline-flex items-center gap-1 text-xs">
-                              <ExternalLink className="h-3 w-3" /> View
-                            </a>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-xs text-brand"
+                              onClick={async () => {
+                                const { data } = await supabase.storage.from("receipts").createSignedUrl(e.receipt_url!, 3600);
+                                if (data?.signedUrl) window.open(data.signedUrl, "_blank");
+                              }}
+                            >
+                              <ExternalLink className="h-3 w-3 mr-1" /> View
+                            </Button>
                           ) : (
                             <>
                               <Button
