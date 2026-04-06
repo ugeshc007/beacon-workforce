@@ -27,6 +27,10 @@ import Utilization from "./pages/reports/Utilization";
 import CostReports from "./pages/reports/CostReports";
 import Profitability from "./pages/reports/Profitability";
 import Executive from "./pages/reports/Executive";
+import AttendanceReport from "./pages/reports/AttendanceReport";
+import OvertimeReport from "./pages/reports/OvertimeReport";
+import ManpowerReport from "./pages/reports/ManpowerReport";
+import AbsenteeReport from "./pages/reports/AbsenteeReport";
 import SettingsPage from "./pages/SettingsPage";
 
 const queryClient = new QueryClient();
