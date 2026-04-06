@@ -390,7 +390,7 @@ export function DayAssignmentPanel({
         </div>
 
         {/* Add employee */}
-        {addingSkill ? (
+        {readOnly ? null : addingSkill ? (
           <div className="space-y-2">
             <p className="text-xs text-muted-foreground">Add {addingSkill}:</p>
             {/* Shift time inputs */}
