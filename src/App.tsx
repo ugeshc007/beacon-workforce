@@ -15,6 +15,7 @@ import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
 import ProjectDetail from "./pages/ProjectDetail";
+import ProjectGantt from "./pages/ProjectGantt";
 import Employees from "./pages/Employees";
 import Schedule from "./pages/Schedule";
 import Attendance from "./pages/Attendance";
