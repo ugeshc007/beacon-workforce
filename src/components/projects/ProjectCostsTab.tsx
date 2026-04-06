@@ -89,7 +89,7 @@ export function ProjectCostsTab({ project, costs }: Props) {
 
   // Budget vs actual bar
   const budgetChart = useMemo(() => {
-    if (!project.budget) return null;
+    if (!costs || !project.budget) return null;
     const items = [
       { name: "Labor", actual: Math.round(costs.totalLabor), budget: 0 },
       { name: "Overtime", actual: Math.round(costs.totalOT), budget: 0 },
@@ -102,9 +102,11 @@ export function ProjectCostsTab({ project, costs }: Props) {
 
   // Drill-down records
   const drillRecords = useMemo(() => {
-    if (!drillDate) return null;
+    if (!drillDate || !costs) return null;
     return costs.dailyData.find((d) => d.date === drillDate) ?? null;
   }, [drillDate, costs]);
+
+  if (!costs) return <p className="text-sm text-muted-foreground text-center py-8">No cost data yet</p>;
 
   const costCards = [
     { label: "Regular Labor", value: costs.totalLabor, color: "text-foreground" },
