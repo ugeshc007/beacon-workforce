@@ -297,6 +297,7 @@ export default function Schedule() {
           requiredHelp={selectedProject.required_helpers}
           requiredSup={selectedProject.required_supervisors}
           conflicts={dayConflicts(selectedDay)}
+          readOnly={!canEdit}
         />
       )}
 
