@@ -69,7 +69,7 @@ export function PurchaseInvoiceDialog({ projectId, open, onOpenChange }: Props) 
     setLines(lines.filter((_, idx) => idx !== i));
   };
 
-  const totalAmount = lines.reduce((s, l) => s + (parseFloat(l.amount) || 0), 0);
+  const totalAmount = lines.reduce((s, l) => s + ((parseFloat(l.quantity) || 0) * (parseFloat(l.unitRate) || 0)), 0);
   const rate = parseFloat(exchangeRate) || 1;
   const totalAed = currency === "AED" ? totalAmount : Math.round(totalAmount * rate * 100) / 100;
   const threshold = Number(settings?.expense_approval_threshold ?? 0);
