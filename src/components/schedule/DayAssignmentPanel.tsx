@@ -185,12 +185,10 @@ export function DayAssignmentPanel({
             <div key={a.id} className="flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-accent/30 transition-colors group">
               <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               <span className="text-sm flex-1 truncate">{a.employee_name}</span>
-              {(a.shift_start || a.shift_end) && (
-                <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                  <Clock className="h-2.5 w-2.5" />
-                  {formatTime(a.shift_start)}–{formatTime(a.shift_end)}
-                </span>
-              )}
+              <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                <Clock className="h-2.5 w-2.5" />
+                {formatTime(a.shift_start) || "08:00"}–{formatTime(a.shift_end) || "17:00"}
+              </span>
               <Badge variant="outline" className={`text-[10px] ${skillColors[a.employee_skill] ?? ""}`}>
                 {a.employee_skill}
               </Badge>
