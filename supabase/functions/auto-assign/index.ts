@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
 
     const assigned: AssignedEmployee[] = [];
     const unfilled: { role: string; needed: number }[] = [];
-    const usedIds = new Set(locked);
+    const usedIds = new Set([...locked, ...alreadyOnProject]);
 
     const roles: Record<string, string> = {
       technicians: "technician",
