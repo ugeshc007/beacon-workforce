@@ -299,23 +299,32 @@ export function DayAssignmentPanel({
             ) : (
               <div className="max-h-40 overflow-y-auto space-y-1">
                 {availableForSkill(addingSkill).map((e) => (
-                  <button
+                   <button
                     key={e.id}
                     className="w-full text-left text-sm px-2 py-1.5 rounded-md hover:bg-accent/50 transition-colors"
                     onClick={() => handleAdd(e.id)}
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-1">
                       <span>{e.name}</span>
-                      {e.assigned_elsewhere && (
-                        <Badge variant="outline" className="text-[9px] border-status-traveling/50 text-status-traveling">
-                          on other project
-                        </Badge>
-                      )}
+                      <div className="flex items-center gap-1">
+                        {e.existing_slots && hasOverlap(e.existing_slots) && (
+                          <Badge variant="outline" className="text-[9px] border-status-absent/50 text-status-absent">
+                            <AlertTriangle className="h-2.5 w-2.5 mr-0.5" />overlap
+                          </Badge>
+                        )}
+                        {e.assigned_elsewhere && !hasOverlap(e.existing_slots ?? []) && (
+                          <Badge variant="outline" className="text-[9px] border-status-traveling/50 text-status-traveling">
+                            on other project
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                     {e.existing_slots && e.existing_slots.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-0.5">
                         {e.existing_slots.map((slot: { start: string; end: string; project: string }, i: number) => (
-                          <span key={i} className="text-[9px] text-status-traveling bg-status-traveling/10 rounded px-1.5 py-0.5">
+                          <span key={i} className={`text-[9px] rounded px-1.5 py-0.5 ${
+                            hasOverlap([slot]) ? "text-status-absent bg-status-absent/10" : "text-status-traveling bg-status-traveling/10"
+                          }`}>
                             {slot.start}–{slot.end} ({slot.project})
                           </span>
                         ))}
