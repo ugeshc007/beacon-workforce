@@ -66,7 +66,8 @@ export function ProjectExpensesTab({ projectId, expenses }: Props) {
 
   const resetForm = () => {
     setCategory("material");
-    setAmount("");
+    setQuantity("");
+    setUnitRate("");
     setCurrency("AED");
     setExchangeRate("1");
     setDescription("");
