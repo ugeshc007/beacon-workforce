@@ -61,29 +61,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        if (session?.user) {
-          const profile = await fetchUserProfile(session.user);
-          setUser(profile);
-        } else {
-          setUser(null);
-        }
-        setLoading(false);
-      }
-    );
+    let mounted = true;
 
+    // First set session synchronously from cache, then fetch profile
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!mounted) return;
       setSession(session);
       if (session?.user) {
         const profile = await fetchUserProfile(session.user);
-        setUser(profile);
+        if (mounted) setUser(profile);
       }
-      setLoading(false);
+      if (mounted) setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (!mounted) return;
+        setSession(session);
+        if (session?.user) {
+          // Defer profile fetch to avoid deadlock in auth callback
+          setTimeout(async () => {
+            if (!mounted) return;
+            const profile = await fetchUserProfile(session.user);
+            if (mounted) setUser(profile);
+          }, 0);
+        } else {
+          setUser(null);
+        }
+      }
+    );
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
