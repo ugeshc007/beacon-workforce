@@ -210,6 +210,7 @@ export default function ProjectDetail() {
                       <th className="text-left py-2 font-medium">Description</th>
                       <th className="text-right py-2 font-medium">Amount</th>
                       <th className="text-left py-2 font-medium">Status</th>
+                      <th className="text-left py-2 font-medium">Receipt</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -220,6 +221,35 @@ export default function ProjectDetail() {
                         <td className="py-2.5 text-muted-foreground">{e.description ?? "—"}</td>
                         <td className="py-2.5 text-right font-mono">AED {Number(e.amount_aed ?? e.amount).toLocaleString()}</td>
                         <td className="py-2.5"><Badge variant={e.status === "approved" ? "default" : e.status === "rejected" ? "destructive" : "secondary"} className="text-[10px]">{e.status}</Badge></td>
+                        <td className="py-2.5">
+                          {e.receipt_url ? (
+                            <a href={e.receipt_url} target="_blank" rel="noopener noreferrer" className="text-brand hover:underline inline-flex items-center gap-1 text-xs">
+                              <ExternalLink className="h-3 w-3" /> View
+                            </a>
+                          ) : (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 text-xs text-muted-foreground"
+                                disabled={uploadingExpenseId === e.id}
+                                onClick={() => {
+                                  const input = document.createElement("input");
+                                  input.type = "file";
+                                  input.accept = "image/*,.pdf";
+                                  input.onchange = (ev) => {
+                                    const file = (ev.target as HTMLInputElement).files?.[0];
+                                    if (file) handleReceiptUpload(e.id, file);
+                                  };
+                                  input.click();
+                                }}
+                              >
+                                <Paperclip className="h-3 w-3 mr-1" />
+                                {uploadingExpenseId === e.id ? "Uploading..." : "Attach"}
+                              </Button>
+                            </>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
