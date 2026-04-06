@@ -78,11 +78,20 @@ export function DayAssignmentPanel({
     try {
       const lockedIds = assignments.filter((a) => a.is_locked).map((a) => a.employee_id);
       const { data, error } = await supabase.functions.invoke("auto-assign", {
-        body: { project_id: projectId, date, locked_employee_ids: lockedIds },
+        body: {
+          projectId,
+          date,
+          requiredByRole: {
+            technicians: requiredTech,
+            helpers: requiredHelp,
+            supervisors: requiredSup,
+          },
+          lockedEmployeeIds: lockedIds,
+        },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      toast({ title: "Auto-assign complete", description: `${data.assignments_created ?? 0} employees assigned` });
+      toast({ title: "Auto-assign complete", description: `${data.assigned?.length ?? 0} employees assigned` });
     } catch (e: any) {
       toast({ title: "Auto-assign failed", description: e.message, variant: "destructive" });
     } finally {

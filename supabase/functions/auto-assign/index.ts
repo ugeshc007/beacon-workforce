@@ -171,8 +171,19 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Log to assignment_audit_log
+    // Insert assignments into project_assignments
     if (assigned.length > 0) {
+      const rows = assigned.map((a) => ({
+        project_id: projectId,
+        employee_id: a.employeeId,
+        date,
+        assignment_mode: "auto" as const,
+        auto_score: a.scoreBreakdown,
+      }));
+      const { error: insertErr } = await supabase.from("project_assignments").insert(rows);
+      if (insertErr) return errorResponse(insertErr.message, 500);
+
+      // Log to assignment_audit_log
       await supabase.from("assignment_audit_log").insert({
         project_id: projectId,
         date,
