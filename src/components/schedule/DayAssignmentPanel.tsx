@@ -169,6 +169,7 @@ export function DayAssignmentPanel({
     }
   };
 
+  const handleRemove = async (id: string) => {
     try {
       await removeAssignment.mutateAsync(id);
       toast({ title: "Assignment removed" });
