@@ -44,11 +44,9 @@ interface Props {
 export function ProjectCostsTab({ project, costs }: Props) {
   const [drillDate, setDrillDate] = useState<string | null>(null);
 
-  if (!costs) return <p className="text-sm text-muted-foreground text-center py-8">No cost data yet</p>;
-
   // Forecast
   const forecast = useMemo(() => {
-    if (!project.start_date || !project.end_date || costs.daysWithCost === 0) return null;
+    if (!costs || !project.start_date || !project.end_date || costs.daysWithCost === 0) return null;
     const end = new Date(project.end_date + "T00:00:00");
     const today = new Date();
     const remainingDays = Math.max(0, Math.ceil((end.getTime() - today.getTime()) / 86400000));
