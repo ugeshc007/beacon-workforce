@@ -18,7 +18,7 @@ import {
   Map, FileText, Download, Eye,
 } from "lucide-react";
 import {
-  useSettings, useSaveSettings, useBranchList, useCreateBranch, useUpdateBranch,
+  useSettings, useSaveSettings, useBranchList, useCreateBranch, useUpdateBranch, useDeleteBranch,
   useSystemAuditLog, useAssignmentAuditLog,
   type SettingsMap,
 } from "@/hooks/useSettings";
