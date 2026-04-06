@@ -103,6 +103,8 @@ export function DayAssignmentPanel({
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      queryClient.invalidateQueries({ queryKey: ["week-assignments"] });
+      queryClient.invalidateQueries({ queryKey: ["available-employees"] });
       toast({ title: "Auto-assign complete", description: `${data.assigned?.length ?? 0} employees assigned` });
     } catch (e: any) {
       toast({ title: "Auto-assign failed", description: e.message, variant: "destructive" });
