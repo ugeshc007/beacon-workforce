@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatCard } from "@/components/ui/stat-card";
-import { ChevronLeft, ChevronRight, Users, Clock, BarChart3, TrendingUp } from "lucide-react";
+import { ChevronLeft, ChevronRight, Users, Clock, BarChart3, TrendingUp, Download } from "lucide-react";
+import { downloadCsv } from "@/lib/csv-export";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid } from "recharts";
 
 const skillColors: Record<string, string> = {
