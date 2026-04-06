@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -11,7 +11,7 @@ import {
   useToggleLock,
   type ScheduleAssignment,
 } from "@/hooks/useSchedule";
-import { Lock, LockOpen, Plus, Trash2, AlertTriangle, Zap, User } from "lucide-react";
+import { Lock, LockOpen, Plus, Trash2, AlertTriangle, Zap, User, Clock } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -54,6 +54,10 @@ export function DayAssignmentPanel({
   const removeAssignment = useRemoveAssignment();
   const toggleLock = useToggleLock();
   const [addingSkill, setAddingSkill] = useState<string | null>(null);
+  const [shiftStart, setShiftStart] = useState("08:00");
+  const [shiftEnd, setShiftEnd] = useState("17:00");
+  const [autoShiftStart, setAutoShiftStart] = useState("08:00");
+  const [autoShiftEnd, setAutoShiftEnd] = useState("17:00");
   const [autoLoading, setAutoLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -68,7 +72,13 @@ export function DayAssignmentPanel({
 
   const handleAdd = async (employeeId: string) => {
     try {
-      await addAssignment.mutateAsync({ project_id: projectId, employee_id: employeeId, date });
+      await addAssignment.mutateAsync({
+        project_id: projectId,
+        employee_id: employeeId,
+        date,
+        shift_start: shiftStart,
+        shift_end: shiftEnd,
+      });
       toast({ title: "Employee assigned" });
       setAddingSkill(null);
     } catch (e: any) {
@@ -99,6 +109,8 @@ export function DayAssignmentPanel({
             supervisors: requiredSup,
           },
           lockedEmployeeIds: lockedIds,
+          shiftStart: autoShiftStart,
+          shiftEnd: autoShiftEnd,
         },
       });
       if (error) throw error;
@@ -121,6 +133,8 @@ export function DayAssignmentPanel({
 
   const availableForSkill = (skill: string) =>
     (employees ?? []).filter((e) => e.skill_type === skill && e.available);
+
+  const formatTime = (t: string | null) => t ? t.slice(0, 5) : "";
 
   return (
     <Card className="glass-card">
@@ -171,6 +185,12 @@ export function DayAssignmentPanel({
             <div key={a.id} className="flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-accent/30 transition-colors group">
               <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               <span className="text-sm flex-1 truncate">{a.employee_name}</span>
+              {(a.shift_start || a.shift_end) && (
+                <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                  <Clock className="h-2.5 w-2.5" />
+                  {formatTime(a.shift_start)}–{formatTime(a.shift_end)}
+                </span>
+              )}
               <Badge variant="outline" className={`text-[10px] ${skillColors[a.employee_skill] ?? ""}`}>
                 {a.employee_skill}
               </Badge>
@@ -202,6 +222,23 @@ export function DayAssignmentPanel({
         {addingSkill ? (
           <div className="space-y-2">
             <p className="text-xs text-muted-foreground">Add {addingSkill}:</p>
+            {/* Shift time inputs */}
+            <div className="flex items-center gap-2">
+              <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <Input
+                type="time"
+                value={shiftStart}
+                onChange={(e) => setShiftStart(e.target.value)}
+                className="h-7 text-xs w-24"
+              />
+              <span className="text-xs text-muted-foreground">to</span>
+              <Input
+                type="time"
+                value={shiftEnd}
+                onChange={(e) => setShiftEnd(e.target.value)}
+                className="h-7 text-xs w-24"
+              />
+            </div>
             {empLoading ? (
               <Skeleton className="h-8 w-full" />
             ) : availableForSkill(addingSkill).length === 0 ? (
@@ -211,10 +248,15 @@ export function DayAssignmentPanel({
                 {availableForSkill(addingSkill).map((e) => (
                   <button
                     key={e.id}
-                    className="w-full text-left text-sm px-2 py-1.5 rounded-md hover:bg-accent/50 transition-colors"
+                    className="w-full text-left text-sm px-2 py-1.5 rounded-md hover:bg-accent/50 transition-colors flex items-center justify-between"
                     onClick={() => handleAdd(e.id)}
                   >
-                    {e.name}
+                    <span>{e.name}</span>
+                    {e.assigned_elsewhere && (
+                      <Badge variant="outline" className="text-[9px] border-status-traveling/50 text-status-traveling">
+                        on other project
+                      </Badge>
+                    )}
                   </button>
                 ))}
               </div>
@@ -232,18 +274,37 @@ export function DayAssignmentPanel({
         )}
       </CardContent>
 
+      {/* Auto-fill confirmation with shift time */}
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Auto-fill assignments?</AlertDialogTitle>
             <AlertDialogDescription asChild>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <p>The engine will assign up to <strong>{totalToFill}</strong> employees for <strong>{projectName}</strong> on {new Date(date + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" })}:</p>
                 <ul className="list-disc pl-5 space-y-0.5 text-sm">
                   {needTech > 0 && <li>{needTech} technician{needTech > 1 ? "s" : ""}</li>}
                   {needHelp > 0 && <li>{needHelp} helper{needHelp > 1 ? "s" : ""}</li>}
                   {needSup > 0 && <li>{needSup} supervisor{needSup > 1 ? "s" : ""}</li>}
                 </ul>
+                {/* Shift time for auto-fill */}
+                <div className="flex items-center gap-2 pt-1">
+                  <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="text-sm">Shift:</span>
+                  <Input
+                    type="time"
+                    value={autoShiftStart}
+                    onChange={(e) => setAutoShiftStart(e.target.value)}
+                    className="h-8 text-sm w-28"
+                  />
+                  <span className="text-sm text-muted-foreground">to</span>
+                  <Input
+                    type="time"
+                    value={autoShiftEnd}
+                    onChange={(e) => setAutoShiftEnd(e.target.value)}
+                    className="h-8 text-sm w-28"
+                  />
+                </div>
                 <p className="text-xs text-muted-foreground">Locked employees will be kept. Scoring considers utilization balance, hours, and recency.</p>
               </div>
             </AlertDialogDescription>
