@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
 import { useProjects } from "@/hooks/useProjects";
 import { useBranches } from "@/hooks/useEmployees";
 import { ProjectFormDialog } from "@/components/projects/ProjectFormDialog";
@@ -11,13 +12,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Progress } from "@/components/ui/progress";
 import {
   FolderKanban, Plus, Search, LayoutGrid, List, MapPin, Users, DollarSign,
-  MoreHorizontal, Eye, Pencil,
+  MoreHorizontal, Eye, Pencil, CalendarIcon, X,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 
 const statusMap: Record<string, "planned" | "present" | "traveling" | "absent" | "overtime"> = {
@@ -35,12 +40,20 @@ export default function Projects() {
   const [view, setView] = useState<"card" | "table">("card");
   const [formOpen, setFormOpen] = useState(false);
   const [editProject, setEditProject] = useState<Tables<"projects"> | null>(null);
+  const [dateFrom, setDateFrom] = useState<Date | undefined>();
+  const [dateTo, setDateTo] = useState<Date | undefined>();
 
-  const { data: projects, isLoading } = useProjects({ search, status, branchId });
+  const { data: projects, isLoading } = useProjects({
+    search, status, branchId,
+    dateFrom: dateFrom ? format(dateFrom, "yyyy-MM-dd") : undefined,
+    dateTo: dateTo ? format(dateTo, "yyyy-MM-dd") : undefined,
+  });
   const { data: branches } = useBranches();
 
   const handleEdit = (p: Tables<"projects">) => { setEditProject(p); setFormOpen(true); };
   const handleAdd = () => { setEditProject(null); setFormOpen(true); };
+
+  const hasDateFilter = dateFrom || dateTo;
 
   return (
     <div className="space-y-6">
@@ -76,6 +89,30 @@ export default function Projects() {
             {branches?.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
           </SelectContent>
         </Select>
+
+        {/* Date range filter */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className={cn("gap-1.5 text-xs", hasDateFilter && "border-brand text-brand")}>
+              <CalendarIcon className="h-3.5 w-3.5" />
+              {dateFrom ? format(dateFrom, "dd/MM") : "From"}
+              {" – "}
+              {dateTo ? format(dateTo, "dd/MM") : "To"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-3 space-y-2" align="start">
+            <p className="text-xs font-medium text-muted-foreground">Start date from</p>
+            <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} className="p-0 pointer-events-auto" />
+            <p className="text-xs font-medium text-muted-foreground pt-2">Start date to</p>
+            <Calendar mode="single" selected={dateTo} onSelect={setDateTo} className="p-0 pointer-events-auto" />
+          </PopoverContent>
+        </Popover>
+        {hasDateFilter && (
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setDateFrom(undefined); setDateTo(undefined); }}>
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        )}
+
         <div className="flex gap-1 bg-muted rounded-lg p-0.5">
           <Button variant={view === "card" ? "default" : "ghost"} size="icon" className="h-8 w-8" onClick={() => setView("card")}><LayoutGrid className="h-4 w-4" /></Button>
           <Button variant={view === "table" ? "default" : "ghost"} size="icon" className="h-8 w-8" onClick={() => setView("table")}><List className="h-4 w-4" /></Button>
@@ -93,6 +130,8 @@ export default function Projects() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {projects.map((p) => {
             const totalStaff = p.required_technicians + p.required_helpers + p.required_supervisors;
+            const budgetUsed = p.budget ? Math.min(((p.actual_cost ?? 0) / p.budget) * 100, 100) : 0;
+            const overBudget = p.budget ? (p.actual_cost ?? 0) > p.budget : false;
             return (
               <Card key={p.id} className="glass-card cursor-pointer hover:border-brand/40 transition-colors group" onClick={() => navigate(`/projects/${p.id}`)}>
                 <CardContent className="p-5 space-y-3">
@@ -106,8 +145,28 @@ export default function Projects() {
                   <div className="space-y-1.5 text-xs text-muted-foreground">
                     {p.site_address && <div className="flex items-center gap-1.5"><MapPin className="h-3 w-3" /><span className="truncate">{p.site_address}</span></div>}
                     <div className="flex items-center gap-1.5"><Users className="h-3 w-3" />{totalStaff} staff required ({p.required_technicians}T / {p.required_helpers}H / {p.required_supervisors}S)</div>
-                    {p.budget && <div className="flex items-center gap-1.5"><DollarSign className="h-3 w-3" />Budget: AED {p.budget.toLocaleString()}</div>}
+                    {p.start_date && (
+                      <div className="flex items-center gap-1.5">
+                        <CalendarIcon className="h-3 w-3" />
+                        {format(new Date(p.start_date), "dd/MM/yyyy")}
+                        {p.end_date && ` – ${format(new Date(p.end_date), "dd/MM/yyyy")}`}
+                      </div>
+                    )}
                   </div>
+                  {/* Budget vs Actual */}
+                  {p.budget ? (
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-[10px]">
+                        <span className="text-muted-foreground">Budget</span>
+                        <span className={cn("font-mono", overBudget ? "text-destructive" : "text-muted-foreground")}>
+                          AED {(p.actual_cost ?? 0).toLocaleString()} / {p.budget.toLocaleString()}
+                        </span>
+                      </div>
+                      <Progress value={budgetUsed} className={cn("h-1.5", overBudget && "[&>div]:bg-destructive")} />
+                    </div>
+                  ) : (
+                    <div className="text-[10px] text-muted-foreground">No budget set</div>
+                  )}
                   <div className="flex items-center justify-between pt-1">
                     <div className="flex items-center gap-2">
                       <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
@@ -133,32 +192,45 @@ export default function Projects() {
                   <th className="text-left py-2 font-medium">Status</th>
                   <th className="text-left py-2 font-medium">Branch</th>
                   <th className="text-left py-2 font-medium">Staff</th>
+                  <th className="text-left py-2 font-medium">Budget vs Actual</th>
                   <th className="text-left py-2 font-medium">Health</th>
-                  <th className="text-right py-2 font-medium">Budget</th>
                   <th className="w-8"></th>
                 </tr>
               </thead>
               <tbody>
-                {projects.map((p) => (
-                  <tr key={p.id} className="border-b border-border/50 last:border-0 hover:bg-accent/30 transition-colors cursor-pointer" onClick={() => navigate(`/projects/${p.id}`)}>
-                    <td className="py-2.5 font-medium text-foreground">{p.name}</td>
-                    <td className="py-2.5 text-muted-foreground">{p.client_name ?? "—"}</td>
-                    <td className="py-2.5"><StatusBadge status={statusMap[p.status] ?? "planned"} /></td>
-                    <td className="py-2.5 text-muted-foreground">{p.branches?.name}</td>
-                    <td className="py-2.5 text-muted-foreground">{p.required_technicians + p.required_helpers + p.required_supervisors}</td>
-                    <td className="py-2.5 font-mono text-xs">{p.health_score ?? 100}%</td>
-                    <td className="py-2.5 text-right font-mono text-muted-foreground">{p.budget ? `AED ${p.budget.toLocaleString()}` : "—"}</td>
-                    <td className="py-2.5" onClick={(e) => e.stopPropagation()}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => navigate(`/projects/${p.id}`)}><Eye className="h-3.5 w-3.5 mr-2" />View</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleEdit(p as Tables<"projects">)}><Pencil className="h-3.5 w-3.5 mr-2" />Edit</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </td>
-                  </tr>
-                ))}
+                {projects.map((p) => {
+                  const budgetUsed = p.budget ? Math.min(((p.actual_cost ?? 0) / p.budget) * 100, 100) : 0;
+                  const overBudget = p.budget ? (p.actual_cost ?? 0) > p.budget : false;
+                  return (
+                    <tr key={p.id} className="border-b border-border/50 last:border-0 hover:bg-accent/30 transition-colors cursor-pointer" onClick={() => navigate(`/projects/${p.id}`)}>
+                      <td className="py-2.5 font-medium text-foreground">{p.name}</td>
+                      <td className="py-2.5 text-muted-foreground">{p.client_name ?? "—"}</td>
+                      <td className="py-2.5"><StatusBadge status={statusMap[p.status] ?? "planned"} /></td>
+                      <td className="py-2.5 text-muted-foreground">{p.branches?.name}</td>
+                      <td className="py-2.5 text-muted-foreground">{p.required_technicians + p.required_helpers + p.required_supervisors}</td>
+                      <td className="py-2.5">
+                        {p.budget ? (
+                          <div className="flex items-center gap-2">
+                            <Progress value={budgetUsed} className={cn("h-1.5 w-16", overBudget && "[&>div]:bg-destructive")} />
+                            <span className={cn("text-xs font-mono", overBudget ? "text-destructive" : "text-muted-foreground")}>
+                              {Math.round(budgetUsed)}%
+                            </span>
+                          </div>
+                        ) : <span className="text-muted-foreground text-xs">—</span>}
+                      </td>
+                      <td className="py-2.5 font-mono text-xs">{p.health_score ?? 100}%</td>
+                      <td className="py-2.5" onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => navigate(`/projects/${p.id}`)}><Eye className="h-3.5 w-3.5 mr-2" />View</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEdit(p as Tables<"projects">)}><Pencil className="h-3.5 w-3.5 mr-2" />Edit</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </CardContent>
