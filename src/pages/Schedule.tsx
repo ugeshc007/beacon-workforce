@@ -95,6 +95,8 @@ export default function Schedule() {
   const copyWeek = useCopyPreviousWeek();
   const applyRange = useApplyToDateRange();
   const recurring = useRecurringSchedule();
+  const { allowed: canCreate } = useCanAccess("schedule", "can_create");
+  const { allowed: canEdit } = useCanAccess("schedule", "can_edit");
 
   const weekLabel = (() => {
     const s = new Date(weekStart + "T00:00:00");

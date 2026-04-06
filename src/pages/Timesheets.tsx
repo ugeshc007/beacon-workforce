@@ -52,6 +52,7 @@ export default function Timesheets() {
   const { data: settings } = useSettings();
   const approve = useApproveTimesheet();
   const travelPaid = settings?.travel_time_paid === "true";
+  const { allowed: canEdit } = useCanAccess("timesheets", "can_edit");
 
   const shiftMonth = (delta: number) => {
     const [y, m] = month.split("-").map(Number);
