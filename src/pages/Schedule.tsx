@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useProjects } from "@/hooks/useProjects";
+import { useCanAccess } from "@/hooks/usePermissions";
 import { useAuth } from "@/hooks/useAuth";
 import {
   useWeekAssignments, useDetectConflicts,
