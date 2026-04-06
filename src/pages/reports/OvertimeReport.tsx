@@ -41,7 +41,7 @@ export default function OvertimeReport() {
               </SelectContent>
             </Select>
           )}
-          {data && (
+          {data && (<>
             <Button variant="outline" size="sm" className="text-xs ml-1" onClick={() => {
               downloadCsv(`overtime-${month}.csv`,
                 ["Employee", "Skill", "Regular Hours", "OT Hours", "OT Cost (AED)", "OT Days", "OT Ratio %"],
