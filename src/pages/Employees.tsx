@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useEmployees, useBranches, useToggleEmployeeStatus } from "@/hooks/useEmployees";
 import { EmployeeFormDialog } from "@/components/employees/EmployeeFormDialog";
 import { EmployeeDetailDrawer } from "@/components/employees/EmployeeDetailDrawer";
+import { MarkLeaveDialog } from "@/components/employees/MarkLeaveDialog";
+import { CsvImportDialog } from "@/components/employees/CsvImportDialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,9 +17,9 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Users, Plus, Search, MoreHorizontal, Pencil, Eye, ChevronLeft, ChevronRight } from "lucide-react";
+import { Users, Plus, Search, MoreHorizontal, Pencil, Eye, ChevronLeft, ChevronRight, Upload, CalendarOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
