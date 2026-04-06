@@ -32,6 +32,26 @@ export default function ProjectDetail() {
   const [assignOpen, setAssignOpen] = useState(false);
   const removeMutation = useRemoveAssignment();
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingExpenseId, setUploadingExpenseId] = useState<string | null>(null);
+
+  const handleReceiptUpload = async (expenseId: string, file: File) => {
+    setUploadingExpenseId(expenseId);
+    const ext = file.name.split(".").pop();
+    const path = `${id}/${expenseId}.${ext}`;
+    const { error: uploadError } = await supabase.storage.from("receipts").upload(path, file, { upsert: true });
+    if (uploadError) {
+      toast({ title: "Upload failed", description: uploadError.message, variant: "destructive" });
+      setUploadingExpenseId(null);
+      return;
+    }
+    const { data: urlData } = supabase.storage.from("receipts").getPublicUrl(path);
+    await supabase.from("project_expenses").update({ receipt_url: urlData.publicUrl }).eq("id", expenseId);
+    toast({ title: "Receipt uploaded" });
+    setUploadingExpenseId(null);
+    // Refresh expenses
+    window.location.reload();
+  };
   if (isLoading) return <div className="space-y-4"><Skeleton className="h-10 w-48" /><Skeleton className="h-64 w-full" /></div>;
   if (!project) return <div className="text-center py-12 text-muted-foreground">Project not found</div>;
 
