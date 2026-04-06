@@ -35,6 +35,14 @@ export default function Utilization() {
           <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setMonthOffset((m) => m - 1)}><ChevronLeft className="h-4 w-4" /></Button>
           <Button variant="outline" size="sm" className="text-xs" onClick={() => setMonthOffset(0)}>This Month</Button>
           <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setMonthOffset((m) => m + 1)}><ChevronRight className="h-4 w-4" /></Button>
+          {data && (
+            <Button variant="outline" size="sm" className="text-xs ml-2" onClick={() => {
+              downloadCsv(`utilization-${month}.csv`,
+                ["Employee", "Skill", "Days Worked", "Hours", "Capacity", "Utilization %"],
+                data.rows.map((r) => [r.name, r.skill_type, r.daysWorked, r.totalHours, r.capacity, r.utilization])
+              );
+            }}><Download className="h-3.5 w-3.5 mr-1" />Export CSV</Button>
+          )}
         </div>
       </div>
 

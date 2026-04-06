@@ -31,6 +31,24 @@ export default function Executive() {
           <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setMonthOffset((m) => m - 1)}><ChevronLeft className="h-4 w-4" /></Button>
           <Button variant="outline" size="sm" className="text-xs" onClick={() => setMonthOffset(0)}>This Month</Button>
           <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setMonthOffset((m) => m + 1)}><ChevronRight className="h-4 w-4" /></Button>
+          {data && (
+            <Button variant="outline" size="sm" className="text-xs ml-2" onClick={() => {
+              const rows: (string | number)[][] = [
+                ["Active Employees", data.activeEmployees],
+                ["Active Projects", data.activeProjects],
+                ["Assignments", data.totalAssignments],
+                ["Unique Workers", data.uniqueWorkers],
+                ["Total Hours", data.totalHours],
+                ["OT Hours", data.totalOtHours],
+                ["Labor Cost (AED)", data.totalLaborCost],
+                ["Total Budget (AED)", data.totalBudget],
+                ["", ""],
+                ["Date", "Daily Cost (AED)"],
+                ...data.costTrend.map((c) => [c.date, c.cost] as (string | number)[]),
+              ];
+              downloadCsv(`executive-${month}.csv`, ["Metric", "Value"], rows);
+            }}><Download className="h-3.5 w-3.5 mr-1" />Export CSV</Button>
+          )}
         </div>
       </div>
 
