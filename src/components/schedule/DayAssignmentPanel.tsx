@@ -53,6 +53,7 @@ export function DayAssignmentPanel({
   const toggleLock = useToggleLock();
   const [addingSkill, setAddingSkill] = useState<string | null>(null);
   const [autoLoading, setAutoLoading] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const techCount = assignments.filter((a) => a.employee_skill === "technician").length;
   const helpCount = assignments.filter((a) => a.employee_skill === "helper").length;
