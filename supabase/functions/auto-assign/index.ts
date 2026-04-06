@@ -73,9 +73,11 @@ Deno.serve(async (req) => {
     }
 
     // Parallel data fetches
-    const [leaveRes, alreadyAssignedRes, monthAssignRes, monthAttendRes, lastAssignRes] = await Promise.all([
+    const [leaveRes, alreadyAssignedRes, allDayAssignRes, monthAssignRes, monthAttendRes, lastAssignRes] = await Promise.all([
       supabase.from("employee_leave").select("employee_id").lte("start_date", date).gte("end_date", date),
       supabase.from("project_assignments").select("employee_id").eq("date", date).eq("project_id", projectId),
+      // All assignments for this date across ALL projects (to detect double-booking)
+      supabase.from("project_assignments").select("employee_id, project_id, shift_start, shift_end, projects(name)").eq("date", date),
       supabase.from("project_assignments").select("employee_id").gte("date", firstOfMonth).lte("date", lastOfMonth),
       supabase.from("attendance_logs").select("employee_id, total_work_minutes").gte("date", firstOfMonth).lte("date", lastOfMonth),
       supabase.from("project_assignments").select("employee_id, date").lte("date", date).order("date", { ascending: false }),
@@ -83,6 +85,20 @@ Deno.serve(async (req) => {
 
     const onLeave = new Set((leaveRes.data ?? []).map((l) => l.employee_id));
     const alreadyOnProject = new Set((alreadyAssignedRes.data ?? []).map((a) => a.employee_id));
+
+    // Employees assigned to OTHER projects on this day
+    const assignedElsewhere = new Set<string>();
+    const assignedElsewhereDetails: Record<string, string[]> = {};
+    for (const a of allDayAssignRes.data ?? []) {
+      if (a.project_id !== projectId) {
+        assignedElsewhere.add(a.employee_id);
+        if (!assignedElsewhereDetails[a.employee_id]) assignedElsewhereDetails[a.employee_id] = [];
+        const projName = (a.projects as any)?.name ?? "Other";
+        if (!assignedElsewhereDetails[a.employee_id].includes(projName)) {
+          assignedElsewhereDetails[a.employee_id].push(projName);
+        }
+      }
+    }
 
     const assignmentCounts: Record<string, number> = {};
     for (const a of monthAssignRes.data ?? []) {
@@ -121,7 +137,7 @@ Deno.serve(async (req) => {
       return { utilization_balance, hours_balance, recency, total };
     }
 
-    const assigned: AssignedEmployee[] = [];
+    const assigned: (AssignedEmployee & { doubleBooked?: boolean; otherProjects?: string[] })[] = [];
     const unfilled: { role: string; needed: number }[] = [];
     const usedIds = new Set([...locked, ...alreadyOnProject]);
 
@@ -143,18 +159,24 @@ Deno.serve(async (req) => {
       const remaining = needed - lockedOfRole.length;
       if (remaining <= 0) continue;
 
-      const eligible = allEmployees
+      // Split eligible: prefer employees NOT assigned elsewhere on same day
+      const allEligible = allEmployees
         .filter((e) =>
           e.skill_type === skillType &&
           !onLeave.has(e.id) &&
           !usedIds.has(e.id)
         )
-        .map((e) => ({ ...e, breakdown: scoreEmployee(e.id) }))
-        .sort((a, b) => b.breakdown.total - a.breakdown.total);
+        .map((e) => ({ ...e, breakdown: scoreEmployee(e.id), isDoubleBook: assignedElsewhere.has(e.id) }));
 
-      // Shuffle tied scores for round-robin fairness
-      const shuffled = shuffleTied(eligible);
-      const selected = shuffled.slice(0, remaining);
+      const free = shuffleTied(
+        allEligible.filter((e) => !e.isDoubleBook).sort((a, b) => b.breakdown.total - a.breakdown.total)
+      );
+      const doubleBook = shuffleTied(
+        allEligible.filter((e) => e.isDoubleBook).sort((a, b) => b.breakdown.total - a.breakdown.total)
+      );
+
+      // Pick free first, then double-booked as last resort
+      const selected = [...free, ...doubleBook].slice(0, remaining);
 
       for (const emp of selected) {
         assigned.push({
@@ -163,6 +185,8 @@ Deno.serve(async (req) => {
           skillType: emp.skill_type,
           score: emp.breakdown.total,
           scoreBreakdown: emp.breakdown,
+          doubleBooked: emp.isDoubleBook,
+          otherProjects: assignedElsewhereDetails[emp.id] ?? [],
         });
         usedIds.add(emp.id);
       }
