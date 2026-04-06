@@ -64,7 +64,7 @@ export default function CostReports() {
           <ReportDateFilter value={dateRange} onChange={setDateRange} />
           {data && (<>
             <Button variant="outline" size="sm" className="text-xs ml-2" onClick={() => {
-              downloadCsv(`project-costs-${month}.csv`,
+              downloadCsv(`project-costs-${dateRange.start}-${dateRange.end}.csv`,
                 ["Project", "Status", "Budget", "Labor", "OT", "Expenses", "Total", "Variance", "% Used", "Forecasted Final", "Value", "Margin %"],
                 data.byProject.map((p) => [p.name, p.status, p.budget, p.laborCost, p.otCost, p.expenses, p.totalCost, p.variance, p.pctUsed, p.forecastedFinal, p.projectValue, p.margin])
               );
@@ -72,8 +72,8 @@ export default function CostReports() {
             <Button variant="outline" size="sm" className="text-xs" onClick={() => {
               exportReportPdf({
                 title: "Project Costs Report",
-                subtitle: monthLabel,
-                filename: `project-costs-${month}.pdf`,
+                subtitle: dateRange.label,
+                filename: `project-costs-${dateRange.start}-${dateRange.end}.pdf`,
                 summaryCards: [
                   { label: "Total Cost", value: `AED ${data.totalCost.toLocaleString()}` },
                   { label: "Total Budget", value: `AED ${data.totalBudget.toLocaleString()}` },
@@ -319,7 +319,7 @@ export default function CostReports() {
                   <Building2 className="h-4 w-4 text-brand" /> {drillProject?.name}
                 </DialogTitle>
                 <DialogDescription>
-                  {monthLabel} · {drillProject?.status?.replace("_", " ")}
+                  {dateRange.label} · {drillProject?.status?.replace("_", " ")}
                 </DialogDescription>
               </DialogHeader>
 

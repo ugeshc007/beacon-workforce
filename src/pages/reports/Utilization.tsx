@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useUtilizationData, type UtilizationRow } from "@/hooks/useReports";
+import { ReportDateFilter, useReportDateRange } from "@/components/reports/ReportDateFilter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,17 +23,14 @@ import {
 const DOW_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export default function Utilization() {
-  const now = new Date();
-  const [monthOffset, setMonthOffset] = useState(0);
-  const target = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
-  const month = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, "0")}`;
-  const monthLabel = target.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+  const [dateRange, setDateRange] = useReportDateRange("This Month");
+  const monthLabel = dateRange.label;
 
   const [skillFilter, setSkillFilter] = useState("all");
   const [branchFilter, setBranchFilter] = useState("all");
   const [drillRow, setDrillRow] = useState<UtilizationRow | null>(null);
 
-  const { data, isLoading } = useUtilizationData(month, {
+  const { data, isLoading } = useUtilizationData(dateRange.start, dateRange.end, {
     skillType: skillFilter,
     branchId: branchFilter,
   });
@@ -86,16 +84,10 @@ export default function Utilization() {
           <p className="text-sm text-muted-foreground">{monthLabel}</p>
         </div>
         <div className="flex items-center gap-1 flex-wrap">
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setMonthOffset((m) => m - 1)}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="sm" className="text-xs" onClick={() => setMonthOffset(0)}>This Month</Button>
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setMonthOffset((m) => m + 1)}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+          <ReportDateFilter value={dateRange} onChange={setDateRange} />
           {data && (<>
             <Button variant="outline" size="sm" className="text-xs ml-2" onClick={() => {
-              downloadCsv(`utilization-${month}.csv`,
+              downloadCsv(`utilization-${dateRange.start}-${dateRange.end}.csv`,
                 ["Employee", "Skill", "Days Worked", "Hours", "OT Hours", "Idle Hours", "Capacity", "Utilization %"],
                 data.rows.map((r) => [r.name, r.skill_type, r.daysWorked, r.totalHours, r.otHours, r.idleHours, r.capacity, r.utilization])
               );
@@ -104,7 +96,7 @@ export default function Utilization() {
               exportReportPdf({
                 title: "Staff Utilization Report",
                 subtitle: monthLabel,
-                filename: `utilization-${month}.pdf`,
+                filename: `utilization-${dateRange.start}-${dateRange.end}.pdf`,
                 summaryCards: [
                   { label: "Avg Utilization", value: `${data.avgUtilization}%` },
                   { label: "Total Worked", value: `${data.totalWorkedHours}h` },
