@@ -103,7 +103,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
         await update.mutateAsync({ id: employee.id, ...payload });
         toast({ title: "Employee updated", description: `${values.name} has been updated.` });
       } else {
-        await create.mutateAsync(payload);
+        await create.mutateAsync(payload as any);
         toast({ title: "Employee added", description: `${values.name} has been added to the team.` });
       }
       onOpenChange(false);
