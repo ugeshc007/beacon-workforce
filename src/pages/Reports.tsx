@@ -1,10 +1,11 @@
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
-import { BarChart3, Users, DollarSign, Briefcase } from "lucide-react";
+import { BarChart3, Users, DollarSign, Briefcase, TrendingUp } from "lucide-react";
 
 const reports = [
   { title: "Staff Utilization", description: "Employee utilization rates, capacity trends, and skill breakdown.", icon: Users, path: "/reports/utilization", color: "text-brand bg-brand/10" },
   { title: "Project Costs", description: "Labor, overtime, and expense costs per project with budget comparison.", icon: DollarSign, path: "/reports/costs", color: "text-status-traveling bg-status-traveling/10" },
+  { title: "Profitability", description: "Budget vs actual cost, gross margin analysis, and project-level P&L.", icon: TrendingUp, path: "/reports/profitability", color: "text-status-present bg-status-present/10" },
   { title: "Executive Summary", description: "High-level KPIs, daily cost trend, and company-wide metrics.", icon: Briefcase, path: "/reports/executive", color: "text-status-overtime bg-status-overtime/10" },
 ];
 

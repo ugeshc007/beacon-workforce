@@ -162,3 +162,61 @@ export function useExecutiveData(month: string) {
     },
   });
 }
+
+export function useProfitabilityData() {
+  return useQuery({
+    queryKey: ["report-profitability"],
+    queryFn: async () => {
+      const [projRes, logsRes, expensesRes] = await Promise.all([
+        supabase.from("projects").select("id, name, budget, project_value, status, start_date, end_date"),
+        supabase.from("attendance_logs").select("project_id, regular_cost, overtime_cost, total_work_minutes"),
+        supabase.from("project_expenses").select("project_id, amount_aed, status"),
+      ]);
+
+      const projects = projRes.data ?? [];
+      const logs = logsRes.data ?? [];
+      const expenses = expensesRes.data ?? [];
+
+      const costMap = new Map<string, { labor: number; ot: number; expenses: number; hours: number }>();
+      for (const l of logs) {
+        if (!l.project_id) continue;
+        if (!costMap.has(l.project_id)) costMap.set(l.project_id, { labor: 0, ot: 0, expenses: 0, hours: 0 });
+        const e = costMap.get(l.project_id)!;
+        e.labor += Number(l.regular_cost ?? 0);
+        e.ot += Number(l.overtime_cost ?? 0);
+        e.hours += (l.total_work_minutes ?? 0) / 60;
+      }
+      for (const ex of expenses) {
+        if (ex.status !== "approved") continue;
+        if (!costMap.has(ex.project_id)) costMap.set(ex.project_id, { labor: 0, ot: 0, expenses: 0, hours: 0 });
+        costMap.get(ex.project_id)!.expenses += Number(ex.amount_aed ?? 0);
+      }
+
+      const rows = projects.map((p) => {
+        const c = costMap.get(p.id) ?? { labor: 0, ot: 0, expenses: 0, hours: 0 };
+        const totalCost = Math.round(c.labor + c.ot + c.expenses);
+        const projectValue = Number(p.project_value ?? 0);
+        const budget = Number(p.budget ?? 0);
+        const grossProfit = Math.round(projectValue - totalCost);
+        const margin = projectValue > 0 ? Math.round((grossProfit / projectValue) * 100) : 0;
+        const budgetVariance = budget > 0 ? Math.round(budget - totalCost) : 0;
+        const budgetUsedPct = budget > 0 ? Math.round((totalCost / budget) * 100) : 0;
+        return {
+          name: p.name, status: p.status, projectValue: Math.round(projectValue),
+          budget: Math.round(budget), laborCost: Math.round(c.labor), otCost: Math.round(c.ot),
+          expenseCost: Math.round(c.expenses), totalCost, grossProfit, margin,
+          budgetVariance, budgetUsedPct, hours: Math.round(c.hours),
+        };
+      });
+
+      const totals = rows.reduce((s, r) => ({
+        value: s.value + r.projectValue, cost: s.cost + r.totalCost,
+        budget: s.budget + r.budget, profit: s.profit + r.grossProfit,
+      }), { value: 0, cost: 0, budget: 0, profit: 0 });
+      const avgMargin = totals.value > 0 ? Math.round((totals.profit / totals.value) * 100) : 0;
+      const profitable = rows.filter((r) => r.grossProfit > 0).length;
+
+      return { rows, totals, avgMargin, profitable };
+    },
+  });
+}
