@@ -16,17 +16,26 @@ const SETTING_KEYS = [
   "gps_site_radius",
   "gps_accuracy_threshold",
   "gps_spoof_detection",
+  "gps_mode",
+  "google_maps_api_key",
+  "google_maps_enabled",
   "standard_work_hours",
   "overtime_multiplier",
   "friday_off",
   "late_threshold_minutes",
   "break_duration_minutes",
   "travel_time_paid",
-  "late_work_start_threshold_minutes",
   "travel_delay_threshold_minutes",
+  "office_punch_in_mandatory",
+  "late_work_start_threshold_minutes",
   "notification_morning_briefing",
   "notification_absent_alert_delay",
   "notification_ot_warning_hours",
+  "notification_absent_inapp",
+  "notification_late_inapp",
+  "notification_ot_inapp",
+  "notification_shortage_inapp",
+  "escalation_delay_minutes",
   "cron_absent_check_time",
   "cron_morning_briefing_time",
   "expense_approval_threshold",
@@ -100,6 +109,43 @@ export function useCreateBranch() {
       toast.success("Branch created");
     },
     onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useSystemAuditLog(filters?: { module?: string; dateFrom?: string; dateTo?: string }) {
+  return useQuery({
+    queryKey: ["system-audit-log", filters],
+    queryFn: async () => {
+      let q = supabase
+        .from("system_audit_log")
+        .select("*, users:user_id(name)")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (filters?.module && filters.module !== "all") q = q.eq("module", filters.module);
+      if (filters?.dateFrom) q = q.gte("created_at", filters.dateFrom);
+      if (filters?.dateTo) q = q.lte("created_at", filters.dateTo + "T23:59:59");
+      const { data, error } = await q;
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+export function useAssignmentAuditLog(filters?: { dateFrom?: string; dateTo?: string }) {
+  return useQuery({
+    queryKey: ["assignment-audit-log", filters],
+    queryFn: async () => {
+      let q = supabase
+        .from("assignment_audit_log")
+        .select("*, projects:project_id(name), users:changed_by(name)")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (filters?.dateFrom) q = q.gte("created_at", filters.dateFrom);
+      if (filters?.dateTo) q = q.lte("created_at", filters.dateTo + "T23:59:59");
+      const { data, error } = await q;
+      if (error) throw error;
+      return data ?? [];
+    },
   });
 }
 
