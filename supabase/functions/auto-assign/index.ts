@@ -145,7 +145,6 @@ Deno.serve(async (req) => {
         .filter((e) =>
           e.skill_type === skillType &&
           !onLeave.has(e.id) &&
-          !busy.has(e.id) &&
           !usedIds.has(e.id)
         )
         .map((e) => ({ ...e, breakdown: scoreEmployee(e.id) }))
