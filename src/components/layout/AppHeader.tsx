@@ -1,4 +1,4 @@
-import { Sun, Moon, User, LogOut, ChevronDown } from "lucide-react";
+import { Sun, Moon, User, LogOut, ChevronDown, Lock } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +13,7 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { NotificationPanel } from "./NotificationPanel";
 import { MorningBriefingDialog } from "./MorningBriefingDialog";
+import { ChangePasswordDialog } from "@/components/auth/ChangePasswordDialog";
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
