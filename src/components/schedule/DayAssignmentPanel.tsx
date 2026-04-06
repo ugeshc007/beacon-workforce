@@ -126,7 +126,7 @@ export function DayAssignmentPanel({
             <CardTitle className="text-sm font-semibold">{dayLabel}</CardTitle>
             <p className="text-xs text-muted-foreground mt-0.5">{projectName}</p>
           </div>
-          <Button size="sm" variant="outline" onClick={handleAutoAssign} disabled={autoLoading}>
+          <Button size="sm" variant="outline" onClick={() => setConfirmOpen(true)} disabled={autoLoading || totalToFill === 0}>
             <Zap className="h-3.5 w-3.5 mr-1" />
             {autoLoading ? "Assigning…" : "Auto-fill"}
           </Button>
