@@ -1,4 +1,4 @@
-import { Sun, Moon, User, LogOut, ChevronDown } from "lucide-react";
+import { Sun, Moon, User, LogOut, ChevronDown, Lock } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +13,7 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { NotificationPanel } from "./NotificationPanel";
 import { MorningBriefingDialog } from "./MorningBriefingDialog";
+import { ChangePasswordDialog } from "@/components/auth/ChangePasswordDialog";
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -37,6 +38,7 @@ export function AppHeader() {
   const location = useLocation();
   const navigate = useNavigate();
   const [isDark, setIsDark] = useState(true);
+  const [pwDialogOpen, setPwDialogOpen] = useState(false);
   const { user, signOut } = useAuth();
   const title = pageTitles[location.pathname] || (location.pathname.startsWith("/projects/") ? "Project Details" : "BeBright Planner");
 
@@ -87,12 +89,16 @@ export function AppHeader() {
             <DropdownMenuItem onClick={() => navigate("/settings")}>
               <User className="mr-2 h-4 w-4" /> Profile
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setPwDialogOpen(true)}>
+              <Lock className="mr-2 h-4 w-4" /> Change Password
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="text-destructive" onClick={handleSignOut}>
               <LogOut className="mr-2 h-4 w-4" /> Sign Out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        <ChangePasswordDialog open={pwDialogOpen} onOpenChange={setPwDialogOpen} />
       </div>
     </header>
   );
