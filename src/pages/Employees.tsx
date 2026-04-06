@@ -235,13 +235,19 @@ export default function Employees() {
                           <DropdownMenuItem onClick={() => handleView(emp.id)}>
                             <Eye className="mr-2 h-4 w-4" /> View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleEdit(emp)}>
-                            <Pencil className="mr-2 h-4 w-4" /> Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => { setLeaveEmployee({ id: emp.id, name: emp.name }); setLeaveOpen(true); }}>
-                            <CalendarOff className="mr-2 h-4 w-4" /> Mark on Leave
-                          </DropdownMenuItem>
+                          {canEdit && (
+                            <DropdownMenuItem onClick={() => handleEdit(emp)}>
+                              <Pencil className="mr-2 h-4 w-4" /> Edit
+                            </DropdownMenuItem>
+                          )}
+                          {canEdit && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => { setLeaveEmployee({ id: emp.id, name: emp.name }); setLeaveOpen(true); }}>
+                                <CalendarOff className="mr-2 h-4 w-4" /> Mark on Leave
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
