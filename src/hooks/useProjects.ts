@@ -175,6 +175,86 @@ export function useProjectExpenses(projectId: string | null) {
   });
 }
 
+export function useProjectSchedule(projectId: string | null) {
+  return useQuery({
+    queryKey: ["project-schedule", projectId],
+    enabled: !!projectId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("project_assignments")
+        .select("id, employee_id, date, shift_start, shift_end, is_locked, assignment_mode, employees(name, skill_type)")
+        .eq("project_id", projectId!)
+        .order("date", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+export function useProjectAttendance(projectId: string | null) {
+  return useQuery({
+    queryKey: ["project-attendance", projectId],
+    enabled: !!projectId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("attendance_logs")
+        .select("id, employee_id, date, office_punch_in, office_punch_out, work_start_time, work_end_time, total_work_minutes, overtime_minutes, regular_cost, overtime_cost, employees(name, skill_type)")
+        .eq("project_id", projectId!)
+        .order("date", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+export function useProjectCosts(projectId: string | null) {
+  return useQuery({
+    queryKey: ["project-costs", projectId],
+    enabled: !!projectId,
+    queryFn: async () => {
+      const [laborRes, expenseRes] = await Promise.all([
+        supabase
+          .from("attendance_logs")
+          .select("date, regular_cost, overtime_cost, total_work_minutes, overtime_minutes")
+          .eq("project_id", projectId!),
+        supabase
+          .from("project_expenses")
+          .select("date, category, amount_aed, status")
+          .eq("project_id", projectId!),
+      ]);
+
+      const laborRows = laborRes.data ?? [];
+      const expenseRows = expenseRes.data ?? [];
+
+      const totalLabor = laborRows.reduce((s, a) => s + Number(a.regular_cost ?? 0), 0);
+      const totalOT = laborRows.reduce((s, a) => s + Number(a.overtime_cost ?? 0), 0);
+      const totalApprovedExpenses = expenseRows
+        .filter((e) => e.status === "approved")
+        .reduce((s, e) => s + Number(e.amount_aed ?? 0), 0);
+      const totalPendingExpenses = expenseRows
+        .filter((e) => e.status === "pending")
+        .reduce((s, e) => s + Number(e.amount_aed ?? 0), 0);
+
+      // By category
+      const byCategory: Record<string, number> = {};
+      for (const e of expenseRows.filter((e) => e.status === "approved")) {
+        byCategory[e.category] = (byCategory[e.category] ?? 0) + Number(e.amount_aed ?? 0);
+      }
+
+      return {
+        totalLabor,
+        totalOT,
+        totalApprovedExpenses,
+        totalPendingExpenses,
+        totalCost: totalLabor + totalOT + totalApprovedExpenses,
+        byCategory,
+        laborRows,
+        expenseRows,
+      };
+    },
+  });
+}
+
 export function useCreateProject() {
   const qc = useQueryClient();
   return useMutation({
