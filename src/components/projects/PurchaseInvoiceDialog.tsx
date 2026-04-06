@@ -81,7 +81,7 @@ export function PurchaseInvoiceDialog({ projectId, open, onOpenChange }: Props) 
     setDueDate("");
     setCurrency("AED");
     setExchangeRate("1");
-    setLines([{ category: "material", amount: "", description: "" }]);
+    setLines([{ category: "material", quantity: "", unitRate: "", description: "" }]);
   };
 
   const handleSubmit = async () => {
