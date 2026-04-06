@@ -70,7 +70,11 @@ Deno.serve(async (req) => {
       .eq("is_active", true);
 
     if (!allEmployees?.length) {
-      return jsonResponse({ assigned: [], unfilled: Object.entries(requiredByRole).map(([role, count]) => ({ role, needed: count })) });
+      return jsonResponse({
+        assigned: [],
+        unfilled: Object.entries(requiredByRole).map(([role, count]) => ({ role, needed: count })),
+        reason: `No active employees found in the "${branchName}" branch. Please add employees to this branch first.`,
+      });
     }
 
     // Parallel data fetches
