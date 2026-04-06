@@ -96,7 +96,24 @@ export default function Projects() {
           <h1 className="text-xl font-bold text-foreground">Projects</h1>
           <p className="text-sm text-muted-foreground">{projects?.length ?? 0} projects</p>
         </div>
-        <Button onClick={handleAdd} size="sm"><Plus className="h-4 w-4 mr-1" /> New Project</Button>
+        <div className="flex gap-2">
+          {templates && templates.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1"><FileText className="h-4 w-4" /> From Template</Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {templates.map((t) => (
+                  <DropdownMenuItem key={t.id} onClick={() => handleFromTemplate(t)}>
+                    {t.name}
+                    <span className="ml-auto text-[10px] text-muted-foreground">{t.required_technicians}T/{t.required_helpers}H/{t.required_supervisors}S</span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          <Button onClick={handleAdd} size="sm"><Plus className="h-4 w-4 mr-1" /> New Project</Button>
+        </div>
       </div>
 
       {/* Filters */}
