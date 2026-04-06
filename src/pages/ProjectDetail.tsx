@@ -13,14 +13,14 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Progress } from "@/components/ui/progress";
 import {
   ArrowLeft, MapPin, Phone, Mail, Users, DollarSign, Clock, Wrench,
-  UserPlus, Trash2, Paperclip, ExternalLink, Check, CalendarDays, BarChart3,
+  UserPlus, Trash2, Check, CalendarDays,
 } from "lucide-react";
 import { useState } from "react";
 import { ProjectFormDialog } from "@/components/projects/ProjectFormDialog";
 import { ProjectCostsTab } from "@/components/projects/ProjectCostsTab";
+import { ProjectExpensesTab } from "@/components/projects/ProjectExpensesTab";
 import { TeamAssignDialog } from "@/components/projects/TeamAssignDialog";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -112,7 +112,6 @@ export default function ProjectDetail() {
   const removeMutation = useRemoveAssignment();
   const updateMutation = useUpdateProject();
   const { toast } = useToast();
-  const [uploadingExpenseId, setUploadingExpenseId] = useState<string | null>(null);
 
   const handleStatusChange = async (newStatus: string) => {
     try {
@@ -123,21 +122,7 @@ export default function ProjectDetail() {
     }
   };
 
-  const handleReceiptUpload = async (expenseId: string, file: File) => {
-    setUploadingExpenseId(expenseId);
-    const ext = file.name.split(".").pop();
-    const path = `${id}/${expenseId}.${ext}`;
-    const { error: uploadError } = await supabase.storage.from("receipts").upload(path, file, { upsert: true });
-    if (uploadError) {
-      toast({ title: "Upload failed", description: uploadError.message, variant: "destructive" });
-      setUploadingExpenseId(null);
-      return;
-    }
-    await supabase.from("project_expenses").update({ receipt_url: path }).eq("id", expenseId);
-    toast({ title: "Receipt uploaded" });
-    setUploadingExpenseId(null);
-    window.location.reload();
-  };
+
 
   if (isLoading) return <div className="space-y-4"><Skeleton className="h-10 w-48" /><Skeleton className="h-64 w-full" /></div>;
   if (!project) return <div className="text-center py-12 text-muted-foreground">Project not found</div>;
@@ -388,65 +373,7 @@ export default function ProjectDetail() {
 
         {/* ── Expenses ── */}
         <TabsContent value="expenses">
-          <Card className="glass-card">
-            <CardContent className="pt-4">
-              {!expenses?.length ? (
-                <p className="text-sm text-muted-foreground text-center py-8">No expenses recorded</p>
-              ) : (
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-xs text-muted-foreground border-b border-border">
-                      <th className="text-left py-2 font-medium">Date</th>
-                      <th className="text-left py-2 font-medium">Category</th>
-                      <th className="text-left py-2 font-medium">Description</th>
-                      <th className="text-right py-2 font-medium">Amount</th>
-                      <th className="text-left py-2 font-medium">Status</th>
-                      <th className="text-left py-2 font-medium">Receipt</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {expenses.map((e) => (
-                      <tr key={e.id} className="border-b border-border/50 last:border-0">
-                        <td className="py-2.5 font-mono text-xs">{e.date}</td>
-                        <td className="py-2.5"><Badge variant="outline" className="text-[10px]">{e.category}</Badge></td>
-                        <td className="py-2.5 text-muted-foreground">{e.description ?? "—"}</td>
-                        <td className="py-2.5 text-right font-mono">AED {Number(e.amount_aed ?? e.amount).toLocaleString()}</td>
-                        <td className="py-2.5"><Badge variant={e.status === "approved" ? "default" : e.status === "rejected" ? "destructive" : "secondary"} className="text-[10px]">{e.status}</Badge></td>
-                        <td className="py-2.5">
-                          {e.receipt_url ? (
-                            <Button variant="ghost" size="sm" className="h-7 text-xs text-brand"
-                              onClick={async () => {
-                                const { data } = await supabase.storage.from("receipts").createSignedUrl(e.receipt_url!, 3600);
-                                if (data?.signedUrl) window.open(data.signedUrl, "_blank");
-                              }}
-                            >
-                              <ExternalLink className="h-3 w-3 mr-1" /> View
-                            </Button>
-                          ) : (
-                            <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" disabled={uploadingExpenseId === e.id}
-                              onClick={() => {
-                                const input = document.createElement("input");
-                                input.type = "file";
-                                input.accept = "image/*,.pdf";
-                                input.onchange = (ev) => {
-                                  const file = (ev.target as HTMLInputElement).files?.[0];
-                                  if (file) handleReceiptUpload(e.id, file);
-                                };
-                                input.click();
-                              }}
-                            >
-                              <Paperclip className="h-3 w-3 mr-1" />
-                              {uploadingExpenseId === e.id ? "Uploading..." : "Attach"}
-                            </Button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </CardContent>
-          </Card>
+          <ProjectExpensesTab projectId={id!} expenses={expenses} />
         </TabsContent>
       </Tabs>
 

@@ -29,6 +29,7 @@ const SETTING_KEYS = [
   "notification_ot_warning_hours",
   "cron_absent_check_time",
   "cron_morning_briefing_time",
+  "expense_approval_threshold",
 ];
 
 export function useSettings() {
