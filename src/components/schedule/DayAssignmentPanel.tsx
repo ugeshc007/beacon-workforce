@@ -216,10 +216,16 @@ export function DayAssignmentPanel({
           {assignments.length === 0 && (
             <p className="text-xs text-muted-foreground text-center py-4">No assignments for this day</p>
           )}
-          {assignments.map((a) => (
+          {assignments.map((a) => {
+            const countdown = getCountdown(a.shift_start, a.shift_end);
+            return (
             <div key={a.id} className="flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-accent/30 transition-colors group">
               <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               <span className="text-sm flex-1 truncate">{a.employee_name}</span>
+              <span className={`text-[9px] flex items-center gap-0.5 ${countdownColor[countdown.status]}`}>
+                <Timer className="h-2.5 w-2.5" />
+                {countdown.label}
+              </span>
               <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
                 <Clock className="h-2.5 w-2.5" />
                 {formatTime(a.shift_start) || "08:00"}–{formatTime(a.shift_end) || "17:00"}
