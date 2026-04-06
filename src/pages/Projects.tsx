@@ -289,7 +289,7 @@ export default function Projects() {
         </Card>
       )}
 
-      <ProjectFormDialog open={formOpen} onOpenChange={setFormOpen} editProject={editProject} />
+      <ProjectFormDialog open={formOpen} onOpenChange={setFormOpen} editProject={editProject} prefill={prefill} />
     </div>
   );
 }
