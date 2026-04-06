@@ -52,7 +52,7 @@ export default function Executive() {
           <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setMonthOffset((m) => m + 1)}>
             <ChevronRight className="h-4 w-4" />
           </Button>
-          {data && (
+          {data && (<>
             <Button variant="outline" size="sm" className="text-xs ml-2" onClick={() => {
               const rows: (string | number)[][] = [
                 ["Active Projects", data.activeProjects],
