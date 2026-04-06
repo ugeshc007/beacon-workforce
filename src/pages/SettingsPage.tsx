@@ -138,6 +138,7 @@ export default function SettingsPage() {
           <TabsTrigger value="attendance">Work & Overtime</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="branches">Branches</TabsTrigger>
+          {isAdmin && <TabsTrigger value="permissions">Permissions</TabsTrigger>}
           <TabsTrigger value="system">System</TabsTrigger>
         </TabsList>
 
