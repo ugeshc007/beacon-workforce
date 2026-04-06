@@ -242,18 +242,29 @@ export function DayAssignmentPanel({
             ) : availableForSkill(addingSkill).length === 0 ? (
               <p className="text-xs text-muted-foreground">No available {addingSkill}s</p>
             ) : (
-              <div className="max-h-32 overflow-y-auto space-y-1">
+              <div className="max-h-40 overflow-y-auto space-y-1">
                 {availableForSkill(addingSkill).map((e) => (
                   <button
                     key={e.id}
-                    className="w-full text-left text-sm px-2 py-1.5 rounded-md hover:bg-accent/50 transition-colors flex items-center justify-between"
+                    className="w-full text-left text-sm px-2 py-1.5 rounded-md hover:bg-accent/50 transition-colors"
                     onClick={() => handleAdd(e.id)}
                   >
-                    <span>{e.name}</span>
-                    {e.assigned_elsewhere && (
-                      <Badge variant="outline" className="text-[9px] border-status-traveling/50 text-status-traveling">
-                        on other project
-                      </Badge>
+                    <div className="flex items-center justify-between">
+                      <span>{e.name}</span>
+                      {e.assigned_elsewhere && (
+                        <Badge variant="outline" className="text-[9px] border-status-traveling/50 text-status-traveling">
+                          on other project
+                        </Badge>
+                      )}
+                    </div>
+                    {e.existing_slots && e.existing_slots.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-0.5">
+                        {e.existing_slots.map((slot: { start: string; end: string; project: string }, i: number) => (
+                          <span key={i} className="text-[9px] text-status-traveling bg-status-traveling/10 rounded px-1.5 py-0.5">
+                            {slot.start}–{slot.end} ({slot.project})
+                          </span>
+                        ))}
+                      </div>
                     )}
                   </button>
                 ))}
