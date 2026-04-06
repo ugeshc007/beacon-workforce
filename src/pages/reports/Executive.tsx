@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatCard } from "@/components/ui/stat-card";
 import {
-  ChevronLeft, ChevronRight, Users, FolderKanban, Clock,
+  Users, FolderKanban, Clock,
   DollarSign, TrendingUp, TrendingDown, Gauge, Download,
   Bell, Building2, UserCheck,
 } from "lucide-react";
