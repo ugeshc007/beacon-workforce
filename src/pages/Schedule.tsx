@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useProjects } from "@/hooks/useProjects";
+import { useAuth } from "@/hooks/useAuth";
 import {
   useWeekAssignments, useDetectConflicts,
   useCopyPreviousWeek, useApplyToDateRange, useRecurringSchedule,
