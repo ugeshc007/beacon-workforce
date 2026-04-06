@@ -180,6 +180,8 @@ export function ProjectExpensesTab({ projectId, expenses }: Props) {
                   <tr className="text-xs text-muted-foreground border-b border-border">
                     <th className="text-left py-2 font-medium">Date</th>
                     <th className="text-left py-2 font-medium">Category</th>
+                    <th className="text-left py-2 font-medium">Invoice</th>
+                    <th className="text-left py-2 font-medium">Supplier</th>
                     <th className="text-right py-2 font-medium">Amount</th>
                     <th className="text-right py-2 font-medium">AED</th>
                     <th className="text-left py-2 font-medium">Description</th>
