@@ -1094,6 +1094,10 @@ export type Database = {
         Args: { cron_expr: string }
         Returns: undefined
       }
+      update_morning_briefing_cron: {
+        Args: { cron_expr: string }
+        Returns: undefined
+      }
     }
     Enums: {
       assignment_mode: "manual" | "auto" | "hybrid"
