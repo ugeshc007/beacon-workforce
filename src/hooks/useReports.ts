@@ -60,7 +60,7 @@ export function useUtilizationData(month: string, filters?: {
         empQuery = empQuery.eq("branch_id", filters.branchId);
       }
       if (filters?.skillType && filters.skillType !== "all") {
-        empQuery = empQuery.eq("skill_type", filters.skillType);
+        empQuery = empQuery.eq("skill_type", filters.skillType as "technician" | "helper" | "supervisor");
       }
 
       const [empRes, logsRes, leaveRes, branchRes] = await Promise.all([
