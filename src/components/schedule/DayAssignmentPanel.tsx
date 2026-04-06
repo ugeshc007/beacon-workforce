@@ -134,6 +134,19 @@ export function DayAssignmentPanel({
   const availableForSkill = (skill: string) =>
     (employees ?? []).filter((e) => e.skill_type === skill && e.available);
 
+  /** Check if selected shift overlaps with any existing slot */
+  const hasOverlap = (slots: { start: string; end: string; project: string }[]) => {
+    if (!slots.length) return false;
+    const toMin = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+    const newStart = toMin(shiftStart);
+    const newEnd = toMin(shiftEnd);
+    return slots.some((s) => {
+      const sStart = toMin(s.start);
+      const sEnd = toMin(s.end);
+      return newStart < sEnd && newEnd > sStart;
+    });
+  };
+
   const formatTime = (t: string | null) => t ? t.slice(0, 5) : "";
 
   // Live countdown ticker
