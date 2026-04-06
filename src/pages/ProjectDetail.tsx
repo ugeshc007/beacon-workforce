@@ -113,7 +113,6 @@ export default function ProjectDetail() {
   const removeMutation = useRemoveAssignment();
   const updateMutation = useUpdateProject();
   const { toast } = useToast();
-  const [uploadingExpenseId, setUploadingExpenseId] = useState<string | null>(null);
 
   const handleStatusChange = async (newStatus: string) => {
     try {
