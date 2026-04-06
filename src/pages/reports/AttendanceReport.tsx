@@ -43,7 +43,7 @@ export default function AttendanceReport() {
               </SelectContent>
             </Select>
           )}
-          {data && (
+{data && (<>
             <Button variant="outline" size="sm" className="text-xs ml-1" onClick={() => {
               downloadCsv(`attendance-${month}.csv`,
                 ["Employee", "Days Worked", "Avg Hours", "Late Days", "On Time %", "Punch-in Rate"],
@@ -68,6 +68,8 @@ export default function AttendanceReport() {
                 }],
               });
             }}><Download className="h-3.5 w-3.5 mr-1" />PDF</Button>
+          </>
+          
           )}
         </div>
       </div>
