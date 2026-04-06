@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { useProjects, useTemplates } from "@/hooks/useProjects";
 import { useAuth } from "@/hooks/useAuth";
 import { useBranches } from "@/hooks/useEmployees";
+import { useCanAccess } from "@/hooks/usePermissions";
 import { ProjectFormDialog, type ProjectPrefill } from "@/components/projects/ProjectFormDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useEmployees, useBranches, useToggleEmployeeStatus } from "@/hooks/useEmployees";
+import { useCanAccess } from "@/hooks/usePermissions";
 import { EmployeeFormDialog } from "@/components/employees/EmployeeFormDialog";
 import { EmployeeDetailDrawer } from "@/components/employees/EmployeeDetailDrawer";
 import { MarkLeaveDialog } from "@/components/employees/MarkLeaveDialog";
