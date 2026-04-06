@@ -86,9 +86,14 @@ export default function Employees() {
           <h2 className="text-lg font-semibold">Employees</h2>
           <p className="text-sm text-muted-foreground">{totalCount} team members</p>
         </div>
-        <Button onClick={handleAdd} size="sm">
-          <Plus className="h-4 w-4 mr-1" /> Add Employee
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setCsvOpen(true)} size="sm" variant="outline">
+            <Upload className="h-4 w-4 mr-1" /> CSV Import
+          </Button>
+          <Button onClick={handleAdd} size="sm">
+            <Plus className="h-4 w-4 mr-1" /> Add Employee
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
