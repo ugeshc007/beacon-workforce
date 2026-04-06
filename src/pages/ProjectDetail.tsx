@@ -123,21 +123,7 @@ export default function ProjectDetail() {
     }
   };
 
-  const handleReceiptUpload = async (expenseId: string, file: File) => {
-    setUploadingExpenseId(expenseId);
-    const ext = file.name.split(".").pop();
-    const path = `${id}/${expenseId}.${ext}`;
-    const { error: uploadError } = await supabase.storage.from("receipts").upload(path, file, { upsert: true });
-    if (uploadError) {
-      toast({ title: "Upload failed", description: uploadError.message, variant: "destructive" });
-      setUploadingExpenseId(null);
-      return;
-    }
-    await supabase.from("project_expenses").update({ receipt_url: path }).eq("id", expenseId);
-    toast({ title: "Receipt uploaded" });
-    setUploadingExpenseId(null);
-    window.location.reload();
-  };
+
 
   if (isLoading) return <div className="space-y-4"><Skeleton className="h-10 w-48" /><Skeleton className="h-64 w-full" /></div>;
   if (!project) return <div className="text-center py-12 text-muted-foreground">Project not found</div>;
