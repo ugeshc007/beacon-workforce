@@ -56,6 +56,8 @@ export default function Projects() {
   });
   const { data: branches } = useBranches();
   const { data: templates } = useTemplates();
+  const { allowed: canCreate } = useCanAccess("projects", "can_create");
+  const { allowed: canEdit } = useCanAccess("projects", "can_edit");
 
   const handleEdit = (p: Tables<"projects">) => { setEditProject(p); setPrefill(null); setFormOpen(true); };
   const handleAdd = () => { setEditProject(null); setPrefill(null); setFormOpen(true); };
