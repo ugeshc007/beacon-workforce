@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
 
   try {
-    const { projectId, date, requiredByRole, lockedEmployeeIds } = await req.json();
+    const { projectId, date, requiredByRole, lockedEmployeeIds, shiftStart, shiftEnd } = await req.json();
 
     if (!projectId || !date || !requiredByRole) {
       return errorResponse("projectId, date, and requiredByRole are required");
@@ -44,6 +44,8 @@ Deno.serve(async (req) => {
 
     const supabase = createSupabaseAdmin();
     const locked: string[] = lockedEmployeeIds ?? [];
+    const assignShiftStart = shiftStart ?? "08:00";
+    const assignShiftEnd = shiftEnd ?? "17:00";
 
     // Get project branch
     const { data: project } = await supabase
