@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { useProjects, useTemplates } from "@/hooks/useProjects";
+import { useAuth } from "@/hooks/useAuth";
 import { useBranches } from "@/hooks/useEmployees";
 import { ProjectFormDialog, type ProjectPrefill } from "@/components/projects/ProjectFormDialog";
 import { Card, CardContent } from "@/components/ui/card";
