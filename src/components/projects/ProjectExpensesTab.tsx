@@ -40,6 +40,8 @@ interface Props {
 
 export function ProjectExpensesTab({ projectId, expenses }: Props) {
   const [addOpen, setAddOpen] = useState(false);
+  const [invoiceOpen, setInvoiceOpen] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const createMutation = useCreateExpense();
   const approveMutation = useApproveExpense();
