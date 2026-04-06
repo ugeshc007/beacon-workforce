@@ -127,6 +127,161 @@ export function useToggleLock() {
   });
 }
 
+/** Copy all assignments from previous week to current week */
+export function useCopyPreviousWeek() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ sourceStart, sourceEnd, targetStart, projectId }: {
+      sourceStart: string; sourceEnd: string; targetStart: string; projectId?: string;
+    }) => {
+      let query = supabase
+        .from("project_assignments")
+        .select("project_id, employee_id, shift_start, shift_end")
+        .gte("date", sourceStart)
+        .lte("date", sourceEnd);
+
+      if (projectId && projectId !== "all") {
+        query = query.eq("project_id", projectId);
+      }
+
+      const { data: source, error } = await query;
+      if (error) throw error;
+      if (!source?.length) throw new Error("No assignments found in source week");
+
+      // Map day-of-week offset
+      const srcMon = new Date(sourceStart + "T00:00:00");
+      const tgtMon = new Date(targetStart + "T00:00:00");
+
+      // Re-fetch with date to compute offset
+      let query2 = supabase
+        .from("project_assignments")
+        .select("project_id, employee_id, date, shift_start, shift_end")
+        .gte("date", sourceStart)
+        .lte("date", sourceEnd);
+      if (projectId && projectId !== "all") query2 = query2.eq("project_id", projectId);
+
+      const { data: sourceWithDates } = await query2;
+
+      const rows = (sourceWithDates ?? []).map((a) => {
+        const srcDate = new Date(a.date + "T00:00:00");
+        const dayOffset = Math.round((srcDate.getTime() - srcMon.getTime()) / 86400000);
+        const tgtDate = new Date(tgtMon);
+        tgtDate.setDate(tgtDate.getDate() + dayOffset);
+        return {
+          project_id: a.project_id,
+          employee_id: a.employee_id,
+          date: tgtDate.toISOString().split("T")[0],
+          shift_start: a.shift_start,
+          shift_end: a.shift_end,
+          assignment_mode: "manual" as const,
+        };
+      });
+
+      if (!rows.length) throw new Error("No assignments to copy");
+
+      const { error: insertErr } = await supabase.from("project_assignments").insert(rows);
+      if (insertErr) throw insertErr;
+      return rows.length;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["schedule-assignments"] }),
+  });
+}
+
+/** Apply a day's assignments to a date range */
+export function useApplyToDateRange() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ sourceDate, startDate, endDate, projectId, skipWeekends }: {
+      sourceDate: string; startDate: string; endDate: string; projectId?: string; skipWeekends?: boolean;
+    }) => {
+      let query = supabase
+        .from("project_assignments")
+        .select("project_id, employee_id, shift_start, shift_end")
+        .eq("date", sourceDate);
+      if (projectId && projectId !== "all") query = query.eq("project_id", projectId);
+
+      const { data: source, error } = await query;
+      if (error) throw error;
+      if (!source?.length) throw new Error("No assignments on source date");
+
+      const rows: any[] = [];
+      const start = new Date(startDate + "T00:00:00");
+      const end = new Date(endDate + "T00:00:00");
+
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split("T")[0];
+        if (dateStr === sourceDate) continue;
+        const dow = d.getDay();
+        if (skipWeekends && (dow === 0 || dow === 6)) continue;
+
+        for (const a of source) {
+          rows.push({
+            project_id: a.project_id,
+            employee_id: a.employee_id,
+            date: dateStr,
+            shift_start: a.shift_start,
+            shift_end: a.shift_end,
+            assignment_mode: "manual" as const,
+          });
+        }
+      }
+
+      if (!rows.length) throw new Error("No dates to apply to");
+      const { error: insertErr } = await supabase.from("project_assignments").insert(rows);
+      if (insertErr) throw insertErr;
+      return rows.length;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["schedule-assignments"] }),
+  });
+}
+
+/** Create recurring weekly schedule for N weeks */
+export function useRecurringSchedule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ sourceStart, sourceEnd, weeks, projectId }: {
+      sourceStart: string; sourceEnd: string; weeks: number; projectId?: string;
+    }) => {
+      let query = supabase
+        .from("project_assignments")
+        .select("project_id, employee_id, date, shift_start, shift_end")
+        .gte("date", sourceStart)
+        .lte("date", sourceEnd);
+      if (projectId && projectId !== "all") query = query.eq("project_id", projectId);
+
+      const { data: source, error } = await query;
+      if (error) throw error;
+      if (!source?.length) throw new Error("No assignments in source week");
+
+      const srcMon = new Date(sourceStart + "T00:00:00");
+      const rows: any[] = [];
+
+      for (let w = 1; w <= weeks; w++) {
+        for (const a of source) {
+          const srcDate = new Date(a.date + "T00:00:00");
+          const dayOffset = Math.round((srcDate.getTime() - srcMon.getTime()) / 86400000);
+          const tgtDate = new Date(srcMon);
+          tgtDate.setDate(tgtDate.getDate() + dayOffset + w * 7);
+          rows.push({
+            project_id: a.project_id,
+            employee_id: a.employee_id,
+            date: tgtDate.toISOString().split("T")[0],
+            shift_start: a.shift_start,
+            shift_end: a.shift_end,
+            assignment_mode: "manual" as const,
+          });
+        }
+      }
+
+      if (!rows.length) throw new Error("No assignments to create");
+      const { error: insertErr } = await supabase.from("project_assignments").insert(rows);
+      if (insertErr) throw insertErr;
+      return { assignments: rows.length, weeks };
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["schedule-assignments"] }),
+  });
+}
+
 export function useAvailableEmployees(date: string, projectId: string) {
   return useQuery({
     queryKey: ["available-employees", date, projectId],
