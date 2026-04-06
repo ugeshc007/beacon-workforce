@@ -104,7 +104,7 @@ export default function Projects() {
           <p className="text-sm text-muted-foreground">{projects?.length ?? 0} projects</p>
         </div>
         <div className="flex gap-2">
-          {templates && templates.length > 0 && (
+          {canCreate && templates && templates.length > 0 && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-1"><FileText className="h-4 w-4" /> From Template</Button>
