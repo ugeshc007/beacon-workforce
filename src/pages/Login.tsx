@@ -46,7 +46,7 @@ export default function Login() {
             <Zap className="h-7 w-7 text-primary-foreground" />
           </div>
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-gradient-brand">BeBright</h1>
+            <h1 className="text-2xl font-bold text-gradient-brand">BeBright Planner</h1>
             <p className="text-sm text-muted-foreground mt-1">
               Workforce & Project Management
             </p>

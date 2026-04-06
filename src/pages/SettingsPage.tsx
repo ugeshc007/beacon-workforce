@@ -293,7 +293,7 @@ export default function SettingsPage() {
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
                 <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Platform</p>
-                <p className="text-sm font-medium text-foreground mt-0.5">BeBright Workforce v1.0</p>
+                <p className="text-sm font-medium text-foreground mt-0.5">BeBright Planner v1.0</p>
               </div>
               <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
                 <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Backend</p>

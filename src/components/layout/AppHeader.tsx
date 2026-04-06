@@ -33,7 +33,7 @@ export function AppHeader() {
   const navigate = useNavigate();
   const [isDark, setIsDark] = useState(true);
   const { user, signOut } = useAuth();
-  const title = pageTitles[location.pathname] || (location.pathname.startsWith("/projects/") ? "Project Details" : "BeBright");
+  const title = pageTitles[location.pathname] || (location.pathname.startsWith("/projects/") ? "Project Details" : "BeBright Planner");
 
   const toggleTheme = () => {
     setIsDark(!isDark);
