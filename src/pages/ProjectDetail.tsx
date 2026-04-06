@@ -116,8 +116,15 @@ export default function ProjectDetail() {
         <TabsContent value="team">
           <Card className="glass-card">
             <CardContent className="pt-4">
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-sm text-muted-foreground">{team?.length ?? 0} team member{(team?.length ?? 0) !== 1 ? "s" : ""}</p>
+                <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setAssignOpen(true)}>
+                  <UserPlus className="h-3.5 w-3.5" />
+                  Assign Employee
+                </Button>
+              </div>
               {!team?.length ? (
-                <p className="text-sm text-muted-foreground text-center py-8">No team assigned today</p>
+                <p className="text-sm text-muted-foreground text-center py-8">No team assigned yet. Click "Assign Employee" to add team members.</p>
               ) : (
                 <table className="w-full text-sm">
                   <thead>
@@ -127,6 +134,7 @@ export default function ProjectDetail() {
                       <th className="text-left py-2 font-medium">Phone</th>
                       <th className="text-left py-2 font-medium">Shift</th>
                       <th className="text-left py-2 font-medium">Last Assigned</th>
+                      <th className="text-right py-2 font-medium">Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -139,6 +147,24 @@ export default function ProjectDetail() {
                           <td className="py-2.5 text-muted-foreground font-mono text-xs">{emp?.phone ?? "—"}</td>
                           <td className="py-2.5 text-muted-foreground font-mono text-xs">{t.shift_start ?? "—"} – {t.shift_end ?? "—"}</td>
                           <td className="py-2.5 text-muted-foreground font-mono text-xs">{(t as any).date ?? "—"}</td>
+                          <td className="py-2.5 text-right">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                              disabled={removeMutation.isPending}
+                              onClick={async () => {
+                                try {
+                                  await removeMutation.mutateAsync({ assignmentId: t.id, projectId: id! });
+                                  toast({ title: "Removed", description: `${emp?.name ?? "Employee"} removed from team.` });
+                                } catch (err: any) {
+                                  toast({ title: "Failed to remove", description: err.message, variant: "destructive" });
+                                }
+                              }}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </td>
                         </tr>
                       );
                     })}
