@@ -7,7 +7,7 @@ import {
   Clock,
   BarChart3,
   Settings,
-  Zap,
+  
   ChevronLeft,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
