@@ -6,8 +6,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StatCard } from "@/components/ui/stat-card";
 import {
   ChevronLeft, ChevronRight, Users, FolderKanban, Clock,
-  DollarSign, Wrench, CalendarDays, TrendingUp, Briefcase,
+  DollarSign, Wrench, CalendarDays, TrendingUp, Briefcase, Download,
 } from "lucide-react";
+import { downloadCsv } from "@/lib/csv-export";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
 export default function Executive() {
