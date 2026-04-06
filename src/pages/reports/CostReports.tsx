@@ -72,8 +72,8 @@ export default function CostReports() {
             <Button variant="outline" size="sm" className="text-xs" onClick={() => {
               exportReportPdf({
                 title: "Project Costs Report",
-                subtitle: monthLabel,
-                filename: `project-costs-${month}.pdf`,
+                subtitle: dateRange.label,
+                filename: `project-costs-${dateRange.start}-${dateRange.end}.pdf`,
                 summaryCards: [
                   { label: "Total Cost", value: `AED ${data.totalCost.toLocaleString()}` },
                   { label: "Total Budget", value: `AED ${data.totalBudget.toLocaleString()}` },
