@@ -14,8 +14,10 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  Plus, ExternalLink, Paperclip, Check, X, FileText,
+  Plus, ExternalLink, Paperclip, Check, X, FileText, Upload, Receipt,
 } from "lucide-react";
+import { PurchaseInvoiceDialog } from "./PurchaseInvoiceDialog";
+import { BulkExpenseDialog } from "./BulkExpenseDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useCreateExpense, useApproveExpense } from "@/hooks/useExpenses";
 import { useSettings } from "@/hooks/useSettings";
@@ -38,6 +40,8 @@ interface Props {
 
 export function ProjectExpensesTab({ projectId, expenses }: Props) {
   const [addOpen, setAddOpen] = useState(false);
+  const [invoiceOpen, setInvoiceOpen] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const createMutation = useCreateExpense();
   const approveMutation = useApproveExpense();
@@ -151,9 +155,17 @@ export function ProjectExpensesTab({ projectId, expenses }: Props) {
             <span className="ml-2 text-xs">(Auto-approve ≤ AED {threshold.toLocaleString()})</span>
           )}
         </div>
-        <Button size="sm" className="gap-1.5" onClick={() => setAddOpen(true)}>
-          <Plus className="h-3.5 w-3.5" /> Add Expense
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setInvoiceOpen(true)}>
+            <Receipt className="h-3.5 w-3.5" /> Purchase Invoice
+          </Button>
+          <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setBulkOpen(true)}>
+            <Upload className="h-3.5 w-3.5" /> Bulk Add
+          </Button>
+          <Button size="sm" className="gap-1.5" onClick={() => setAddOpen(true)}>
+            <Plus className="h-3.5 w-3.5" /> Add Expense
+          </Button>
+        </div>
       </div>
 
       {/* Table */}
@@ -168,6 +180,8 @@ export function ProjectExpensesTab({ projectId, expenses }: Props) {
                   <tr className="text-xs text-muted-foreground border-b border-border">
                     <th className="text-left py-2 font-medium">Date</th>
                     <th className="text-left py-2 font-medium">Category</th>
+                    <th className="text-left py-2 font-medium">Invoice</th>
+                    <th className="text-left py-2 font-medium">Supplier</th>
                     <th className="text-right py-2 font-medium">Amount</th>
                     <th className="text-right py-2 font-medium">AED</th>
                     <th className="text-left py-2 font-medium">Description</th>
@@ -183,6 +197,8 @@ export function ProjectExpensesTab({ projectId, expenses }: Props) {
                       <td className="py-2.5">
                         <Badge variant="outline" className="text-[10px] capitalize">{e.category}</Badge>
                       </td>
+                      <td className="py-2.5 text-xs text-muted-foreground">{(e as any).invoice_number ?? "—"}</td>
+                      <td className="py-2.5 text-xs text-muted-foreground">{(e as any).supplier_name ?? "—"}</td>
                       <td className="py-2.5 text-right font-mono text-xs">
                         {e.currency !== "AED" ? `${e.currency} ${Number(e.amount).toLocaleString()}` : "—"}
                       </td>
@@ -336,6 +352,9 @@ export function ProjectExpensesTab({ projectId, expenses }: Props) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <PurchaseInvoiceDialog projectId={projectId} open={invoiceOpen} onOpenChange={setInvoiceOpen} />
+      <BulkExpenseDialog projectId={projectId} open={bulkOpen} onOpenChange={setBulkOpen} />
     </div>
   );
 }

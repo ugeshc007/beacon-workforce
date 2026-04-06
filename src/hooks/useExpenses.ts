@@ -22,6 +22,29 @@ export function useCreateExpense() {
   });
 }
 
+export function useBulkCreateExpenses() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (expenses: TablesInsert<"project_expenses">[]) => {
+      if (!expenses.length) throw new Error("No expenses to create");
+      const { data, error } = await supabase
+        .from("project_expenses")
+        .insert(expenses)
+        .select();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_data, vars) => {
+      const pid = vars[0]?.project_id;
+      if (pid) {
+        qc.invalidateQueries({ queryKey: ["project-expenses", pid] });
+        qc.invalidateQueries({ queryKey: ["project-costs", pid] });
+        qc.invalidateQueries({ queryKey: ["project-stats", pid] });
+      }
+    },
+  });
+}
+
 export function useApproveExpense() {
   const qc = useQueryClient();
   return useMutation({

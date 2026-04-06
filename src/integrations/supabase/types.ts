@@ -578,11 +578,14 @@ export type Database = {
           currency: string
           date: string
           description: string | null
+          due_date: string | null
           exchange_rate: number
           id: string
+          invoice_number: string | null
           project_id: string
           receipt_url: string | null
           status: Database["public"]["Enums"]["expense_status"]
+          supplier_name: string | null
         }
         Insert: {
           added_by?: string | null
@@ -595,11 +598,14 @@ export type Database = {
           currency?: string
           date: string
           description?: string | null
+          due_date?: string | null
           exchange_rate?: number
           id?: string
+          invoice_number?: string | null
           project_id: string
           receipt_url?: string | null
           status?: Database["public"]["Enums"]["expense_status"]
+          supplier_name?: string | null
         }
         Update: {
           added_by?: string | null
@@ -612,11 +618,14 @@ export type Database = {
           currency?: string
           date?: string
           description?: string | null
+          due_date?: string | null
           exchange_rate?: number
           id?: string
+          invoice_number?: string | null
           project_id?: string
           receipt_url?: string | null
           status?: Database["public"]["Enums"]["expense_status"]
+          supplier_name?: string | null
         }
         Relationships: [
           {
