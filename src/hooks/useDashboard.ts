@@ -23,7 +23,7 @@ export interface DashboardStats {
 export interface TeamMember {
   name: string;
   project: string;
-  status: "present" | "traveling" | "absent" | "on_break";
+  status: "present" | "traveling" | "absent" | "planned" | "overtime";
   punchIn: string;
   arrival: string;
   workStart: string;
