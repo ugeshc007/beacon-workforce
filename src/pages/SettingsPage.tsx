@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger,
 } from "@/components/ui/dialog";
@@ -17,6 +18,8 @@ import {
   useSettings, useSaveSettings, useBranchList, useCreateBranch, useUpdateBranch,
   type SettingsMap,
 } from "@/hooks/useSettings";
+import { useRolePermissions, useUpdatePermission } from "@/hooks/usePermissions";
+import { useAuth } from "@/hooks/useAuth";
 
 // ─── helpers ────────────────────────────────────────────────
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
