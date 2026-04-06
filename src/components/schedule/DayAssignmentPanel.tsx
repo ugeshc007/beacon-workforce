@@ -35,6 +35,7 @@ interface Props {
   requiredHelp: number;
   requiredSup: number;
   conflicts: { employee_id: string; employee_name: string; projects: string[] }[];
+  readOnly?: boolean;
 }
 
 const skillColors: Record<string, string> = {
