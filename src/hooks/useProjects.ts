@@ -33,7 +33,7 @@ export function useProjects(filters?: {
           .select("project_id")
           .limit(1000);
         
-        const assignedIds = [...new Set((assignedProjects ?? []).map(a => a.project_id))];
+        const assignedIds = Array.from(new Set((assignedProjects ?? []).map(a => a.project_id)));
         
         // Show projects the user created OR projects with team assignments
         if (assignedIds.length > 0) {
