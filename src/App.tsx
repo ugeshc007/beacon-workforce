@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
+import ProjectDetail from "./pages/ProjectDetail";
 import Employees from "./pages/Employees";
 import Schedule from "./pages/Schedule";
 import Attendance from "./pages/Attendance";
@@ -42,6 +43,7 @@ const App = () => (
             >
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/projects" element={<Projects />} />
+              <Route path="/projects/:id" element={<ProjectDetail />} />
               <Route path="/employees" element={<Employees />} />
               <Route path="/schedule" element={<Schedule />} />
               <Route path="/attendance" element={<Attendance />} />
