@@ -89,12 +89,16 @@ export function AppHeader() {
             <DropdownMenuItem onClick={() => navigate("/settings")}>
               <User className="mr-2 h-4 w-4" /> Profile
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setPwDialogOpen(true)}>
+              <Lock className="mr-2 h-4 w-4" /> Change Password
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="text-destructive" onClick={handleSignOut}>
               <LogOut className="mr-2 h-4 w-4" /> Sign Out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        <ChangePasswordDialog open={pwDialogOpen} onOpenChange={setPwDialogOpen} />
       </div>
     </header>
   );
