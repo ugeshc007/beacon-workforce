@@ -83,6 +83,13 @@ export function ProjectFormDialog({ open, onOpenChange, editProject, prefill }: 
     }
   }, [open, editProject, prefill]);
 
+  // Auto-select branch if only one exists
+  useEffect(() => {
+    if (branches?.length === 1 && !form.branch_id) {
+      set("branch_id", branches[0].id);
+    }
+  }, [branches, form.branch_id]);
+
   const set = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
 
   const applyTemplate = (tpl: Tables<"project_templates">) => {
