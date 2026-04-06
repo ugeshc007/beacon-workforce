@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useProjects } from "@/hooks/useProjects";
+import { useAuth } from "@/hooks/useAuth";
 import {
   useWeekAssignments, useDetectConflicts,
   useCopyPreviousWeek, useApplyToDateRange, useRecurringSchedule,
@@ -66,7 +67,8 @@ export default function Schedule() {
   const prevWeekStart = prevWeekDates[0];
   const prevWeekEnd = prevWeekDates[6];
 
-  const { data: projects } = useProjects({ status: "all" });
+  const { user } = useAuth();
+  const { data: projects } = useProjects({ status: "all", userRole: user?.role, userId: user?.id });
   const activeProjects = (projects ?? []).filter((p) => ["assigned", "in_progress"].includes(p.status));
   const { data: assignments, isLoading } = useWeekAssignments(weekStart, weekEnd, selectedProjectId);
   const conflicts = useDetectConflicts(assignments ?? []);
