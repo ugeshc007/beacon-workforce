@@ -99,14 +99,21 @@ export function useProjectTeam(projectId: string | null) {
     queryKey: ["project-team", projectId],
     enabled: !!projectId,
     queryFn: async () => {
-      const today = new Date().toISOString().split("T")[0];
       const { data, error } = await supabase
         .from("project_assignments")
-        .select("id, employee_id, shift_start, shift_end, employees(id, name, skill_type, phone)")
+        .select("id, employee_id, date, shift_start, shift_end, employees(id, name, skill_type, phone)")
         .eq("project_id", projectId!)
-        .eq("date", today);
+        .order("date", { ascending: false });
       if (error) throw error;
-      return data ?? [];
+
+      // Deduplicate: keep the latest assignment per employee
+      const seen = new Set<string>();
+      const unique = (data ?? []).filter((a) => {
+        if (seen.has(a.employee_id)) return false;
+        seen.add(a.employee_id);
+        return true;
+      });
+      return unique;
     },
   });
 }
