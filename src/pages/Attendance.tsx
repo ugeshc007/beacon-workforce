@@ -60,6 +60,7 @@ export default function Attendance() {
   const { data: logs, isLoading } = useAttendanceLogs({ date, search, projectId });
   const { data: summary } = useAttendanceSummary(date);
   const { data: projects } = useProjects({});
+  const { allowed: canEdit } = useCanAccess("attendance", "can_edit");
 
   // Apply GPS filter client-side
   const filteredLogs = (logs ?? []).filter((log) => {
