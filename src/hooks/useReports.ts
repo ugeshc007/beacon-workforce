@@ -409,22 +409,136 @@ export function useExecutiveData(month: string) {
   return useQuery({
     queryKey: ["report-executive", month],
     queryFn: async () => {
-      const { start, end } = monthRange(month);
+      const { start, end, lastDay } = monthRange(month);
+      const [y, m] = month.split("-").map(Number);
 
-      const [empRes, projRes, logsRes, assignRes] = await Promise.all([
-        supabase.from("employees").select("id, branch_id, is_active", { count: "exact" }).eq("is_active", true),
-        supabase.from("projects").select("id, status, branch_id, budget", { count: "exact" }).in("status", ["assigned", "in_progress"]),
-        supabase.from("attendance_logs").select("employee_id, total_work_minutes, overtime_minutes, regular_cost, overtime_cost, date").gte("date", start).lte("date", end),
-        supabase.from("project_assignments").select("id, date", { count: "exact" }).gte("date", start).lte("date", end),
+      // Previous month for comparison
+      const prevTarget = new Date(y, m - 2, 1);
+      const prevMonth = `${prevTarget.getFullYear()}-${String(prevTarget.getMonth() + 1).padStart(2, "0")}`;
+      const prevRange = monthRange(prevMonth);
+
+      // Today's date for "deployed today"
+      const todayStr = new Date(Date.now() + 4 * 3600000).toISOString().slice(0, 10);
+
+      // 12-week utilization trend: go back 12 weeks
+      const weekStarts: string[] = [];
+      const now = new Date();
+      for (let w = 11; w >= 0; w--) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - d.getDay() - w * 7);
+        weekStarts.push(d.toISOString().slice(0, 10));
+      }
+      const twelveWeeksAgo = weekStarts[0];
+
+      const [
+        empRes, projRes, logsRes, prevLogsRes, assignTodayRes,
+        branchRes, notifRes, weeklyLogsRes,
+      ] = await Promise.all([
+        supabase.from("employees").select("id, branch_id, is_active, standard_hours_per_day", { count: "exact" }).eq("is_active", true),
+        supabase.from("projects").select("id, name, status, branch_id, budget", { count: "exact" }).in("status", ["assigned", "in_progress"]),
+        supabase.from("attendance_logs")
+          .select("employee_id, total_work_minutes, overtime_minutes, regular_cost, overtime_cost, date, project_id")
+          .gte("date", start).lte("date", end),
+        supabase.from("attendance_logs")
+          .select("regular_cost, overtime_cost")
+          .gte("date", prevRange.start).lte("date", prevRange.end),
+        supabase.from("project_assignments")
+          .select("employee_id", { count: "exact" })
+          .eq("date", todayStr),
+        supabase.from("branches").select("id, name"),
+        supabase.from("notifications")
+          .select("type, is_read")
+          .eq("is_read", false),
+        supabase.from("attendance_logs")
+          .select("employee_id, date, total_work_minutes")
+          .gte("date", twelveWeeksAgo),
       ]);
 
+      const employees = empRes.data ?? [];
+      const projects = projRes.data ?? [];
       const logs = logsRes.data ?? [];
+      const prevLogs = prevLogsRes.data ?? [];
+      const branches = branchRes.data ?? [];
+      const unreadNotifs = notifRes.data ?? [];
+      const weeklyLogs = weeklyLogsRes.data ?? [];
+
       const totalHours = Math.round(logs.reduce((s, l) => s + (l.total_work_minutes ?? 0), 0) / 60);
       const totalOtHours = Math.round(logs.reduce((s, l) => s + (l.overtime_minutes ?? 0), 0) / 60);
       const totalLaborCost = Math.round(logs.reduce((s, l) => s + Number(l.regular_cost ?? 0) + Number(l.overtime_cost ?? 0), 0));
-      const uniqueWorkers = new Set(logs.map((l) => l.employee_id)).size;
-      const totalBudget = (projRes.data ?? []).reduce((s, p) => s + Number(p.budget ?? 0), 0);
+      const prevMonthSpend = Math.round(prevLogs.reduce((s, l) => s + Number(l.regular_cost ?? 0) + Number(l.overtime_cost ?? 0), 0));
+      const spendChange = prevMonthSpend > 0 ? Math.round(((totalLaborCost - prevMonthSpend) / prevMonthSpend) * 100) : 0;
+      const totalBudget = projects.reduce((s, p) => s + Number(p.budget ?? 0), 0);
+      const deployedToday = assignTodayRes.count ?? 0;
 
+      // Company utilization %
+      let workingDays = 0;
+      for (let d = 1; d <= lastDay; d++) {
+        if (new Date(y, m - 1, d).getDay() !== 5) workingDays++;
+      }
+      const totalCapacity = employees.reduce((s, e) => s + workingDays * Number(e.standard_hours_per_day), 0);
+      const companyUtilization = totalCapacity > 0 ? Math.round((totalHours / totalCapacity) * 100) : 0;
+
+      // Top 5 projects by cost
+      const projCostMap = new Map<string, { name: string; cost: number; labor: number; ot: number }>();
+      for (const p of projects) {
+        projCostMap.set(p.id, { name: p.name, cost: 0, labor: 0, ot: 0 });
+      }
+      for (const l of logs) {
+        if (l.project_id && projCostMap.has(l.project_id)) {
+          const pc = projCostMap.get(l.project_id)!;
+          pc.labor += Number(l.regular_cost ?? 0);
+          pc.ot += Number(l.overtime_cost ?? 0);
+          pc.cost += Number(l.regular_cost ?? 0) + Number(l.overtime_cost ?? 0);
+        }
+      }
+      const top5Projects = [...projCostMap.values()]
+        .sort((a, b) => b.cost - a.cost)
+        .slice(0, 5)
+        .map((p) => ({
+          name: p.name.length > 18 ? p.name.slice(0, 16) + "…" : p.name,
+          labor: Math.round(p.labor),
+          ot: Math.round(p.ot),
+          total: Math.round(p.cost),
+        }));
+
+      // 12-week utilization trend
+      const weeklyUtilization = weekStarts.map((ws, i) => {
+        const weekEnd = i < weekStarts.length - 1 ? weekStarts[i + 1] : new Date(new Date(ws).getTime() + 7 * 86400000).toISOString().slice(0, 10);
+        const weekLogs = weeklyLogs.filter((l) => l.date >= ws && l.date < weekEnd);
+        const weekHours = weekLogs.reduce((s, l) => s + (l.total_work_minutes ?? 0), 0) / 60;
+        // Capacity: active employees × ~5 working days × 8h (approximate)
+        const weekCapacity = employees.length * 5 * 8;
+        const util = weekCapacity > 0 ? Math.round((weekHours / weekCapacity) * 100) : 0;
+        const weekLabel = `W${i + 1}`;
+        return { week: ws, weekLabel, utilization: Math.min(util, 100), hours: Math.round(weekHours) };
+      });
+
+      // Branch comparison
+      const branchStats = branches.map((b) => {
+        const branchEmps = employees.filter((e) => e.branch_id === b.id);
+        const branchEmpIds = new Set(branchEmps.map((e) => e.id));
+        const branchLogs = logs.filter((l) => branchEmpIds.has(l.employee_id));
+        const branchHours = Math.round(branchLogs.reduce((s, l) => s + (l.total_work_minutes ?? 0), 0) / 60);
+        const branchCost = Math.round(branchLogs.reduce((s, l) => s + Number(l.regular_cost ?? 0) + Number(l.overtime_cost ?? 0), 0));
+        const branchCapacity = branchEmps.reduce((s, e) => s + workingDays * Number(e.standard_hours_per_day), 0);
+        const branchUtil = branchCapacity > 0 ? Math.round((branchHours / branchCapacity) * 100) : 0;
+        return {
+          name: b.name, id: b.id,
+          employees: branchEmps.length, hours: branchHours,
+          cost: branchCost, utilization: branchUtil,
+        };
+      }).filter((b) => b.employees > 0);
+
+      // Unresolved alerts by type
+      const alertsByType = new Map<string, number>();
+      for (const n of unreadNotifs) {
+        alertsByType.set(n.type, (alertsByType.get(n.type) ?? 0) + 1);
+      }
+      const unresolvedAlerts = [...alertsByType.entries()]
+        .map(([type, count]) => ({ type, count }))
+        .sort((a, b) => b.count - a.count);
+
+      // Daily cost trend
       const dailyCost = new Map<string, number>();
       for (const l of logs) {
         const cost = Number(l.regular_cost ?? 0) + Number(l.overtime_cost ?? 0);
@@ -435,12 +549,18 @@ export function useExecutiveData(month: string) {
       return {
         activeEmployees: empRes.count ?? 0,
         activeProjects: projRes.count ?? 0,
-        totalAssignments: assignRes.count ?? 0,
+        deployedToday,
+        companyUtilization,
         totalHours,
         totalOtHours,
         totalLaborCost,
+        prevMonthSpend,
+        spendChange,
         totalBudget: Math.round(totalBudget),
-        uniqueWorkers,
+        top5Projects,
+        weeklyUtilization,
+        branchStats,
+        unresolvedAlerts,
         costTrend,
       };
     },
