@@ -51,19 +51,23 @@ export function ProjectExpensesTab({ projectId, expenses }: Props) {
 
   // Form state
   const [category, setCategory] = useState<string>("material");
-  const [amount, setAmount] = useState("");
+  const [quantity, setQuantity] = useState("");
+  const [unitRate, setUnitRate] = useState("");
   const [currency, setCurrency] = useState("AED");
   const [exchangeRate, setExchangeRate] = useState("1");
   const [description, setDescription] = useState("");
   const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split("T")[0]);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
 
+  const computedAmount = (parseFloat(quantity) || 0) * (parseFloat(unitRate) || 0);
+
   const threshold = Number(settings?.expense_approval_threshold ?? 0);
   const canApprove = isAdmin || isManager;
 
   const resetForm = () => {
     setCategory("material");
-    setAmount("");
+    setQuantity("");
+    setUnitRate("");
     setCurrency("AED");
     setExchangeRate("1");
     setDescription("");
@@ -78,9 +82,9 @@ export function ProjectExpensesTab({ projectId, expenses }: Props) {
   };
 
   const handleSubmit = async () => {
-    const amtNum = parseFloat(amount);
+    const amtNum = computedAmount;
     if (!amtNum || amtNum <= 0) {
-      toast({ title: "Invalid amount", variant: "destructive" });
+      toast({ title: "Enter valid quantity and unit rate", variant: "destructive" });
       return;
     }
     const rate = parseFloat(exchangeRate) || 1;
@@ -301,7 +305,7 @@ export function ProjectExpensesTab({ projectId, expenses }: Props) {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-4 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">Currency</Label>
                 <Select value={currency} onValueChange={handleCurrencyChange}>
@@ -314,8 +318,12 @@ export function ProjectExpensesTab({ projectId, expenses }: Props) {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Amount</Label>
-                <Input type="number" step="0.01" min="0" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} />
+                <Label className="text-xs">Quantity</Label>
+                <Input type="number" step="1" min="0" placeholder="1" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Unit Rate</Label>
+                <Input type="number" step="0.01" min="0" placeholder="0.00" value={unitRate} onChange={(e) => setUnitRate(e.target.value)} />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Rate → AED</Label>
@@ -326,10 +334,19 @@ export function ProjectExpensesTab({ projectId, expenses }: Props) {
               </div>
             </div>
 
-            {currency !== "AED" && amount && (
-              <p className="text-xs text-muted-foreground">
-                ≈ AED {(parseFloat(amount) * parseFloat(exchangeRate || "1")).toFixed(2)}
-              </p>
+            {computedAmount > 0 && (
+              <div className="rounded-lg bg-muted/30 border border-border p-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Amount</span>
+                  <span className="font-mono font-medium">{currency} {computedAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                </div>
+                {currency !== "AED" && (
+                  <div className="flex justify-between mt-1">
+                    <span className="text-muted-foreground">≈ AED</span>
+                    <span className="font-mono font-medium">AED {(computedAmount * (parseFloat(exchangeRate) || 1)).toFixed(2)}</span>
+                  </div>
+                )}
+              </div>
             )}
 
             <div className="space-y-1.5">
