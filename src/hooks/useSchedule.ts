@@ -287,28 +287,25 @@ export function useAvailableEmployees(date: string, projectId: string) {
     queryKey: ["available-employees", date, projectId],
     enabled: !!date && !!projectId,
     queryFn: async () => {
-      // Get all active employees
       const { data: employees } = await supabase
         .from("employees")
         .select("id, name, skill_type")
         .eq("is_active", true)
         .order("name");
 
-      // Get employees already assigned to THIS project on this date
       const { data: assignedToProject } = await supabase
         .from("project_assignments")
         .select("employee_id")
         .eq("date", date)
         .eq("project_id", projectId);
 
-      // Get all assignments for this date (to show as info, not block)
-      const { data: allAssigned } = await supabase
+      // Get all assignments for this date with time slots
+      const { data: allAssignments } = await supabase
         .from("project_assignments")
-        .select("employee_id")
+        .select("employee_id, shift_start, shift_end, projects(name)")
         .eq("date", date)
         .neq("project_id", projectId);
 
-      // Get employees on leave
       const { data: onLeave } = await supabase
         .from("employee_leave")
         .select("employee_id")
@@ -316,14 +313,25 @@ export function useAvailableEmployees(date: string, projectId: string) {
         .gte("end_date", date);
 
       const assignedToProjectIds = new Set((assignedToProject ?? []).map((a) => a.employee_id));
-      const assignedElsewhereIds = new Set((allAssigned ?? []).map((a) => a.employee_id));
       const leaveIds = new Set((onLeave ?? []).map((l) => l.employee_id));
+
+      // Build time slots map per employee
+      const timeSlotsMap = new Map<string, { start: string; end: string; project: string }[]>();
+      for (const a of allAssignments ?? []) {
+        if (!timeSlotsMap.has(a.employee_id)) timeSlotsMap.set(a.employee_id, []);
+        timeSlotsMap.get(a.employee_id)!.push({
+          start: a.shift_start?.slice(0, 5) ?? "08:00",
+          end: a.shift_end?.slice(0, 5) ?? "17:00",
+          project: (a.projects as any)?.name ?? "Other",
+        });
+      }
 
       return (employees ?? []).map((e) => ({
         ...e,
         available: !assignedToProjectIds.has(e.id) && !leaveIds.has(e.id),
         on_leave: leaveIds.has(e.id),
-        assigned_elsewhere: assignedElsewhereIds.has(e.id) && !leaveIds.has(e.id),
+        assigned_elsewhere: timeSlotsMap.has(e.id) && !leaveIds.has(e.id),
+        existing_slots: timeSlotsMap.get(e.id) ?? [],
       }));
     },
   });
