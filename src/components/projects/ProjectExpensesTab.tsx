@@ -14,12 +14,12 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  Plus, ExternalLink, Paperclip, Check, X, FileText, Upload, Receipt,
+  Plus, ExternalLink, Paperclip, Check, X, FileText, Upload, Receipt, Trash2,
 } from "lucide-react";
 import { PurchaseInvoiceDialog } from "./PurchaseInvoiceDialog";
 import { BulkExpenseDialog } from "./BulkExpenseDialog";
 import { supabase } from "@/integrations/supabase/client";
-import { useCreateExpense, useApproveExpense } from "@/hooks/useExpenses";
+import { useCreateExpense, useApproveExpense, useDeleteExpense } from "@/hooks/useExpenses";
 import { useSettings } from "@/hooks/useSettings";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -45,6 +45,7 @@ export function ProjectExpensesTab({ projectId, expenses }: Props) {
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const createMutation = useCreateExpense();
   const approveMutation = useApproveExpense();
+  const deleteMutation = useDeleteExpense();
   const { data: settings } = useSettings();
   const { isAdmin, isManager } = useAuth();
   const { toast } = useToast();
@@ -251,24 +252,39 @@ export function ProjectExpensesTab({ projectId, expenses }: Props) {
                       </td>
                       {canApprove && (
                         <td className="py-2.5 text-right">
-                          {e.status === "pending" ? (
-                            <div className="flex items-center justify-end gap-1">
-                              <Button size="icon" variant="ghost" className="h-7 w-7 text-status-present hover:bg-status-present/10"
-                                disabled={approveMutation.isPending}
-                                onClick={() => handleApprove(e.id, "approved")}
-                              >
-                                <Check className="h-3.5 w-3.5" />
-                              </Button>
+                          <div className="flex items-center justify-end gap-1">
+                            {e.status === "pending" && (
+                              <>
+                                <Button size="icon" variant="ghost" className="h-7 w-7 text-status-present hover:bg-status-present/10"
+                                  disabled={approveMutation.isPending}
+                                  onClick={() => handleApprove(e.id, "approved")}
+                                >
+                                  <Check className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:bg-destructive/10"
+                                  disabled={approveMutation.isPending}
+                                  onClick={() => handleApprove(e.id, "rejected")}
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </Button>
+                              </>
+                            )}
+                            {isAdmin && (
                               <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:bg-destructive/10"
-                                disabled={approveMutation.isPending}
-                                onClick={() => handleApprove(e.id, "rejected")}
+                                disabled={deleteMutation.isPending}
+                                onClick={() => {
+                                  if (confirm("Delete this expense?")) {
+                                    deleteMutation.mutate(
+                                      { expenseId: e.id, projectId },
+                                      { onSuccess: () => toast({ title: "Expense deleted" }) }
+                                    );
+                                  }
+                                }}
                               >
-                                <X className="h-3.5 w-3.5" />
+                                <Trash2 className="h-3.5 w-3.5" />
                               </Button>
-                            </div>
-                          ) : (
-                            <span className="text-[10px] text-muted-foreground">—</span>
-                          )}
+                            )}
+                          </div>
                         </td>
                       )}
                     </tr>

@@ -75,3 +75,21 @@ export function useApproveExpense() {
     },
   });
 }
+
+export function useDeleteExpense() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ expenseId, projectId }: { expenseId: string; projectId: string }) => {
+      const { error } = await supabase
+        .from("project_expenses")
+        .delete()
+        .eq("id", expenseId);
+      if (error) throw error;
+    },
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ["project-expenses", vars.projectId] });
+      qc.invalidateQueries({ queryKey: ["project-costs", vars.projectId] });
+      qc.invalidateQueries({ queryKey: ["project-stats", vars.projectId] });
+    },
+  });
+}
