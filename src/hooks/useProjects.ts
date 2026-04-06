@@ -335,3 +335,39 @@ export function useRemoveAssignment() {
     },
   });
 }
+
+export function useTemplates() {
+  return useQuery({
+    queryKey: ["project-templates"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("project_templates")
+        .select("*")
+        .order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+export function useSaveTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (template: {
+      name: string;
+      required_technicians: number;
+      required_helpers: number;
+      required_supervisors: number;
+      default_duration_days?: number;
+    }) => {
+      const { data, error } = await supabase
+        .from("project_templates")
+        .insert(template)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["project-templates"] }),
+  });
+}
