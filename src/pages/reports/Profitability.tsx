@@ -7,6 +7,7 @@ import { StatCard } from "@/components/ui/stat-card";
 import { DollarSign, TrendingUp, TrendingDown, Percent, Download } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine, Cell } from "recharts";
 import { downloadCsv } from "@/lib/csv-export";
+import { exportReportPdf } from "@/lib/pdf-export";
 
 export default function Profitability() {
   const { data, isLoading } = useProfitabilityData();
