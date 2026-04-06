@@ -14,7 +14,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  Plus, ExternalLink, Paperclip, Check, X, FileText, Upload, Receipt,
+  Plus, ExternalLink, Paperclip, Check, X, FileText, Upload, Receipt, Trash2,
 } from "lucide-react";
 import { PurchaseInvoiceDialog } from "./PurchaseInvoiceDialog";
 import { BulkExpenseDialog } from "./BulkExpenseDialog";
