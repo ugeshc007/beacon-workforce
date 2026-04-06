@@ -23,14 +23,12 @@ import {
 const DOW_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export default function Utilization() {
+  const [dateRange, setDateRange] = useReportDateRange("This Month");
+  const monthLabel = dateRange.label;
+
   const [skillFilter, setSkillFilter] = useState("all");
   const [branchFilter, setBranchFilter] = useState("all");
   const [drillRow, setDrillRow] = useState<UtilizationRow | null>(null);
-
-  // Import date range filter
-  const { useReportDateRange } = await import("@/components/reports/ReportDateFilter");
-  const [dateRange, setDateRange] = useReportDateRange("This Month");
-  const monthLabel = dateRange.label;
 
   const { data, isLoading } = useUtilizationData(dateRange.start, dateRange.end, {
     skillType: skillFilter,
