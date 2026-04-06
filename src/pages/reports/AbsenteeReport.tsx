@@ -43,7 +43,7 @@ export default function AbsenteeReport() {
               </SelectContent>
             </Select>
           )}
-          {data && (
+          {data && (<>
             <Button variant="outline" size="sm" className="text-xs ml-1" onClick={() => {
               downloadCsv(`absentee-${month}.csv`,
                 ["Employee", "Skill", "Absent Days", "Leave Days", "Unexcused", "Absence Rate %"],
