@@ -24,7 +24,8 @@ const CURRENCIES = [
 
 interface LineItem {
   category: string;
-  amount: string;
+  quantity: string;
+  unitRate: string;
   description: string;
 }
 
@@ -46,7 +47,7 @@ export function PurchaseInvoiceDialog({ projectId, open, onOpenChange }: Props) 
   const [currency, setCurrency] = useState("AED");
   const [exchangeRate, setExchangeRate] = useState("1");
   const [lines, setLines] = useState<LineItem[]>([
-    { category: "material", amount: "", description: "" },
+    { category: "material", quantity: "", unitRate: "", description: "" },
   ]);
 
   const handleCurrencyChange = (code: string) => {
@@ -55,7 +56,7 @@ export function PurchaseInvoiceDialog({ projectId, open, onOpenChange }: Props) 
     setExchangeRate(c ? String(c.rate) : "1");
   };
 
-  const addLine = () => setLines([...lines, { category: "material", amount: "", description: "" }]);
+  const addLine = () => setLines([...lines, { category: "material", quantity: "", unitRate: "", description: "" }]);
 
   const updateLine = (i: number, field: keyof LineItem, value: string) => {
     const updated = [...lines];
@@ -68,7 +69,7 @@ export function PurchaseInvoiceDialog({ projectId, open, onOpenChange }: Props) 
     setLines(lines.filter((_, idx) => idx !== i));
   };
 
-  const totalAmount = lines.reduce((s, l) => s + (parseFloat(l.amount) || 0), 0);
+  const totalAmount = lines.reduce((s, l) => s + ((parseFloat(l.quantity) || 0) * (parseFloat(l.unitRate) || 0)), 0);
   const rate = parseFloat(exchangeRate) || 1;
   const totalAed = currency === "AED" ? totalAmount : Math.round(totalAmount * rate * 100) / 100;
   const threshold = Number(settings?.expense_approval_threshold ?? 0);
@@ -80,7 +81,7 @@ export function PurchaseInvoiceDialog({ projectId, open, onOpenChange }: Props) 
     setDueDate("");
     setCurrency("AED");
     setExchangeRate("1");
-    setLines([{ category: "material", amount: "", description: "" }]);
+    setLines([{ category: "material", quantity: "", unitRate: "", description: "" }]);
   };
 
   const handleSubmit = async () => {
@@ -88,14 +89,14 @@ export function PurchaseInvoiceDialog({ projectId, open, onOpenChange }: Props) 
       toast({ title: "Invoice number required", variant: "destructive" });
       return;
     }
-    const validLines = lines.filter((l) => parseFloat(l.amount) > 0);
+    const validLines = lines.filter((l) => (parseFloat(l.quantity) || 0) * (parseFloat(l.unitRate) || 0) > 0);
     if (!validLines.length) {
       toast({ title: "Add at least one line with an amount", variant: "destructive" });
       return;
     }
 
     const expenses = validLines.map((l) => {
-      const amt = parseFloat(l.amount);
+      const amt = (parseFloat(l.quantity) || 0) * (parseFloat(l.unitRate) || 0);
       const amountAed = currency === "AED" ? amt : Math.round(amt * rate * 100) / 100;
       const needsApproval = threshold > 0 && amountAed > threshold;
       return {
@@ -184,8 +185,11 @@ export function PurchaseInvoiceDialog({ projectId, open, onOpenChange }: Props) 
             </div>
 
             <div className="space-y-2">
+              <div className="grid grid-cols-[110px_70px_80px_80px_1fr_32px] gap-2 text-[10px] text-muted-foreground uppercase tracking-wider px-1">
+                <span>Category</span><span>Qty</span><span>Unit Rate</span><span>Amount</span><span>Description</span><span></span>
+              </div>
               {lines.map((line, i) => (
-                <div key={i} className="grid grid-cols-[120px_100px_1fr_32px] gap-2 items-end">
+                <div key={i} className="grid grid-cols-[110px_70px_80px_80px_1fr_32px] gap-2 items-end">
                   <Select value={line.category} onValueChange={(v) => updateLine(i, "category", v)}>
                     <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -194,9 +198,15 @@ export function PurchaseInvoiceDialog({ projectId, open, onOpenChange }: Props) 
                       ))}
                     </SelectContent>
                   </Select>
-                  <Input type="number" step="0.01" min="0" placeholder="0.00"
-                    className="h-9 text-xs" value={line.amount}
-                    onChange={(e) => updateLine(i, "amount", e.target.value)} />
+                  <Input type="number" step="1" min="0" placeholder="Qty"
+                    className="h-9 text-xs" value={line.quantity}
+                    onChange={(e) => updateLine(i, "quantity", e.target.value)} />
+                  <Input type="number" step="0.01" min="0" placeholder="Rate"
+                    className="h-9 text-xs" value={line.unitRate}
+                    onChange={(e) => updateLine(i, "unitRate", e.target.value)} />
+                  <div className="h-9 flex items-center text-xs font-mono text-muted-foreground px-1">
+                    {((parseFloat(line.quantity) || 0) * (parseFloat(line.unitRate) || 0)).toFixed(2)}
+                  </div>
                   <Input placeholder="Description" className="h-9 text-xs"
                     value={line.description}
                     onChange={(e) => updateLine(i, "description", e.target.value)} />
