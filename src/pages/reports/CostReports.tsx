@@ -72,7 +72,7 @@ export default function CostReports() {
           <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setMonthOffset((m) => m + 1)}>
             <ChevronRight className="h-4 w-4" />
           </Button>
-          {data && (
+          {data && (<>
             <Button variant="outline" size="sm" className="text-xs ml-2" onClick={() => {
               downloadCsv(`project-costs-${month}.csv`,
                 ["Project", "Status", "Budget", "Labor", "OT", "Expenses", "Total", "Variance", "% Used", "Forecasted Final", "Value", "Margin %"],
