@@ -19,7 +19,7 @@ import {
 import { PurchaseInvoiceDialog } from "./PurchaseInvoiceDialog";
 import { BulkExpenseDialog } from "./BulkExpenseDialog";
 import { supabase } from "@/integrations/supabase/client";
-import { useCreateExpense, useApproveExpense } from "@/hooks/useExpenses";
+import { useCreateExpense, useApproveExpense, useDeleteExpense } from "@/hooks/useExpenses";
 import { useSettings } from "@/hooks/useSettings";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
