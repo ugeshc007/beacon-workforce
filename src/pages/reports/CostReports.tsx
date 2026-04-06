@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatCard } from "@/components/ui/stat-card";
-import { ChevronLeft, ChevronRight, DollarSign, TrendingDown } from "lucide-react";
+import { ChevronLeft, ChevronRight, DollarSign, TrendingDown, Download } from "lucide-react";
+import { downloadCsv } from "@/lib/csv-export";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 
 const PIE_COLORS = [
