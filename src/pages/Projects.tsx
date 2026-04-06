@@ -17,7 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Progress } from "@/components/ui/progress";
 import {
   FolderKanban, Plus, Search, LayoutGrid, List, MapPin, Users, DollarSign,
-  MoreHorizontal, Eye, Pencil, CalendarIcon, X, Copy, FileText,
+  MoreHorizontal, Eye, Pencil, CalendarIcon, X, Copy, FileText, GanttChart,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -112,6 +112,9 @@ export default function Projects() {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
+          <Button variant="outline" size="sm" className="gap-1" onClick={() => navigate("/projects/gantt")}>
+            <GanttChart className="h-4 w-4" /> Gantt
+          </Button>
           <Button onClick={handleAdd} size="sm"><Plus className="h-4 w-4 mr-1" /> New Project</Button>
         </div>
       </div>

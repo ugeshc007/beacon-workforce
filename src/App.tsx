@@ -15,6 +15,7 @@ import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
 import ProjectDetail from "./pages/ProjectDetail";
+import ProjectGantt from "./pages/ProjectGantt";
 import Employees from "./pages/Employees";
 import Schedule from "./pages/Schedule";
 import Attendance from "./pages/Attendance";
@@ -49,6 +50,7 @@ const App = () => (
             >
               <Route path="/dashboard" element={<ModuleGuard module="dashboard"><Dashboard /></ModuleGuard>} />
               <Route path="/projects" element={<ModuleGuard module="projects"><Projects /></ModuleGuard>} />
+              <Route path="/projects/gantt" element={<ModuleGuard module="projects"><ProjectGantt /></ModuleGuard>} />
               <Route path="/projects/:id" element={<ModuleGuard module="projects"><ProjectDetail /></ModuleGuard>} />
               <Route path="/employees" element={<ModuleGuard module="employees"><Employees /></ModuleGuard>} />
               <Route path="/schedule" element={<ModuleGuard module="schedule"><Schedule /></ModuleGuard>} />
