@@ -24,7 +24,8 @@ const CURRENCIES = [
 
 interface LineItem {
   category: string;
-  amount: string;
+  quantity: string;
+  unitRate: string;
   description: string;
 }
 
