@@ -51,12 +51,15 @@ export function ProjectExpensesTab({ projectId, expenses }: Props) {
 
   // Form state
   const [category, setCategory] = useState<string>("material");
-  const [amount, setAmount] = useState("");
+  const [quantity, setQuantity] = useState("");
+  const [unitRate, setUnitRate] = useState("");
   const [currency, setCurrency] = useState("AED");
   const [exchangeRate, setExchangeRate] = useState("1");
   const [description, setDescription] = useState("");
   const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split("T")[0]);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
+
+  const computedAmount = (parseFloat(quantity) || 0) * (parseFloat(unitRate) || 0);
 
   const threshold = Number(settings?.expense_approval_threshold ?? 0);
   const canApprove = isAdmin || isManager;
