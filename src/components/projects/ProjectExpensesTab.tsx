@@ -352,6 +352,9 @@ export function ProjectExpensesTab({ projectId, expenses }: Props) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <PurchaseInvoiceDialog projectId={projectId} open={invoiceOpen} onOpenChange={setInvoiceOpen} />
+      <BulkExpenseDialog projectId={projectId} open={bulkOpen} onOpenChange={setBulkOpen} />
     </div>
   );
 }
