@@ -97,9 +97,8 @@ function BranchDialog({ branch, onClose }: {
   );
 }
 
-  const { isAdmin } = useAuth();
-  
 export default function SettingsPage() {
+  const { isAdmin } = useAuth();
   const { data: settings, isLoading } = useSettings();
   const save = useSaveSettings();
   const { data: branches, isLoading: branchesLoading } = useBranchList();
