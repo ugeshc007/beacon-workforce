@@ -86,6 +86,8 @@ export function DayAssignmentPanel({
   const [reassignEnd, setReassignEnd] = useState("17:00");
   const [reassignKeepOld, setReassignKeepOld] = useState(true);
   const [reassignOldEnd, setReassignOldEnd] = useState("");
+
+  const techCount = assignments.filter((a) => a.employee_skill === "technician").length;
   const helpCount = assignments.filter((a) => a.employee_skill === "helper").length;
   const supCount = assignments.filter((a) => a.employee_skill === "supervisor").length;
 
