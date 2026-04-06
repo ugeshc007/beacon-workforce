@@ -59,6 +59,11 @@ export function DayAssignmentPanel({
   const helpCount = assignments.filter((a) => a.employee_skill === "helper").length;
   const supCount = assignments.filter((a) => a.employee_skill === "supervisor").length;
 
+  const needTech = Math.max(0, requiredTech - techCount);
+  const needHelp = Math.max(0, requiredHelp - helpCount);
+  const needSup = Math.max(0, requiredSup - supCount);
+  const totalToFill = needTech + needHelp + needSup;
+
   const handleAdd = async (employeeId: string) => {
     try {
       await addAssignment.mutateAsync({ project_id: projectId, employee_id: employeeId, date });
