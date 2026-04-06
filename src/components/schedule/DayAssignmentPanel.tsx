@@ -136,6 +136,41 @@ export function DayAssignmentPanel({
 
   const formatTime = (t: string | null) => t ? t.slice(0, 5) : "";
 
+  // Live countdown ticker
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const getCountdown = (shiftStart: string | null, shiftEnd: string | null) => {
+    const start = shiftStart?.slice(0, 5) || "08:00";
+    const end = shiftEnd?.slice(0, 5) || "17:00";
+    const [sh, sm] = start.split(":").map(Number);
+    const [eh, em] = end.split(":").map(Number);
+
+    const shiftDate = new Date(date + "T00:00:00");
+    const startMs = new Date(shiftDate).setHours(sh, sm, 0, 0);
+    const endMs = new Date(shiftDate).setHours(eh, em, 0, 0);
+    const nowMs = now.getTime();
+
+    if (nowMs < startMs) {
+      const diff = startMs - nowMs;
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      return { label: `Starts in ${h}h ${m}m`, status: "upcoming" as const };
+    }
+    if (nowMs >= startMs && nowMs < endMs) {
+      const diff = endMs - nowMs;
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      return { label: `${h}h ${m}m left`, status: "active" as const };
+    }
+    return { label: "Completed", status: "done" as const };
+  };
+
+  const countdownColor = { upcoming: "text-status-planned", active: "text-status-present", done: "text-muted-foreground" };
+
   return (
     <Card className="glass-card">
       <CardHeader className="pb-3">
