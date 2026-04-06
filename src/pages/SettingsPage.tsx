@@ -14,7 +14,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Building2, MapPin, Clock, Bell, Shield, Database, Save, Plus, Pencil,
+  Building2, MapPin, Clock, Bell, Shield, Database, Save, Plus, Pencil, Trash2,
   Map, FileText, Download, Eye,
 } from "lucide-react";
 import {
