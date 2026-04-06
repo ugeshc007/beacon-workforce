@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAttendanceLogs, useAttendanceSummary, type AttendanceLog } from "@/hooks/useAttendance";
+import { useCanAccess } from "@/hooks/usePermissions";
 import { useProjects } from "@/hooks/useProjects";
 import { AttendanceTimeline } from "@/components/attendance/AttendanceTimeline";
 import { AttendanceOverrideDialog } from "@/components/attendance/AttendanceOverrideDialog";
@@ -59,6 +60,7 @@ export default function Attendance() {
   const { data: logs, isLoading } = useAttendanceLogs({ date, search, projectId });
   const { data: summary } = useAttendanceSummary(date);
   const { data: projects } = useProjects({});
+  const { allowed: canEdit } = useCanAccess("attendance", "can_edit");
 
   // Apply GPS filter client-side
   const filteredLogs = (logs ?? []).filter((log) => {
@@ -243,9 +245,11 @@ export default function Attendance() {
                               <DropdownMenuItem onClick={() => setDetailLog(log)}>
                                 <Eye className="h-3.5 w-3.5 mr-2" />View Details
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => setOverrideLog(log)}>
-                                <Pencil className="h-3.5 w-3.5 mr-2" />Override
-                              </DropdownMenuItem>
+                              {canEdit && (
+                                <DropdownMenuItem onClick={() => setOverrideLog(log)}>
+                                  <Pencil className="h-3.5 w-3.5 mr-2" />Override
+                                </DropdownMenuItem>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </td>

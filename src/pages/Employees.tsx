@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useEmployees, useBranches, useToggleEmployeeStatus } from "@/hooks/useEmployees";
+import { useCanAccess } from "@/hooks/usePermissions";
 import { EmployeeFormDialog } from "@/components/employees/EmployeeFormDialog";
 import { EmployeeDetailDrawer } from "@/components/employees/EmployeeDetailDrawer";
 import { MarkLeaveDialog } from "@/components/employees/MarkLeaveDialog";
@@ -49,6 +50,9 @@ export default function Employees() {
   const { data: branches } = useBranches();
   const toggleStatus = useToggleEmployeeStatus();
   const { toast } = useToast();
+  const { allowed: canCreate } = useCanAccess("employees", "can_create");
+  const { allowed: canEdit } = useCanAccess("employees", "can_edit");
+  const { allowed: canDelete } = useCanAccess("employees", "can_delete");
 
   const employees = data?.data ?? [];
   const totalCount = data?.count ?? 0;
@@ -87,12 +91,16 @@ export default function Employees() {
           <p className="text-sm text-muted-foreground">{totalCount} team members</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => setCsvOpen(true)} size="sm" variant="outline">
-            <Upload className="h-4 w-4 mr-1" /> CSV Import
-          </Button>
-          <Button onClick={handleAdd} size="sm">
-            <Plus className="h-4 w-4 mr-1" /> Add Employee
-          </Button>
+          {canCreate && (
+            <Button onClick={() => setCsvOpen(true)} size="sm" variant="outline">
+              <Upload className="h-4 w-4 mr-1" /> CSV Import
+            </Button>
+          )}
+          {canCreate && (
+            <Button onClick={handleAdd} size="sm">
+              <Plus className="h-4 w-4 mr-1" /> Add Employee
+            </Button>
+          )}
         </div>
       </div>
 
@@ -206,11 +214,15 @@ export default function Employees() {
                       {Number(emp.standard_hours_per_day)}
                     </TableCell>
                     <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
-                      <Switch
-                        checked={emp.is_active}
-                        onCheckedChange={() => handleToggle(emp.id, emp.is_active)}
-                        className="data-[state=checked]:bg-primary"
-                      />
+                      {canEdit ? (
+                        <Switch
+                          checked={emp.is_active}
+                          onCheckedChange={() => handleToggle(emp.id, emp.is_active)}
+                          className="data-[state=checked]:bg-primary"
+                        />
+                      ) : (
+                        <Badge variant="outline" className="text-[10px]">{emp.is_active ? "Active" : "Inactive"}</Badge>
+                      )}
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
@@ -223,13 +235,19 @@ export default function Employees() {
                           <DropdownMenuItem onClick={() => handleView(emp.id)}>
                             <Eye className="mr-2 h-4 w-4" /> View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleEdit(emp)}>
-                            <Pencil className="mr-2 h-4 w-4" /> Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => { setLeaveEmployee({ id: emp.id, name: emp.name }); setLeaveOpen(true); }}>
-                            <CalendarOff className="mr-2 h-4 w-4" /> Mark on Leave
-                          </DropdownMenuItem>
+                          {canEdit && (
+                            <DropdownMenuItem onClick={() => handleEdit(emp)}>
+                              <Pencil className="mr-2 h-4 w-4" /> Edit
+                            </DropdownMenuItem>
+                          )}
+                          {canEdit && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => { setLeaveEmployee({ id: emp.id, name: emp.name }); setLeaveOpen(true); }}>
+                                <CalendarOff className="mr-2 h-4 w-4" /> Mark on Leave
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

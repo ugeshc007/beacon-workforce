@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { useProjects, useTemplates } from "@/hooks/useProjects";
 import { useAuth } from "@/hooks/useAuth";
 import { useBranches } from "@/hooks/useEmployees";
+import { useCanAccess } from "@/hooks/usePermissions";
 import { ProjectFormDialog, type ProjectPrefill } from "@/components/projects/ProjectFormDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -55,6 +56,8 @@ export default function Projects() {
   });
   const { data: branches } = useBranches();
   const { data: templates } = useTemplates();
+  const { allowed: canCreate } = useCanAccess("projects", "can_create");
+  const { allowed: canEdit } = useCanAccess("projects", "can_edit");
 
   const handleEdit = (p: Tables<"projects">) => { setEditProject(p); setPrefill(null); setFormOpen(true); };
   const handleAdd = () => { setEditProject(null); setPrefill(null); setFormOpen(true); };
@@ -101,7 +104,7 @@ export default function Projects() {
           <p className="text-sm text-muted-foreground">{projects?.length ?? 0} projects</p>
         </div>
         <div className="flex gap-2">
-          {templates && templates.length > 0 && (
+          {canCreate && templates && templates.length > 0 && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-1"><FileText className="h-4 w-4" /> From Template</Button>
@@ -119,7 +122,9 @@ export default function Projects() {
           <Button variant="outline" size="sm" className="gap-1" onClick={() => navigate("/projects/gantt")}>
             <GanttChart className="h-4 w-4" /> Gantt
           </Button>
-          <Button onClick={handleAdd} size="sm"><Plus className="h-4 w-4 mr-1" /> New Project</Button>
+          {canCreate && (
+            <Button onClick={handleAdd} size="sm"><Plus className="h-4 w-4 mr-1" /> New Project</Button>
+          )}
         </div>
       </div>
 

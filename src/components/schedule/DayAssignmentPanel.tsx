@@ -35,6 +35,7 @@ interface Props {
   requiredHelp: number;
   requiredSup: number;
   conflicts: { employee_id: string; employee_name: string; projects: string[] }[];
+  readOnly?: boolean;
 }
 
 const skillColors: Record<string, string> = {
@@ -52,6 +53,7 @@ export function DayAssignmentPanel({
   requiredHelp,
   requiredSup,
   conflicts,
+  readOnly = false,
 }: Props) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -286,10 +288,12 @@ export function DayAssignmentPanel({
             <CardTitle className="text-sm font-semibold">{dayLabel}</CardTitle>
             <p className="text-xs text-muted-foreground mt-0.5">{projectName}</p>
           </div>
-          <Button size="sm" variant="outline" onClick={() => setConfirmOpen(true)} disabled={autoLoading || totalToFill === 0}>
-            <Zap className="h-3.5 w-3.5 mr-1" />
-            {autoLoading ? "Assigning…" : "Auto-fill"}
-          </Button>
+          {!readOnly && (
+            <Button size="sm" variant="outline" onClick={() => setConfirmOpen(true)} disabled={autoLoading || totalToFill === 0}>
+              <Zap className="h-3.5 w-3.5 mr-1" />
+              {autoLoading ? "Assigning…" : "Auto-fill"}
+            </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -355,7 +359,7 @@ export function DayAssignmentPanel({
                 {a.assignment_mode !== "manual" && (
                   <Badge variant="secondary" className="text-[10px]">{a.assignment_mode}</Badge>
                 )}
-                {!isEditing && (
+                {!isEditing && !readOnly && (
                   <>
                     <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100" title="Edit time"
                       onClick={() => handleEditTime(a)} disabled={a.is_locked}>
@@ -367,14 +371,18 @@ export function DayAssignmentPanel({
                     </Button>
                   </>
                 )}
-                <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100"
-                  onClick={() => toggleLock.mutate({ id: a.id, is_locked: !a.is_locked })}>
-                  {a.is_locked ? <Lock className="h-3 w-3 text-brand" /> : <LockOpen className="h-3 w-3 text-muted-foreground" />}
-                </Button>
-                <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 text-destructive"
-                  onClick={() => handleRemove(a.id)} disabled={a.is_locked}>
-                  <Trash2 className="h-3 w-3" />
-                </Button>
+                {!readOnly && (
+                  <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                    onClick={() => toggleLock.mutate({ id: a.id, is_locked: !a.is_locked })}>
+                    {a.is_locked ? <Lock className="h-3 w-3 text-brand" /> : <LockOpen className="h-3 w-3 text-muted-foreground" />}
+                  </Button>
+                )}
+                {!readOnly && (
+                  <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 text-destructive"
+                    onClick={() => handleRemove(a.id)} disabled={a.is_locked}>
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                )}
               </div>
             </div>
             );
@@ -382,7 +390,7 @@ export function DayAssignmentPanel({
         </div>
 
         {/* Add employee */}
-        {addingSkill ? (
+        {readOnly ? null : addingSkill ? (
           <div className="space-y-2">
             <p className="text-xs text-muted-foreground">Add {addingSkill}:</p>
             {/* Shift time inputs */}

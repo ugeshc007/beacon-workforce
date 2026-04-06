@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useTimesheetData, useApproveTimesheet, type TimesheetRow, type ProjectTimesheetRow } from "@/hooks/useTimesheets";
+import { useCanAccess } from "@/hooks/usePermissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,6 +52,7 @@ export default function Timesheets() {
   const { data: settings } = useSettings();
   const approve = useApproveTimesheet();
   const travelPaid = settings?.travel_time_paid === "true";
+  const { allowed: canEdit } = useCanAccess("timesheets", "can_edit");
 
   const shiftMonth = (delta: number) => {
     const [y, m] = month.split("-").map(Number);
@@ -383,16 +385,20 @@ export default function Timesheets() {
                               )}
                             </td>
                             <td className="text-center py-2 px-2">
-                              <div className="flex items-center justify-center gap-1">
-                                <Button variant="ghost" size="icon" className="h-6 w-6 text-status-present hover:text-status-present"
-                                  onClick={() => { setApproveRow(row); setApproveAction("approved"); }} title="Approve">
-                                  <CheckCircle2 className="h-3.5 w-3.5" />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="h-6 w-6 text-status-absent hover:text-status-absent"
-                                  onClick={() => { setApproveRow(row); setApproveAction("rejected"); }} title="Reject">
-                                  <XCircle className="h-3.5 w-3.5" />
-                                </Button>
-                              </div>
+                              {canEdit ? (
+                                <div className="flex items-center justify-center gap-1">
+                                  <Button variant="ghost" size="icon" className="h-6 w-6 text-status-present hover:text-status-present"
+                                    onClick={() => { setApproveRow(row); setApproveAction("approved"); }} title="Approve">
+                                    <CheckCircle2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-6 w-6 text-status-absent hover:text-status-absent"
+                                    onClick={() => { setApproveRow(row); setApproveAction("rejected"); }} title="Reject">
+                                    <XCircle className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">—</span>
+                              )}
                             </td>
                           </tr>
                         ))}

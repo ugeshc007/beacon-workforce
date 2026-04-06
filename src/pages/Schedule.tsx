@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useProjects } from "@/hooks/useProjects";
+import { useCanAccess } from "@/hooks/usePermissions";
 import { useAuth } from "@/hooks/useAuth";
 import {
   useWeekAssignments, useDetectConflicts,
@@ -94,6 +95,8 @@ export default function Schedule() {
   const copyWeek = useCopyPreviousWeek();
   const applyRange = useApplyToDateRange();
   const recurring = useRecurringSchedule();
+  const { allowed: canCreate } = useCanAccess("schedule", "can_create");
+  const { allowed: canEdit } = useCanAccess("schedule", "can_edit");
 
   const weekLabel = (() => {
     const s = new Date(weekStart + "T00:00:00");
@@ -170,29 +173,31 @@ export default function Schedule() {
         </div>
         <div className="flex items-center gap-3">
           {/* Bulk actions menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="text-xs">
-                <MoreVertical className="h-3.5 w-3.5 mr-1" />Bulk Actions
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setBulkDialog("copy")}>
-                <Copy className="h-3.5 w-3.5 mr-2" />Copy from Previous Week
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {
-                if (!selectedDay) { toast.error("Select a day first to use as source"); return; }
-                setRangeStart(weekStart);
-                setRangeEnd(weekEnd);
-                setBulkDialog("apply");
-              }}>
-                <CalendarRange className="h-3.5 w-3.5 mr-2" />Apply to Date Range
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setBulkDialog("recurring")}>
-                <Repeat className="h-3.5 w-3.5 mr-2" />Recurring Schedule
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {canEdit && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="text-xs">
+                  <MoreVertical className="h-3.5 w-3.5 mr-1" />Bulk Actions
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setBulkDialog("copy")}>
+                  <Copy className="h-3.5 w-3.5 mr-2" />Copy from Previous Week
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {
+                  if (!selectedDay) { toast.error("Select a day first to use as source"); return; }
+                  setRangeStart(weekStart);
+                  setRangeEnd(weekEnd);
+                  setBulkDialog("apply");
+                }}>
+                  <CalendarRange className="h-3.5 w-3.5 mr-2" />Apply to Date Range
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setBulkDialog("recurring")}>
+                  <Repeat className="h-3.5 w-3.5 mr-2" />Recurring Schedule
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
 
           <Select value={selectedProjectId} onValueChange={(v) => { setSelectedProjectId(v); setSelectedDay(null); }}>
             <SelectTrigger className="w-[220px]"><SelectValue placeholder="All Projects" /></SelectTrigger>
@@ -292,6 +297,7 @@ export default function Schedule() {
           requiredHelp={selectedProject.required_helpers}
           requiredSup={selectedProject.required_supervisors}
           conflicts={dayConflicts(selectedDay)}
+          readOnly={!canEdit}
         />
       )}
 
@@ -316,6 +322,7 @@ export default function Schedule() {
                   conflicts={dayConflicts(selectedDay).filter((c) =>
                     c.projects.includes(p.name)
                   )}
+                  readOnly={!canEdit}
                 />
               ))
           )}
