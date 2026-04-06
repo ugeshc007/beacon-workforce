@@ -137,14 +137,14 @@ export default function Attendance() {
                         <td className="py-2.5">
                           <div className="flex items-center gap-1">
                             {log.office_punch_in_valid === true ? (
-                              <MapPin className="h-3.5 w-3.5 text-status-present" title="GPS valid" />
+                              <span title="GPS valid"><MapPin className="h-3.5 w-3.5 text-status-present" /></span>
                             ) : log.office_punch_in_valid === false ? (
-                              <MapPinOff className="h-3.5 w-3.5 text-status-absent" title="GPS invalid" />
+                              <span title="GPS invalid"><MapPinOff className="h-3.5 w-3.5 text-status-absent" /></span>
                             ) : (
                               <span className="text-muted-foreground text-xs">—</span>
                             )}
                             {log.office_punch_in_spoofed && (
-                              <ShieldAlert className="h-3.5 w-3.5 text-status-absent" title="GPS spoofing detected" />
+                              <span title="GPS spoofing detected"><ShieldAlert className="h-3.5 w-3.5 text-status-absent" /></span>
                             )}
                             {log.office_punch_in_distance_m != null && (
                               <span className="text-[10px] text-muted-foreground font-mono">{Math.round(Number(log.office_punch_in_distance_m))}m</span>
