@@ -49,7 +49,25 @@ export default function AttendanceReport() {
                 ["Employee", "Days Worked", "Avg Hours", "Late Days", "On Time %", "Punch-in Rate"],
                 data.rows.map((r) => [r.name, r.daysWorked, r.avgHours, r.lateDays, r.onTimePct, r.punchInRate])
               );
-            }}><Download className="h-3.5 w-3.5 mr-1" />Export</Button>
+            }}><Download className="h-3.5 w-3.5 mr-1" />CSV</Button>
+            <Button variant="outline" size="sm" className="text-xs" onClick={() => {
+              exportReportPdf({
+                title: "Attendance Report",
+                subtitle: monthLabel,
+                filename: `attendance-${month}.pdf`,
+                summaryCards: [
+                  { label: "Total Employees", value: String(data.totalEmployees) },
+                  { label: "Avg Attendance", value: `${data.avgAttendanceRate}%` },
+                  { label: "Avg Hours/Day", value: `${data.avgHoursPerDay}h` },
+                  { label: "Late Arrivals", value: String(data.totalLateDays) },
+                ],
+                tables: [{
+                  title: "Employee Attendance Detail",
+                  headers: ["Employee", "Days Worked", "Avg Hours", "Late Days", "On Time %", "Punch-in Rate"],
+                  rows: data.rows.map((r) => [r.name, r.daysWorked, `${r.avgHours}h`, r.lateDays, `${r.onTimePct}%`, `${r.punchInRate}%`]),
+                }],
+              });
+            }}><Download className="h-3.5 w-3.5 mr-1" />PDF</Button>
           )}
         </div>
       </div>

@@ -49,7 +49,25 @@ export default function AbsenteeReport() {
                 ["Employee", "Skill", "Absent Days", "Leave Days", "Unexcused", "Absence Rate %"],
                 data.rows.map((r) => [r.name, r.skill, r.absentDays, r.leaveDays, r.unexcusedDays, r.absenceRate])
               );
-            }}><Download className="h-3.5 w-3.5 mr-1" />Export</Button>
+            }}><Download className="h-3.5 w-3.5 mr-1" />CSV</Button>
+            <Button variant="outline" size="sm" className="text-xs" onClick={() => {
+              exportReportPdf({
+                title: "Absentee Report",
+                subtitle: monthLabel,
+                filename: `absentee-${month}.pdf`,
+                summaryCards: [
+                  { label: "Total Absent Days", value: String(data.totalAbsentDays) },
+                  { label: "On Leave", value: String(data.totalLeaveDays) },
+                  { label: "Unexcused", value: String(data.totalUnexcused) },
+                  { label: "Avg Absence Rate", value: `${data.avgAbsenceRate}%` },
+                ],
+                tables: [{
+                  title: "Absentee Detail",
+                  headers: ["Employee", "Skill", "Absent Days", "Leave Days", "Unexcused", "Absence Rate %"],
+                  rows: data.rows.map((r) => [r.name, r.skill, r.absentDays, r.leaveDays, r.unexcusedDays, `${r.absenceRate}%`]),
+                }],
+              });
+            }}><Download className="h-3.5 w-3.5 mr-1" />PDF</Button>
           )}
         </div>
       </div>

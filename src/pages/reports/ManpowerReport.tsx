@@ -47,7 +47,25 @@ export default function ManpowerReport() {
                 ["Project", "Status", "Required", "Assigned", "Fill Rate %", "Tech", "Helpers", "Supervisors"],
                 data.rows.map((r) => [r.name, r.status, r.required, r.assigned, r.fillRate, r.technicians, r.helpers, r.supervisors])
               );
-            }}><Download className="h-3.5 w-3.5 mr-1" />Export</Button>
+            }}><Download className="h-3.5 w-3.5 mr-1" />CSV</Button>
+            <Button variant="outline" size="sm" className="text-xs" onClick={() => {
+              exportReportPdf({
+                title: "Project Manpower Report",
+                subtitle: monthLabel,
+                filename: `manpower-${month}.pdf`,
+                summaryCards: [
+                  { label: "Active Projects", value: String(data.totalProjects) },
+                  { label: "Total Required", value: String(data.totalRequired) },
+                  { label: "Avg Fill Rate", value: `${data.avgFillRate}%` },
+                  { label: "Understaffed", value: String(data.understaffed) },
+                ],
+                tables: [{
+                  title: "Staffing Detail",
+                  headers: ["Project", "Status", "Required", "Assigned", "Fill Rate %", "Tech", "Helpers", "Supervisors"],
+                  rows: data.rows.map((r) => [r.name, r.status, r.required, r.assigned, `${r.fillRate}%`, r.technicians, r.helpers, r.supervisors]),
+                }],
+              });
+            }}><Download className="h-3.5 w-3.5 mr-1" />PDF</Button>
           )}
         </div>
       </div>

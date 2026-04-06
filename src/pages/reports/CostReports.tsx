@@ -78,7 +78,25 @@ export default function CostReports() {
                 ["Project", "Status", "Budget", "Labor", "OT", "Expenses", "Total", "Variance", "% Used", "Forecasted Final", "Value", "Margin %"],
                 data.byProject.map((p) => [p.name, p.status, p.budget, p.laborCost, p.otCost, p.expenses, p.totalCost, p.variance, p.pctUsed, p.forecastedFinal, p.projectValue, p.margin])
               );
-            }}><Download className="h-3.5 w-3.5 mr-1" />Export CSV</Button>
+            }}><Download className="h-3.5 w-3.5 mr-1" />CSV</Button>
+            <Button variant="outline" size="sm" className="text-xs" onClick={() => {
+              exportReportPdf({
+                title: "Project Costs Report",
+                subtitle: monthLabel,
+                filename: `project-costs-${month}.pdf`,
+                summaryCards: [
+                  { label: "Total Cost", value: `AED ${data.totalCost.toLocaleString()}` },
+                  { label: "Total Budget", value: `AED ${data.totalBudget.toLocaleString()}` },
+                  { label: "Labor Cost", value: `AED ${data.totalLabor.toLocaleString()}` },
+                  { label: "OT Cost", value: `AED ${data.totalOt.toLocaleString()}` },
+                ],
+                tables: [{
+                  title: "Budget vs Actual",
+                  headers: ["Project", "Status", "Budget", "Labor", "OT", "Expenses", "Total", "Variance", "% Used"],
+                  rows: data.byProject.map((p) => [p.name, p.status, `AED ${p.budget.toLocaleString()}`, `AED ${p.laborCost.toLocaleString()}`, `AED ${p.otCost.toLocaleString()}`, `AED ${p.expenses.toLocaleString()}`, `AED ${p.totalCost.toLocaleString()}`, `AED ${p.variance.toLocaleString()}`, `${p.pctUsed}%`]),
+                }],
+              });
+            }}><Download className="h-3.5 w-3.5 mr-1" />PDF</Button>
           )}
         </div>
       </div>

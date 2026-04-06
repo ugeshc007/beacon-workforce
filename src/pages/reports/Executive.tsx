@@ -65,7 +65,41 @@ export default function Executive() {
                 ["OT Hours", data.totalOtHours],
               ];
               downloadCsv(`executive-${month}.csv`, ["Metric", "Value"], rows);
-            }}><Download className="h-3.5 w-3.5 mr-1" />Export</Button>
+            }}><Download className="h-3.5 w-3.5 mr-1" />CSV</Button>
+            <Button variant="outline" size="sm" className="text-xs" onClick={() => {
+              exportReportPdf({
+                title: "Executive Summary",
+                subtitle: monthLabel,
+                filename: `executive-${month}.pdf`,
+                summaryCards: [
+                  { label: "Active Projects", value: String(data.activeProjects) },
+                  { label: "Deployed Today", value: String(data.deployedToday) },
+                  { label: "Utilization", value: `${data.companyUtilization}%` },
+                  { label: "Month Spend", value: `AED ${data.totalLaborCost.toLocaleString()}` },
+                ],
+                tables: [
+                  {
+                    title: "Key Metrics",
+                    headers: ["Metric", "Value"],
+                    rows: [
+                      ["Active Projects", data.activeProjects],
+                      ["Deployed Today", data.deployedToday],
+                      ["Company Utilization", `${data.companyUtilization}%`],
+                      ["Total Spend (AED)", `AED ${data.totalLaborCost.toLocaleString()}`],
+                      ["Last Month Spend", `AED ${data.prevMonthSpend.toLocaleString()}`],
+                      ["Spend Change", `${data.spendChange}%`],
+                      ["Total Hours", `${data.totalHours}h`],
+                      ["OT Hours", `${data.totalOtHours}h`],
+                    ],
+                  },
+                  ...(data.branchStats.length > 0 ? [{
+                    title: "Branch Comparison",
+                    headers: ["Branch", "Staff", "Hours", "Cost (AED)", "Utilization %"],
+                    rows: data.branchStats.map((b) => [b.name, b.employees, `${b.hours}h`, `AED ${b.cost.toLocaleString()}`, `${b.utilization}%`]),
+                  }] : []),
+                ],
+              });
+            }}><Download className="h-3.5 w-3.5 mr-1" />PDF</Button>
           )}
         </div>
       </div>
