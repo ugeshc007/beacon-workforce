@@ -160,3 +160,57 @@ export function useUpdateProject() {
     },
   });
 }
+
+export function useAssignEmployee() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      projectId,
+      employeeId,
+      date,
+      shiftStart,
+      shiftEnd,
+    }: {
+      projectId: string;
+      employeeId: string;
+      date: string;
+      shiftStart?: string;
+      shiftEnd?: string;
+    }) => {
+      const { data, error } = await supabase
+        .from("project_assignments")
+        .insert({
+          project_id: projectId,
+          employee_id: employeeId,
+          date,
+          shift_start: shiftStart ?? "08:00",
+          shift_end: shiftEnd ?? "17:00",
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ["project-team", vars.projectId] });
+      qc.invalidateQueries({ queryKey: ["project-stats", vars.projectId] });
+    },
+  });
+}
+
+export function useRemoveAssignment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ assignmentId, projectId }: { assignmentId: string; projectId: string }) => {
+      const { error } = await supabase
+        .from("project_assignments")
+        .delete()
+        .eq("id", assignmentId);
+      if (error) throw error;
+    },
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ["project-team", vars.projectId] });
+      qc.invalidateQueries({ queryKey: ["project-stats", vars.projectId] });
+    },
+  });
+}
