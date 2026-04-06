@@ -215,11 +215,11 @@ export function useProjectCosts(projectId: string | null) {
       const [laborRes, expenseRes] = await Promise.all([
         supabase
           .from("attendance_logs")
-          .select("date, regular_cost, overtime_cost, total_work_minutes, overtime_minutes")
+          .select("date, regular_cost, overtime_cost, total_work_minutes, overtime_minutes, employee_id, employees(name, employee_code)")
           .eq("project_id", projectId!),
         supabase
           .from("project_expenses")
-          .select("date, category, amount_aed, status")
+          .select("date, category, amount_aed, status, description")
           .eq("project_id", projectId!),
       ]);
 
@@ -241,6 +241,51 @@ export function useProjectCosts(projectId: string | null) {
         byCategory[e.category] = (byCategory[e.category] ?? 0) + Number(e.amount_aed ?? 0);
       }
 
+      // Weekly aggregation for charts
+      const weeklyMap = new Map<string, { week: string; labor: number; overtime: number; expenses: number }>();
+      const getWeekKey = (dateStr: string) => {
+        const d = new Date(dateStr + "T00:00:00");
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        const monday = new Date(d.setDate(diff));
+        return monday.toISOString().split("T")[0];
+      };
+
+      for (const r of laborRows) {
+        const wk = getWeekKey(r.date);
+        if (!weeklyMap.has(wk)) weeklyMap.set(wk, { week: wk, labor: 0, overtime: 0, expenses: 0 });
+        const w = weeklyMap.get(wk)!;
+        w.labor += Number(r.regular_cost ?? 0);
+        w.overtime += Number(r.overtime_cost ?? 0);
+      }
+      for (const e of expenseRows.filter((e) => e.status === "approved")) {
+        const wk = getWeekKey(e.date);
+        if (!weeklyMap.has(wk)) weeklyMap.set(wk, { week: wk, labor: 0, overtime: 0, expenses: 0 });
+        weeklyMap.get(wk)!.expenses += Number(e.amount_aed ?? 0);
+      }
+      const weeklyData = Array.from(weeklyMap.values()).sort((a, b) => a.week.localeCompare(b.week));
+
+      // Daily records for drill-down
+      const dailyMap = new Map<string, { date: string; labor: number; overtime: number; expenses: number; records: any[] }>();
+      for (const r of laborRows) {
+        if (!dailyMap.has(r.date)) dailyMap.set(r.date, { date: r.date, labor: 0, overtime: 0, expenses: 0, records: [] });
+        const d = dailyMap.get(r.date)!;
+        d.labor += Number(r.regular_cost ?? 0);
+        d.overtime += Number(r.overtime_cost ?? 0);
+        d.records.push({ type: "labor", employee: (r as any).employees?.name ?? "Unknown", regular: Number(r.regular_cost ?? 0), ot: Number(r.overtime_cost ?? 0), minutes: r.total_work_minutes });
+      }
+      for (const e of expenseRows.filter((e) => e.status === "approved")) {
+        if (!dailyMap.has(e.date)) dailyMap.set(e.date, { date: e.date, labor: 0, overtime: 0, expenses: 0, records: [] });
+        const d = dailyMap.get(e.date)!;
+        d.expenses += Number(e.amount_aed ?? 0);
+        d.records.push({ type: "expense", category: e.category, amount: Number(e.amount_aed ?? 0), description: e.description });
+      }
+      const dailyData = Array.from(dailyMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+
+      // Unique dates with costs for forecast
+      const uniqueDates = new Set([...laborRows.map((r) => r.date), ...expenseRows.filter((e) => e.status === "approved").map((e) => e.date)]);
+      const daysWithCost = uniqueDates.size;
+
       return {
         totalLabor,
         totalOT,
@@ -250,6 +295,9 @@ export function useProjectCosts(projectId: string | null) {
         byCategory,
         laborRows,
         expenseRows,
+        weeklyData,
+        dailyData,
+        daysWithCost,
       };
     },
   });
