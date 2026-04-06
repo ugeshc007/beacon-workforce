@@ -34,7 +34,9 @@ export default function Executive() {
   const month = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, "0")}`;
   const monthLabel = target.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
 
-  const { data, isLoading } = useExecutiveData(month);
+  const startDate = `${month}-01`;
+  const endDate = new Date(target.getFullYear(), target.getMonth() + 1, 0).toISOString().slice(0, 10);
+  const { data, isLoading } = useExecutiveData(startDate, endDate);
 
   return (
     <div className="space-y-6">

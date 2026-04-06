@@ -319,7 +319,7 @@ export default function CostReports() {
                   <Building2 className="h-4 w-4 text-brand" /> {drillProject?.name}
                 </DialogTitle>
                 <DialogDescription>
-                  {monthLabel} · {drillProject?.status?.replace("_", " ")}
+                  {dateRange.label} · {drillProject?.status?.replace("_", " ")}
                 </DialogDescription>
               </DialogHeader>
 

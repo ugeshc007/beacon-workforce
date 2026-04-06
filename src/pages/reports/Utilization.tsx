@@ -22,17 +22,16 @@ import {
 const DOW_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export default function Utilization() {
-  const now = new Date();
-  const [monthOffset, setMonthOffset] = useState(0);
-  const target = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
-  const month = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, "0")}`;
-  const monthLabel = target.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
-
   const [skillFilter, setSkillFilter] = useState("all");
   const [branchFilter, setBranchFilter] = useState("all");
   const [drillRow, setDrillRow] = useState<UtilizationRow | null>(null);
 
-  const { data, isLoading } = useUtilizationData(month, {
+  // Import date range filter
+  const { useReportDateRange } = await import("@/components/reports/ReportDateFilter");
+  const [dateRange, setDateRange] = useReportDateRange("This Month");
+  const monthLabel = dateRange.label;
+
+  const { data, isLoading } = useUtilizationData(dateRange.start, dateRange.end, {
     skillType: skillFilter,
     branchId: branchFilter,
   });
