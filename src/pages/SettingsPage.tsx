@@ -97,7 +97,8 @@ function BranchDialog({ branch, onClose }: {
   );
 }
 
-// ─── Main page ──────────────────────────────────────────────
+  const { isAdmin } = useAuth();
+  
 export default function SettingsPage() {
   const { data: settings, isLoading } = useSettings();
   const save = useSaveSettings();
