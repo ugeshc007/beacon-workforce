@@ -9,13 +9,19 @@ import {
   useAddAssignment,
   useRemoveAssignment,
   useToggleLock,
+  useUpdateAssignment,
+  useReassignEmployee,
   type ScheduleAssignment,
 } from "@/hooks/useSchedule";
-import { Lock, LockOpen, Plus, Trash2, AlertTriangle, Zap, User, Clock, Timer } from "lucide-react";
+import { useProjects } from "@/hooks/useProjects";
+import { Lock, LockOpen, Plus, Trash2, AlertTriangle, Zap, User, Clock, Timer, Pencil, ArrowRightLeft, Check, X } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -53,6 +59,11 @@ export function DayAssignmentPanel({
   const addAssignment = useAddAssignment();
   const removeAssignment = useRemoveAssignment();
   const toggleLock = useToggleLock();
+  const updateAssignment = useUpdateAssignment();
+  const reassignEmployee = useReassignEmployee();
+  const { data: allProjects } = useProjects({ status: "all" });
+  const activeProjects = (allProjects ?? []).filter((p) => ["planned", "assigned", "in_progress"].includes(p.status) && p.id !== projectId);
+
   const [addingSkill, setAddingSkill] = useState<string | null>(null);
   const [shiftStart, setShiftStart] = useState("08:00");
   const [shiftEnd, setShiftEnd] = useState("17:00");
@@ -60,6 +71,21 @@ export function DayAssignmentPanel({
   const [autoShiftEnd, setAutoShiftEnd] = useState("17:00");
   const [autoLoading, setAutoLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+
+  // Edit time state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editStart, setEditStart] = useState("");
+  const [editEnd, setEditEnd] = useState("");
+
+  // Reassign state
+  const [reassignId, setReassignId] = useState<string | null>(null);
+  const [reassignEmpId, setReassignEmpId] = useState("");
+  const [reassignEmpName, setReassignEmpName] = useState("");
+  const [reassignProject, setReassignProject] = useState("");
+  const [reassignStart, setReassignStart] = useState("");
+  const [reassignEnd, setReassignEnd] = useState("17:00");
+  const [reassignKeepOld, setReassignKeepOld] = useState(true);
+  const [reassignOldEnd, setReassignOldEnd] = useState("");
 
   const techCount = assignments.filter((a) => a.employee_skill === "technician").length;
   const helpCount = assignments.filter((a) => a.employee_skill === "helper").length;
@@ -81,6 +107,63 @@ export function DayAssignmentPanel({
       });
       toast({ title: "Employee assigned" });
       setAddingSkill(null);
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+  };
+
+  const handleEditTime = (a: ScheduleAssignment) => {
+    setEditingId(a.id);
+    setEditStart(formatTime(a.shift_start) || "08:00");
+    setEditEnd(formatTime(a.shift_end) || "17:00");
+  };
+
+  const handleSaveTime = async () => {
+    if (!editingId) return;
+    try {
+      await updateAssignment.mutateAsync({ id: editingId, shift_start: editStart, shift_end: editEnd });
+      toast({ title: "Shift time updated" });
+      setEditingId(null);
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+  };
+
+  const openReassign = (a: ScheduleAssignment) => {
+    setReassignId(a.id);
+    setReassignEmpId(a.employee_id);
+    setReassignEmpName(a.employee_name);
+    const currentEnd = formatTime(a.shift_end) || "17:00";
+    const currentStart = formatTime(a.shift_start) || "08:00";
+    // Default: split at midpoint
+    const [sh, sm] = currentStart.split(":").map(Number);
+    const [eh, em] = currentEnd.split(":").map(Number);
+    const midMin = Math.round((sh * 60 + sm + eh * 60 + em) / 2);
+    const midH = String(Math.floor(midMin / 60)).padStart(2, "0");
+    const midM = String(midMin % 60).padStart(2, "0");
+    const mid = `${midH}:${midM}`;
+    setReassignOldEnd(mid);
+    setReassignStart(mid);
+    setReassignEnd(currentEnd);
+    setReassignKeepOld(true);
+    setReassignProject("");
+  };
+
+  const handleReassign = async () => {
+    if (!reassignId || !reassignProject) return;
+    try {
+      await reassignEmployee.mutateAsync({
+        oldAssignmentId: reassignId,
+        newProjectId: reassignProject,
+        employeeId: reassignEmpId,
+        date,
+        shiftStart: reassignStart,
+        shiftEnd: reassignEnd,
+        keepOld: reassignKeepOld,
+        oldShiftEnd: reassignKeepOld ? reassignOldEnd : undefined,
+      });
+      toast({ title: reassignKeepOld ? "Employee split across projects" : "Employee reassigned" });
+      setReassignId(null);
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     }
@@ -242,41 +325,57 @@ export function DayAssignmentPanel({
           )}
           {assignments.map((a) => {
             const countdown = getCountdown(a.shift_start, a.shift_end);
+            const isEditing = editingId === a.id;
             return (
-            <div key={a.id} className="flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-accent/30 transition-colors group">
-              <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <span className="text-sm flex-1 truncate">{a.employee_name}</span>
-              <span className={`text-[9px] flex items-center gap-0.5 ${countdownColor[countdown.status]}`}>
-                <Timer className="h-2.5 w-2.5" />
-                {countdown.label}
-              </span>
-              <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                <Clock className="h-2.5 w-2.5" />
-                {formatTime(a.shift_start) || "08:00"}–{formatTime(a.shift_end) || "17:00"}
-              </span>
-              <Badge variant="outline" className={`text-[10px] ${skillColors[a.employee_skill] ?? ""}`}>
-                {a.employee_skill}
-              </Badge>
-              {a.assignment_mode !== "manual" && (
-                <Badge variant="secondary" className="text-[10px]">{a.assignment_mode}</Badge>
-              )}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 opacity-0 group-hover:opacity-100"
-                onClick={() => toggleLock.mutate({ id: a.id, is_locked: !a.is_locked })}
-              >
-                {a.is_locked ? <Lock className="h-3 w-3 text-brand" /> : <LockOpen className="h-3 w-3 text-muted-foreground" />}
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 opacity-0 group-hover:opacity-100 text-destructive"
-                onClick={() => handleRemove(a.id)}
-                disabled={a.is_locked}
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
+            <div key={a.id} className="space-y-1">
+              <div className="flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-accent/30 transition-colors group">
+                <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <span className="text-sm flex-1 truncate">{a.employee_name}</span>
+                <span className={`text-[9px] flex items-center gap-0.5 ${countdownColor[countdown.status]}`}>
+                  <Timer className="h-2.5 w-2.5" />
+                  {countdown.label}
+                </span>
+                {isEditing ? (
+                  <div className="flex items-center gap-1">
+                    <Input type="time" value={editStart} onChange={(e) => setEditStart(e.target.value)} className="h-6 text-[10px] w-20" />
+                    <span className="text-[10px] text-muted-foreground">–</span>
+                    <Input type="time" value={editEnd} onChange={(e) => setEditEnd(e.target.value)} className="h-6 text-[10px] w-20" />
+                    <Button variant="ghost" size="icon" className="h-5 w-5 text-status-present" onClick={handleSaveTime}><Check className="h-3 w-3" /></Button>
+                    <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setEditingId(null)}><X className="h-3 w-3" /></Button>
+                  </div>
+                ) : (
+                  <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                    <Clock className="h-2.5 w-2.5" />
+                    {formatTime(a.shift_start) || "08:00"}–{formatTime(a.shift_end) || "17:00"}
+                  </span>
+                )}
+                <Badge variant="outline" className={`text-[10px] ${skillColors[a.employee_skill] ?? ""}`}>
+                  {a.employee_skill}
+                </Badge>
+                {a.assignment_mode !== "manual" && (
+                  <Badge variant="secondary" className="text-[10px]">{a.assignment_mode}</Badge>
+                )}
+                {!isEditing && (
+                  <>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100" title="Edit time"
+                      onClick={() => handleEditTime(a)} disabled={a.is_locked}>
+                      <Pencil className="h-3 w-3 text-muted-foreground" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100" title="Reassign / Split"
+                      onClick={() => openReassign(a)} disabled={a.is_locked}>
+                      <ArrowRightLeft className="h-3 w-3 text-brand" />
+                    </Button>
+                  </>
+                )}
+                <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                  onClick={() => toggleLock.mutate({ id: a.id, is_locked: !a.is_locked })}>
+                  {a.is_locked ? <Lock className="h-3 w-3 text-brand" /> : <LockOpen className="h-3 w-3 text-muted-foreground" />}
+                </Button>
+                <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 text-destructive"
+                  onClick={() => handleRemove(a.id)} disabled={a.is_locked}>
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
             </div>
             );
           })}
@@ -397,6 +496,62 @@ export function DayAssignmentPanel({
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={() => { setConfirmOpen(false); handleAutoAssign(); }}>
               <Zap className="h-3.5 w-3.5 mr-1" /> Assign {totalToFill} employees
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reassign / Split dialog */}
+      <AlertDialog open={!!reassignId} onOpenChange={(open) => { if (!open) setReassignId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reassign {reassignEmpName}</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                <p className="text-sm">Move to another project or split shift time across sites.</p>
+
+                <div className="space-y-2">
+                  <Label className="text-xs">Target Project</Label>
+                  <Select value={reassignProject} onValueChange={setReassignProject}>
+                    <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select project" /></SelectTrigger>
+                    <SelectContent>
+                      {activeProjects.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Switch id="keep-old" checked={reassignKeepOld} onCheckedChange={setReassignKeepOld} />
+                  <Label htmlFor="keep-old" className="text-xs">Keep on {projectName} (split shift)</Label>
+                </div>
+
+                {reassignKeepOld && (
+                  <div className="space-y-1.5 rounded-lg bg-accent/20 p-2.5">
+                    <p className="text-xs font-medium">{projectName}</p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">Ends at:</span>
+                      <Input type="time" value={reassignOldEnd} onChange={(e) => { setReassignOldEnd(e.target.value); setReassignStart(e.target.value); }} className="h-7 text-xs w-24" />
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-1.5 rounded-lg bg-brand/5 border border-brand/20 p-2.5">
+                  <p className="text-xs font-medium">New project shift</p>
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                    <Input type="time" value={reassignStart} onChange={(e) => setReassignStart(e.target.value)} className="h-7 text-xs w-24" />
+                    <span className="text-xs text-muted-foreground">to</span>
+                    <Input type="time" value={reassignEnd} onChange={(e) => setReassignEnd(e.target.value)} className="h-7 text-xs w-24" />
+                  </div>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleReassign} disabled={!reassignProject}>
+              <ArrowRightLeft className="h-3.5 w-3.5 mr-1" />
+              {reassignKeepOld ? "Split Shift" : "Reassign"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
