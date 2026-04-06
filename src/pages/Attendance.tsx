@@ -8,6 +8,7 @@ import { StatCard } from "@/components/ui/stat-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DateInput } from "@/components/ui/date-input";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -94,7 +95,7 @@ export default function Attendance() {
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <Button variant="outline" size="sm" className="text-xs" onClick={() => setDate(today)}>Today</Button>
-            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-[140px] h-8 text-xs" />
+            <DateInput value={date} onChange={setDate} className="w-[150px]" />
             <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => shiftDate(1)}>
               <ChevronRight className="h-4 w-4" />
             </Button>

@@ -13,6 +13,7 @@ import { useAvailableEmployees } from "@/hooks/useSchedule";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DateInput } from "@/components/ui/date-input";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -191,7 +192,7 @@ export default function DailyTeam() {
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <Button variant="outline" size="sm" className="text-xs" onClick={() => setDate(today)}>Today</Button>
-            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-[140px] h-8 text-xs" />
+            <DateInput value={date} onChange={setDate} className="w-[150px]" />
             <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => shiftDate(1)}>
               <ChevronRight className="h-4 w-4" />
             </Button>

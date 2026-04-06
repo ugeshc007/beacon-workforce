@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/ui/date-input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -226,7 +227,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
               <FormField control={form.control} name="join_date" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Join Date</FormLabel>
-                  <FormControl><Input type="date" {...field} /></FormControl>
+                  <FormControl><DateInput value={field.value ?? ""} onChange={field.onChange} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />

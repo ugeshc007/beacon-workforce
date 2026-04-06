@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/ui/date-input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -355,11 +356,11 @@ export default function Schedule() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs">Start Date</Label>
-                <Input type="date" value={rangeStart} onChange={(e) => setRangeStart(e.target.value)} className="mt-1" />
+                <DateInput value={rangeStart} onChange={setRangeStart} className="mt-1" />
               </div>
               <div>
                 <Label className="text-xs">End Date</Label>
-                <Input type="date" value={rangeEnd} onChange={(e) => setRangeEnd(e.target.value)} className="mt-1" />
+                <DateInput value={rangeEnd} onChange={setRangeEnd} className="mt-1" />
               </div>
             </div>
             <div className="flex items-center gap-2">
