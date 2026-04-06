@@ -117,7 +117,13 @@ export function DayAssignmentPanel({
       if (data?.error) throw new Error(data.error);
       queryClient.invalidateQueries({ queryKey: ["schedule-assignments"] });
       queryClient.invalidateQueries({ queryKey: ["available-employees"] });
-      toast({ title: "Auto-assign complete", description: `${data.assigned?.length ?? 0} employees assigned` });
+      const doubleBooked = (data.assigned ?? []).filter((a: any) => a.doubleBooked);
+      if (doubleBooked.length > 0) {
+        const names = doubleBooked.map((a: any) => `${a.name} (also on ${a.otherProjects?.join(", ")})`).join("; ");
+        toast({ title: "Auto-assign complete — with conflicts", description: `${data.assigned?.length ?? 0} assigned. ⚠️ Double-booked: ${names}`, variant: "destructive" });
+      } else {
+        toast({ title: "Auto-assign complete", description: `${data.assigned?.length ?? 0} employees assigned` });
+      }
     } catch (e: any) {
       toast({ title: "Auto-assign failed", description: e.message, variant: "destructive" });
     } finally {
