@@ -47,14 +47,15 @@ Deno.serve(async (req) => {
     const assignShiftStart = shiftStart ?? "08:00";
     const assignShiftEnd = shiftEnd ?? "17:00";
 
-    // Get project branch
+    // Get project branch + name
     const { data: project } = await supabase
       .from("projects")
-      .select("branch_id")
+      .select("branch_id, name, branches(name)")
       .eq("id", projectId)
       .single();
 
     if (!project) return errorResponse("Project not found", 404);
+    const branchName = (project.branches as any)?.name ?? "Unknown";
 
     // Get month boundaries for scoring
     const dateObj = new Date(date);
