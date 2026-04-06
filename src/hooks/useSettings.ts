@@ -26,6 +26,7 @@ const SETTING_KEYS = [
   "notification_absent_alert_delay",
   "notification_ot_warning_hours",
   "cron_absent_check_time",
+  "cron_morning_briefing_time",
 ];
 
 export function useSettings() {

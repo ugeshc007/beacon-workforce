@@ -219,21 +219,24 @@ export default function SettingsPage() {
         <TabsContent value="notifications">
           <SectionCard icon={Bell} title="Notification Rules" desc="Configure alert timing and thresholds."
             onSave={async () => {
-              await saveSection(["notification_morning_briefing", "notification_absent_alert_delay", "notification_ot_warning_hours", "cron_absent_check_time"]);
-              // Update the cron schedule if time changed
-              const timeVal = form.cron_absent_check_time;
-              if (timeVal && /^\d{2}:\d{2}$/.test(timeVal)) {
+              await saveSection(["notification_morning_briefing", "notification_absent_alert_delay", "notification_ot_warning_hours", "cron_absent_check_time", "cron_morning_briefing_time"]);
+              const { supabase } = await import("@/integrations/supabase/client");
+              // Update absent check cron
+              const absentTime = form.cron_absent_check_time;
+              if (absentTime && /^\d{2}:\d{2}$/.test(absentTime)) {
                 try {
-                  const { supabase } = await import("@/integrations/supabase/client");
-                  const { data: sessionData } = await supabase.auth.getSession();
-                  const token = sessionData?.session?.access_token;
-                  if (token) {
-                    await supabase.functions.invoke("update-cron-schedule", {
-                      body: { time_uae: timeVal },
-                    });
-                  }
+                  await supabase.functions.invoke("update-cron-schedule", { body: { time_uae: absentTime } });
                 } catch (err) {
-                  console.error("Failed to update cron schedule:", err);
+                  console.error("Failed to update absent check cron:", err);
+                }
+              }
+              // Update morning briefing cron
+              const briefingTime = form.cron_morning_briefing_time;
+              if (briefingTime && /^\d{2}:\d{2}$/.test(briefingTime)) {
+                try {
+                  await supabase.functions.invoke("update-cron-schedule", { body: { time_uae: briefingTime, job: "morning-briefing" } });
+                } catch (err) {
+                  console.error("Failed to update briefing cron:", err);
                 }
               }
             }} saving={save.isPending}>
@@ -244,7 +247,10 @@ export default function SettingsPage() {
                   <span className="text-xs text-muted-foreground">{isOn("notification_morning_briefing") ? "Enabled" : "Disabled"}</span>
                 </div>
               </Field>
-              <Field label="Absent Check Time (UAE)" hint="Daily time to run absence check and notify managers. 24h format HH:MM.">
+              <Field label="Briefing Time (UAE)" hint="Daily time to send morning briefing notifications. 24h format.">
+                <Input type="time" value={form.cron_morning_briefing_time ?? "07:00"} onChange={(e) => set("cron_morning_briefing_time", e.target.value)} />
+              </Field>
+              <Field label="Absent Check Time (UAE)" hint="Daily time to run absence check and notify managers. 24h format.">
                 <Input type="time" value={form.cron_absent_check_time ?? "09:00"} onChange={(e) => set("cron_absent_check_time", e.target.value)} />
               </Field>
               <Field label="Absent Alert Delay (min)" hint="Minutes after shift start to send absence alerts.">
