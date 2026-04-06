@@ -71,9 +71,10 @@ Deno.serve(async (req) => {
     }
 
     // Parallel data fetches
-    const [leaveRes, busyRes, monthAssignRes, monthAttendRes, lastAssignRes] = await Promise.all([
+    const [leaveRes, busyRes, alreadyAssignedRes, monthAssignRes, monthAttendRes, lastAssignRes] = await Promise.all([
       supabase.from("employee_leave").select("employee_id").lte("start_date", date).gte("end_date", date),
       supabase.from("project_assignments").select("employee_id").eq("date", date).neq("project_id", projectId),
+      supabase.from("project_assignments").select("employee_id").eq("date", date).eq("project_id", projectId),
       supabase.from("project_assignments").select("employee_id").gte("date", firstOfMonth).lte("date", lastOfMonth),
       supabase.from("attendance_logs").select("employee_id, total_work_minutes").gte("date", firstOfMonth).lte("date", lastOfMonth),
       supabase.from("project_assignments").select("employee_id, date").lte("date", date).order("date", { ascending: false }),
@@ -81,6 +82,7 @@ Deno.serve(async (req) => {
 
     const onLeave = new Set((leaveRes.data ?? []).map((l) => l.employee_id));
     const busy = new Set((busyRes.data ?? []).map((b) => b.employee_id));
+    const alreadyOnProject = new Set((alreadyAssignedRes.data ?? []).map((a) => a.employee_id));
 
     const assignmentCounts: Record<string, number> = {};
     for (const a of monthAssignRes.data ?? []) {
