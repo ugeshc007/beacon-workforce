@@ -96,7 +96,7 @@ export function PurchaseInvoiceDialog({ projectId, open, onOpenChange }: Props) 
     }
 
     const expenses = validLines.map((l) => {
-      const amt = parseFloat(l.amount);
+      const amt = (parseFloat(l.quantity) || 0) * (parseFloat(l.unitRate) || 0);
       const amountAed = currency === "AED" ? amt : Math.round(amt * rate * 100) / 100;
       const needsApproval = threshold > 0 && amountAed > threshold;
       return {
