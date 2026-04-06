@@ -14,11 +14,15 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Building2, MapPin, Clock, Bell, Shield, Database, Save, Plus, Pencil,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Building2, MapPin, Clock, Bell, Shield, Database, Save, Plus, Pencil, Trash2,
   Map, FileText, Download, Eye,
 } from "lucide-react";
 import {
-  useSettings, useSaveSettings, useBranchList, useCreateBranch, useUpdateBranch,
+  useSettings, useSaveSettings, useBranchList, useCreateBranch, useUpdateBranch, useDeleteBranch,
   useSystemAuditLog, useAssignmentAuditLog,
   type SettingsMap,
 } from "@/hooks/useSettings";
@@ -119,10 +123,12 @@ export default function SettingsPage() {
   const { data: settings, isLoading } = useSettings();
   const save = useSaveSettings();
   const { data: branches, isLoading: branchesLoading } = useBranchList();
+  const deleteBranch = useDeleteBranch();
 
   const [form, setForm] = useState<SettingsMap>({});
   const [branchDialogOpen, setBranchDialogOpen] = useState(false);
   const [editingBranch, setEditingBranch] = useState<typeof branches extends (infer T)[] ? T : never | null>(null);
+  const [deletingBranch, setDeletingBranch] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     if (settings) setForm(settings);
@@ -390,6 +396,9 @@ export default function SettingsPage() {
                         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditingBranch(b); setBranchDialogOpen(true); }}>
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeletingBranch({ id: b.id, name: b.name })}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -402,6 +411,31 @@ export default function SettingsPage() {
             open={branchDialogOpen}
             onOpenChange={(open) => { setBranchDialogOpen(open); if (!open) setEditingBranch(null); }}
           />
+          <AlertDialog open={!!deletingBranch} onOpenChange={(open) => { if (!open) setDeletingBranch(null); }}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete branch "{deletingBranch?.name}"?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently remove the branch. Deletion is blocked if the branch has active employees or projects.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  disabled={deleteBranch.isPending}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (deletingBranch) {
+                      deleteBranch.mutate(deletingBranch.id, { onSuccess: () => setDeletingBranch(null) });
+                    }
+                  }}
+                >
+                  {deleteBranch.isPending ? "Deleting…" : "Delete"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </TabsContent>
 
         {/* ── Permissions ─────────────────── */}
