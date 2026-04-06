@@ -42,7 +42,6 @@ export default function Executive() {
         </div>
         <div className="flex items-center gap-1 flex-wrap">
           <ReportDateFilter value={dateRange} onChange={setDateRange} />
-          </Button>
           {data && (<>
             <Button variant="outline" size="sm" className="text-xs ml-2" onClick={() => {
               const rows: (string | number)[][] = [
