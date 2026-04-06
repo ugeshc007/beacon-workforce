@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronLeft, ChevronRight, Download, Clock, DollarSign, TrendingUp, AlertTriangle } from "lucide-react";
 import { downloadCsv } from "@/lib/csv-export";
+import { exportReportPdf } from "@/lib/pdf-export";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LineChart, Line, Legend } from "recharts";
 
 export default function OvertimeReport() {
@@ -40,14 +41,32 @@ export default function OvertimeReport() {
               </SelectContent>
             </Select>
           )}
-          {data && (
+          {data && (<>
             <Button variant="outline" size="sm" className="text-xs ml-1" onClick={() => {
               downloadCsv(`overtime-${month}.csv`,
                 ["Employee", "Skill", "Regular Hours", "OT Hours", "OT Cost (AED)", "OT Days", "OT Ratio %"],
                 data.rows.map((r) => [r.name, r.skill, r.regularHours, r.otHours, r.otCost, r.otDays, r.otRatio])
               );
-            }}><Download className="h-3.5 w-3.5 mr-1" />Export</Button>
-          )}
+            }}><Download className="h-3.5 w-3.5 mr-1" />CSV</Button>
+            <Button variant="outline" size="sm" className="text-xs" onClick={() => {
+              exportReportPdf({
+                title: "Overtime Report",
+                subtitle: monthLabel,
+                filename: `overtime-${month}.pdf`,
+                summaryCards: [
+                  { label: "Total OT Hours", value: `${data.totalOtHours}h` },
+                  { label: "Total OT Cost", value: `AED ${data.totalOtCost.toLocaleString()}` },
+                  { label: "Employees with OT", value: String(data.employeesWithOt) },
+                  { label: "Avg OT/Employee", value: `${data.avgOtPerEmployee}h` },
+                ],
+                tables: [{
+                  title: "Overtime Detail",
+                  headers: ["Employee", "Skill", "Regular Hours", "OT Hours", "OT Cost (AED)", "OT Days", "OT Ratio %"],
+                  rows: data.rows.map((r) => [r.name, r.skill, `${r.regularHours}h`, `${r.otHours}h`, `AED ${r.otCost.toLocaleString()}`, r.otDays, `${r.otRatio}%`]),
+                }],
+              });
+            }}><Download className="h-3.5 w-3.5 mr-1" />PDF</Button>
+          </>)}
         </div>
       </div>
 

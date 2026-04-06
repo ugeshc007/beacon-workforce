@@ -13,6 +13,7 @@ import {
   Download, Timer, BatteryLow, AlertTriangle, CalendarX,
 } from "lucide-react";
 import { downloadCsv } from "@/lib/csv-export";
+import { exportReportPdf } from "@/lib/pdf-export";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   LineChart, Line, CartesianGrid, PieChart, Pie, Cell, Legend,
@@ -92,14 +93,32 @@ export default function Utilization() {
           <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setMonthOffset((m) => m + 1)}>
             <ChevronRight className="h-4 w-4" />
           </Button>
-          {data && (
+          {data && (<>
             <Button variant="outline" size="sm" className="text-xs ml-2" onClick={() => {
               downloadCsv(`utilization-${month}.csv`,
                 ["Employee", "Skill", "Days Worked", "Hours", "OT Hours", "Idle Hours", "Capacity", "Utilization %"],
                 data.rows.map((r) => [r.name, r.skill_type, r.daysWorked, r.totalHours, r.otHours, r.idleHours, r.capacity, r.utilization])
               );
-            }}><Download className="h-3.5 w-3.5 mr-1" />Export CSV</Button>
-          )}
+            }}><Download className="h-3.5 w-3.5 mr-1" />CSV</Button>
+            <Button variant="outline" size="sm" className="text-xs" onClick={() => {
+              exportReportPdf({
+                title: "Staff Utilization Report",
+                subtitle: monthLabel,
+                filename: `utilization-${month}.pdf`,
+                summaryCards: [
+                  { label: "Avg Utilization", value: `${data.avgUtilization}%` },
+                  { label: "Total Worked", value: `${data.totalWorkedHours}h` },
+                  { label: "Idle Hours", value: `${data.totalIdleHours}h` },
+                  { label: "OT Hours", value: `${data.totalOtHours}h` },
+                ],
+                tables: [{
+                  title: "Employee Utilization Detail",
+                  headers: ["Employee", "Skill", "Days", "Hours", "OT", "Idle", "Capacity", "Utilization %"],
+                  rows: data.rows.map((r) => [r.name, r.skill_type, r.daysWorked, `${r.totalHours}h`, `${r.otHours}h`, `${r.idleHours}h`, `${r.capacity}h`, `${r.utilization}%`]),
+                }],
+              });
+            }}><Download className="h-3.5 w-3.5 mr-1" />PDF</Button>
+          </>)}
         </div>
       </div>
 

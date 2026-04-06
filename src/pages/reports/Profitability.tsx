@@ -7,6 +7,7 @@ import { StatCard } from "@/components/ui/stat-card";
 import { DollarSign, TrendingUp, TrendingDown, Percent, Download } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine, Cell } from "recharts";
 import { downloadCsv } from "@/lib/csv-export";
+import { exportReportPdf } from "@/lib/pdf-export";
 
 export default function Profitability() {
   const { data, isLoading } = useProfitabilityData();
@@ -19,12 +20,32 @@ export default function Profitability() {
           <p className="text-sm text-muted-foreground">Budget vs actual cost with margin analysis</p>
         </div>
         {data && (
-          <Button variant="outline" size="sm" className="text-xs" onClick={() => {
-            downloadCsv("profitability.csv",
-              ["Project", "Status", "Value (AED)", "Budget (AED)", "Labor", "OT", "Expenses", "Total Cost", "Gross Profit", "Margin %", "Budget Variance", "Budget Used %"],
-              data.rows.map((r) => [r.name, r.status, r.projectValue, r.budget, r.laborCost, r.otCost, r.expenseCost, r.totalCost, r.grossProfit, r.margin, r.budgetVariance, r.budgetUsedPct])
-            );
-          }}><Download className="h-3.5 w-3.5 mr-1" />Export CSV</Button>
+          <div className="flex gap-1">
+            <Button variant="outline" size="sm" className="text-xs" onClick={() => {
+              downloadCsv("profitability.csv",
+                ["Project", "Status", "Value (AED)", "Budget (AED)", "Labor", "OT", "Expenses", "Total Cost", "Gross Profit", "Margin %", "Budget Variance", "Budget Used %"],
+                data.rows.map((r) => [r.name, r.status, r.projectValue, r.budget, r.laborCost, r.otCost, r.expenseCost, r.totalCost, r.grossProfit, r.margin, r.budgetVariance, r.budgetUsedPct])
+              );
+            }}><Download className="h-3.5 w-3.5 mr-1" />CSV</Button>
+            <Button variant="outline" size="sm" className="text-xs" onClick={() => {
+              exportReportPdf({
+                title: "Project Profitability",
+                subtitle: "Budget vs actual cost with margin analysis",
+                filename: "profitability.pdf",
+                summaryCards: [
+                  { label: "Total Revenue", value: `AED ${data.totals.value.toLocaleString()}` },
+                  { label: "Total Cost", value: `AED ${data.totals.cost.toLocaleString()}` },
+                  { label: "Gross Profit", value: `AED ${data.totals.profit.toLocaleString()}` },
+                  { label: "Avg Margin", value: `${data.avgMargin}%` },
+                ],
+                tables: [{
+                  title: "Profitability Detail",
+                  headers: ["Project", "Status", "Value", "Budget", "Total Cost", "Gross Profit", "Margin %", "Budget Used %"],
+                  rows: data.rows.map((r) => [r.name, r.status, r.projectValue > 0 ? `AED ${r.projectValue.toLocaleString()}` : "—", r.budget > 0 ? `AED ${r.budget.toLocaleString()}` : "—", `AED ${r.totalCost.toLocaleString()}`, `AED ${r.grossProfit.toLocaleString()}`, `${r.margin}%`, `${r.budgetUsedPct}%`]),
+                }],
+              });
+            }}><Download className="h-3.5 w-3.5 mr-1" />PDF</Button>
+          </div>
         )}
       </div>
 

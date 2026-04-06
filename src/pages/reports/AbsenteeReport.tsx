@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronLeft, ChevronRight, Download, CalendarX, Users, TrendingDown, AlertTriangle } from "lucide-react";
 import { downloadCsv } from "@/lib/csv-export";
+import { exportReportPdf } from "@/lib/pdf-export";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -42,14 +43,32 @@ export default function AbsenteeReport() {
               </SelectContent>
             </Select>
           )}
-          {data && (
+          {data && (<>
             <Button variant="outline" size="sm" className="text-xs ml-1" onClick={() => {
               downloadCsv(`absentee-${month}.csv`,
                 ["Employee", "Skill", "Absent Days", "Leave Days", "Unexcused", "Absence Rate %"],
                 data.rows.map((r) => [r.name, r.skill, r.absentDays, r.leaveDays, r.unexcusedDays, r.absenceRate])
               );
-            }}><Download className="h-3.5 w-3.5 mr-1" />Export</Button>
-          )}
+            }}><Download className="h-3.5 w-3.5 mr-1" />CSV</Button>
+            <Button variant="outline" size="sm" className="text-xs" onClick={() => {
+              exportReportPdf({
+                title: "Absentee Report",
+                subtitle: monthLabel,
+                filename: `absentee-${month}.pdf`,
+                summaryCards: [
+                  { label: "Total Absent Days", value: String(data.totalAbsentDays) },
+                  { label: "On Leave", value: String(data.totalLeaveDays) },
+                  { label: "Unexcused", value: String(data.totalUnexcused) },
+                  { label: "Avg Absence Rate", value: `${data.avgAbsenceRate}%` },
+                ],
+                tables: [{
+                  title: "Absentee Detail",
+                  headers: ["Employee", "Skill", "Absent Days", "Leave Days", "Unexcused", "Absence Rate %"],
+                  rows: data.rows.map((r) => [r.name, r.skill, r.absentDays, r.leaveDays, r.unexcusedDays, `${r.absenceRate}%`]),
+                }],
+              });
+            }}><Download className="h-3.5 w-3.5 mr-1" />PDF</Button>
+          </>)}
         </div>
       </div>
 
