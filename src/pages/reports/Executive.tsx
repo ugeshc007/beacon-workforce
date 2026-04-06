@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { useExecutiveData } from "@/hooks/useReports";
+import { ReportDateFilter, useReportDateRange } from "@/components/reports/ReportDateFilter";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatCard } from "@/components/ui/stat-card";
 import {
-  ChevronLeft, ChevronRight, Users, FolderKanban, Clock,
+  Users, FolderKanban, Clock,
   DollarSign, TrendingUp, TrendingDown, Gauge, Download,
   Bell, Building2, UserCheck,
 } from "lucide-react";
@@ -28,15 +28,9 @@ const ALERT_LABELS: Record<string, string> = {
 
 export default function Executive() {
   const navigate = useNavigate();
-  const now = new Date();
-  const [monthOffset, setMonthOffset] = useState(0);
-  const target = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
-  const month = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, "0")}`;
-  const monthLabel = target.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+  const [dateRange, setDateRange] = useReportDateRange("This Month");
 
-  const startDate = `${month}-01`;
-  const endDate = new Date(target.getFullYear(), target.getMonth() + 1, 0).toISOString().slice(0, 10);
-  const { data, isLoading } = useExecutiveData(startDate, endDate);
+  const { data, isLoading } = useExecutiveData(dateRange.start, dateRange.end);
 
   return (
     <div className="space-y-6">
@@ -44,16 +38,10 @@ export default function Executive() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-xl font-bold text-foreground">Executive Summary</h1>
-          <p className="text-sm text-muted-foreground">{monthLabel}</p>
+          <p className="text-sm text-muted-foreground">{dateRange.label}</p>
         </div>
         <div className="flex items-center gap-1 flex-wrap">
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setMonthOffset((m) => m - 1)}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="sm" className="text-xs" onClick={() => setMonthOffset(0)}>This Month</Button>
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setMonthOffset((m) => m + 1)}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+          <ReportDateFilter value={dateRange} onChange={setDateRange} />
           {data && (<>
             <Button variant="outline" size="sm" className="text-xs ml-2" onClick={() => {
               const rows: (string | number)[][] = [
@@ -66,13 +54,13 @@ export default function Executive() {
                 ["Total Hours", data.totalHours],
                 ["OT Hours", data.totalOtHours],
               ];
-              downloadCsv(`executive-${month}.csv`, ["Metric", "Value"], rows);
+              downloadCsv(`executive-${dateRange.start}-${dateRange.end}.csv`, ["Metric", "Value"], rows);
             }}><Download className="h-3.5 w-3.5 mr-1" />CSV</Button>
             <Button variant="outline" size="sm" className="text-xs" onClick={() => {
               exportReportPdf({
                 title: "Executive Summary",
-                subtitle: monthLabel,
-                filename: `executive-${month}.pdf`,
+                subtitle: dateRange.label,
+                filename: `executive-${dateRange.start}-${dateRange.end}.pdf`,
                 summaryCards: [
                   { label: "Active Projects", value: String(data.activeProjects) },
                   { label: "Deployed Today", value: String(data.deployedToday) },
