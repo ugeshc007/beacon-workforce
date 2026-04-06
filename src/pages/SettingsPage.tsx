@@ -28,6 +28,7 @@ import {
 } from "@/hooks/useSettings";
 import { useRolePermissions, useUpdatePermission } from "@/hooks/usePermissions";
 import { useAuth } from "@/hooks/useAuth";
+import { DateInput } from "@/components/ui/date-input";
 import { downloadCsv } from "@/lib/csv-export";
 
 // ─── helpers ────────────────────────────────────────────────
