@@ -38,6 +38,7 @@ export function AppHeader() {
   const location = useLocation();
   const navigate = useNavigate();
   const [isDark, setIsDark] = useState(true);
+  const [pwDialogOpen, setPwDialogOpen] = useState(false);
   const { user, signOut } = useAuth();
   const title = pageTitles[location.pathname] || (location.pathname.startsWith("/projects/") ? "Project Details" : "BeBright Planner");
 
