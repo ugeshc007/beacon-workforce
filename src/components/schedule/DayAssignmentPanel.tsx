@@ -11,12 +11,12 @@ import {
   useToggleLock,
   type ScheduleAssignment,
 } from "@/hooks/useSchedule";
-import { Lock, LockOpen, Plus, Trash2, AlertTriangle, Zap, User, Clock } from "lucide-react";
+import { Lock, LockOpen, Plus, Trash2, AlertTriangle, Zap, User, Clock, Timer } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -136,6 +136,41 @@ export function DayAssignmentPanel({
 
   const formatTime = (t: string | null) => t ? t.slice(0, 5) : "";
 
+  // Live countdown ticker
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const getCountdown = (shiftStart: string | null, shiftEnd: string | null) => {
+    const start = shiftStart?.slice(0, 5) || "08:00";
+    const end = shiftEnd?.slice(0, 5) || "17:00";
+    const [sh, sm] = start.split(":").map(Number);
+    const [eh, em] = end.split(":").map(Number);
+
+    const shiftDate = new Date(date + "T00:00:00");
+    const startMs = new Date(shiftDate).setHours(sh, sm, 0, 0);
+    const endMs = new Date(shiftDate).setHours(eh, em, 0, 0);
+    const nowMs = now.getTime();
+
+    if (nowMs < startMs) {
+      const diff = startMs - nowMs;
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      return { label: `Starts in ${h}h ${m}m`, status: "upcoming" as const };
+    }
+    if (nowMs >= startMs && nowMs < endMs) {
+      const diff = endMs - nowMs;
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      return { label: `${h}h ${m}m left`, status: "active" as const };
+    }
+    return { label: "Completed", status: "done" as const };
+  };
+
+  const countdownColor = { upcoming: "text-status-planned", active: "text-status-present", done: "text-muted-foreground" };
+
   return (
     <Card className="glass-card">
       <CardHeader className="pb-3">
@@ -181,10 +216,16 @@ export function DayAssignmentPanel({
           {assignments.length === 0 && (
             <p className="text-xs text-muted-foreground text-center py-4">No assignments for this day</p>
           )}
-          {assignments.map((a) => (
+          {assignments.map((a) => {
+            const countdown = getCountdown(a.shift_start, a.shift_end);
+            return (
             <div key={a.id} className="flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-accent/30 transition-colors group">
               <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               <span className="text-sm flex-1 truncate">{a.employee_name}</span>
+              <span className={`text-[9px] flex items-center gap-0.5 ${countdownColor[countdown.status]}`}>
+                <Timer className="h-2.5 w-2.5" />
+                {countdown.label}
+              </span>
               <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
                 <Clock className="h-2.5 w-2.5" />
                 {formatTime(a.shift_start) || "08:00"}–{formatTime(a.shift_end) || "17:00"}
@@ -213,7 +254,8 @@ export function DayAssignmentPanel({
                 <Trash2 className="h-3 w-3" />
               </Button>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Add employee */}
