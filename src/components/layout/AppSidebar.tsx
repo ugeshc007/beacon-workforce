@@ -2,6 +2,7 @@ import {
   LayoutDashboard,
   FolderKanban,
   Users,
+  Car,
   CalendarDays,
   ClipboardCheck,
   Clock,
