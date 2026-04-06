@@ -45,10 +45,13 @@ export default function Projects() {
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
 
+  const { user } = useAuth();
   const { data: projects, isLoading } = useProjects({
     search, status, branchId,
     dateFrom: dateFrom ? format(dateFrom, "yyyy-MM-dd") : undefined,
     dateTo: dateTo ? format(dateTo, "yyyy-MM-dd") : undefined,
+    userRole: user?.role,
+    userId: user?.id,
   });
   const { data: branches } = useBranches();
   const { data: templates } = useTemplates();
