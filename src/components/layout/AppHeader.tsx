@@ -8,9 +8,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { Badge } from "@/components/ui/badge";
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -28,12 +29,19 @@ const pageTitles: Record<string, string> = {
 
 export function AppHeader() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [isDark, setIsDark] = useState(true);
+  const { user, signOut } = useAuth();
   const title = pageTitles[location.pathname] || "BeBright";
 
   const toggleTheme = () => {
     setIsDark(!isDark);
     document.documentElement.classList.toggle("light");
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/login", { replace: true });
   };
 
   return (
@@ -63,11 +71,19 @@ export function AppHeader() {
               <div className="h-7 w-7 rounded-full bg-brand/20 flex items-center justify-center">
                 <User className="h-3.5 w-3.5 text-brand" />
               </div>
-              <span className="text-sm font-medium hidden sm:inline">Admin</span>
+              <div className="hidden sm:flex flex-col items-start">
+                <span className="text-sm font-medium leading-none">{user?.name || "User"}</span>
+                <span className="text-[10px] text-muted-foreground capitalize">{user?.role || ""}</span>
+              </div>
               <ChevronDown className="h-3 w-3" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
+            <div className="px-2 py-1.5">
+              <p className="text-sm font-medium">{user?.name}</p>
+              <p className="text-xs text-muted-foreground">{user?.email}</p>
+            </div>
+            <DropdownMenuSeparator />
             <DropdownMenuItem>
               <User className="mr-2 h-4 w-4" /> Profile
             </DropdownMenuItem>
@@ -75,7 +91,7 @@ export function AppHeader() {
               <Bell className="mr-2 h-4 w-4" /> Notifications
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive">
+            <DropdownMenuItem className="text-destructive" onClick={handleSignOut}>
               <LogOut className="mr-2 h-4 w-4" /> Sign Out
             </DropdownMenuItem>
           </DropdownMenuContent>
