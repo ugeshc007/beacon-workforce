@@ -82,9 +82,9 @@ export function ProjectExpensesTab({ projectId, expenses }: Props) {
   };
 
   const handleSubmit = async () => {
-    const amtNum = parseFloat(amount);
+    const amtNum = computedAmount;
     if (!amtNum || amtNum <= 0) {
-      toast({ title: "Invalid amount", variant: "destructive" });
+      toast({ title: "Enter valid quantity and unit rate", variant: "destructive" });
       return;
     }
     const rate = parseFloat(exchangeRate) || 1;
