@@ -45,6 +45,7 @@ export function ProjectExpensesTab({ projectId, expenses }: Props) {
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const createMutation = useCreateExpense();
   const approveMutation = useApproveExpense();
+  const deleteMutation = useDeleteExpense();
   const { data: settings } = useSettings();
   const { isAdmin, isManager } = useAuth();
   const { toast } = useToast();
