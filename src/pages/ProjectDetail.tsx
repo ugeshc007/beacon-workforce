@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { ArrowLeft, MapPin, Phone, Mail, Users, DollarSign, Clock, Wrench, UserPlus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, MapPin, Phone, Mail, Users, DollarSign, Clock, Wrench, UserPlus, Trash2, Paperclip, ExternalLink } from "lucide-react";
+import { useState, useRef } from "react";
 import { ProjectFormDialog } from "@/components/projects/ProjectFormDialog";
 import { TeamAssignDialog } from "@/components/projects/TeamAssignDialog";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 
 const statusMap: Record<string, "planned" | "present" | "traveling" | "absent" | "overtime"> = {
@@ -31,6 +32,26 @@ export default function ProjectDetail() {
   const [assignOpen, setAssignOpen] = useState(false);
   const removeMutation = useRemoveAssignment();
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingExpenseId, setUploadingExpenseId] = useState<string | null>(null);
+
+  const handleReceiptUpload = async (expenseId: string, file: File) => {
+    setUploadingExpenseId(expenseId);
+    const ext = file.name.split(".").pop();
+    const path = `${id}/${expenseId}.${ext}`;
+    const { error: uploadError } = await supabase.storage.from("receipts").upload(path, file, { upsert: true });
+    if (uploadError) {
+      toast({ title: "Upload failed", description: uploadError.message, variant: "destructive" });
+      setUploadingExpenseId(null);
+      return;
+    }
+    // Store the path (bucket is private, we'll use signed URLs to view)
+    await supabase.from("project_expenses").update({ receipt_url: path }).eq("id", expenseId);
+    toast({ title: "Receipt uploaded" });
+    setUploadingExpenseId(null);
+    // Refresh expenses
+    window.location.reload();
+  };
   if (isLoading) return <div className="space-y-4"><Skeleton className="h-10 w-48" /><Skeleton className="h-64 w-full" /></div>;
   if (!project) return <div className="text-center py-12 text-muted-foreground">Project not found</div>;
 
@@ -189,6 +210,7 @@ export default function ProjectDetail() {
                       <th className="text-left py-2 font-medium">Description</th>
                       <th className="text-right py-2 font-medium">Amount</th>
                       <th className="text-left py-2 font-medium">Status</th>
+                      <th className="text-left py-2 font-medium">Receipt</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -199,6 +221,43 @@ export default function ProjectDetail() {
                         <td className="py-2.5 text-muted-foreground">{e.description ?? "—"}</td>
                         <td className="py-2.5 text-right font-mono">AED {Number(e.amount_aed ?? e.amount).toLocaleString()}</td>
                         <td className="py-2.5"><Badge variant={e.status === "approved" ? "default" : e.status === "rejected" ? "destructive" : "secondary"} className="text-[10px]">{e.status}</Badge></td>
+                        <td className="py-2.5">
+                          {e.receipt_url ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-xs text-brand"
+                              onClick={async () => {
+                                const { data } = await supabase.storage.from("receipts").createSignedUrl(e.receipt_url!, 3600);
+                                if (data?.signedUrl) window.open(data.signedUrl, "_blank");
+                              }}
+                            >
+                              <ExternalLink className="h-3 w-3 mr-1" /> View
+                            </Button>
+                          ) : (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 text-xs text-muted-foreground"
+                                disabled={uploadingExpenseId === e.id}
+                                onClick={() => {
+                                  const input = document.createElement("input");
+                                  input.type = "file";
+                                  input.accept = "image/*,.pdf";
+                                  input.onchange = (ev) => {
+                                    const file = (ev.target as HTMLInputElement).files?.[0];
+                                    if (file) handleReceiptUpload(e.id, file);
+                                  };
+                                  input.click();
+                                }}
+                              >
+                                <Paperclip className="h-3 w-3 mr-1" />
+                                {uploadingExpenseId === e.id ? "Uploading..." : "Attach"}
+                              </Button>
+                            </>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
