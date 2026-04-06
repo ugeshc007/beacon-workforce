@@ -197,6 +197,8 @@ export function ProjectExpensesTab({ projectId, expenses }: Props) {
                       <td className="py-2.5">
                         <Badge variant="outline" className="text-[10px] capitalize">{e.category}</Badge>
                       </td>
+                      <td className="py-2.5 text-xs text-muted-foreground">{(e as any).invoice_number ?? "—"}</td>
+                      <td className="py-2.5 text-xs text-muted-foreground">{(e as any).supplier_name ?? "—"}</td>
                       <td className="py-2.5 text-right font-mono text-xs">
                         {e.currency !== "AED" ? `${e.currency} ${Number(e.amount).toLocaleString()}` : "—"}
                       </td>
