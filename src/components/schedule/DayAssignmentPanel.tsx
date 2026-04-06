@@ -59,6 +59,11 @@ export function DayAssignmentPanel({
   const addAssignment = useAddAssignment();
   const removeAssignment = useRemoveAssignment();
   const toggleLock = useToggleLock();
+  const updateAssignment = useUpdateAssignment();
+  const reassignEmployee = useReassignEmployee();
+  const { data: allProjects } = useProjects({ status: "all" });
+  const activeProjects = (allProjects ?? []).filter((p) => ["planned", "assigned", "in_progress"].includes(p.status) && p.id !== projectId);
+
   const [addingSkill, setAddingSkill] = useState<string | null>(null);
   const [shiftStart, setShiftStart] = useState("08:00");
   const [shiftEnd, setShiftEnd] = useState("17:00");
@@ -67,7 +72,20 @@ export function DayAssignmentPanel({
   const [autoLoading, setAutoLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const techCount = assignments.filter((a) => a.employee_skill === "technician").length;
+  // Edit time state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editStart, setEditStart] = useState("");
+  const [editEnd, setEditEnd] = useState("");
+
+  // Reassign state
+  const [reassignId, setReassignId] = useState<string | null>(null);
+  const [reassignEmpId, setReassignEmpId] = useState("");
+  const [reassignEmpName, setReassignEmpName] = useState("");
+  const [reassignProject, setReassignProject] = useState("");
+  const [reassignStart, setReassignStart] = useState("");
+  const [reassignEnd, setReassignEnd] = useState("17:00");
+  const [reassignKeepOld, setReassignKeepOld] = useState(true);
+  const [reassignOldEnd, setReassignOldEnd] = useState("");
   const helpCount = assignments.filter((a) => a.employee_skill === "helper").length;
   const supCount = assignments.filter((a) => a.employee_skill === "supervisor").length;
 
