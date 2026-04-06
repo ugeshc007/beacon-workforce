@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
-import { useProjects } from "@/hooks/useProjects";
+import { useProjects, useTemplates } from "@/hooks/useProjects";
 import { useBranches } from "@/hooks/useEmployees";
-import { ProjectFormDialog } from "@/components/projects/ProjectFormDialog";
+import { ProjectFormDialog, type ProjectPrefill } from "@/components/projects/ProjectFormDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,10 +17,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Progress } from "@/components/ui/progress";
 import {
   FolderKanban, Plus, Search, LayoutGrid, List, MapPin, Users, DollarSign,
-  MoreHorizontal, Eye, Pencil, CalendarIcon, X,
+  MoreHorizontal, Eye, Pencil, CalendarIcon, X, Copy, FileText,
 } from "lucide-react";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
