@@ -1,4 +1,4 @@
-import { Bell, Sun, Moon, Sunrise, User, LogOut, ChevronDown } from "lucide-react";
+import { Sun, Moon, User, LogOut, ChevronDown } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,7 +11,8 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { Badge } from "@/components/ui/badge";
+import { NotificationPanel } from "./NotificationPanel";
+import { MorningBriefingDialog } from "./MorningBriefingDialog";
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -53,14 +54,8 @@ export function AppHeader() {
       </div>
 
       <div className="flex items-center gap-1">
-        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground relative">
-          <Sunrise className="h-4 w-4" />
-        </Button>
-
-        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground relative">
-          <Bell className="h-4 w-4" />
-          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-destructive" />
-        </Button>
+        <MorningBriefingDialog />
+        <NotificationPanel />
 
         <Button variant="ghost" size="icon" onClick={toggleTheme} className="text-muted-foreground hover:text-foreground">
           {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
@@ -85,11 +80,8 @@ export function AppHeader() {
               <p className="text-xs text-muted-foreground">{user?.email}</p>
             </div>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/settings")}>
               <User className="mr-2 h-4 w-4" /> Profile
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Bell className="mr-2 h-4 w-4" /> Notifications
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="text-destructive" onClick={handleSignOut}>
