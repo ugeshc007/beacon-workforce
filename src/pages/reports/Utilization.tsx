@@ -13,6 +13,7 @@ import {
   Download, Timer, BatteryLow, AlertTriangle, CalendarX,
 } from "lucide-react";
 import { downloadCsv } from "@/lib/csv-export";
+import { exportReportPdf } from "@/lib/pdf-export";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   LineChart, Line, CartesianGrid, PieChart, Pie, Cell, Legend,
