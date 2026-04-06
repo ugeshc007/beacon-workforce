@@ -22,6 +22,7 @@ const SETTING_KEYS = [
   "late_threshold_minutes",
   "break_duration_minutes",
   "travel_time_paid",
+  "travel_delay_threshold_minutes",
   "notification_morning_briefing",
   "notification_absent_alert_delay",
   "notification_ot_warning_hours",
