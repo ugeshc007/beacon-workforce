@@ -91,12 +91,16 @@ export default function Employees() {
           <p className="text-sm text-muted-foreground">{totalCount} team members</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => setCsvOpen(true)} size="sm" variant="outline">
-            <Upload className="h-4 w-4 mr-1" /> CSV Import
-          </Button>
-          <Button onClick={handleAdd} size="sm">
-            <Plus className="h-4 w-4 mr-1" /> Add Employee
-          </Button>
+          {canCreate && (
+            <Button onClick={() => setCsvOpen(true)} size="sm" variant="outline">
+              <Upload className="h-4 w-4 mr-1" /> CSV Import
+            </Button>
+          )}
+          {canCreate && (
+            <Button onClick={handleAdd} size="sm">
+              <Plus className="h-4 w-4 mr-1" /> Add Employee
+            </Button>
+          )}
         </div>
       </div>
 
