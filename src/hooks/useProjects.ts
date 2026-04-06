@@ -13,6 +13,8 @@ export function useProjects(filters?: {
   branchId?: string;
   dateFrom?: string;
   dateTo?: string;
+  userRole?: string | null;
+  userId?: string | null;
 }) {
   return useQuery({
     queryKey: ["projects", filters],
@@ -21,6 +23,25 @@ export function useProjects(filters?: {
         .from("projects")
         .select("*, branches(name)")
         .order("created_at", { ascending: false });
+
+      // Non-admin, non-supervisor users only see projects they created
+      // or projects that have team assignments (employees added)
+      if (filters?.userId && filters?.userRole && filters.userRole !== "admin" && filters.userRole !== "supervisor") {
+        // First get project IDs that have any assignments
+        const { data: assignedProjects } = await supabase
+          .from("project_assignments")
+          .select("project_id")
+          .limit(1000);
+        
+        const assignedIds = Array.from(new Set((assignedProjects ?? []).map(a => a.project_id)));
+        
+        // Show projects the user created OR projects with team assignments
+        if (assignedIds.length > 0) {
+          query = query.or(`created_by.eq.${filters.userId},id.in.(${assignedIds.join(",")})`);
+        } else {
+          query = query.eq("created_by", filters.userId);
+        }
+      }
 
       if (filters?.search) {
         const s = `%${filters.search}%`;

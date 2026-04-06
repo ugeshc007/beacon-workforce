@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { useProjects, useTemplates } from "@/hooks/useProjects";
+import { useAuth } from "@/hooks/useAuth";
 import { useBranches } from "@/hooks/useEmployees";
 import { ProjectFormDialog, type ProjectPrefill } from "@/components/projects/ProjectFormDialog";
 import { Card, CardContent } from "@/components/ui/card";
@@ -44,10 +45,13 @@ export default function Projects() {
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
 
+  const { user } = useAuth();
   const { data: projects, isLoading } = useProjects({
     search, status, branchId,
     dateFrom: dateFrom ? format(dateFrom, "yyyy-MM-dd") : undefined,
     dateTo: dateTo ? format(dateTo, "yyyy-MM-dd") : undefined,
+    userRole: user?.role,
+    userId: user?.id,
   });
   const { data: branches } = useBranches();
   const { data: templates } = useTemplates();
