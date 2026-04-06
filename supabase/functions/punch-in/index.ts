@@ -1,4 +1,4 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, haversineDistance, todayDate, nowTimestamp } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, haversineDistance, todayDate, nowTimestamp, notifyBranchManagers } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
@@ -13,10 +13,10 @@ Deno.serve(async (req) => {
     const supabase = createSupabaseAdmin();
     const today = todayDate();
 
-    // Get employee branch + office
+    // Get employee branch + office + name
     const { data: emp } = await supabase
       .from("employees")
-      .select("id, branch_id")
+      .select("id, branch_id, name")
       .eq("id", employee_id)
       .single();
 
@@ -36,10 +36,10 @@ Deno.serve(async (req) => {
     const distance = haversineDistance(lat, lng, Number(office.latitude), Number(office.longitude));
     const valid = distance <= office.gps_radius_meters;
 
-    // Get today's assignment for project_id
+    // Get today's assignment for project_id and shift_start
     const { data: assignment } = await supabase
       .from("project_assignments")
-      .select("project_id")
+      .select("project_id, shift_start")
       .eq("employee_id", employee_id)
       .eq("date", today)
       .limit(1)
@@ -76,6 +76,33 @@ Deno.serve(async (req) => {
       .single();
 
     if (error) return errorResponse(error.message, 500);
+
+    // Check if late — compare punch-in time against shift_start
+    if (assignment?.shift_start) {
+      const { data: settings } = await supabase
+        .from("settings")
+        .select("value")
+        .eq("key", "late_threshold_minutes")
+        .maybeSingle();
+
+      const lateThreshold = parseInt(settings?.value ?? "15", 10);
+      const shiftStartStr = `${today}T${assignment.shift_start}+04:00`; // UAE timezone
+      const shiftStart = new Date(shiftStartStr);
+      const punchTime = new Date(now);
+      const diffMinutes = (punchTime.getTime() - shiftStart.getTime()) / 60000;
+
+      if (diffMinutes > lateThreshold) {
+        const lateBy = Math.round(diffMinutes);
+        await notifyBranchManagers(supabase, emp.branch_id, {
+          type: "late_arrival",
+          title: `${emp.name} punched in late`,
+          message: `Late by ${lateBy} minutes (arrived at ${punchTime.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Dubai" })}, shift started at ${assignment.shift_start.slice(0, 5)})`,
+          priority: lateBy > 60 ? "high" : "normal",
+          reference_id: log.id,
+          reference_type: "attendance",
+        });
+      }
+    }
 
     return jsonResponse({
       success: true,
