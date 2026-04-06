@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useCostData, type CostProjectRow } from "@/hooks/useReports";
+import { ReportDateFilter, useReportDateRange } from "@/components/reports/ReportDateFilter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import {
-  ChevronLeft, ChevronRight, DollarSign, TrendingDown, TrendingUp,
+  DollarSign, TrendingDown, TrendingUp,
   Download, Percent, Building2,
 } from "lucide-react";
 import { downloadCsv } from "@/lib/csv-export";
