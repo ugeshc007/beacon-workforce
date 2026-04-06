@@ -291,6 +291,13 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
+        {/* ── Permissions ─────────────────── */}
+        {isAdmin && (
+          <TabsContent value="permissions">
+            <PermissionMatrix />
+          </TabsContent>
+        )}
+
         {/* ── System ──────────────────────── */}
         <TabsContent value="system">
           <SectionCard icon={Database} title="System Information" desc="Platform details and diagnostics.">
