@@ -211,58 +211,196 @@ export function useUtilizationData(month: string, filters?: {
   });
 }
 
-export function useCostData(month: string) {
-  return useQuery({
-    queryKey: ["report-costs", month],
-    queryFn: async () => {
-      const { start, end } = monthRange(month);
+export interface CostProjectRow {
+  id: string;
+  name: string;
+  status: string;
+  budget: number;
+  projectValue: number;
+  laborCost: number;
+  otCost: number;
+  expenses: number;
+  totalCost: number;
+  variance: number;
+  pctUsed: number;
+  forecastedFinal: number;
+  grossProfit: number;
+  margin: number;
+  startDate: string | null;
+  endDate: string | null;
+  dailyCosts: { date: string; labor: number; ot: number; expenses: number }[];
+}
 
-      const [logsRes, expensesRes, projectsRes] = await Promise.all([
-        supabase.from("attendance_logs").select("project_id, regular_cost, overtime_cost").gte("date", start).lte("date", end),
-        supabase.from("project_expenses").select("project_id, amount_aed, category, status").gte("date", start).lte("date", end),
-        supabase.from("projects").select("id, name, budget").in("status", ["assigned", "in_progress"]),
+export function useCostData(month: string, filters?: {
+  projectIds?: string[];
+  status?: string;
+  branchId?: string;
+}) {
+  return useQuery({
+    queryKey: ["report-costs", month, filters],
+    queryFn: async () => {
+      const { start, end, lastDay } = monthRange(month);
+
+      let projQuery = supabase
+        .from("projects")
+        .select("id, name, budget, project_value, status, branch_id, start_date, end_date");
+
+      if (filters?.status && filters.status !== "all") {
+        projQuery = projQuery.eq("status", filters.status as any);
+      } else {
+        projQuery = projQuery.in("status", ["assigned", "in_progress", "completed"]);
+      }
+      if (filters?.branchId && filters.branchId !== "all") {
+        projQuery = projQuery.eq("branch_id", filters.branchId);
+      }
+
+      const [logsRes, expensesRes, projectsRes, branchRes] = await Promise.all([
+        supabase.from("attendance_logs")
+          .select("project_id, date, regular_cost, overtime_cost")
+          .gte("date", start).lte("date", end),
+        supabase.from("project_expenses")
+          .select("project_id, date, amount_aed, category, status")
+          .gte("date", start).lte("date", end),
+        projQuery,
+        supabase.from("branches").select("id, name").order("name"),
       ]);
 
       const logs = logsRes.data ?? [];
       const expenses = expensesRes.data ?? [];
-      const projects = projectsRes.data ?? [];
+      let projects = projectsRes.data ?? [];
+      const branches = branchRes.data ?? [];
 
-      const projMap = new Map<string, { name: string; budget: number; laborCost: number; otCost: number; expenses: number }>();
-      for (const p of projects) {
-        projMap.set(p.id, { name: p.name, budget: Number(p.budget ?? 0), laborCost: 0, otCost: 0, expenses: 0 });
+      if (filters?.projectIds?.length) {
+        projects = projects.filter((p) => filters.projectIds!.includes(p.id));
       }
+
+      const projMap = new Map<string, {
+        name: string; status: string; budget: number; projectValue: number;
+        laborCost: number; otCost: number; expenses: number;
+        startDate: string | null; endDate: string | null;
+        dailyCosts: Map<string, { labor: number; ot: number; expenses: number }>;
+      }>();
+      for (const p of projects) {
+        projMap.set(p.id, {
+          name: p.name, status: p.status, budget: Number(p.budget ?? 0),
+          projectValue: Number(p.project_value ?? 0),
+          laborCost: 0, otCost: 0, expenses: 0,
+          startDate: p.start_date, endDate: p.end_date,
+          dailyCosts: new Map(),
+        });
+      }
+
       for (const l of logs) {
         if (l.project_id && projMap.has(l.project_id)) {
-          projMap.get(l.project_id)!.laborCost += Number(l.regular_cost ?? 0);
-          projMap.get(l.project_id)!.otCost += Number(l.overtime_cost ?? 0);
+          const p = projMap.get(l.project_id)!;
+          const reg = Number(l.regular_cost ?? 0);
+          const ot = Number(l.overtime_cost ?? 0);
+          p.laborCost += reg;
+          p.otCost += ot;
+          if (!p.dailyCosts.has(l.date)) p.dailyCosts.set(l.date, { labor: 0, ot: 0, expenses: 0 });
+          const dc = p.dailyCosts.get(l.date)!;
+          dc.labor += reg;
+          dc.ot += ot;
         }
       }
       for (const e of expenses) {
         if (e.status === "approved" && projMap.has(e.project_id)) {
-          projMap.get(e.project_id)!.expenses += Number(e.amount_aed ?? 0);
+          const p = projMap.get(e.project_id)!;
+          const amt = Number(e.amount_aed ?? 0);
+          p.expenses += amt;
+          if (!p.dailyCosts.has(e.date)) p.dailyCosts.set(e.date, { labor: 0, ot: 0, expenses: 0 });
+          p.dailyCosts.get(e.date)!.expenses += amt;
         }
       }
 
-      const byProject = [...projMap.values()].map((p) => ({
-        ...p,
-        totalCost: Math.round(p.laborCost + p.otCost + p.expenses),
-        laborCost: Math.round(p.laborCost),
-        otCost: Math.round(p.otCost),
-        expenses: Math.round(p.expenses),
-        budget: Math.round(p.budget),
-      }));
+      const byProject: CostProjectRow[] = [...projMap.entries()].map(([id, p]) => {
+        const totalCost = Math.round(p.laborCost + p.otCost + p.expenses);
+        const budget = Math.round(p.budget);
+        const variance = budget > 0 ? budget - totalCost : 0;
+        const pctUsed = budget > 0 ? Math.round((totalCost / budget) * 100) : 0;
+        const daysWithCost = p.dailyCosts.size;
 
+        // Forecast: avg daily cost × remaining project days
+        let forecastedFinal = totalCost;
+        if (daysWithCost > 0 && p.endDate) {
+          const today = new Date();
+          const endDt = new Date(p.endDate);
+          const remaining = Math.max(0, Math.ceil((endDt.getTime() - today.getTime()) / 86400000));
+          const avgDaily = totalCost / daysWithCost;
+          forecastedFinal = Math.round(totalCost + avgDaily * remaining);
+        }
+
+        const grossProfit = Math.round(p.projectValue - totalCost);
+        const margin = p.projectValue > 0 ? Math.round((grossProfit / p.projectValue) * 100) : 0;
+
+        const dailyCosts = Array.from(p.dailyCosts.entries())
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([date, c]) => ({
+            date,
+            labor: Math.round(c.labor),
+            ot: Math.round(c.ot),
+            expenses: Math.round(c.expenses),
+          }));
+
+        return {
+          id, name: p.name, status: p.status, budget,
+          projectValue: Math.round(p.projectValue),
+          laborCost: Math.round(p.laborCost), otCost: Math.round(p.otCost),
+          expenses: Math.round(p.expenses), totalCost, variance, pctUsed,
+          forecastedFinal, grossProfit, margin,
+          startDate: p.startDate, endDate: p.endDate, dailyCosts,
+        };
+      }).sort((a, b) => b.totalCost - a.totalCost);
+
+      // Category breakdown
       const catMap = new Map<string, number>();
-      catMap.set("labor", logs.reduce((s, l) => s + Number(l.regular_cost ?? 0), 0));
-      catMap.set("overtime", logs.reduce((s, l) => s + Number(l.overtime_cost ?? 0), 0));
-      for (const e of expenses.filter((e) => e.status === "approved")) {
+      catMap.set("labor", logs.reduce((s, l) => {
+        if (l.project_id && projMap.has(l.project_id)) return s + Number(l.regular_cost ?? 0);
+        return s;
+      }, 0));
+      catMap.set("overtime", logs.reduce((s, l) => {
+        if (l.project_id && projMap.has(l.project_id)) return s + Number(l.overtime_cost ?? 0);
+        return s;
+      }, 0));
+      for (const e of expenses.filter((e) => e.status === "approved" && projMap.has(e.project_id))) {
         catMap.set(e.category, (catMap.get(e.category) ?? 0) + Number(e.amount_aed ?? 0));
       }
-      const byCategory = [...catMap.entries()].map(([category, amount]) => ({ category, amount: Math.round(amount) })).filter((c) => c.amount > 0);
+      const byCategory = [...catMap.entries()]
+        .map(([category, amount]) => ({ category, amount: Math.round(amount) }))
+        .filter((c) => c.amount > 0);
 
-      const totalCost = byCategory.reduce((s, c) => s + c.amount, 0);
+      // Daily cost trend (aggregated)
+      const dailyTrend = new Map<string, { labor: number; ot: number; expenses: number }>();
+      for (const p of byProject) {
+        for (const dc of p.dailyCosts) {
+          if (!dailyTrend.has(dc.date)) dailyTrend.set(dc.date, { labor: 0, ot: 0, expenses: 0 });
+          const t = dailyTrend.get(dc.date)!;
+          t.labor += dc.labor;
+          t.ot += dc.ot;
+          t.expenses += dc.expenses;
+        }
+      }
+      const costTrend = Array.from(dailyTrend.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([date, c]) => ({
+          date,
+          label: date.split("-")[2],
+          labor: c.labor,
+          ot: c.ot,
+          expenses: c.expenses,
+          total: c.labor + c.ot + c.expenses,
+        }));
 
-      return { byProject, byCategory, totalCost };
+      const totalCost = byProject.reduce((s, p) => s + p.totalCost, 0);
+      const totalBudget = byProject.reduce((s, p) => s + p.budget, 0);
+      const totalLabor = byProject.reduce((s, p) => s + p.laborCost, 0);
+      const totalOt = byProject.reduce((s, p) => s + p.otCost, 0);
+
+      return {
+        byProject, byCategory, costTrend, totalCost, totalBudget, totalLabor, totalOt,
+        branches: branches.map((b) => ({ id: b.id, name: b.name })),
+        projects: projects.map((p) => ({ id: p.id, name: p.name })),
+      };
     },
   });
 }
