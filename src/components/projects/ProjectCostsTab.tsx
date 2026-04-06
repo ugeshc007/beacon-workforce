@@ -77,6 +77,7 @@ export function ProjectCostsTab({ project, costs }: Props) {
 
   // Weekly chart data
   const weeklyChart = useMemo(() => {
+    if (!costs) return [];
     return costs.weeklyData.map((w) => ({
       ...w,
       week: new Date(w.week + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }),
