@@ -112,6 +112,43 @@ export function useCreateBranch() {
   });
 }
 
+export function useSystemAuditLog(filters?: { module?: string; dateFrom?: string; dateTo?: string }) {
+  return useQuery({
+    queryKey: ["system-audit-log", filters],
+    queryFn: async () => {
+      let q = supabase
+        .from("system_audit_log")
+        .select("*, users:user_id(name)")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (filters?.module && filters.module !== "all") q = q.eq("module", filters.module);
+      if (filters?.dateFrom) q = q.gte("created_at", filters.dateFrom);
+      if (filters?.dateTo) q = q.lte("created_at", filters.dateTo + "T23:59:59");
+      const { data, error } = await q;
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+export function useAssignmentAuditLog(filters?: { dateFrom?: string; dateTo?: string }) {
+  return useQuery({
+    queryKey: ["assignment-audit-log", filters],
+    queryFn: async () => {
+      let q = supabase
+        .from("assignment_audit_log")
+        .select("*, projects:project_id(name), users:changed_by(name)")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (filters?.dateFrom) q = q.gte("created_at", filters.dateFrom);
+      if (filters?.dateTo) q = q.lte("created_at", filters.dateTo + "T23:59:59");
+      const { data, error } = await q;
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
 export function useUpdateBranch() {
   const qc = useQueryClient();
   return useMutation({
