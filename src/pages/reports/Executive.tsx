@@ -60,8 +60,8 @@ export default function Executive() {
             <Button variant="outline" size="sm" className="text-xs" onClick={() => {
               exportReportPdf({
                 title: "Executive Summary",
-                subtitle: monthLabel,
-                filename: `executive-${month}.pdf`,
+                subtitle: dateRange.label,
+                filename: `executive-${dateRange.start}-${dateRange.end}.pdf`,
                 summaryCards: [
                   { label: "Active Projects", value: String(data.activeProjects) },
                   { label: "Deployed Today", value: String(data.deployedToday) },
