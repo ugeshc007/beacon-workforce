@@ -210,6 +210,12 @@ export default function ProjectDetail() {
       </Tabs>
 
       <ProjectFormDialog open={editOpen} onOpenChange={setEditOpen} editProject={project as Tables<"projects">} />
+      <TeamAssignDialog
+        open={assignOpen}
+        onOpenChange={setAssignOpen}
+        projectId={id!}
+        existingEmployeeIds={(team ?? []).map((t) => t.employee_id)}
+      />
     </div>
   );
 }
