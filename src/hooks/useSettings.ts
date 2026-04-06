@@ -163,3 +163,37 @@ export function useUpdateBranch() {
     onError: (e: Error) => toast.error(e.message),
   });
 }
+
+export function useDeleteBranch() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      // Check for active employees
+      const { count: empCount } = await supabase
+        .from("employees")
+        .select("id", { count: "exact", head: true })
+        .eq("branch_id", id)
+        .eq("is_active", true);
+      if (empCount && empCount > 0) {
+        throw new Error(`Cannot delete: ${empCount} active employee(s) belong to this branch`);
+      }
+      // Check for active projects
+      const { count: projCount } = await supabase
+        .from("projects")
+        .select("id", { count: "exact", head: true })
+        .eq("branch_id", id)
+        .in("status", ["planned", "assigned", "in_progress"]);
+      if (projCount && projCount > 0) {
+        throw new Error(`Cannot delete: ${projCount} active project(s) belong to this branch`);
+      }
+      const { error } = await supabase.from("branches").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["branches-full"] });
+      qc.invalidateQueries({ queryKey: ["branches"] });
+      toast.success("Branch deleted");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
