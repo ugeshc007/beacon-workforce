@@ -59,7 +59,10 @@ export default function Dashboard() {
         <div className="lg:col-span-2">
           <Card className="glass-card">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold text-foreground">Today's Team</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-semibold text-foreground">Today's Team</CardTitle>
+                <Link to="/attendance/daily" className="text-xs text-primary hover:underline">Manage →</Link>
+              </div>
             </CardHeader>
             <CardContent>
               {teamLoading ? (
