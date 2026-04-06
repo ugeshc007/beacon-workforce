@@ -21,7 +21,6 @@ import { ProjectCostsTab } from "@/components/projects/ProjectCostsTab";
 import { ProjectExpensesTab } from "@/components/projects/ProjectExpensesTab";
 import { TeamAssignDialog } from "@/components/projects/TeamAssignDialog";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 
