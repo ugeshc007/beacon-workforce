@@ -14,8 +14,10 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  Plus, ExternalLink, Paperclip, Check, X, FileText,
+  Plus, ExternalLink, Paperclip, Check, X, FileText, Upload, Receipt,
 } from "lucide-react";
+import { PurchaseInvoiceDialog } from "./PurchaseInvoiceDialog";
+import { BulkExpenseDialog } from "./BulkExpenseDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useCreateExpense, useApproveExpense } from "@/hooks/useExpenses";
 import { useSettings } from "@/hooks/useSettings";
