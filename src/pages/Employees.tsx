@@ -214,11 +214,15 @@ export default function Employees() {
                       {Number(emp.standard_hours_per_day)}
                     </TableCell>
                     <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
-                      <Switch
-                        checked={emp.is_active}
-                        onCheckedChange={() => handleToggle(emp.id, emp.is_active)}
-                        className="data-[state=checked]:bg-primary"
-                      />
+                      {canEdit ? (
+                        <Switch
+                          checked={emp.is_active}
+                          onCheckedChange={() => handleToggle(emp.id, emp.is_active)}
+                          className="data-[state=checked]:bg-primary"
+                        />
+                      ) : (
+                        <Badge variant="outline" className="text-[10px]">{emp.is_active ? "Active" : "Inactive"}</Badge>
+                      )}
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
