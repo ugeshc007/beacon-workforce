@@ -4,12 +4,15 @@ import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase
 
 export type Project = Tables<"projects"> & {
   branches?: { name: string } | null;
+  actual_cost?: number;
 };
 
 export function useProjects(filters?: {
   search?: string;
   status?: string;
   branchId?: string;
+  dateFrom?: string;
+  dateTo?: string;
 }) {
   return useQuery({
     queryKey: ["projects", filters],
@@ -29,10 +32,48 @@ export function useProjects(filters?: {
       if (filters?.branchId && filters.branchId !== "all") {
         query = query.eq("branch_id", filters.branchId);
       }
+      if (filters?.dateFrom) {
+        query = query.gte("start_date", filters.dateFrom);
+      }
+      if (filters?.dateTo) {
+        query = query.lte("start_date", filters.dateTo);
+      }
 
       const { data, error } = await query;
       if (error) throw error;
-      return data as Project[];
+
+      const projects = data as Project[];
+
+      // Fetch actual costs (labor + approved expenses) for projects with budgets
+      const withBudget = projects.filter((p) => p.budget);
+      if (withBudget.length) {
+        const ids = withBudget.map((p) => p.id);
+
+        const [laborRes, expenseRes] = await Promise.all([
+          supabase
+            .from("attendance_logs")
+            .select("project_id, regular_cost, overtime_cost")
+            .in("project_id", ids),
+          supabase
+            .from("project_expenses")
+            .select("project_id, amount_aed, status")
+            .in("project_id", ids)
+            .eq("status", "approved"),
+        ]);
+
+        const costMap: Record<string, number> = {};
+        for (const a of laborRes.data ?? []) {
+          costMap[a.project_id!] = (costMap[a.project_id!] ?? 0) + Number(a.regular_cost ?? 0) + Number(a.overtime_cost ?? 0);
+        }
+        for (const e of expenseRes.data ?? []) {
+          costMap[e.project_id] = (costMap[e.project_id] ?? 0) + Number(e.amount_aed ?? 0);
+        }
+        for (const p of projects) {
+          p.actual_cost = costMap[p.id] ?? 0;
+        }
+      }
+
+      return projects;
     },
   });
 }
