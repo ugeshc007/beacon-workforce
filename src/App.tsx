@@ -3,7 +3,10 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/hooks/useAuth";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AppLayout } from "@/components/layout/AppLayout";
+import Login from "./pages/Login";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/Dashboard";
@@ -26,23 +29,32 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route element={<AppLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/projects" element={<Projects />} />
-            <Route path="/employees" element={<Employees />} />
-            <Route path="/schedule" element={<Schedule />} />
-            <Route path="/attendance" element={<Attendance />} />
-            <Route path="/timesheets" element={<Timesheets />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/reports/utilization" element={<Utilization />} />
-            <Route path="/reports/costs" element={<CostReports />} />
-            <Route path="/reports/executive" element={<Executive />} />
-            <Route path="/settings" element={<SettingsPage />} />
-          </Route>
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/" element={<Index />} />
+            <Route
+              element={
+                <ProtectedRoute>
+                  <AppLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/projects" element={<Projects />} />
+              <Route path="/employees" element={<Employees />} />
+              <Route path="/schedule" element={<Schedule />} />
+              <Route path="/attendance" element={<Attendance />} />
+              <Route path="/timesheets" element={<Timesheets />} />
+              <Route path="/reports" element={<Reports />} />
+              <Route path="/reports/utilization" element={<Utilization />} />
+              <Route path="/reports/costs" element={<CostReports />} />
+              <Route path="/reports/executive" element={<Executive />} />
+              <Route path="/settings" element={<SettingsPage />} />
+            </Route>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
