@@ -69,9 +69,11 @@ export function useUpdatePermission() {
       field: "can_view" | "can_create" | "can_edit" | "can_delete";
       value: boolean;
     }) => {
+      const updatePayload: { can_view?: boolean; can_create?: boolean; can_edit?: boolean; can_delete?: boolean; updated_at: string } = { updated_at: new Date().toISOString() };
+      updatePayload[field] = value;
       const { error } = await supabase
         .from("role_permissions")
-        .update({ [field]: value, updated_at: new Date().toISOString() })
+        .update(updatePayload)
         .eq("id", id);
       if (error) throw error;
     },

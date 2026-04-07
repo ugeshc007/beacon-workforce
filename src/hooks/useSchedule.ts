@@ -120,7 +120,7 @@ export function useUpdateAssignment() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, shift_start, shift_end }: { id: string; shift_start?: string; shift_end?: string }) => {
-      const updates: Record<string, string> = {};
+      const updates: { shift_start?: string; shift_end?: string } = {};
       if (shift_start !== undefined) updates.shift_start = shift_start;
       if (shift_end !== undefined) updates.shift_end = shift_end;
       const { error } = await supabase.from("project_assignments").update(updates).eq("id", id);
