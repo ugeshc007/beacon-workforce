@@ -74,7 +74,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
         phone: employee.phone ?? "",
         email: employee.email ?? "",
         designation: employee.designation ?? "",
-        skill_type: employee.skill_type,
+        skill_type: employee.skill_type as "team_member" | "team_leader",
         branch_id: employee.branch_id,
         hourly_rate: Number(employee.hourly_rate),
         overtime_rate: Number(employee.overtime_rate),
