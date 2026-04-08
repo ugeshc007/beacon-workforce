@@ -30,6 +30,7 @@ import { toast } from "sonner";
 import {
   Users, UserCheck, UserMinus, UserPlus, MoreHorizontal,
   CheckCircle2, XCircle, Clock, ChevronLeft, ChevronRight, Search,
+  MapPin, Share2, FileText, StickyNote,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -175,6 +176,33 @@ export default function DailyTeam() {
   const totalAssigned = groups?.reduce((s, g) => s + g.members.length, 0) ?? 0;
   const totalPresent = groups?.reduce((s, g) => s + g.members.filter((m) => m.punch_in).length, 0) ?? 0;
 
+  const handleShare = (group: DailyProjectGroup) => {
+    const lines: string[] = [];
+    lines.push(`📋 *${group.project_name}*`);
+    lines.push(`📅 ${new Date(date + "T00:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short", year: "numeric" })}`);
+    if (group.site_address) lines.push(`📍 Location: ${group.site_address}`);
+    if (group.notes) lines.push(`📝 Scope: ${group.notes}`);
+    lines.push("");
+    lines.push(`👥 *Team (${group.members.filter((m) => m.override_action !== "absent" && m.override_action !== "removed").length} members):*`);
+    group.members
+      .filter((m) => m.override_action !== "absent" && m.override_action !== "removed")
+      .forEach((m, i) => {
+        const shift = m.shift_start && m.shift_end ? `${m.shift_start.slice(0,5)}–${m.shift_end.slice(0,5)}` : "08:00–17:00";
+        const role = m.skill_type === "team_leader" ? "TL" : "Member";
+        lines.push(`${i + 1}. ${m.employee_name} (${role}) ⏰ ${shift}`);
+      });
+
+    const text = lines.join("\n");
+
+    if (navigator.share) {
+      navigator.share({ title: `${group.project_name} - Daily Team`, text }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(text).then(() => {
+        toast.success("Team details copied to clipboard");
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -217,13 +245,18 @@ export default function DailyTeam() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div>
-                    <CardTitle className="text-base">
-                      <Link to={`/projects/${group.project_id}`} className="hover:text-primary transition-colors">
-                        {group.project_name}
-                      </Link>
-                    </CardTitle>
-                    {group.client_name && <p className="text-xs text-muted-foreground">{group.client_name}</p>}
-                  </div>
+                     <CardTitle className="text-base">
+                       <Link to={`/projects/${group.project_id}`} className="hover:text-primary transition-colors">
+                         {group.project_name}
+                       </Link>
+                     </CardTitle>
+                     {group.client_name && <p className="text-xs text-muted-foreground">{group.client_name}</p>}
+                     {group.site_address && (
+                       <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                         <MapPin className="h-3 w-3 shrink-0" />{group.site_address}
+                       </p>
+                     )}
+                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-[10px]">
                       {presentCount}/{group.members.length} present {required > 0 && `· ${required} req`}
@@ -234,10 +267,19 @@ export default function DailyTeam() {
                     <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => setAddDialog({ project_id: group.project_id, project_name: group.project_name })}>
                       <UserPlus className="h-3 w-3 mr-1" />Add Staff
                     </Button>
+                    <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => handleShare(group)}>
+                      <Share2 className="h-3 w-3 mr-1" />Share
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="pt-0">
+                {group.notes && (
+                  <div className="flex items-start gap-2 px-1 pb-3 text-xs text-muted-foreground">
+                    <StickyNote className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                    <span className="line-clamp-2">{group.notes}</span>
+                  </div>
+                )}
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
