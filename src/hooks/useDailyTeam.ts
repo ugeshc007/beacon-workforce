@@ -29,6 +29,8 @@ export interface DailyProjectGroup {
   project_id: string;
   project_name: string;
   client_name: string | null;
+  site_address: string | null;
+  notes: string | null;
   required_technicians: number;
   required_helpers: number;
   required_supervisors: number;
