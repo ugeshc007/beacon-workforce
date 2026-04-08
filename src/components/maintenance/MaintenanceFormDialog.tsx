@@ -67,6 +67,10 @@ export function MaintenanceFormDialog({ open, onOpenChange, editCall }: Props) {
       toast({ title: "Company name is required", variant: "destructive" });
       return;
     }
+    if (!user?.branchId) {
+      toast({ title: "No branch assigned to your account", variant: "destructive" });
+      return;
+    }
     try {
       if (isEdit) {
         await updateMutation.mutateAsync({
