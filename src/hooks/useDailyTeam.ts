@@ -51,7 +51,7 @@ export function useDailyTeam(date?: string) {
       // 1. Assignments for the date
       const { data: assignments, error: aErr } = await supabase
         .from("project_assignments")
-        .select("id, project_id, employee_id, shift_start, shift_end, is_locked, employees(name, employee_code, skill_type), projects(name, client_name, required_technicians, required_helpers, required_supervisors)")
+        .select("id, project_id, employee_id, shift_start, shift_end, is_locked, employees(name, employee_code, skill_type), projects(name, client_name, site_address, notes, required_technicians, required_helpers, required_supervisors)")
         .eq("date", d)
         .order("project_id");
       if (aErr) throw aErr;
@@ -86,6 +86,8 @@ export function useDailyTeam(date?: string) {
             project_id: a.project_id,
             project_name: proj?.name ?? "Unknown",
             client_name: proj?.client_name ?? null,
+            site_address: proj?.site_address ?? null,
+            notes: proj?.notes ?? null,
             required_technicians: proj?.required_technicians ?? 0,
             required_helpers: proj?.required_helpers ?? 0,
             required_supervisors: proj?.required_supervisors ?? 0,
