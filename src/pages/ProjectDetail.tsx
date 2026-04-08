@@ -218,8 +218,7 @@ export default function ProjectDetail() {
                 <div className="border-t pt-2 mt-2">
                   <p className="text-xs text-muted-foreground mb-1">Staffing Requirements</p>
                   <div className="flex gap-2">
-                    <Badge variant="outline">{project.required_technicians} Tech</Badge>
-                    <Badge variant="outline">{project.required_helpers} Help</Badge>
+                    <Badge variant="outline">{(project as any).required_team_members ?? (project.required_technicians + project.required_helpers)} Members</Badge>
                     <Badge variant="outline">{project.required_supervisors} TL</Badge>
                   </div>
                 </div>

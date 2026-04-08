@@ -29,7 +29,7 @@ export function useEmployees(filters?: {
         query = query.or(`name.ilike.${s},employee_code.ilike.${s},phone.ilike.${s},email.ilike.${s}`);
       }
       if (filters?.skillType && filters.skillType !== "all") {
-        query = query.eq("skill_type", filters.skillType as "technician" | "helper" | "team_leader");
+        query = query.eq("skill_type", filters.skillType as "team_member" | "team_leader");
       }
       if (filters?.branchId && filters.branchId !== "all") {
         query = query.eq("branch_id", filters.branchId);
