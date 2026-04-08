@@ -142,6 +142,18 @@ export function MaintenanceFormDialog({ open, onOpenChange, editCall }: Props) {
           </div>
 
           <div>
+            <Label>Branch *</Label>
+            <Select value={form.branch_id} onValueChange={(v) => set("branch_id", v)}>
+              <SelectTrigger><SelectValue placeholder="Select branch" /></SelectTrigger>
+              <SelectContent>
+                {branches?.map((b) => (
+                  <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
             <Label>Location</Label>
             <Input value={form.location} onChange={(e) => set("location", e.target.value)} placeholder="Site address or area" />
           </div>
