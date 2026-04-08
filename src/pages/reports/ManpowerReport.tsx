@@ -39,7 +39,7 @@ export default function ManpowerReport() {
           {data && (<>
             <Button variant="outline" size="sm" className="text-xs ml-1" onClick={() => {
               downloadCsv(`manpower-${dateRange.start}.csv`,
-                ["Project", "Status", "Required", "Assigned", "Fill Rate %", "Tech", "Helpers", "Supervisors"],
+                ["Project", "Status", "Required", "Assigned", "Fill Rate %", "Tech", "Helpers", "Team Leaders"],
                 data.rows.map((r) => [r.name, r.status, r.required, r.assigned, r.fillRate, r.technicians, r.helpers, r.supervisors])
               );
             }}><Download className="h-3.5 w-3.5 mr-1" />CSV</Button>
@@ -56,7 +56,7 @@ export default function ManpowerReport() {
                 ],
                 tables: [{
                   title: "Staffing Detail",
-                  headers: ["Project", "Status", "Required", "Assigned", "Fill Rate %", "Tech", "Helpers", "Supervisors"],
+                  headers: ["Project", "Status", "Required", "Assigned", "Fill Rate %", "Tech", "Helpers", "Team Leaders"],
                   rows: data.rows.map((r) => [r.name, r.status, r.required, r.assigned, `${r.fillRate}%`, r.technicians, r.helpers, r.supervisors]),
                 }],
               });
@@ -124,7 +124,7 @@ export default function ManpowerReport() {
                     <th className="text-center py-2 font-medium">Fill Rate</th>
                     <th className="text-center py-2 font-medium">Tech</th>
                     <th className="text-center py-2 font-medium">Help</th>
-                    <th className="text-center py-2 font-medium">Sup</th>
+                    <th className="text-center py-2 font-medium">TL</th>
                   </tr>
                 </thead>
                 <tbody>
