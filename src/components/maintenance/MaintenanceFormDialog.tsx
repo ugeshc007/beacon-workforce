@@ -87,7 +87,7 @@ export function MaintenanceFormDialog({ open, onOpenChange, editCall }: Props) {
           location: form.location || null,
           scope: form.scope || null,
           notes: form.notes || null,
-          branch_id: user?.branch_id ?? "",
+          branch_id: user?.branchId ?? "",
           created_by: user?.id ?? null,
           status: "open",
         });
