@@ -149,7 +149,7 @@ Deno.serve(async (req) => {
     const roles: Record<string, string> = {
       technicians: "technician",
       helpers: "helper",
-      supervisors: "supervisor",
+      supervisors: "team_leader",
     };
 
     for (const [roleKey, skillType] of Object.entries(roles)) {
