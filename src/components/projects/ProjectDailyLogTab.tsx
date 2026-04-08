@@ -1,0 +1,287 @@
+import { useState, useRef } from "react";
+import { format } from "date-fns";
+import { useDailyLogs, useCreateDailyLog, useDeleteDailyLog, uploadDailyLogPhoto } from "@/hooks/useDailyLogs";
+import { useAuth } from "@/hooks/useAuth";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Plus, Send, Camera, AlertTriangle, TrendingUp, Trash2, ImageIcon, X, User,
+} from "lucide-react";
+
+interface Props {
+  projectId: string;
+}
+
+export function ProjectDailyLogTab({ projectId }: Props) {
+  const { data: logs, isLoading } = useDailyLogs(projectId);
+  const createMutation = useCreateDailyLog();
+  const deleteMutation = useDeleteDailyLog();
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  const [showForm, setShowForm] = useState(false);
+  const [description, setDescription] = useState("");
+  const [issues, setIssues] = useState("");
+  const [completionPct, setCompletionPct] = useState("");
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const resetForm = () => {
+    setDescription("");
+    setIssues("");
+    setCompletionPct("");
+    setPhotos([]);
+    setShowForm(false);
+  };
+
+  const handleSubmit = async () => {
+    if (!description.trim()) {
+      toast({ title: "Description required", variant: "destructive" });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      let photoUrls: string[] = [];
+      for (const file of photos) {
+        const url = await uploadDailyLogPhoto(file, projectId);
+        photoUrls.push(url);
+      }
+
+      await createMutation.mutateAsync({
+        project_id: projectId,
+        description: description.trim(),
+        issues: issues.trim() || null,
+        completion_pct: completionPct ? parseInt(completionPct) : null,
+        photo_urls: photoUrls,
+        posted_by: user?.id ?? null,
+      });
+
+      toast({ title: "Daily update added" });
+      resetForm();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDelete = async (logId: string) => {
+    try {
+      await deleteMutation.mutateAsync({ id: logId, projectId });
+      toast({ title: "Update deleted" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setPhotos((prev) => [...prev, ...Array.from(e.target.files!)]);
+    }
+  };
+
+  const removePhoto = (idx: number) => {
+    setPhotos((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  // Group logs by date
+  const logsByDate = (logs ?? []).reduce<Record<string, typeof logs>>((acc, log) => {
+    const d = log.date;
+    if (!acc[d]) acc[d] = [];
+    acc[d]!.push(log);
+    return acc;
+  }, {});
+
+  return (
+    <Card className="glass-card">
+      <CardContent className="pt-4">
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-sm text-muted-foreground">{logs?.length ?? 0} update{(logs?.length ?? 0) !== 1 ? "s" : ""}</p>
+          {!showForm && (
+            <Button size="sm" className="gap-1.5" onClick={() => setShowForm(true)}>
+              <Plus className="h-3.5 w-3.5" /> Add Update
+            </Button>
+          )}
+        </div>
+
+        {/* Add update form */}
+        {showForm && (
+          <Card className="mb-6 border-brand/30 bg-brand/5">
+            <CardContent className="pt-4 space-y-3">
+              <Textarea
+                placeholder="What was done today? Describe the work completed..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Completion %</label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={100}
+                    placeholder="e.g. 45"
+                    value={completionPct}
+                    onChange={(e) => setCompletionPct(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Issues / Blockers</label>
+                  <Input
+                    placeholder="Any problems encountered?"
+                    value={issues}
+                    onChange={(e) => setIssues(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Photo upload */}
+              <div>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => fileRef.current?.click()}
+                >
+                  <Camera className="h-3.5 w-3.5" /> Attach Photos
+                </Button>
+                {photos.length > 0 && (
+                  <div className="flex gap-2 mt-2 flex-wrap">
+                    {photos.map((f, i) => (
+                      <div key={i} className="relative group">
+                        <img
+                          src={URL.createObjectURL(f)}
+                          className="h-16 w-16 object-cover rounded-md border border-border"
+                          alt=""
+                        />
+                        <button
+                          className="absolute -top-1.5 -right-1.5 bg-destructive text-white rounded-full h-4 w-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => removePhoto(i)}
+                        >
+                          <X className="h-2.5 w-2.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-2 justify-end">
+                <Button variant="ghost" size="sm" onClick={resetForm}>Cancel</Button>
+                <Button
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={handleSubmit}
+                  disabled={uploading || createMutation.isPending}
+                >
+                  <Send className="h-3.5 w-3.5" />
+                  {uploading ? "Uploading..." : "Post Update"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Log entries */}
+        {isLoading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}
+          </div>
+        ) : !logs?.length ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <ImageIcon className="h-10 w-10 mx-auto mb-3 opacity-30" />
+            <p className="text-sm font-medium">No daily updates yet</p>
+            <p className="text-xs mt-1">Start tracking progress by adding your first update</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {Object.entries(logsByDate)
+              .sort(([a], [b]) => b.localeCompare(a))
+              .map(([date, entries]) => (
+                <div key={date}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="h-2 w-2 rounded-full bg-brand" />
+                    <span className="text-xs font-semibold text-foreground">
+                      {format(new Date(date + "T00:00:00"), "EEE, dd MMM yyyy")}
+                    </span>
+                    <Badge variant="outline" className="text-[10px]">{entries!.length} update{entries!.length !== 1 ? "s" : ""}</Badge>
+                  </div>
+
+                  <div className="space-y-3 ml-3 border-l-2 border-border pl-4">
+                    {entries!.map((log) => (
+                      <div key={log.id} className="bg-accent/20 rounded-lg p-3 space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1">
+                            <p className="text-sm text-foreground">{log.description}</p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
+                            onClick={() => handleDelete(log.id)}
+                            disabled={deleteMutation.isPending}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+
+                        <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                          {log.completion_pct !== null && (
+                            <span className="flex items-center gap-1">
+                              <TrendingUp className="h-3 w-3 text-brand" />
+                              {log.completion_pct}% complete
+                            </span>
+                          )}
+                          {log.issues && (
+                            <span className="flex items-center gap-1 text-status-overtime">
+                              <AlertTriangle className="h-3 w-3" />
+                              {log.issues}
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1 ml-auto">
+                            <User className="h-3 w-3" />
+                            {log.users?.name ?? "Unknown"} · {format(new Date(log.created_at), "HH:mm")}
+                          </span>
+                        </div>
+
+                        {log.photo_urls?.length > 0 && (
+                          <div className="flex gap-2 flex-wrap mt-1">
+                            {log.photo_urls.map((url, i) => (
+                              <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                                <img
+                                  src={url}
+                                  className="h-20 w-20 object-cover rounded-md border border-border hover:border-brand transition-colors"
+                                  alt={`Site photo ${i + 1}`}
+                                />
+                              </a>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

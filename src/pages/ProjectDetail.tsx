@@ -19,6 +19,7 @@ import { useState } from "react";
 import { ProjectFormDialog } from "@/components/projects/ProjectFormDialog";
 import { ProjectCostsTab } from "@/components/projects/ProjectCostsTab";
 import { ProjectExpensesTab } from "@/components/projects/ProjectExpensesTab";
+import { ProjectDailyLogTab } from "@/components/projects/ProjectDailyLogTab";
 import { TeamAssignDialog } from "@/components/projects/TeamAssignDialog";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -190,6 +191,7 @@ export default function ProjectDetail() {
           <TabsTrigger value="attendance">Attendance</TabsTrigger>
           <TabsTrigger value="costs">Costs</TabsTrigger>
           <TabsTrigger value="expenses">Expenses</TabsTrigger>
+          <TabsTrigger value="daily-log">Daily Log</TabsTrigger>
         </TabsList>
 
         {/* ── Overview ── */}
@@ -373,6 +375,11 @@ export default function ProjectDetail() {
         {/* ── Expenses ── */}
         <TabsContent value="expenses">
           <ProjectExpensesTab projectId={id!} expenses={expenses} />
+        </TabsContent>
+
+        {/* ── Daily Log ── */}
+        <TabsContent value="daily-log">
+          <ProjectDailyLogTab projectId={id!} />
         </TabsContent>
       </Tabs>
 
