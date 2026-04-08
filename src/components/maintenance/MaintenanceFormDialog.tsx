@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DateInput } from "@/components/ui/date-input";
 import { useCreateMaintenanceCall, useUpdateMaintenanceCall, MaintenanceCall } from "@/hooks/useMaintenance";
+import { useBranches } from "@/hooks/useEmployees";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
@@ -23,6 +24,7 @@ export function MaintenanceFormDialog({ open, onOpenChange, editCall }: Props) {
   const { toast } = useToast();
   const createMutation = useCreateMaintenanceCall();
   const updateMutation = useUpdateMaintenanceCall();
+  const { data: branches } = useBranches();
   const isEdit = !!editCall;
 
   const [form, setForm] = useState({
@@ -34,6 +36,7 @@ export function MaintenanceFormDialog({ open, onOpenChange, editCall }: Props) {
     priority: "normal" as "emergency" | "high" | "normal" | "low",
     scheduled_date: "",
     notes: "",
+    branch_id: "",
   });
 
   useEffect(() => {
@@ -47,6 +50,7 @@ export function MaintenanceFormDialog({ open, onOpenChange, editCall }: Props) {
         priority: editCall.priority,
         scheduled_date: editCall.scheduled_date ?? "",
         notes: editCall.notes ?? "",
+        branch_id: editCall.branch_id,
       });
     } else {
       setForm({
@@ -58,17 +62,18 @@ export function MaintenanceFormDialog({ open, onOpenChange, editCall }: Props) {
         priority: "normal",
         scheduled_date: "",
         notes: "",
+        branch_id: user?.branchId ?? "",
       });
     }
-  }, [editCall, open]);
+  }, [editCall, open, user?.branchId]);
 
   const handleSubmit = async () => {
     if (!form.company_name.trim()) {
       toast({ title: "Company name is required", variant: "destructive" });
       return;
     }
-    if (!user?.branchId) {
-      toast({ title: "No branch assigned to your account", variant: "destructive" });
+    if (!form.branch_id) {
+      toast({ title: "Please select a branch", variant: "destructive" });
       return;
     }
     try {
@@ -91,7 +96,7 @@ export function MaintenanceFormDialog({ open, onOpenChange, editCall }: Props) {
           location: form.location || null,
           scope: form.scope || null,
           notes: form.notes || null,
-          branch_id: user?.branchId ?? "",
+          branch_id: form.branch_id,
           created_by: user?.id ?? null,
           status: "open",
         });
@@ -134,6 +139,18 @@ export function MaintenanceFormDialog({ open, onOpenChange, editCall }: Props) {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div>
+            <Label>Branch *</Label>
+            <Select value={form.branch_id} onValueChange={(v) => set("branch_id", v)}>
+              <SelectTrigger><SelectValue placeholder="Select branch" /></SelectTrigger>
+              <SelectContent>
+                {branches?.map((b) => (
+                  <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
