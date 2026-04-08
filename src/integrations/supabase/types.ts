@@ -687,6 +687,70 @@ export type Database = {
           },
         ]
       }
+      project_daily_logs: {
+        Row: {
+          completion_pct: number | null
+          created_at: string
+          date: string
+          description: string
+          employee_id: string | null
+          id: string
+          issues: string | null
+          photo_urls: string[] | null
+          posted_by: string | null
+          project_id: string
+          updated_at: string
+        }
+        Insert: {
+          completion_pct?: number | null
+          created_at?: string
+          date?: string
+          description: string
+          employee_id?: string | null
+          id?: string
+          issues?: string | null
+          photo_urls?: string[] | null
+          posted_by?: string | null
+          project_id: string
+          updated_at?: string
+        }
+        Update: {
+          completion_pct?: number | null
+          created_at?: string
+          date?: string
+          description?: string
+          employee_id?: string | null
+          id?: string
+          issues?: string | null
+          photo_urls?: string[] | null
+          posted_by?: string | null
+          project_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_daily_logs_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_daily_logs_posted_by_fkey"
+            columns: ["posted_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_daily_logs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_expenses: {
         Row: {
           added_by: string | null
