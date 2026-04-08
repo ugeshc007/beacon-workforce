@@ -191,6 +191,7 @@ export default function ProjectDetail() {
           <TabsTrigger value="attendance">Attendance</TabsTrigger>
           <TabsTrigger value="costs">Costs</TabsTrigger>
           <TabsTrigger value="expenses">Expenses</TabsTrigger>
+          <TabsTrigger value="daily-log">Daily Log</TabsTrigger>
         </TabsList>
 
         {/* ── Overview ── */}
