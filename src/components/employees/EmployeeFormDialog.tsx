@@ -22,7 +22,7 @@ const schema = z.object({
   phone: z.string().max(20).optional().or(z.literal("")),
   email: z.string().email("Invalid email").max(255).optional().or(z.literal("")),
   designation: z.string().max(100).optional().or(z.literal("")),
-  skill_type: z.enum(["technician", "helper", "team_leader"]),
+  skill_type: z.enum(["team_member", "team_leader"]),
   branch_id: z.string().uuid("Select a branch"),
   hourly_rate: z.coerce.number().min(0),
   overtime_rate: z.coerce.number().min(0),
@@ -55,7 +55,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
       phone: "",
       email: "",
       designation: "",
-      skill_type: "helper",
+      skill_type: "team_member",
       branch_id: "",
       hourly_rate: 25,
       overtime_rate: 37.5,
@@ -74,7 +74,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
         phone: employee.phone ?? "",
         email: employee.email ?? "",
         designation: employee.designation ?? "",
-        skill_type: employee.skill_type,
+        skill_type: employee.skill_type as "team_member" | "team_leader",
         branch_id: employee.branch_id,
         hourly_rate: Number(employee.hourly_rate),
         overtime_rate: Number(employee.overtime_rate),
@@ -175,8 +175,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                     <SelectContent>
-                      <SelectItem value="technician">Technician</SelectItem>
-                      <SelectItem value="helper">Helper</SelectItem>
+                      <SelectItem value="team_member">Team Member</SelectItem>
                       <SelectItem value="team_leader">Team Leader</SelectItem>
                     </SelectContent>
                   </Select>

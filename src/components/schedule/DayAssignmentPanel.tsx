@@ -39,8 +39,7 @@ interface Props {
 }
 
 const skillColors: Record<string, string> = {
-  technician: "bg-brand/15 text-brand border-brand/30",
-  helper: "bg-status-traveling/15 text-status-traveling border-status-traveling/30",
+  team_member: "bg-brand/15 text-brand border-brand/30",
   team_leader: "bg-status-overtime/15 text-status-overtime border-status-overtime/30",
 };
 
@@ -89,14 +88,12 @@ export function DayAssignmentPanel({
   const [reassignKeepOld, setReassignKeepOld] = useState(true);
   const [reassignOldEnd, setReassignOldEnd] = useState("");
 
-  const techCount = assignments.filter((a) => a.employee_skill === "technician").length;
-  const helpCount = assignments.filter((a) => a.employee_skill === "helper").length;
-  const supCount = assignments.filter((a) => a.employee_skill === "team_leader").length;
+  const memberCount = assignments.filter((a) => a.employee_skill === "team_member").length;
+  const tlCount = assignments.filter((a) => a.employee_skill === "team_leader").length;
 
-  const needTech = Math.max(0, requiredTech - techCount);
-  const needHelp = Math.max(0, requiredHelp - helpCount);
-  const needSup = Math.max(0, requiredSup - supCount);
-  const totalToFill = needTech + needHelp + needSup;
+  const needMembers = Math.max(0, requiredTech - memberCount);
+  const needTL = Math.max(0, requiredSup - tlCount);
+  const totalToFill = needMembers + needTL;
 
   const handleAdd = async (employeeId: string) => {
     try {
@@ -299,14 +296,11 @@ export function DayAssignmentPanel({
       <CardContent className="space-y-4">
         {/* Staffing summary */}
         <div className="flex gap-2 text-xs">
-          <Badge variant="outline" className={techCount >= requiredTech ? "border-status-present/50" : "border-status-absent/50"}>
-            Tech: {techCount}/{requiredTech}
+          <Badge variant="outline" className={memberCount >= requiredTech ? "border-status-present/50" : "border-status-absent/50"}>
+            Members: {memberCount}/{requiredTech}
           </Badge>
-          <Badge variant="outline" className={helpCount >= requiredHelp ? "border-status-present/50" : "border-status-absent/50"}>
-            Help: {helpCount}/{requiredHelp}
-          </Badge>
-          <Badge variant="outline" className={supCount >= requiredSup ? "border-status-present/50" : "border-status-absent/50"}>
-            TL: {supCount}/{requiredSup}
+          <Badge variant="outline" className={tlCount >= requiredSup ? "border-status-present/50" : "border-status-absent/50"}>
+            TL: {tlCount}/{requiredSup}
           </Badge>
         </div>
 
@@ -456,9 +450,9 @@ export function DayAssignmentPanel({
           </div>
         ) : (
           <div className="flex gap-2">
-            {(["technician", "helper", "team_leader"] as const).map((skill) => (
+            {(["team_member", "team_leader"] as const).map((skill) => (
               <Button key={skill} variant="outline" size="sm" className="flex-1 text-xs" onClick={() => setAddingSkill(skill)}>
-                <Plus className="h-3 w-3 mr-1" /> {skill.charAt(0).toUpperCase() + skill.slice(1, 4)}
+                <Plus className="h-3 w-3 mr-1" /> {skill === "team_member" ? "Member" : "TL"}
               </Button>
             ))}
           </div>
@@ -474,9 +468,8 @@ export function DayAssignmentPanel({
               <div className="space-y-3">
                 <p>The engine will assign up to <strong>{totalToFill}</strong> employees for <strong>{projectName}</strong> on {new Date(date + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" })}:</p>
                 <ul className="list-disc pl-5 space-y-0.5 text-sm">
-                  {needTech > 0 && <li>{needTech} technician{needTech > 1 ? "s" : ""}</li>}
-                  {needHelp > 0 && <li>{needHelp} helper{needHelp > 1 ? "s" : ""}</li>}
-                  {needSup > 0 && <li>{needSup} supervisor{needSup > 1 ? "s" : ""}</li>}
+                  {needMembers > 0 && <li>{needMembers} team member{needMembers > 1 ? "s" : ""}</li>}
+                  {needTL > 0 && <li>{needTL} team leader{needTL > 1 ? "s" : ""}</li>}
                 </ul>
                 {/* Shift time for auto-fill */}
                 <div className="flex items-center gap-2 pt-1">

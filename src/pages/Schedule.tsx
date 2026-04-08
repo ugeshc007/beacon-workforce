@@ -293,8 +293,8 @@ export default function Schedule() {
           projectId={selectedProjectId}
           projectName={selectedProject.name}
           assignments={dayAssignments(selectedDay).filter((a) => a.project_id === selectedProjectId)}
-          requiredTech={selectedProject.required_technicians}
-          requiredHelp={selectedProject.required_helpers}
+          requiredTech={(selectedProject as any).required_team_members ?? selectedProject.required_technicians + selectedProject.required_helpers}
+          requiredHelp={0}
           requiredSup={selectedProject.required_supervisors}
           conflicts={dayConflicts(selectedDay)}
           readOnly={!canEdit}
@@ -316,8 +316,8 @@ export default function Schedule() {
                   projectId={p.id}
                   projectName={p.name}
                   assignments={dayAssignments(selectedDay).filter((a) => a.project_id === p.id)}
-                  requiredTech={p.required_technicians}
-                  requiredHelp={p.required_helpers}
+                  requiredTech={(p as any).required_team_members ?? p.required_technicians + p.required_helpers}
+                  requiredHelp={0}
                   requiredSup={p.required_supervisors}
                   conflicts={dayConflicts(selectedDay).filter((c) =>
                     c.projects.includes(p.name)

@@ -134,7 +134,7 @@ export function useUtilizationData(start: string, end: string, filters?: {
         };
       });
 
-      const bySkill = ["technician", "helper", "team_leader"].map((skill) => {
+      const bySkill = ["team_member", "team_leader"].map((skill) => {
         const group = rows.filter((r) => r.skill_type === skill);
         const avgUtil = group.length > 0 ? Math.round(group.reduce((s, r) => s + r.utilization, 0) / group.length) : 0;
         return { skill, count: group.length, avgUtilization: avgUtil };
@@ -760,13 +760,12 @@ export function useManpowerReport(start: string, end: string, filters?: { branch
 
       const rows = projects.map((p) => {
         const projAssigns = assignments.filter((a) => a.project_id === p.id);
-        const required = p.required_technicians + p.required_helpers + p.required_supervisors;
+        const required = (p as any).required_team_members + p.required_supervisors;
         const assigned = projAssigns.length;
-        const technicians = projAssigns.filter((a: any) => a.employees?.skill_type === "technician").length;
-        const helpers = projAssigns.filter((a: any) => a.employees?.skill_type === "helper").length;
-        const supervisors = projAssigns.filter((a: any) => a.employees?.skill_type === "team_leader").length;
+        const teamMembers = projAssigns.filter((a: any) => a.employees?.skill_type === "team_member").length;
+        const teamLeaders = projAssigns.filter((a: any) => a.employees?.skill_type === "team_leader").length;
         const fillRate = required > 0 ? Math.round((assigned / required) * 100) : assigned > 0 ? 100 : 0;
-        return { id: p.id, name: p.name, status: p.status, required, assigned, fillRate, technicians, helpers, supervisors };
+        return { id: p.id, name: p.name, status: p.status, required, assigned, fillRate, teamMembers, teamLeaders };
       }).sort((a, b) => a.fillRate - b.fillRate);
 
       const totalProjects = rows.length;

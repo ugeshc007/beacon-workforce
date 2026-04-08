@@ -147,8 +147,7 @@ Deno.serve(async (req) => {
     const usedIds = new Set([...locked, ...alreadyOnProject]);
 
     const roles: Record<string, string> = {
-      technicians: "technician",
-      helpers: "helper",
+      team_members: "team_member",
       supervisors: "team_leader",
     };
 

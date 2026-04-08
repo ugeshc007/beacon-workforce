@@ -276,8 +276,7 @@ export default function Timesheets() {
           <SelectTrigger className="w-[140px]"><SelectValue placeholder="All Skills" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Skills</SelectItem>
-            <SelectItem value="technician">Technician</SelectItem>
-            <SelectItem value="helper">Helper</SelectItem>
+            <SelectItem value="team_member">Team Member</SelectItem>
             <SelectItem value="team_leader">Team Leader</SelectItem>
           </SelectContent>
         </Select>

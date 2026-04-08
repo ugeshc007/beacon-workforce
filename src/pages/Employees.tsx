@@ -25,8 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
 const skillColors: Record<string, string> = {
-  technician: "bg-blue-500/15 text-blue-400 border-blue-500/30",
-  helper: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+  team_member: "bg-blue-500/15 text-blue-400 border-blue-500/30",
   team_leader: "bg-purple-500/15 text-purple-400 border-purple-500/30",
 };
 
@@ -119,8 +118,7 @@ export default function Employees() {
           <SelectTrigger className="w-[140px]"><SelectValue placeholder="Skill Type" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Skills</SelectItem>
-            <SelectItem value="technician">Technician</SelectItem>
-            <SelectItem value="helper">Helper</SelectItem>
+            <SelectItem value="team_member">Team Member</SelectItem>
             <SelectItem value="team_leader">Team Leader</SelectItem>
           </SelectContent>
         </Select>

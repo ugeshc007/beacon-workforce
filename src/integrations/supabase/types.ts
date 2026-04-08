@@ -661,6 +661,7 @@ export type Database = {
           name: string
           required_helpers: number
           required_supervisors: number
+          required_team_members: number
           required_technicians: number
         }
         Insert: {
@@ -672,6 +673,7 @@ export type Database = {
           name: string
           required_helpers?: number
           required_supervisors?: number
+          required_team_members?: number
           required_technicians?: number
         }
         Update: {
@@ -683,6 +685,7 @@ export type Database = {
           name?: string
           required_helpers?: number
           required_supervisors?: number
+          required_team_members?: number
           required_technicians?: number
         }
         Relationships: [
@@ -712,6 +715,7 @@ export type Database = {
           project_value: number | null
           required_helpers: number
           required_supervisors: number
+          required_team_members: number
           required_technicians: number
           site_address: string | null
           site_gps_radius: number
@@ -737,6 +741,7 @@ export type Database = {
           project_value?: number | null
           required_helpers?: number
           required_supervisors?: number
+          required_team_members?: number
           required_technicians?: number
           site_address?: string | null
           site_gps_radius?: number
@@ -762,6 +767,7 @@ export type Database = {
           project_value?: number | null
           required_helpers?: number
           required_supervisors?: number
+          required_team_members?: number
           required_technicians?: number
           site_address?: string | null
           site_gps_radius?: number
@@ -1123,7 +1129,7 @@ export type Database = {
       override_action: "absent" | "replaced" | "added" | "removed"
       project_status: "planned" | "assigned" | "in_progress" | "completed"
       report_schedule: "none" | "daily" | "weekly" | "monthly"
-      skill_type: "technician" | "helper" | "team_leader"
+      skill_type: "technician" | "helper" | "team_leader" | "team_member"
       user_role: "admin" | "manager" | "team_leader"
     }
     CompositeTypes: {
@@ -1267,7 +1273,7 @@ export const Constants = {
       override_action: ["absent", "replaced", "added", "removed"],
       project_status: ["planned", "assigned", "in_progress", "completed"],
       report_schedule: ["none", "daily", "weekly", "monthly"],
-      skill_type: ["technician", "helper", "team_leader"],
+      skill_type: ["technician", "helper", "team_leader", "team_member"],
       user_role: ["admin", "manager", "team_leader"],
     },
   },
