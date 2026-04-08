@@ -376,6 +376,11 @@ export default function ProjectDetail() {
         <TabsContent value="expenses">
           <ProjectExpensesTab projectId={id!} expenses={expenses} />
         </TabsContent>
+
+        {/* ── Daily Log ── */}
+        <TabsContent value="daily-log">
+          <ProjectDailyLogTab projectId={id!} />
+        </TabsContent>
       </Tabs>
 
       <ProjectFormDialog open={editOpen} onOpenChange={setEditOpen} editProject={project as Tables<"projects">} />
