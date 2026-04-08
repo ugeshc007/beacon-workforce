@@ -468,9 +468,8 @@ export function DayAssignmentPanel({
               <div className="space-y-3">
                 <p>The engine will assign up to <strong>{totalToFill}</strong> employees for <strong>{projectName}</strong> on {new Date(date + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" })}:</p>
                 <ul className="list-disc pl-5 space-y-0.5 text-sm">
-                  {needTech > 0 && <li>{needTech} technician{needTech > 1 ? "s" : ""}</li>}
-                  {needHelp > 0 && <li>{needHelp} helper{needHelp > 1 ? "s" : ""}</li>}
-                  {needSup > 0 && <li>{needSup} supervisor{needSup > 1 ? "s" : ""}</li>}
+                  {needMembers > 0 && <li>{needMembers} team member{needMembers > 1 ? "s" : ""}</li>}
+                  {needTL > 0 && <li>{needTL} team leader{needTL > 1 ? "s" : ""}</li>}
                 </ul>
                 {/* Shift time for auto-fill */}
                 <div className="flex items-center gap-2 pt-1">

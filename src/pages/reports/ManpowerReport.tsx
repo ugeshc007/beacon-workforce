@@ -39,8 +39,8 @@ export default function ManpowerReport() {
           {data && (<>
             <Button variant="outline" size="sm" className="text-xs ml-1" onClick={() => {
               downloadCsv(`manpower-${dateRange.start}.csv`,
-                ["Project", "Status", "Required", "Assigned", "Fill Rate %", "Tech", "Helpers", "Team Leaders"],
-                data.rows.map((r) => [r.name, r.status, r.required, r.assigned, r.fillRate, r.technicians, r.helpers, r.supervisors])
+                ["Project", "Status", "Required", "Assigned", "Fill Rate %", "Members", "TL"],
+                data.rows.map((r) => [r.name, r.status, r.required, r.assigned, r.fillRate, r.teamMembers, r.teamLeaders])
               );
             }}><Download className="h-3.5 w-3.5 mr-1" />CSV</Button>
             <Button variant="outline" size="sm" className="text-xs" onClick={() => {
@@ -56,8 +56,8 @@ export default function ManpowerReport() {
                 ],
                 tables: [{
                   title: "Staffing Detail",
-                  headers: ["Project", "Status", "Required", "Assigned", "Fill Rate %", "Tech", "Helpers", "Team Leaders"],
-                  rows: data.rows.map((r) => [r.name, r.status, r.required, r.assigned, `${r.fillRate}%`, r.technicians, r.helpers, r.supervisors]),
+                  headers: ["Project", "Status", "Required", "Assigned", "Fill Rate %", "Members", "TL"],
+                  rows: data.rows.map((r) => [r.name, r.status, r.required, r.assigned, `${r.fillRate}%`, r.teamMembers, r.teamLeaders]),
                 }],
               });
             }}><Download className="h-3.5 w-3.5 mr-1" />PDF</Button>
@@ -103,9 +103,8 @@ export default function ManpowerReport() {
                   <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={130} />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="supervisors" stackId="a" fill="hsl(var(--status-overtime))" name="Team Leaders" />
-                  <Bar dataKey="technicians" stackId="a" fill="hsl(var(--brand))" name="Technicians" />
-                  <Bar dataKey="helpers" stackId="a" fill="hsl(var(--status-present))" name="Helpers" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="teamLeaders" stackId="a" fill="hsl(var(--status-overtime))" name="Team Leaders" />
+                  <Bar dataKey="teamMembers" stackId="a" fill="hsl(var(--brand))" name="Team Members" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -122,9 +121,8 @@ export default function ManpowerReport() {
                     <th className="text-center py-2 font-medium">Required</th>
                     <th className="text-center py-2 font-medium">Assigned</th>
                     <th className="text-center py-2 font-medium">Fill Rate</th>
-                    <th className="text-center py-2 font-medium">Tech</th>
-                    <th className="text-center py-2 font-medium">Help</th>
-                    <th className="text-center py-2 font-medium">TL</th>
+                     <th className="text-center py-2 font-medium">Members</th>
+                     <th className="text-center py-2 font-medium">TL</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -137,9 +135,8 @@ export default function ManpowerReport() {
                       <td className="py-2 text-center">
                         <Badge variant="outline" className={`text-[10px] ${r.fillRate >= 100 ? "text-status-present border-status-present/30" : r.fillRate >= 70 ? "text-brand border-brand/30" : "text-status-absent border-status-absent/30"}`}>{r.fillRate}%</Badge>
                       </td>
-                      <td className="py-2 text-center font-mono text-xs">{r.technicians}</td>
-                      <td className="py-2 text-center font-mono text-xs">{r.helpers}</td>
-                      <td className="py-2 text-center font-mono text-xs">{r.supervisors}</td>
+                      <td className="py-2 text-center font-mono text-xs">{r.teamMembers}</td>
+                      <td className="py-2 text-center font-mono text-xs">{r.teamLeaders}</td>
                     </tr>
                   ))}
                 </tbody>
