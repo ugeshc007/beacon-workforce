@@ -1123,8 +1123,8 @@ export type Database = {
       override_action: "absent" | "replaced" | "added" | "removed"
       project_status: "planned" | "assigned" | "in_progress" | "completed"
       report_schedule: "none" | "daily" | "weekly" | "monthly"
-      skill_type: "technician" | "helper" | "supervisor"
-      user_role: "admin" | "manager" | "supervisor"
+      skill_type: "technician" | "helper" | "team_leader"
+      user_role: "admin" | "manager" | "team_leader"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1267,8 +1267,8 @@ export const Constants = {
       override_action: ["absent", "replaced", "added", "removed"],
       project_status: ["planned", "assigned", "in_progress", "completed"],
       report_schedule: ["none", "daily", "weekly", "monthly"],
-      skill_type: ["technician", "helper", "supervisor"],
-      user_role: ["admin", "manager", "supervisor"],
+      skill_type: ["technician", "helper", "team_leader"],
+      user_role: ["admin", "manager", "team_leader"],
     },
   },
 } as const
