@@ -19,6 +19,7 @@ import { useState } from "react";
 import { ProjectFormDialog } from "@/components/projects/ProjectFormDialog";
 import { ProjectCostsTab } from "@/components/projects/ProjectCostsTab";
 import { ProjectExpensesTab } from "@/components/projects/ProjectExpensesTab";
+import { ProjectDailyLogTab } from "@/components/projects/ProjectDailyLogTab";
 import { TeamAssignDialog } from "@/components/projects/TeamAssignDialog";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
