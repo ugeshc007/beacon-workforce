@@ -240,10 +240,19 @@ export default function DailyTeam() {
                     <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => setAddDialog({ project_id: group.project_id, project_name: group.project_name })}>
                       <UserPlus className="h-3 w-3 mr-1" />Add Staff
                     </Button>
+                    <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => handleShare(group)}>
+                      <Share2 className="h-3 w-3 mr-1" />Share
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="pt-0">
+                {group.notes && (
+                  <div className="flex items-start gap-2 px-1 pb-3 text-xs text-muted-foreground">
+                    <StickyNote className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                    <span className="line-clamp-2">{group.notes}</span>
+                  </div>
+                )}
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
