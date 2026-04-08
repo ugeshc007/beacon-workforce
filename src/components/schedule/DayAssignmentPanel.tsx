@@ -41,7 +41,7 @@ interface Props {
 const skillColors: Record<string, string> = {
   technician: "bg-brand/15 text-brand border-brand/30",
   helper: "bg-status-traveling/15 text-status-traveling border-status-traveling/30",
-  supervisor: "bg-status-overtime/15 text-status-overtime border-status-overtime/30",
+  team_leader: "bg-status-overtime/15 text-status-overtime border-status-overtime/30",
 };
 
 export function DayAssignmentPanel({
@@ -91,7 +91,7 @@ export function DayAssignmentPanel({
 
   const techCount = assignments.filter((a) => a.employee_skill === "technician").length;
   const helpCount = assignments.filter((a) => a.employee_skill === "helper").length;
-  const supCount = assignments.filter((a) => a.employee_skill === "supervisor").length;
+  const supCount = assignments.filter((a) => a.employee_skill === "team_leader").length;
 
   const needTech = Math.max(0, requiredTech - techCount);
   const needHelp = Math.max(0, requiredHelp - helpCount);
@@ -306,7 +306,7 @@ export function DayAssignmentPanel({
             Help: {helpCount}/{requiredHelp}
           </Badge>
           <Badge variant="outline" className={supCount >= requiredSup ? "border-status-present/50" : "border-status-absent/50"}>
-            Sup: {supCount}/{requiredSup}
+            TL: {supCount}/{requiredSup}
           </Badge>
         </div>
 
@@ -456,7 +456,7 @@ export function DayAssignmentPanel({
           </div>
         ) : (
           <div className="flex gap-2">
-            {(["technician", "helper", "supervisor"] as const).map((skill) => (
+            {(["technician", "helper", "team_leader"] as const).map((skill) => (
               <Button key={skill} variant="outline" size="sm" className="flex-1 text-xs" onClick={() => setAddingSkill(skill)}>
                 <Plus className="h-3 w-3 mr-1" /> {skill.charAt(0).toUpperCase() + skill.slice(1, 4)}
               </Button>

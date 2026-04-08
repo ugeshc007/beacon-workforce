@@ -24,9 +24,9 @@ export function useProjects(filters?: {
         .select("*, branches(name)")
         .order("created_at", { ascending: false });
 
-      // Non-admin, non-supervisor users only see projects they created
+      // Non-admin, non-team_leader users only see projects they created
       // or projects that have team assignments (employees added)
-      if (filters?.userId && filters?.userRole && filters.userRole !== "admin" && filters.userRole !== "supervisor") {
+      if (filters?.userId && filters?.userRole && filters.userRole !== "admin" && filters.userRole !== "team_leader") {
         // First get project IDs that have any assignments
         const { data: assignedProjects } = await supabase
           .from("project_assignments")

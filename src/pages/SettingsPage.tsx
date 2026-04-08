@@ -636,7 +636,7 @@ function AssignmentAuditLogSection() {
 // ─── Permission Matrix ──────────────────────────────────────
 const MODULES = ["dashboard", "projects", "employees", "schedule", "attendance", "timesheets", "reports", "settings"];
 const ACTIONS = ["can_view", "can_create", "can_edit", "can_delete"] as const;
-const ROLES = ["admin", "manager", "supervisor"];
+const ROLES = ["admin", "manager", "team_leader"];
 
 function PermissionMatrix() {
   const { data: permissions, isLoading } = useRolePermissions();

@@ -22,7 +22,7 @@ const schema = z.object({
   phone: z.string().max(20).optional().or(z.literal("")),
   email: z.string().email("Invalid email").max(255).optional().or(z.literal("")),
   designation: z.string().max(100).optional().or(z.literal("")),
-  skill_type: z.enum(["technician", "helper", "supervisor"]),
+  skill_type: z.enum(["technician", "helper", "team_leader"]),
   branch_id: z.string().uuid("Select a branch"),
   hourly_rate: z.coerce.number().min(0),
   overtime_rate: z.coerce.number().min(0),
@@ -177,7 +177,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
                     <SelectContent>
                       <SelectItem value="technician">Technician</SelectItem>
                       <SelectItem value="helper">Helper</SelectItem>
-                      <SelectItem value="supervisor">Supervisor</SelectItem>
+                      <SelectItem value="team_leader">Team Leader</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />

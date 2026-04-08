@@ -41,7 +41,7 @@ const fmt = (ts: string | null) => {
 const skillColor: Record<string, string> = {
   technician: "bg-blue-500/20 text-blue-400 border-blue-500/30",
   helper: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
-  supervisor: "bg-purple-500/20 text-purple-400 border-purple-500/30",
+  team_leader: "bg-purple-500/20 text-purple-400 border-purple-500/30",
 };
 
 function todayUAE(): string {
