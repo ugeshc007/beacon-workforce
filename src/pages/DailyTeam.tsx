@@ -30,6 +30,7 @@ import { toast } from "sonner";
 import {
   Users, UserCheck, UserMinus, UserPlus, MoreHorizontal,
   CheckCircle2, XCircle, Clock, ChevronLeft, ChevronRight, Search,
+  MapPin, Share2, FileText, StickyNote,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -217,13 +218,18 @@ export default function DailyTeam() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div>
-                    <CardTitle className="text-base">
-                      <Link to={`/projects/${group.project_id}`} className="hover:text-primary transition-colors">
-                        {group.project_name}
-                      </Link>
-                    </CardTitle>
-                    {group.client_name && <p className="text-xs text-muted-foreground">{group.client_name}</p>}
-                  </div>
+                     <CardTitle className="text-base">
+                       <Link to={`/projects/${group.project_id}`} className="hover:text-primary transition-colors">
+                         {group.project_name}
+                       </Link>
+                     </CardTitle>
+                     {group.client_name && <p className="text-xs text-muted-foreground">{group.client_name}</p>}
+                     {group.site_address && (
+                       <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                         <MapPin className="h-3 w-3 shrink-0" />{group.site_address}
+                       </p>
+                     )}
+                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-[10px]">
                       {presentCount}/{group.members.length} present {required > 0 && `· ${required} req`}
