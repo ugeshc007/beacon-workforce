@@ -414,6 +414,127 @@ export type Database = {
           },
         ]
       }
+      maintenance_assignments: {
+        Row: {
+          assigned_by: string | null
+          created_at: string
+          date: string
+          employee_id: string
+          id: string
+          maintenance_call_id: string
+          shift_end: string | null
+          shift_start: string | null
+        }
+        Insert: {
+          assigned_by?: string | null
+          created_at?: string
+          date: string
+          employee_id: string
+          id?: string
+          maintenance_call_id: string
+          shift_end?: string | null
+          shift_start?: string | null
+        }
+        Update: {
+          assigned_by?: string | null
+          created_at?: string
+          date?: string
+          employee_id?: string
+          id?: string
+          maintenance_call_id?: string
+          shift_end?: string | null
+          shift_start?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_assignments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_assignments_maintenance_call_id_fkey"
+            columns: ["maintenance_call_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_calls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      maintenance_calls: {
+        Row: {
+          branch_id: string
+          company_name: string
+          contact_number: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          location: string | null
+          notes: string | null
+          permit_required: boolean
+          priority: Database["public"]["Enums"]["maintenance_priority"]
+          scheduled_date: string | null
+          scope: string | null
+          status: Database["public"]["Enums"]["maintenance_status"]
+          updated_at: string
+        }
+        Insert: {
+          branch_id: string
+          company_name: string
+          contact_number?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          location?: string | null
+          notes?: string | null
+          permit_required?: boolean
+          priority?: Database["public"]["Enums"]["maintenance_priority"]
+          scheduled_date?: string | null
+          scope?: string | null
+          status?: Database["public"]["Enums"]["maintenance_status"]
+          updated_at?: string
+        }
+        Update: {
+          branch_id?: string
+          company_name?: string
+          contact_number?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          location?: string | null
+          notes?: string | null
+          permit_required?: boolean
+          priority?: Database["public"]["Enums"]["maintenance_priority"]
+          scheduled_date?: string | null
+          scope?: string | null
+          status?: Database["public"]["Enums"]["maintenance_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_calls_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_calls_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -1125,6 +1246,13 @@ export type Database = {
         | "equipment"
         | "misc"
       expense_status: "pending" | "approved" | "rejected"
+      maintenance_priority: "emergency" | "high" | "normal" | "low"
+      maintenance_status:
+        | "open"
+        | "scheduled"
+        | "in_progress"
+        | "completed"
+        | "closed"
       notification_priority: "low" | "normal" | "high" | "critical"
       override_action: "absent" | "replaced" | "added" | "removed"
       project_status: "planned" | "assigned" | "in_progress" | "completed"
@@ -1269,6 +1397,14 @@ export const Constants = {
         "misc",
       ],
       expense_status: ["pending", "approved", "rejected"],
+      maintenance_priority: ["emergency", "high", "normal", "low"],
+      maintenance_status: [
+        "open",
+        "scheduled",
+        "in_progress",
+        "completed",
+        "closed",
+      ],
       notification_priority: ["low", "normal", "high", "critical"],
       override_action: ["absent", "replaced", "added", "removed"],
       project_status: ["planned", "assigned", "in_progress", "completed"],

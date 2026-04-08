@@ -8,6 +8,7 @@ import {
   Clock,
   BarChart3,
   Settings,
+  Wrench,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -35,6 +36,7 @@ const mainNav = [
   { title: "Attendance", url: "/attendance", icon: ClipboardCheck, module: "attendance" },
   { title: "Travel", url: "/travel", icon: Car, module: "attendance" },
   { title: "Timesheets", url: "/timesheets", icon: Clock, module: "timesheets" },
+  { title: "Maintenance", url: "/maintenance", icon: Wrench, module: "maintenance" },
 ];
 
 const reportNav = [

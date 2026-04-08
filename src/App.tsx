@@ -32,6 +32,8 @@ import OvertimeReport from "./pages/reports/OvertimeReport";
 import ManpowerReport from "./pages/reports/ManpowerReport";
 import AbsenteeReport from "./pages/reports/AbsenteeReport";
 import SettingsPage from "./pages/SettingsPage";
+import Maintenance from "./pages/Maintenance";
+import MaintenanceDetail from "./pages/MaintenanceDetail";
 
 const queryClient = new QueryClient();
 
@@ -64,6 +66,8 @@ const App = () => (
               <Route path="/attendance/daily" element={<ModuleGuard module="attendance"><DailyTeam /></ModuleGuard>} />
               <Route path="/travel" element={<ModuleGuard module="attendance"><Travel /></ModuleGuard>} />
               <Route path="/timesheets" element={<ModuleGuard module="timesheets"><Timesheets /></ModuleGuard>} />
+              <Route path="/maintenance" element={<ModuleGuard module="maintenance"><Maintenance /></ModuleGuard>} />
+              <Route path="/maintenance/:id" element={<ModuleGuard module="maintenance"><MaintenanceDetail /></ModuleGuard>} />
               <Route path="/reports" element={<ModuleGuard module="reports"><Reports /></ModuleGuard>} />
               <Route path="/reports/utilization" element={<ModuleGuard module="reports"><Utilization /></ModuleGuard>} />
               <Route path="/reports/costs" element={<ModuleGuard module="reports"><CostReports /></ModuleGuard>} />
