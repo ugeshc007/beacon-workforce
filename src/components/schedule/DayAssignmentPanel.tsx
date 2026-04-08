@@ -225,7 +225,7 @@ export function DayAssignmentPanel({
   });
 
   const availableForSkill = (skill: string) =>
-    (employees ?? []).filter((e) => e.skill_type === skill && e.available);
+    (employees ?? []).filter((e) => e.skill_type === skill && !e.on_leave);
 
   /** Check if selected shift overlaps with any existing slot */
   const hasOverlap = (slots: { start: string; end: string; project: string }[]) => {
