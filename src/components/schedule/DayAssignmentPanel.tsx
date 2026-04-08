@@ -14,7 +14,7 @@ import {
   type ScheduleAssignment,
 } from "@/hooks/useSchedule";
 import { useProjects } from "@/hooks/useProjects";
-import { Lock, LockOpen, Plus, Trash2, AlertTriangle, Zap, User, Clock, Timer, Pencil, ArrowRightLeft, Check, X } from "lucide-react";
+import { Lock, LockOpen, Plus, Trash2, AlertTriangle, Zap, User, Clock, Timer, Pencil, ArrowRightLeft, Check, X, Shield, Users } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
