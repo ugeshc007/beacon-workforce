@@ -69,7 +69,7 @@ export function useUtilizationData(start: string, end: string, filters?: {
         empQuery = empQuery.eq("branch_id", filters.branchId);
       }
       if (filters?.skillType && filters.skillType !== "all") {
-        empQuery = empQuery.eq("skill_type", filters.skillType as "technician" | "helper" | "supervisor");
+        empQuery = empQuery.eq("skill_type", filters.skillType as "technician" | "helper" | "team_leader");
       }
 
       const [empRes, logsRes, leaveRes, branchRes] = await Promise.all([
@@ -134,7 +134,7 @@ export function useUtilizationData(start: string, end: string, filters?: {
         };
       });
 
-      const bySkill = ["technician", "helper", "supervisor"].map((skill) => {
+      const bySkill = ["technician", "helper", "team_leader"].map((skill) => {
         const group = rows.filter((r) => r.skill_type === skill);
         const avgUtil = group.length > 0 ? Math.round(group.reduce((s, r) => s + r.utilization, 0) / group.length) : 0;
         return { skill, count: group.length, avgUtilization: avgUtil };
@@ -764,7 +764,7 @@ export function useManpowerReport(start: string, end: string, filters?: { branch
         const assigned = projAssigns.length;
         const technicians = projAssigns.filter((a: any) => a.employees?.skill_type === "technician").length;
         const helpers = projAssigns.filter((a: any) => a.employees?.skill_type === "helper").length;
-        const supervisors = projAssigns.filter((a: any) => a.employees?.skill_type === "supervisor").length;
+        const supervisors = projAssigns.filter((a: any) => a.employees?.skill_type === "team_leader").length;
         const fillRate = required > 0 ? Math.round((assigned / required) * 100) : assigned > 0 ? 100 : 0;
         return { id: p.id, name: p.name, status: p.status, required, assigned, fillRate, technicians, helpers, supervisors };
       }).sort((a, b) => a.fillRate - b.fillRate);

@@ -103,7 +103,7 @@ export default function ManpowerReport() {
                   <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={130} />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="supervisors" stackId="a" fill="hsl(var(--status-overtime))" name="Supervisors" />
+                  <Bar dataKey="supervisors" stackId="a" fill="hsl(var(--status-overtime))" name="Team Leaders" />
                   <Bar dataKey="technicians" stackId="a" fill="hsl(var(--brand))" name="Technicians" />
                   <Bar dataKey="helpers" stackId="a" fill="hsl(var(--status-present))" name="Helpers" radius={[0, 4, 4, 0]} />
                 </BarChart>

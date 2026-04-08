@@ -220,7 +220,7 @@ export default function ProjectDetail() {
                   <div className="flex gap-2">
                     <Badge variant="outline">{project.required_technicians} Tech</Badge>
                     <Badge variant="outline">{project.required_helpers} Help</Badge>
-                    <Badge variant="outline">{project.required_supervisors} Sup</Badge>
+                    <Badge variant="outline">{project.required_supervisors} TL</Badge>
                   </div>
                 </div>
               </CardContent>

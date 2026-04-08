@@ -59,8 +59,8 @@ function validateRow(headers: string[], values: string[], rowNum: number): Parse
     if (!data[req]) errors.push(`Missing ${req}`);
   }
 
-  if (data.skill_type && !["technician", "helper", "supervisor"].includes(data.skill_type.toLowerCase())) {
-    errors.push(`Invalid skill_type: ${data.skill_type} (must be technician/helper/supervisor)`);
+  if (data.skill_type && !["technician", "helper", "team_leader"].includes(data.skill_type.toLowerCase())) {
+    errors.push(`Invalid skill_type: ${data.skill_type} (must be technician/helper/team_leader)`);
   }
 
   if (data.hourly_rate && isNaN(Number(data.hourly_rate))) errors.push("Invalid hourly_rate");

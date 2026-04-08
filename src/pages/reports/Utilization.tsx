@@ -122,7 +122,7 @@ export default function Utilization() {
             <SelectItem value="all">All Skills</SelectItem>
             <SelectItem value="technician">Technician</SelectItem>
             <SelectItem value="helper">Helper</SelectItem>
-            <SelectItem value="supervisor">Supervisor</SelectItem>
+            <SelectItem value="team_leader">Team Leader</SelectItem>
           </SelectContent>
         </Select>
         <Select value={branchFilter} onValueChange={setBranchFilter}>

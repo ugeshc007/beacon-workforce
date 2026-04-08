@@ -264,7 +264,7 @@ export function ProjectFormDialog({ open, onOpenChange, editProject, prefill }: 
             <>
               <div><Label>Technicians Required</Label><Input type="number" value={form.required_technicians} onChange={(e) => set("required_technicians", e.target.value)} /></div>
               <div><Label>Helpers Required</Label><Input type="number" value={form.required_helpers} onChange={(e) => set("required_helpers", e.target.value)} /></div>
-              <div><Label>Supervisors Required</Label><Input type="number" value={form.required_supervisors} onChange={(e) => set("required_supervisors", e.target.value)} /></div>
+              <div><Label>Team Leaders Required</Label><Input type="number" value={form.required_supervisors} onChange={(e) => set("required_supervisors", e.target.value)} /></div>
             </>
           )}
         </div>
