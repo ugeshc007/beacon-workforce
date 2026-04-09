@@ -87,6 +87,17 @@ export default function Employees() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteEmployee.mutateAsync(deleteTarget.id);
+      toast({ title: "Employee deleted", description: `${deleteTarget.name} and all related records have been removed.` });
+      setDeleteTarget(null);
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Header */}
