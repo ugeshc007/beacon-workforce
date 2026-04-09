@@ -42,6 +42,7 @@ export default function Projects() {
   const [branchId, setBranchId] = useState("all");
   const [view, setView] = useState<"card" | "table">("card");
   const [formOpen, setFormOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [editProject, setEditProject] = useState<Tables<"projects"> | null>(null);
   const [prefill, setPrefill] = useState<ProjectPrefill | null>(null);
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
