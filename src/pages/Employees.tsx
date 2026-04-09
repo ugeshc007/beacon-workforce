@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useEmployees, useBranches, useToggleEmployeeStatus } from "@/hooks/useEmployees";
+import { useEmployees, useBranches, useToggleEmployeeStatus, useDeleteEmployee } from "@/hooks/useEmployees";
 import { useCanAccess } from "@/hooks/usePermissions";
 import { EmployeeFormDialog } from "@/components/employees/EmployeeFormDialog";
 import { EmployeeDetailDrawer } from "@/components/employees/EmployeeDetailDrawer";
@@ -20,7 +20,11 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Users, Plus, Search, MoreHorizontal, Pencil, Eye, ChevronLeft, ChevronRight, Upload, CalendarOff } from "lucide-react";
+import { Users, Plus, Search, MoreHorizontal, Pencil, Eye, ChevronLeft, ChevronRight, Upload, CalendarOff, Trash2 } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -44,10 +48,12 @@ export default function Employees() {
   const [csvOpen, setCsvOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [leaveEmployee, setLeaveEmployee] = useState<{ id: string; name: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   const { data, isLoading } = useEmployees({ search, skillType, branchId, status, page, pageSize });
   const { data: branches } = useBranches();
   const toggleStatus = useToggleEmployeeStatus();
+  const deleteEmployee = useDeleteEmployee();
   const { toast } = useToast();
   const { allowed: canCreate } = useCanAccess("employees", "can_create");
   const { allowed: canEdit } = useCanAccess("employees", "can_edit");
@@ -76,6 +82,17 @@ export default function Employees() {
     try {
       await toggleStatus.mutateAsync({ id, is_active: !current });
       toast({ title: current ? "Employee deactivated" : "Employee activated" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteEmployee.mutateAsync(deleteTarget.id);
+      toast({ title: "Employee deleted", description: `${deleteTarget.name} and all related records have been removed.` });
+      setDeleteTarget(null);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
@@ -246,6 +263,17 @@ export default function Employees() {
                               </DropdownMenuItem>
                             </>
                           )}
+                          {canDelete && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="text-destructive focus:text-destructive"
+                                onClick={() => setDeleteTarget({ id: emp.id, name: emp.name })}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -304,6 +332,26 @@ export default function Employees() {
           employeeName={leaveEmployee.name}
         />
       )}
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Employee</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{deleteTarget?.name}</strong>? This will permanently remove all their assignments, attendance records, leave records, and timesheets. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteEmployee.isPending ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
