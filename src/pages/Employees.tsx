@@ -48,10 +48,12 @@ export default function Employees() {
   const [csvOpen, setCsvOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [leaveEmployee, setLeaveEmployee] = useState<{ id: string; name: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   const { data, isLoading } = useEmployees({ search, skillType, branchId, status, page, pageSize });
   const { data: branches } = useBranches();
   const toggleStatus = useToggleEmployeeStatus();
+  const deleteEmployee = useDeleteEmployee();
   const { toast } = useToast();
   const { allowed: canCreate } = useCanAccess("employees", "can_create");
   const { allowed: canEdit } = useCanAccess("employees", "can_edit");
