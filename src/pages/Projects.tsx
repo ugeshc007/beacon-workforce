@@ -19,8 +19,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Progress } from "@/components/ui/progress";
 import {
   FolderKanban, Plus, Search, LayoutGrid, List, MapPin, Users, DollarSign,
-  MoreHorizontal, Eye, Pencil, CalendarIcon, X, Copy, FileText, GanttChart,
+  MoreHorizontal, Eye, Pencil, CalendarIcon, X, Copy, FileText, GanttChart, Upload,
 } from "lucide-react";
+import { CsvProjectImportDialog } from "@/components/projects/CsvProjectImportDialog";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
