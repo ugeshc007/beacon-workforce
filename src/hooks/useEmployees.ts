@@ -166,3 +166,17 @@ export function useToggleEmployeeStatus() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["employees"] }),
   });
 }
+
+export function useDeleteEmployee() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.rpc("delete_employee_cascade", { emp_id: id });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["employees"] });
+      qc.invalidateQueries({ queryKey: ["employee"] });
+    },
+  });
+}

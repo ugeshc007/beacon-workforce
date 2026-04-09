@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useEmployees, useBranches, useToggleEmployeeStatus } from "@/hooks/useEmployees";
+import { useEmployees, useBranches, useToggleEmployeeStatus, useDeleteEmployee } from "@/hooks/useEmployees";
 import { useCanAccess } from "@/hooks/usePermissions";
 import { EmployeeFormDialog } from "@/components/employees/EmployeeFormDialog";
 import { EmployeeDetailDrawer } from "@/components/employees/EmployeeDetailDrawer";
@@ -20,7 +20,11 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Users, Plus, Search, MoreHorizontal, Pencil, Eye, ChevronLeft, ChevronRight, Upload, CalendarOff } from "lucide-react";
+import { Users, Plus, Search, MoreHorizontal, Pencil, Eye, ChevronLeft, ChevronRight, Upload, CalendarOff, Trash2 } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
