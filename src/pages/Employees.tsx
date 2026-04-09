@@ -263,6 +263,17 @@ export default function Employees() {
                               </DropdownMenuItem>
                             </>
                           )}
+                          {canDelete && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="text-destructive focus:text-destructive"
+                                onClick={() => setDeleteTarget({ id: emp.id, name: emp.name })}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -321,6 +332,26 @@ export default function Employees() {
           employeeName={leaveEmployee.name}
         />
       )}
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Employee</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{deleteTarget?.name}</strong>? This will permanently remove all their assignments, attendance records, leave records, and timesheets. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteEmployee.isPending ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
