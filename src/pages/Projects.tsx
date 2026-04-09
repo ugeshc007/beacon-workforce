@@ -121,6 +121,11 @@ export default function Projects() {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
+          {canCreate && (
+            <Button variant="outline" size="sm" className="gap-1" onClick={() => setImportOpen(true)}>
+              <Upload className="h-4 w-4" /> Bulk Import
+            </Button>
+          )}
           <Button variant="outline" size="sm" className="gap-1" onClick={() => navigate("/projects/gantt")}>
             <GanttChart className="h-4 w-4" /> Gantt
           </Button>
