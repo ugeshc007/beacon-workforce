@@ -1280,6 +1280,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      delete_employee_cascade: { Args: { emp_id: string }; Returns: undefined }
       get_user_branch_id: { Args: never; Returns: string }
       get_user_id: { Args: never; Returns: string }
       has_role: {
