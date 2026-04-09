@@ -309,6 +309,7 @@ export default function Projects() {
       )}
 
       <ProjectFormDialog open={formOpen} onOpenChange={setFormOpen} editProject={editProject} prefill={prefill} />
+      <CsvProjectImportDialog open={importOpen} onOpenChange={setImportOpen} branches={(branches ?? []).map(b => ({ id: b.id, name: b.name }))} />
     </div>
   );
 }
