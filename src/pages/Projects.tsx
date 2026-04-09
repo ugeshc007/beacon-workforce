@@ -19,8 +19,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Progress } from "@/components/ui/progress";
 import {
   FolderKanban, Plus, Search, LayoutGrid, List, MapPin, Users, DollarSign,
-  MoreHorizontal, Eye, Pencil, CalendarIcon, X, Copy, FileText, GanttChart,
+  MoreHorizontal, Eye, Pencil, CalendarIcon, X, Copy, FileText, GanttChart, Upload,
 } from "lucide-react";
+import { CsvProjectImportDialog } from "@/components/projects/CsvProjectImportDialog";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -41,6 +42,7 @@ export default function Projects() {
   const [branchId, setBranchId] = useState("all");
   const [view, setView] = useState<"card" | "table">("card");
   const [formOpen, setFormOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [editProject, setEditProject] = useState<Tables<"projects"> | null>(null);
   const [prefill, setPrefill] = useState<ProjectPrefill | null>(null);
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
@@ -118,6 +120,11 @@ export default function Projects() {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+          )}
+          {canCreate && (
+            <Button variant="outline" size="sm" className="gap-1" onClick={() => setImportOpen(true)}>
+              <Upload className="h-4 w-4" /> Bulk Import
+            </Button>
           )}
           <Button variant="outline" size="sm" className="gap-1" onClick={() => navigate("/projects/gantt")}>
             <GanttChart className="h-4 w-4" /> Gantt
@@ -302,6 +309,7 @@ export default function Projects() {
       )}
 
       <ProjectFormDialog open={formOpen} onOpenChange={setFormOpen} editProject={editProject} prefill={prefill} />
+      <CsvProjectImportDialog open={importOpen} onOpenChange={setImportOpen} branches={(branches ?? []).map(b => ({ id: b.id, name: b.name }))} />
     </div>
   );
 }
