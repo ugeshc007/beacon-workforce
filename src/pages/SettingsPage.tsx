@@ -31,6 +31,7 @@ import { useRolePermissions, useUpdatePermission } from "@/hooks/usePermissions"
 import { useAuth } from "@/hooks/useAuth";
 import { DateInput } from "@/components/ui/date-input";
 import { downloadCsv } from "@/lib/csv-export";
+import LocationPickerMap from "@/components/settings/LocationPickerMap";
 
 // ─── helpers ────────────────────────────────────────────────
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
@@ -132,6 +133,7 @@ function OfficeDialog({ office, branchId, open, onOpenChange }: {
   const [lat, setLat] = useState("");
   const [lng, setLng] = useState("");
   const [radius, setRadius] = useState("100");
+  const [showMap, setShowMap] = useState(false);
   const create = useCreateOffice();
   const update = useUpdateOffice();
   const saving = create.isPending || update.isPending;
@@ -143,6 +145,7 @@ function OfficeDialog({ office, branchId, open, onOpenChange }: {
       setLat(office?.latitude?.toString() ?? "");
       setLng(office?.longitude?.toString() ?? "");
       setRadius(office?.gps_radius_meters?.toString() ?? "100");
+      setShowMap(false);
     }
   }, [open, office]);
 
@@ -162,9 +165,14 @@ function OfficeDialog({ office, branchId, open, onOpenChange }: {
     }
   };
 
+  const handleMapSelect = (selectedLat: number, selectedLng: number) => {
+    setLat(selectedLat.toFixed(6));
+    setLng(selectedLng.toFixed(6));
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="text-sm">{office ? "Edit Office" : "New Office"}</DialogTitle>
         </DialogHeader>
@@ -176,9 +184,21 @@ function OfficeDialog({ office, branchId, open, onOpenChange }: {
               <Input type="number" step="any" value={lat} onChange={(e) => setLat(e.target.value)} placeholder="25.2048" />
             </Field>
             <Field label="Longitude" hint="e.g. 55.2708">
-              <Input type="number" step="any" value={lng} onChange={(e) => setLng(e.target.value)} placeholder="55.2708" />
+              <div className="flex gap-1.5">
+                <Input type="number" step="any" value={lng} onChange={(e) => setLng(e.target.value)} placeholder="55.2708" className="flex-1" />
+                <Button type="button" size="icon" variant={showMap ? "default" : "outline"} className="h-9 w-9 shrink-0" onClick={() => setShowMap(!showMap)} title="Pick from map">
+                  <MapPin className="h-4 w-4" />
+                </Button>
+              </div>
             </Field>
           </div>
+          {showMap && (
+            <LocationPickerMap
+              lat={lat ? parseFloat(lat) : null}
+              lng={lng ? parseFloat(lng) : null}
+              onSelect={handleMapSelect}
+            />
+          )}
           <Field label="GPS Radius (m)" hint="Punch-in valid within this radius of the office.">
             <Input type="number" value={radius} onChange={(e) => setRadius(e.target.value)} placeholder="100" />
           </Field>
