@@ -283,24 +283,28 @@ export default function Timesheets() {
             <SelectItem value="team_leader">Team Leader</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={projectFilter} onValueChange={setProjectFilter}>
-          <SelectTrigger className="w-[180px]"><SelectValue placeholder="All Projects" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Projects</SelectItem>
-            {(data?.projects ?? []).map((p) => (
-              <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={employeeFilter} onValueChange={setEmployeeFilter}>
-          <SelectTrigger className="w-[180px]"><SelectValue placeholder="All Employees" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Employees</SelectItem>
-            {(data?.employees ?? []).map((e) => (
-              <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {showAdvancedFilters && (
+          <Select value={projectFilter} onValueChange={setProjectFilter}>
+            <SelectTrigger className="w-[180px]"><SelectValue placeholder="All Projects" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Projects</SelectItem>
+              {(data?.projects ?? []).map((p) => (
+                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        {showAdvancedFilters && (
+          <Select value={employeeFilter} onValueChange={setEmployeeFilter}>
+            <SelectTrigger className="w-[180px]"><SelectValue placeholder="All Employees" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Employees</SelectItem>
+              {(data?.employees ?? []).map((e) => (
+                <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {/* Tabs: Employee view vs Project view */}
