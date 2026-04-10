@@ -31,6 +31,7 @@ import { useRolePermissions, useUpdatePermission } from "@/hooks/usePermissions"
 import { useAuth } from "@/hooks/useAuth";
 import { DateInput } from "@/components/ui/date-input";
 import { downloadCsv } from "@/lib/csv-export";
+import LocationPickerMap from "@/components/settings/LocationPickerMap";
 
 // ─── helpers ────────────────────────────────────────────────
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
