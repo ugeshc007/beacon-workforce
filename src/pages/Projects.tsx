@@ -29,8 +29,7 @@ import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 
 const statusMap: Record<string, "planned" | "present" | "traveling" | "absent" | "overtime"> = {
-  planned: "planned",
-  assigned: "planned",
+  on_hold: "planned",
   in_progress: "present",
   completed: "overtime",
 };
@@ -145,8 +144,7 @@ export default function Projects() {
           <SelectTrigger className="w-[140px]"><SelectValue placeholder="Status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="planned">Planned</SelectItem>
-            <SelectItem value="assigned">Assigned</SelectItem>
+            <SelectItem value="on_hold">On Hold</SelectItem>
             <SelectItem value="in_progress">In Progress</SelectItem>
             <SelectItem value="completed">Completed</SelectItem>
           </SelectContent>

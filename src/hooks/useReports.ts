@@ -241,7 +241,7 @@ export function useCostData(start: string, end: string, filters?: {
       if (filters?.status && filters.status !== "all") {
         projQuery = projQuery.eq("status", filters.status as any);
       } else {
-        projQuery = projQuery.in("status", ["assigned", "in_progress", "completed"]);
+        projQuery = projQuery.in("status", ["on_hold", "in_progress", "completed"]);
       }
       if (filters?.branchId && filters.branchId !== "all") {
         projQuery = projQuery.eq("branch_id", filters.branchId);
@@ -429,7 +429,7 @@ export function useExecutiveData(start: string, end: string) {
         branchRes, notifRes, weeklyLogsRes,
       ] = await Promise.all([
         supabase.from("employees").select("id, branch_id, is_active, standard_hours_per_day", { count: "exact" }).eq("is_active", true),
-        supabase.from("projects").select("id, name, status, branch_id, budget", { count: "exact" }).in("status", ["assigned", "in_progress"]),
+        supabase.from("projects").select("id, name, status, branch_id, budget", { count: "exact" }).in("status", ["in_progress"]),
         supabase.from("attendance_logs")
           .select("employee_id, total_work_minutes, overtime_minutes, regular_cost, overtime_cost, date, project_id")
           .gte("date", start).lte("date", end),
@@ -741,7 +741,7 @@ export function useManpowerReport(start: string, end: string, filters?: { branch
     queryFn: async () => {
       let projQuery = supabase.from("projects")
         .select("id, name, status, branch_id, required_technicians, required_helpers, required_supervisors")
-        .in("status", ["assigned", "in_progress"]);
+        .in("status", ["in_progress"]);
       if (filters?.branchId && filters.branchId !== "all") projQuery = projQuery.eq("branch_id", filters.branchId);
 
       const todayStr = new Date(Date.now() + 4 * 3600000).toISOString().slice(0, 10);

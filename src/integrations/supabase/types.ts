@@ -1459,7 +1459,7 @@ export type Database = {
         | "closed"
       notification_priority: "low" | "normal" | "high" | "critical"
       override_action: "absent" | "replaced" | "added" | "removed"
-      project_status: "planned" | "assigned" | "in_progress" | "completed"
+      project_status: "on_hold" | "in_progress" | "completed"
       report_schedule: "none" | "daily" | "weekly" | "monthly"
       skill_type: "technician" | "helper" | "team_leader" | "team_member"
       user_role: "admin" | "manager" | "team_leader"
@@ -1611,7 +1611,7 @@ export const Constants = {
       ],
       notification_priority: ["low", "normal", "high", "critical"],
       override_action: ["absent", "replaced", "added", "removed"],
-      project_status: ["planned", "assigned", "in_progress", "completed"],
+      project_status: ["on_hold", "in_progress", "completed"],
       report_schedule: ["none", "daily", "weekly", "monthly"],
       skill_type: ["technician", "helper", "team_leader", "team_member"],
       user_role: ["admin", "manager", "team_leader"],

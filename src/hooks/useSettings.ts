@@ -182,7 +182,7 @@ export function useDeleteBranch() {
         .from("projects")
         .select("id", { count: "exact", head: true })
         .eq("branch_id", id)
-        .in("status", ["planned", "assigned", "in_progress"]);
+        .in("status", ["on_hold", "in_progress"]);
       if (projCount && projCount > 0) {
         throw new Error(`Cannot delete: ${projCount} active project(s) belong to this branch`);
       }

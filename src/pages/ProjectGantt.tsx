@@ -28,8 +28,7 @@ const STATUS_BORDER: Record<string, string> = {
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  planned: "Planned",
-  assigned: "Assigned",
+  on_hold: "On Hold",
   in_progress: "In Progress",
   completed: "Completed",
 };

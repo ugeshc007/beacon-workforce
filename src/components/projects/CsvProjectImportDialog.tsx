@@ -32,7 +32,7 @@ const ALL_HEADERS = [
   "required_technicians", "required_helpers", "required_supervisors",
   "notes",
 ];
-const VALID_STATUSES = ["planned", "assigned", "in_progress", "completed"];
+const VALID_STATUSES = ["on_hold", "in_progress", "completed"];
 
 function downloadTemplate(branches: { id: string; name: string }[]) {
   const wb = XLSX.utils.book_new();
@@ -42,28 +42,28 @@ function downloadTemplate(branches: { id: string; name: string }[]) {
   const data = [
     ALL_HEADERS,
     [
-      "Dubai Mall LED Wall", dubaiName, "planned",
+      "Dubai Mall LED Wall", dubaiName, "on_hold",
       "Emaar Properties", "+971501234567", "emaar@example.com",
       "Dubai Mall, Ground Floor, Financial Center Rd", "25.1972", "55.2744", "100",
       "2026-04-15", "2026-06-30", "50000", "75000",
       "2", "3", "1", "Large LED wall installation at main entrance",
     ],
     [
-      "Riyadh Tower Signage", damamName, "planned",
+      "Riyadh Tower Signage", damamName, "on_hold",
       "Al Faisaliah Group", "+966512345678", "projects@alfaisaliah.com",
       "Al Faisaliah Tower, King Fahd Road, Riyadh", "24.6908", "46.6853", "150",
       "2026-05-01", "2026-07-15", "35000", "55000",
       "3", "2", "1", "External signage with LED backlight",
     ],
     [
-      "JBR Beach Digital Board", dubaiName, "assigned",
+      "JBR Beach Digital Board", dubaiName, "in_progress",
       "Meraas Holding", "+971504567890", "info@meraas.com",
       "JBR The Walk, Jumeirah Beach Residence", "25.0780", "55.1340", "80",
       "2026-04-20", "2026-05-30", "28000", "42000",
       "2", "2", "1", "Outdoor digital display board near beach",
     ],
     [
-      "Dammam Corniche LED Screen", damamName, "planned",
+      "Dammam Corniche LED Screen", damamName, "on_hold",
       "Eastern Province Municipality", "+966138456789", "projects@epm.gov.sa",
       "Dammam Corniche, King Abdullah Park", "26.4367", "50.1033", "120",
       "2026-06-01", "2026-08-30", "60000", "90000",
