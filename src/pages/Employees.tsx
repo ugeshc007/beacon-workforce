@@ -322,7 +322,7 @@ export default function Employees() {
         onOpenChange={setDrawerOpen}
       />
 
-      <CsvImportDialog open={csvOpen} onOpenChange={setCsvOpen} />
+      <CsvImportDialog open={csvOpen} onOpenChange={setCsvOpen} branches={branches?.map(b => ({ id: b.id, name: b.name })) ?? []} />
 
       {leaveEmployee && (
         <MarkLeaveDialog
