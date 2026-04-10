@@ -164,6 +164,80 @@ export function useUpdateBranch() {
   });
 }
 
+// ─── Offices ────────────────────────────────────────────────
+export function useOffices(branchId?: string) {
+  return useQuery({
+    queryKey: ["offices", branchId],
+    enabled: !!branchId,
+    queryFn: async () => {
+      const q = supabase.from("offices").select("*").order("name");
+      if (branchId) q.eq("branch_id", branchId);
+      const { data, error } = await q;
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useAllOffices() {
+  return useQuery({
+    queryKey: ["offices-all"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("offices").select("*").order("name");
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useCreateOffice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { branch_id: string; name: string; address?: string; latitude?: number; longitude?: number; gps_radius_meters?: number }) => {
+      const { error } = await supabase.from("offices").insert(payload);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["offices"] });
+      qc.invalidateQueries({ queryKey: ["offices-all"] });
+      toast.success("Office created");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useUpdateOffice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: { id: string; name?: string; address?: string; latitude?: number | null; longitude?: number | null; gps_radius_meters?: number }) => {
+      const { error } = await supabase.from("offices").update(payload).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["offices"] });
+      qc.invalidateQueries({ queryKey: ["offices-all"] });
+      toast.success("Office updated");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useDeleteOffice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("offices").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["offices"] });
+      qc.invalidateQueries({ queryKey: ["offices-all"] });
+      toast.success("Office deleted");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
 export function useDeleteBranch() {
   const qc = useQueryClient();
   return useMutation({
