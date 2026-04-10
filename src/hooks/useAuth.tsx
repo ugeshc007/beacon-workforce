@@ -61,17 +61,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 2) Fallback: check the employees table (field workers)
       const { data: empData } = await supabase
         .from("employees")
-        .select("id, name, email, branch_id, auth_id")
+        .select("id, name, email, branch_id, auth_id, skill_type")
         .eq("auth_id", authUser.id)
         .single();
 
       if (empData) {
+        // Team leaders get the team_leader role; others get employee
+        const empRole: UserRole = empData.skill_type === "team_leader" ? "team_leader" : "employee";
         return {
           id: empData.id,
           authId: authUser.id,
           email: empData.email ?? authUser.email ?? "",
           name: empData.name,
-          role: "employee" as UserRole,
+          role: empRole,
           branchId: empData.branch_id,
         };
       }
