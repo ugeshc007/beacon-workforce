@@ -1,6 +1,6 @@
 import { Outlet, NavLink, Navigate } from "react-router-dom";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
-import { Home, ClipboardList, Bell, User, Loader2 } from "lucide-react";
+import { Home, ClipboardList, Bell, User, Loader2, Users } from "lucide-react";
 
 export default function MobileLayout() {
   const { session, employee, loading } = useMobileAuth();
@@ -17,18 +17,19 @@ export default function MobileLayout() {
     return <Navigate to="/m/login" replace />;
   }
 
+  const isTeamLeader = employee.isTeamLeader;
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Content area */}
       <main className="flex-1 overflow-y-auto">
         <Outlet />
       </main>
 
-      {/* Bottom navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border/50 safe-area-bottom z-50">
         <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
           <MobileNavItem to="/m" icon={Home} label="Home" end />
           <MobileNavItem to="/m/timesheet" icon={ClipboardList} label="Timesheet" />
+          {isTeamLeader && <MobileNavItem to="/m/team" icon={Users} label="Team" />}
           <MobileNavItem to="/m/notifications" icon={Bell} label="Alerts" />
           <MobileNavItem to="/m/profile" icon={User} label="Profile" />
         </div>
