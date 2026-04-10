@@ -4,10 +4,11 @@ import path from "path";
 
 // https://vitejs.dev/config/
 export default defineConfig(async ({ mode }) => {
+  // @ts-ignore - lovable-tagger is only available in Lovable sandbox
   let tagger: any;
   if (mode === "development") {
     try {
-      tagger = (await import("lovable-tagger")).componentTagger;
+      tagger = (await import(/* @vite-ignore */ "lovable-tagger")).componentTagger;
     } catch {
       // lovable-tagger not available outside Lovable sandbox
     }
