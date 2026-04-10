@@ -1,5 +1,10 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.49.1/cors";
+import { createClient } from "npm:@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -38,7 +43,6 @@ Deno.serve(async (req) => {
 
     const fcmKey = Deno.env.get("FCM_SERVER_KEY");
     if (!fcmKey) {
-      // Still create the notification in DB even without FCM
       await supabaseAdmin.from("employee_notifications").insert({
         employee_id,
         title,
@@ -53,7 +57,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Send FCM push to all device tokens
     let sent = 0;
     const failedTokens: string[] = [];
 
@@ -83,7 +86,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Clean up invalid tokens
     if (failedTokens.length > 0) {
       await supabaseAdmin
         .from("device_tokens")
@@ -91,7 +93,6 @@ Deno.serve(async (req) => {
         .in("fcm_token", failedTokens);
     }
 
-    // Also save notification to DB
     await supabaseAdmin.from("employee_notifications").insert({
       employee_id,
       title,
