@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useTimesheetData, useApproveTimesheet, type TimesheetRow, type ProjectTimesheetRow } from "@/hooks/useTimesheets";
+import { useAuth } from "@/hooks/useAuth";
 import { useCanAccess } from "@/hooks/usePermissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -53,6 +54,8 @@ export default function Timesheets() {
   const approve = useApproveTimesheet();
   const travelPaid = settings?.travel_time_paid === "true";
   const { allowed: canEdit } = useCanAccess("timesheets", "can_edit");
+  const { isAdmin, isManager, isTeamLeader } = useAuth();
+  const showAdvancedFilters = isAdmin || isManager || isTeamLeader;
 
   const shiftMonth = (delta: number) => {
     const [y, m] = month.split("-").map(Number);
@@ -280,24 +283,28 @@ export default function Timesheets() {
             <SelectItem value="team_leader">Team Leader</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={projectFilter} onValueChange={setProjectFilter}>
-          <SelectTrigger className="w-[180px]"><SelectValue placeholder="All Projects" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Projects</SelectItem>
-            {(data?.projects ?? []).map((p) => (
-              <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={employeeFilter} onValueChange={setEmployeeFilter}>
-          <SelectTrigger className="w-[180px]"><SelectValue placeholder="All Employees" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Employees</SelectItem>
-            {(data?.employees ?? []).map((e) => (
-              <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {showAdvancedFilters && (
+          <Select value={projectFilter} onValueChange={setProjectFilter}>
+            <SelectTrigger className="w-[180px]"><SelectValue placeholder="All Projects" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Projects</SelectItem>
+              {(data?.projects ?? []).map((p) => (
+                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        {showAdvancedFilters && (
+          <Select value={employeeFilter} onValueChange={setEmployeeFilter}>
+            <SelectTrigger className="w-[180px]"><SelectValue placeholder="All Employees" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Employees</SelectItem>
+              {(data?.employees ?? []).map((e) => (
+                <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {/* Tabs: Employee view vs Project view */}
