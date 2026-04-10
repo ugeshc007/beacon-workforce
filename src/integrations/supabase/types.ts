@@ -74,6 +74,7 @@ export type Database = {
           date: string
           employee_id: string
           id: string
+          idempotency_key: string | null
           is_manual_override: boolean | null
           notes: string | null
           office_punch_in: string | null
@@ -90,15 +91,18 @@ export type Database = {
           overtime_minutes: number | null
           project_id: string | null
           regular_cost: number | null
+          site_arrival_accuracy: number | null
           site_arrival_distance_m: number | null
           site_arrival_lat: number | null
           site_arrival_lng: number | null
           site_arrival_time: string | null
           site_arrival_valid: boolean | null
           total_work_minutes: number | null
+          travel_start_accuracy: number | null
           travel_start_lat: number | null
           travel_start_lng: number | null
           travel_start_time: string | null
+          verification_type: string | null
           work_end_time: string | null
           work_start_time: string | null
         }
@@ -110,6 +114,7 @@ export type Database = {
           date: string
           employee_id: string
           id?: string
+          idempotency_key?: string | null
           is_manual_override?: boolean | null
           notes?: string | null
           office_punch_in?: string | null
@@ -126,15 +131,18 @@ export type Database = {
           overtime_minutes?: number | null
           project_id?: string | null
           regular_cost?: number | null
+          site_arrival_accuracy?: number | null
           site_arrival_distance_m?: number | null
           site_arrival_lat?: number | null
           site_arrival_lng?: number | null
           site_arrival_time?: string | null
           site_arrival_valid?: boolean | null
           total_work_minutes?: number | null
+          travel_start_accuracy?: number | null
           travel_start_lat?: number | null
           travel_start_lng?: number | null
           travel_start_time?: string | null
+          verification_type?: string | null
           work_end_time?: string | null
           work_start_time?: string | null
         }
@@ -146,6 +154,7 @@ export type Database = {
           date?: string
           employee_id?: string
           id?: string
+          idempotency_key?: string | null
           is_manual_override?: boolean | null
           notes?: string | null
           office_punch_in?: string | null
@@ -162,15 +171,18 @@ export type Database = {
           overtime_minutes?: number | null
           project_id?: string | null
           regular_cost?: number | null
+          site_arrival_accuracy?: number | null
           site_arrival_distance_m?: number | null
           site_arrival_lat?: number | null
           site_arrival_lng?: number | null
           site_arrival_time?: string | null
           site_arrival_valid?: boolean | null
           total_work_minutes?: number | null
+          travel_start_accuracy?: number | null
           travel_start_lat?: number | null
           travel_start_lng?: number | null
           travel_start_time?: string | null
+          verification_type?: string | null
           work_end_time?: string | null
           work_start_time?: string | null
         }
@@ -295,6 +307,41 @@ export type Database = {
           {
             foreignKeyName: "daily_team_overrides_replacement_employee_id_fkey"
             columns: ["replacement_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      device_tokens: {
+        Row: {
+          created_at: string
+          device_info: string | null
+          employee_id: string
+          fcm_token: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          device_info?: string | null
+          employee_id: string
+          fcm_token: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          device_info?: string | null
+          employee_id?: string
+          fcm_token?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_tokens_employee_id_fkey"
+            columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
             referencedColumns: ["id"]
