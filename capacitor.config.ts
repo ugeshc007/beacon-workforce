@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.535ca16b4da54c5f88def3da094d2364',
+  appId: 'com.bebright.planner',
   appName: 'beacon-workforce',
   webDir: 'dist',
   server: {
