@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { isNativeApp } from "@/lib/capacitor";
-import { Loader2 } from "lucide-react";
 
 export default function Index() {
   const [status, setStatus] = useState<"loading" | "authed" | "anon">("loading");
@@ -21,10 +20,14 @@ export default function Index() {
       </div>
     );
   }
-  if (status === "anon") return <Navigate to="/login" replace />;
-  // On native mobile app, go to worker mobile UI; on web, go to admin dashboard
+
+  // Native app always uses mobile flow
   if (isNativeApp()) {
+    if (status === "anon") return <Navigate to="/m/login" replace />;
     return <Navigate to="/m" replace />;
   }
+
+  // Web portal uses admin flow
+  if (status === "anon") return <Navigate to="/login" replace />;
   return <Navigate to="/dashboard" replace />;
 }
