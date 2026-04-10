@@ -5,6 +5,8 @@ import { EmployeeFormDialog } from "@/components/employees/EmployeeFormDialog";
 import { EmployeeDetailDrawer } from "@/components/employees/EmployeeDetailDrawer";
 import { MarkLeaveDialog } from "@/components/employees/MarkLeaveDialog";
 import { CsvImportDialog } from "@/components/employees/CsvImportDialog";
+import { CreateLoginDialog } from "@/components/employees/CreateLoginDialog";
+import { ResetPasswordDialog } from "@/components/employees/ResetPasswordDialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +22,7 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Users, Plus, Search, MoreHorizontal, Pencil, Eye, ChevronLeft, ChevronRight, Upload, CalendarOff, Trash2 } from "lucide-react";
+import { Users, Plus, Search, MoreHorizontal, Pencil, Eye, ChevronLeft, ChevronRight, Upload, CalendarOff, Trash2, KeyRound, RotateCcw } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -49,6 +51,10 @@ export default function Employees() {
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [leaveEmployee, setLeaveEmployee] = useState<{ id: string; name: string } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [loginTarget, setLoginTarget] = useState<{ id: string; name: string; email?: string | null } | null>(null);
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [resetTarget, setResetTarget] = useState<{ id: string; name: string } | null>(null);
+  const [resetOpen, setResetOpen] = useState(false);
 
   const { data, isLoading } = useEmployees({ search, skillType, branchId, status, page, pageSize });
   const { data: branches } = useBranches();
@@ -261,6 +267,15 @@ export default function Employees() {
                               <DropdownMenuItem onClick={() => { setLeaveEmployee({ id: emp.id, name: emp.name }); setLeaveOpen(true); }}>
                                 <CalendarOff className="mr-2 h-4 w-4" /> Mark on Leave
                               </DropdownMenuItem>
+                              {!emp.auth_id ? (
+                                <DropdownMenuItem onClick={() => { setLoginTarget({ id: emp.id, name: emp.name, email: emp.email }); setLoginOpen(true); }}>
+                                  <KeyRound className="mr-2 h-4 w-4" /> Create Login
+                                </DropdownMenuItem>
+                              ) : (
+                                <DropdownMenuItem onClick={() => { setResetTarget({ id: emp.id, name: emp.name }); setResetOpen(true); }}>
+                                  <RotateCcw className="mr-2 h-4 w-4" /> Reset Password
+                                </DropdownMenuItem>
+                              )}
                             </>
                           )}
                           {canDelete && (
@@ -352,6 +367,18 @@ export default function Employees() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <CreateLoginDialog
+        open={loginOpen}
+        onOpenChange={setLoginOpen}
+        employee={loginTarget}
+      />
+
+      <ResetPasswordDialog
+        open={resetOpen}
+        onOpenChange={setResetOpen}
+        employee={resetTarget}
+      />
     </div>
   );
 }
