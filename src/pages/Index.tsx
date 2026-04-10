@@ -14,8 +14,9 @@ export default function Index() {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-brand" />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
+        <img src="/splash-butterfly.png" alt="BeBright" className="w-24 h-auto animate-bounce" />
+        <p className="text-sm text-muted-foreground font-medium">Loading...</p>
       </div>
     );
   }
