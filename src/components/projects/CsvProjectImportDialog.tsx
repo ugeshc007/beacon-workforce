@@ -24,9 +24,9 @@ interface ParsedRow {
   valid: boolean;
 }
 
-const REQUIRED_HEADERS = ["name", "branch_id", "status"];
+const REQUIRED_HEADERS = ["name", "branch", "status"];
 const ALL_HEADERS = [
-  "name", "branch_id", "status", "client_name", "client_phone", "client_email",
+  "name", "branch", "status", "client_name", "client_phone", "client_email",
   "site_address", "site_latitude", "site_longitude", "site_gps_radius",
   "start_date", "end_date", "budget", "project_value",
   "required_technicians", "required_helpers", "required_supervisors",
@@ -36,41 +36,41 @@ const VALID_STATUSES = ["planned", "assigned", "in_progress", "completed"];
 
 function downloadTemplate(branches: { id: string; name: string }[]) {
   const wb = XLSX.utils.book_new();
-  const dubaiId = branches.find(b => b.name === "Dubai")?.id ?? branches[1]?.id ?? "BRANCH_ID";
-  const damamId = branches.find(b => b.name === "Damam")?.id ?? branches[0]?.id ?? "BRANCH_ID";
+  const dubaiName = branches.find(b => b.name === "Dubai")?.name ?? branches[1]?.name ?? "Branch1";
+  const damamName = branches.find(b => b.name === "Damam")?.name ?? branches[0]?.name ?? "Branch2";
 
   const data = [
     ALL_HEADERS,
     [
-      "Dubai Mall LED Wall", dubaiId, "planned",
+      "Dubai Mall LED Wall", dubaiName, "planned",
       "Emaar Properties", "+971501234567", "emaar@example.com",
       "Dubai Mall, Ground Floor, Financial Center Rd", "25.1972", "55.2744", "100",
       "2026-04-15", "2026-06-30", "50000", "75000",
       "2", "3", "1", "Large LED wall installation at main entrance",
     ],
     [
-      "Riyadh Tower Signage", damamId, "planned",
+      "Riyadh Tower Signage", damamName, "planned",
       "Al Faisaliah Group", "+966512345678", "projects@alfaisaliah.com",
       "Al Faisaliah Tower, King Fahd Road, Riyadh", "24.6908", "46.6853", "150",
       "2026-05-01", "2026-07-15", "35000", "55000",
       "3", "2", "1", "External signage with LED backlight",
     ],
     [
-      "JBR Beach Digital Board", dubaiId, "assigned",
+      "JBR Beach Digital Board", dubaiName, "assigned",
       "Meraas Holding", "+971504567890", "info@meraas.com",
       "JBR The Walk, Jumeirah Beach Residence", "25.0780", "55.1340", "80",
       "2026-04-20", "2026-05-30", "28000", "42000",
       "2", "2", "1", "Outdoor digital display board near beach",
     ],
     [
-      "Dammam Corniche LED Screen", damamId, "planned",
+      "Dammam Corniche LED Screen", damamName, "planned",
       "Eastern Province Municipality", "+966138456789", "projects@epm.gov.sa",
       "Dammam Corniche, King Abdullah Park", "26.4367", "50.1033", "120",
       "2026-06-01", "2026-08-30", "60000", "90000",
       "4", "4", "2", "Large outdoor LED screen facing the waterfront",
     ],
     [
-      "Mall of Emirates Store Display", dubaiId, "in_progress",
+      "Mall of Emirates Store Display", dubaiName, "in_progress",
       "Majid Al Futtaim", "+971506789012", "maf@example.com",
       "Mall of the Emirates, Level 2, Shop 245", "25.1181", "55.2006", "50",
       "2026-03-01", "2026-04-30", "15000", "22000",
@@ -79,19 +79,16 @@ function downloadTemplate(branches: { id: string; name: string }[]) {
   ];
   const ws = XLSX.utils.aoa_to_sheet(data);
   ws["!cols"] = [
-    { wch: 32 }, { wch: 40 }, { wch: 14 }, { wch: 28 }, { wch: 18 }, { wch: 28 },
+    { wch: 32 }, { wch: 16 }, { wch: 14 }, { wch: 28 }, { wch: 18 }, { wch: 28 },
     { wch: 45 }, { wch: 12 }, { wch: 12 }, { wch: 14 },
     { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 14 },
     { wch: 20 }, { wch: 18 }, { wch: 22 }, { wch: 44 },
   ];
-  // Force text format on phone & branch_id columns to prevent Excel corruption
+  // Force text format on phone column
   const phoneCol = ALL_HEADERS.indexOf("client_phone");
-  const branchCol = ALL_HEADERS.indexOf("branch_id");
   for (let r = 1; r <= 5; r++) {
     const phoneCell = XLSX.utils.encode_cell({ r, c: phoneCol });
-    const branchCell = XLSX.utils.encode_cell({ r, c: branchCol });
     if (ws[phoneCell]) ws[phoneCell].t = "s";
-    if (ws[branchCell]) ws[branchCell].t = "s";
   }
   XLSX.utils.book_append_sheet(wb, ws, "Projects");
 
@@ -99,7 +96,7 @@ function downloadTemplate(branches: { id: string; name: string }[]) {
   const instructions = [
     ["Field", "Required", "Format / Notes"],
     ["name", "YES", "Project name"],
-    ["branch_id", "YES", "UUID of the branch (see below)"],
+    ["branch", "YES", "Branch name (e.g. Dubai, Damam)"],
     ["status", "YES", "planned / assigned / in_progress / completed"],
     ["client_name", "No", "Client company name"],
     ["client_phone", "No", "Phone with country code e.g. +971501234567"],
@@ -117,8 +114,8 @@ function downloadTemplate(branches: { id: string; name: string }[]) {
     ["required_supervisors", "No", "Number (default 0)"],
     ["notes", "No", "Free text"],
     [],
-    ["Branch Name", "Branch ID"],
-    ...branches.map(b => [b.name, b.id]),
+    ["Available Branches"],
+    ...branches.map(b => [b.name]),
   ];
   const ws2 = XLSX.utils.aoa_to_sheet(instructions);
   ws2["!cols"] = [{ wch: 22 }, { wch: 44 }, { wch: 50 }];
@@ -168,7 +165,7 @@ function parseFile(buffer: ArrayBuffer): { headers: string[]; rows: Record<strin
   return { headers, rows };
 }
 
-function validateRow(data: Record<string, any>, rowNum: number, branchIds: string[]): ParsedRow {
+function validateRow(data: Record<string, any>, rowNum: number, branches: { id: string; name: string }[]): ParsedRow {
   const errors: string[] = [];
   const d: Record<string, string> = {};
   ALL_HEADERS.forEach(h => { d[h] = data[h] != null ? String(data[h]).trim() : ""; });
@@ -178,14 +175,25 @@ function validateRow(data: Record<string, any>, rowNum: number, branchIds: strin
   d.end_date = normalizeDate(data.end_date);
   d.client_phone = normalizePhone(data.client_phone);
 
+  // Also support legacy branch_id column
+  if (!d.branch && data.branch_id) d.branch = String(data.branch_id).trim();
+
+  // Resolve branch name to ID (case-insensitive match)
+  const branchName = d.branch;
+  const matchedBranch = branches.find(b =>
+    b.name.toLowerCase() === branchName.toLowerCase() || b.id === branchName
+  );
+  if (branchName && matchedBranch) {
+    d.branch_id = matchedBranch.id;
+  } else if (branchName) {
+    errors.push(`Unknown branch: "${branchName}" (use: ${branches.map(b => b.name).join(", ")})`);
+  }
+
   for (const req of REQUIRED_HEADERS) {
     if (!d[req]) errors.push(`Missing ${req}`);
   }
   if (d.status && !VALID_STATUSES.includes(d.status.toLowerCase())) {
     errors.push(`Invalid status: ${d.status}`);
-  }
-  if (d.branch_id && !branchIds.includes(d.branch_id)) {
-    errors.push("Unknown branch_id");
   }
   if (d.budget && isNaN(Number(d.budget))) errors.push("Invalid budget");
   if (d.project_value && isNaN(Number(d.project_value))) errors.push("Invalid project_value");
@@ -204,7 +212,6 @@ export function CsvProjectImportDialog({ open, onOpenChange, branches }: Props) 
   const fileRef = useRef<HTMLInputElement>(null);
   const qc = useQueryClient();
   const { toast } = useToast();
-  const branchIds = branches.map(b => b.id);
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -223,7 +230,7 @@ export function CsvProjectImportDialog({ open, onOpenChange, branches }: Props) 
         toast({ title: "Missing columns", description: `Required: ${missing.join(", ")}`, variant: "destructive" });
         return;
       }
-      setParsed(rows.map((row, i) => validateRow(row, i + 2, branchIds)));
+      setParsed(rows.map((row, i) => validateRow(row, i + 2, branches)));
     };
     reader.readAsArrayBuffer(file);
   };
@@ -240,9 +247,10 @@ export function CsvProjectImportDialog({ open, onOpenChange, branches }: Props) 
 
     for (const row of validRows) {
       const d = row.data;
+      const resolvedBranchId = d.branch_id || branches.find(b => b.name.toLowerCase() === d.branch?.toLowerCase())?.id;
       const { error } = await supabase.from("projects").insert({
         name: d.name,
-        branch_id: d.branch_id,
+        branch_id: resolvedBranchId!,
         status: d.status.toLowerCase() as any,
         client_name: d.client_name || null,
         client_phone: d.client_phone || null,
@@ -307,13 +315,10 @@ export function CsvProjectImportDialog({ open, onOpenChange, branches }: Props) 
               </div>
               <div className="text-xs text-muted-foreground space-y-1">
                 <p><strong>Accepts:</strong> .xlsx or .csv files</p>
-                <p><strong>Required columns:</strong> name, branch_id, status</p>
+                <p><strong>Required columns:</strong> name, branch, status</p>
                 <p><strong>Status values:</strong> planned, assigned, in_progress, completed</p>
                 <p><strong>Date format:</strong> YYYY-MM-DD (auto-converts M/D/YYYY)</p>
-                <p><strong>Branch IDs:</strong></p>
-                {branches.map(b => (
-                  <p key={b.id} className="font-mono text-[10px]">{b.name}: {b.id}</p>
-                ))}
+                <p><strong>Branches:</strong> {branches.map(b => b.name).join(", ")}</p>
               </div>
             </div>
             <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleFile} />
