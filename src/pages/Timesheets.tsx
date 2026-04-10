@@ -271,18 +271,22 @@ export default function Timesheets() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[180px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search employee…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
-        </div>
-        <Select value={skillFilter} onValueChange={setSkillFilter}>
-          <SelectTrigger className="w-[140px]"><SelectValue placeholder="All Skills" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Skills</SelectItem>
-            <SelectItem value="team_member">Team Member</SelectItem>
-            <SelectItem value="team_leader">Team Leader</SelectItem>
-          </SelectContent>
-        </Select>
+        {showAdvancedFilters && (
+          <div className="relative flex-1 min-w-[180px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Search employee…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          </div>
+        )}
+        {showAdvancedFilters && (
+          <Select value={skillFilter} onValueChange={setSkillFilter}>
+            <SelectTrigger className="w-[140px]"><SelectValue placeholder="All Skills" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Skills</SelectItem>
+              <SelectItem value="team_member">Team Member</SelectItem>
+              <SelectItem value="team_leader">Team Leader</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
         {showAdvancedFilters && (
           <Select value={projectFilter} onValueChange={setProjectFilter}>
             <SelectTrigger className="w-[180px]"><SelectValue placeholder="All Projects" /></SelectTrigger>
@@ -309,10 +313,12 @@ export default function Timesheets() {
 
       {/* Tabs: Employee view vs Project view */}
       <Tabs defaultValue="employee" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="employee" className="gap-1.5"><Users className="h-3.5 w-3.5" /> By Employee</TabsTrigger>
-          <TabsTrigger value="project" className="gap-1.5"><Building2 className="h-3.5 w-3.5" /> By Project</TabsTrigger>
-        </TabsList>
+        {showAdvancedFilters && (
+          <TabsList>
+            <TabsTrigger value="employee" className="gap-1.5"><Users className="h-3.5 w-3.5" /> By Employee</TabsTrigger>
+            <TabsTrigger value="project" className="gap-1.5"><Building2 className="h-3.5 w-3.5" /> By Project</TabsTrigger>
+          </TabsList>
+        )}
 
         {/* ── Employee View ── */}
         <TabsContent value="employee">
