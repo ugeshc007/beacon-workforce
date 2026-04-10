@@ -160,3 +160,12 @@
     -webkit-text-fill-color: transparent;
   }
 }
+
+/* Mobile safe area utilities */
+.safe-area-inset {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}

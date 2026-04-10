@@ -1,0 +1,151 @@
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useMobileAuth } from "@/hooks/useMobileAuth";
+import {
+  WorkflowStep,
+  WorkflowAction,
+  deriveStepFromLog,
+  getAvailableActions,
+  getNextStep,
+} from "@/lib/workflow-engine";
+
+interface TodayAssignment {
+  projectId: string;
+  projectName: string;
+  siteAddress: string | null;
+  shiftStart: string | null;
+  shiftEnd: string | null;
+  siteLat: number | null;
+  siteLng: number | null;
+  siteRadius: number;
+}
+
+interface AttendanceLog {
+  id: string;
+  office_punch_in: string | null;
+  travel_start_time: string | null;
+  site_arrival_time: string | null;
+  work_start_time: string | null;
+  break_start_time: string | null;
+  break_end_time: string | null;
+  work_end_time: string | null;
+  office_punch_out: string | null;
+}
+
+export function useMobileWorkflow() {
+  const { employee } = useMobileAuth();
+  const [step, setStep] = useState<WorkflowStep>("idle");
+  const [assignment, setAssignment] = useState<TodayAssignment | null>(null);
+  const [attendanceLog, setAttendanceLog] = useState<AttendanceLog | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const today = new Date().toISOString().split("T")[0];
+
+  const fetchData = useCallback(async () => {
+    if (!employee) return;
+    setLoading(true);
+
+    try {
+      // Fetch today's assignment
+      const { data: assignments } = await supabase
+        .from("project_assignments")
+        .select("project_id, shift_start, shift_end, projects(name, site_address, site_latitude, site_longitude, site_gps_radius)")
+        .eq("employee_id", employee.id)
+        .eq("date", today)
+        .limit(1);
+
+      if (assignments && assignments.length > 0) {
+        const a = assignments[0];
+        const project = a.projects as any;
+        setAssignment({
+          projectId: a.project_id,
+          projectName: project?.name || "Unknown",
+          siteAddress: project?.site_address,
+          shiftStart: a.shift_start,
+          shiftEnd: a.shift_end,
+          siteLat: project?.site_latitude,
+          siteLng: project?.site_longitude,
+          siteRadius: project?.site_gps_radius || 100,
+        });
+      } else {
+        setAssignment(null);
+      }
+
+      // Fetch today's attendance log
+      const { data: logs } = await supabase
+        .from("attendance_logs")
+        .select("id, office_punch_in, travel_start_time, site_arrival_time, work_start_time, break_start_time, break_end_time, work_end_time, office_punch_out")
+        .eq("employee_id", employee.id)
+        .eq("date", today)
+        .limit(1);
+
+      const log = logs?.[0] || null;
+      setAttendanceLog(log);
+      setStep(deriveStepFromLog(log));
+    } catch (e) {
+      console.error("Failed to fetch workflow data", e);
+    } finally {
+      setLoading(false);
+    }
+  }, [employee, today]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const executeAction = async (action: WorkflowAction, payload?: Record<string, unknown>) => {
+    if (!employee) return;
+    setActionLoading(true);
+
+    try {
+      const edgeFunctionMap: Record<WorkflowAction, string> = {
+        punch_in: "punch-in",
+        start_travel: "start-travel",
+        arrive_site: "arrive-site",
+        start_work: "start-work",
+        start_break: "start-break",
+        end_break: "end-break",
+        end_work: "end-work",
+        punch_out: "punch-out",
+      };
+
+      const fnName = edgeFunctionMap[action];
+      const body = {
+        employee_id: employee.id,
+        ...payload,
+      };
+
+      const { data, error } = await supabase.functions.invoke(fnName, {
+        body: JSON.stringify(body),
+      });
+
+      if (error) throw error;
+
+      // Advance the step
+      const next = getNextStep(step, action);
+      if (next) setStep(next);
+
+      // Refresh data
+      await fetchData();
+
+      return { success: true, data };
+    } catch (e: any) {
+      console.error(`Action ${action} failed:`, e);
+      return { success: false, error: e.message || "Action failed" };
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  return {
+    step,
+    assignment,
+    attendanceLog,
+    availableActions: getAvailableActions(step),
+    loading,
+    actionLoading,
+    executeAction,
+    refresh: fetchData,
+  };
+}
