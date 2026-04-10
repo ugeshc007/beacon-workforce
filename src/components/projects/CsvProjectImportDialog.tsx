@@ -36,25 +36,58 @@ const VALID_STATUSES = ["planned", "assigned", "in_progress", "completed"];
 
 function downloadTemplate(branches: { id: string; name: string }[]) {
   const wb = XLSX.utils.book_new();
+  const dubaiId = branches.find(b => b.name === "Dubai")?.id ?? branches[1]?.id ?? "BRANCH_ID";
+  const damamId = branches.find(b => b.name === "Damam")?.id ?? branches[0]?.id ?? "BRANCH_ID";
 
-  // Projects sheet with headers + example
   const data = [
     ALL_HEADERS,
     [
-      "Dubai Mall LED Wall", branches[0]?.id ?? "BRANCH_ID_HERE", "planned",
-      "Emaar Properties", "+971501234567", "client@example.com",
-      "Dubai Mall, Ground Floor", "25.1972", "55.2744", "100",
+      "Dubai Mall LED Wall", dubaiId, "planned",
+      "Emaar Properties", "+971501234567", "emaar@example.com",
+      "Dubai Mall, Ground Floor, Financial Center Rd", "25.1972", "55.2744", "100",
       "2026-04-15", "2026-06-30", "50000", "75000",
-      "2", "3", "1", "LED wall installation project",
+      "2", "3", "1", "Large LED wall installation at main entrance",
+    ],
+    [
+      "Riyadh Tower Signage", damamId, "planned",
+      "Al Faisaliah Group", "+966512345678", "projects@alfaisaliah.com",
+      "Al Faisaliah Tower, King Fahd Road, Riyadh", "24.6908", "46.6853", "150",
+      "2026-05-01", "2026-07-15", "35000", "55000",
+      "3", "2", "1", "External signage with LED backlight",
+    ],
+    [
+      "JBR Beach Digital Board", dubaiId, "assigned",
+      "Meraas Holding", "+971504567890", "info@meraas.com",
+      "JBR The Walk, Jumeirah Beach Residence", "25.0780", "55.1340", "80",
+      "2026-04-20", "2026-05-30", "28000", "42000",
+      "2", "2", "1", "Outdoor digital display board near beach",
+    ],
+    [
+      "Dammam Corniche LED Screen", damamId, "planned",
+      "Eastern Province Municipality", "+966138456789", "projects@epm.gov.sa",
+      "Dammam Corniche, King Abdullah Park", "26.4367", "50.1033", "120",
+      "2026-06-01", "2026-08-30", "60000", "90000",
+      "4", "4", "2", "Large outdoor LED screen facing the waterfront",
+    ],
+    [
+      "Mall of Emirates Store Display", dubaiId, "in_progress",
+      "Majid Al Futtaim", "+971506789012", "maf@example.com",
+      "Mall of the Emirates, Level 2, Shop 245", "25.1181", "55.2006", "50",
+      "2026-03-01", "2026-04-30", "15000", "22000",
+      "1", "2", "0", "In-store promotional LED display panels",
     ],
   ];
   const ws = XLSX.utils.aoa_to_sheet(data);
-  // Set column widths
-  ws["!cols"] = ALL_HEADERS.map(h => ({ wch: Math.max(h.length + 4, 18) }));
-  // Force phone & branch_id columns to text so Excel doesn't use scientific notation
+  ws["!cols"] = [
+    { wch: 32 }, { wch: 40 }, { wch: 14 }, { wch: 28 }, { wch: 18 }, { wch: 28 },
+    { wch: 45 }, { wch: 12 }, { wch: 12 }, { wch: 14 },
+    { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 14 },
+    { wch: 20 }, { wch: 18 }, { wch: 22 }, { wch: 44 },
+  ];
+  // Force text format on phone & branch_id columns to prevent Excel corruption
   const phoneCol = ALL_HEADERS.indexOf("client_phone");
   const branchCol = ALL_HEADERS.indexOf("branch_id");
-  for (let r = 1; r <= 1; r++) {
+  for (let r = 1; r <= 5; r++) {
     const phoneCell = XLSX.utils.encode_cell({ r, c: phoneCol });
     const branchCell = XLSX.utils.encode_cell({ r, c: branchCol });
     if (ws[phoneCell]) ws[phoneCell].t = "s";
