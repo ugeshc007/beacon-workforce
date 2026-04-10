@@ -201,7 +201,7 @@ function BranchOfficeList({ branchId }: { branchId: string }) {
   const [editingOffice, setEditingOffice] = useState<typeof offices extends (infer T)[] ? T : never | null>(null);
 
   return (
-    <div className="mt-2 ml-4 space-y-1.5">
+    <div className="mt-2 mx-3 mb-3 p-3 space-y-1.5 rounded-lg border border-border/30 bg-muted/10">
       <div className="flex items-center justify-between">
         <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Offices</p>
         <Button size="sm" variant="ghost" className="h-6 text-[11px] px-2" onClick={() => { setEditingOffice(null); setDialogOpen(true); }}>
