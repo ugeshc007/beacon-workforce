@@ -14,6 +14,7 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   branchId?: string;
+  branches?: { id: string; name: string }[];
 }
 
 interface ParsedRow {
@@ -23,9 +24,9 @@ interface ParsedRow {
   valid: boolean;
 }
 
-const REQUIRED_HEADERS = ["employee_code", "name", "skill_type", "branch_id"];
+const REQUIRED_HEADERS = ["employee_code", "name", "skill_type", "branch"];
 const ALL_HEADERS = [
-  "employee_code", "name", "skill_type", "branch_id",
+  "employee_code", "name", "skill_type", "branch",
   "phone", "email", "designation", "hourly_rate", "overtime_rate",
   "standard_hours_per_day", "join_date", "emergency_contact", "notes",
 ];
@@ -49,18 +50,39 @@ function parseCSV(text: string): { headers: string[]; rows: string[][] } {
   return { headers, rows };
 }
 
-function validateRow(headers: string[], values: string[], rowNum: number): ParsedRow {
+function validateRow(
+  headers: string[],
+  values: string[],
+  rowNum: number,
+  branches: { id: string; name: string }[]
+): ParsedRow {
   const data: Record<string, string> = {};
   const errors: string[] = [];
 
   headers.forEach((h, i) => { data[h] = values[i] ?? ""; });
 
+  // Support legacy branch_id column as fallback
+  if (!data.branch && data.branch_id) data.branch = data.branch_id;
+
+  // Resolve branch name or ID
+  const branchVal = (data.branch || "").trim();
+  if (branchVal) {
+    const matched = branches.find(b =>
+      b.name.toLowerCase() === branchVal.toLowerCase() || b.id === branchVal
+    );
+    if (matched) {
+      data.resolved_branch_id = matched.id;
+    } else {
+      errors.push(`Unknown branch: "${branchVal}" (use: ${branches.map(b => b.name).join(", ")})`);
+    }
+  }
+
   for (const req of REQUIRED_HEADERS) {
     if (!data[req]) errors.push(`Missing ${req}`);
   }
 
-  if (data.skill_type && !["team_member", "team_leader"].includes(data.skill_type.toLowerCase())) {
-    errors.push(`Invalid skill_type: ${data.skill_type} (must be team_member/team_leader)`);
+  if (data.skill_type && !["team_member", "team_leader", "technician", "helper"].includes(data.skill_type.toLowerCase())) {
+    errors.push(`Invalid skill_type: ${data.skill_type} (must be team_member/team_leader/technician/helper)`);
   }
 
   if (data.hourly_rate && isNaN(Number(data.hourly_rate))) errors.push("Invalid hourly_rate");
@@ -70,7 +92,7 @@ function validateRow(headers: string[], values: string[], rowNum: number): Parse
   return { row: rowNum, data, errors, valid: errors.length === 0 };
 }
 
-export function CsvImportDialog({ open, onOpenChange, branchId }: Props) {
+export function CsvImportDialog({ open, onOpenChange, branchId, branches = [] }: Props) {
   const [parsed, setParsed] = useState<ParsedRow[] | null>(null);
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<{ success: number; failed: number } | null>(null);
@@ -93,13 +115,15 @@ export function CsvImportDialog({ open, onOpenChange, branchId }: Props) {
         return;
       }
 
-      const missing = REQUIRED_HEADERS.filter((h) => !headers.includes(h));
+      // Accept both "branch" and legacy "branch_id"
+      const normalizedHeaders = headers.map(h => h === "branch_id" ? "branch" : h);
+      const missing = REQUIRED_HEADERS.filter((h) => !normalizedHeaders.includes(h));
       if (missing.length) {
         toast({ title: "Missing columns", description: `Required: ${missing.join(", ")}`, variant: "destructive" });
         return;
       }
 
-      const validated = rows.map((row, i) => validateRow(headers, row, i + 2));
+      const validated = rows.map((row, i) => validateRow(headers, row, i + 2, branches));
       setParsed(validated);
     };
     reader.readAsText(file);
@@ -123,7 +147,7 @@ export function CsvImportDialog({ open, onOpenChange, branchId }: Props) {
         employee_code: d.employee_code,
         name: d.name,
         skill_type: d.skill_type.toLowerCase() as any,
-        branch_id: d.branch_id || branchId || "",
+        branch_id: d.resolved_branch_id || branchId || "",
         phone: d.phone || null,
         email: d.email || null,
         designation: d.designation || null,
@@ -160,13 +184,19 @@ export function CsvImportDialog({ open, onOpenChange, branchId }: Props) {
   const validCount = parsed?.filter((r) => r.valid).length ?? 0;
   const errorCount = parsed?.filter((r) => !r.valid).length ?? 0;
 
+  const branchHint = branches.length
+    ? `Use branch name (${branches.map(b => b.name).join(", ")}) or UUID.`
+    : "";
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Bulk CSV Import</DialogTitle>
           <DialogDescription>
-            Upload a CSV file with columns: {REQUIRED_HEADERS.join(", ")} (required), plus optional: phone, email, designation, hourly_rate, overtime_rate, etc.
+            Upload a CSV with columns: employee_code, name, skill_type, branch (required).
+            Optional: phone, email, designation, hourly_rate, overtime_rate, etc.
+            {branchHint && <><br />{branchHint}</>}
           </DialogDescription>
         </DialogHeader>
 
@@ -185,7 +215,6 @@ export function CsvImportDialog({ open, onOpenChange, branchId }: Props) {
           </div>
         ) : (
           <>
-            {/* Summary */}
             <div className="flex gap-3 py-2">
               <Badge variant="default" className="gap-1">
                 <CheckCircle2 className="h-3 w-3" /> {validCount} valid
@@ -198,7 +227,6 @@ export function CsvImportDialog({ open, onOpenChange, branchId }: Props) {
               <Badge variant="secondary">{parsed.length} total rows</Badge>
             </div>
 
-            {/* Validation Results */}
             <ScrollArea className="flex-1 min-h-0 border rounded-lg">
               <div className="p-2 space-y-1">
                 {parsed.map((row) => (
@@ -224,7 +252,6 @@ export function CsvImportDialog({ open, onOpenChange, branchId }: Props) {
               </div>
             </ScrollArea>
 
-            {/* Actions */}
             <div className="flex justify-between items-center pt-2">
               <Button variant="ghost" size="sm" onClick={() => { setParsed(null); setResult(null); if (fileRef.current) fileRef.current.value = ""; }}>
                 Choose different file
