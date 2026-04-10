@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useTimesheetData, useApproveTimesheet, type TimesheetRow, type ProjectTimesheetRow } from "@/hooks/useTimesheets";
+import { useAuth } from "@/hooks/useAuth";
 import { useCanAccess } from "@/hooks/usePermissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
