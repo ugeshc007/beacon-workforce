@@ -46,7 +46,7 @@ function makeForm(src?: Tables<"projects"> | null, prefill?: ProjectPrefill | nu
   const s = src ?? prefill;
   return {
     name: (s as any)?.name ?? "",
-    status: (s as any)?.status ?? "planned",
+    status: (s as any)?.status ?? "on_hold",
     branch_id: (s as any)?.branch_id ?? "",
     start_date: (s as any)?.start_date ?? "",
     end_date: (s as any)?.end_date ?? "",
@@ -221,8 +221,7 @@ export function ProjectFormDialog({ open, onOpenChange, editProject, prefill }: 
                   <Select value={form.status} onValueChange={(v) => set("status", v)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="planned">Planned</SelectItem>
-                      <SelectItem value="assigned">Assigned</SelectItem>
+                      <SelectItem value="on_hold">On Hold</SelectItem>
                       <SelectItem value="in_progress">In Progress</SelectItem>
                       <SelectItem value="completed">Completed</SelectItem>
                     </SelectContent>

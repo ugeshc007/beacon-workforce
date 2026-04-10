@@ -32,7 +32,7 @@ const ALL_HEADERS = [
   "required_technicians", "required_helpers", "required_supervisors",
   "notes",
 ];
-const VALID_STATUSES = ["planned", "assigned", "in_progress", "completed"];
+const VALID_STATUSES = ["on_hold", "in_progress", "completed"];
 
 function downloadTemplate(branches: { id: string; name: string }[]) {
   const wb = XLSX.utils.book_new();
