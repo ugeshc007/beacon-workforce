@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 
-type UserRole = "admin" | "manager" | "team_leader";
+type UserRole = "admin" | "manager" | "team_leader" | "employee";
 
 interface AuthUser {
   id: string;
@@ -22,6 +22,7 @@ interface AuthContextType {
   isAdmin: boolean;
   isManager: boolean;
   isTeamLeader: boolean;
+  isEmployee: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,30 +32,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchUserProfile = async (authUser: User) => {
+  const fetchUserProfile = async (authUser: User): Promise<AuthUser | null> => {
     try {
+      // 1) Check the users table (admin/manager/team_leader)
       const { data: userData } = await supabase
         .from("users")
         .select("id, name, email, branch_id, auth_id")
         .eq("auth_id", authUser.id)
         .single();
 
-      if (!userData) return null;
+      if (userData) {
+        const { data: roleData } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", userData.id)
+          .single();
 
-      const { data: roleData } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userData.id)
+        return {
+          id: userData.id,
+          authId: authUser.id,
+          email: userData.email,
+          name: userData.name,
+          role: (roleData?.role as UserRole) ?? null,
+          branchId: userData.branch_id,
+        };
+      }
+
+      // 2) Fallback: check the employees table (field workers)
+      const { data: empData } = await supabase
+        .from("employees")
+        .select("id, name, email, branch_id, auth_id")
+        .eq("auth_id", authUser.id)
         .single();
 
-      return {
-        id: userData.id,
-        authId: authUser.id,
-        email: userData.email,
-        name: userData.name,
-        role: (roleData?.role as UserRole) ?? null,
-        branchId: userData.branch_id,
-      };
+      if (empData) {
+        return {
+          id: empData.id,
+          authId: authUser.id,
+          email: empData.email ?? authUser.email ?? "",
+          name: empData.name,
+          role: "employee" as UserRole,
+          branchId: empData.branch_id,
+        };
+      }
+
+      return null;
     } catch {
       return null;
     }
@@ -63,7 +85,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    // First set session synchronously from cache, then fetch profile
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!mounted) return;
       setSession(session);
@@ -79,7 +100,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!mounted) return;
         setSession(session);
         if (session?.user) {
-          // Defer profile fetch to avoid deadlock in auth callback
           setTimeout(async () => {
             if (!mounted) return;
             const profile = await fetchUserProfile(session.user);
@@ -119,6 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAdmin: user?.role === "admin",
         isManager: user?.role === "manager",
         isTeamLeader: user?.role === "team_leader",
+        isEmployee: user?.role === "employee",
       }}
     >
       {children}

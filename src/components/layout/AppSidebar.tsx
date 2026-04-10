@@ -46,19 +46,26 @@ const reportNav = [
   { title: "All Reports", url: "/reports", icon: BarChart3 },
 ];
 
+// Modules employees can access on the web portal
+const EMPLOYEE_MODULES = ["dashboard", "projects", "schedule", "timesheets"];
+
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + "/");
   const { permissions } = useMyPermissions();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isEmployee } = useAuth();
 
-  const canView = (module: string) => isAdmin || (permissions.get(module)?.can_view ?? false);
+  const canView = (module: string) => {
+    if (isAdmin) return true;
+    if (isEmployee) return EMPLOYEE_MODULES.includes(module);
+    return permissions.get(module)?.can_view ?? false;
+  };
 
   const visibleMain = mainNav.filter((item) => canView(item.module));
-  const showReports = canView("reports");
-  const showSettings = canView("settings");
+  const showReports = !isEmployee && canView("reports");
+  const showSettings = !isEmployee && canView("settings");
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
