@@ -4,7 +4,7 @@ import { useMobileAuth } from "@/hooks/useMobileAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Eye, EyeOff, HardHat } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function MobileLogin() {
@@ -39,8 +39,8 @@ export default function MobileLogin() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-background px-6 safe-area-inset">
       {/* Logo area */}
       <div className="flex flex-col items-center gap-4 mb-8">
-        <div className="w-16 h-16 rounded-2xl bg-brand/10 flex items-center justify-center">
-          <HardHat className="w-8 h-8 text-brand" />
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center">
+          <img src="/app-icon.png" alt="BeBright" className="w-14 h-14 object-contain" />
         </div>
         <div className="text-center">
           <h1 className="text-2xl font-bold text-foreground">BeBright</h1>
