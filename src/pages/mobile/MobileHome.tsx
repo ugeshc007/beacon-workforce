@@ -239,7 +239,7 @@ export default function MobileHome() {
         CRITICAL_ACTIONS.includes(primaryAction) ? (
           <HoldToConfirm
             onConfirm={() => handleAction(primaryAction)}
-            disabled={actionLoading || !assignment}
+            disabled={actionLoading}
             loading={actionLoading}
           >
             {actionLoading ? (
@@ -253,7 +253,7 @@ export default function MobileHome() {
           <Button
             className="h-16 text-lg font-bold rounded-2xl shadow-lg"
             onClick={() => handleAction(primaryAction)}
-            disabled={actionLoading || !assignment}
+            disabled={actionLoading}
           >
             {actionLoading ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <CheckCircle2 className="mr-2 h-6 w-6" />}
             {actionLabels[primaryAction]}
