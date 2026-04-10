@@ -8,7 +8,7 @@ export default defineConfig(async ({ mode }) => {
   let tagger: any;
   if (mode === "development") {
     try {
-      tagger = (await import(/* @vite-ignore */ "lovable-tagger")).componentTagger;
+      tagger = ((await (Function('return import("lovable-tagger")')()) as any)).componentTagger;
     } catch {
       // lovable-tagger not available outside Lovable sandbox
     }
