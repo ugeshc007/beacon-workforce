@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { isNativeApp } from "@/lib/capacitor";
 import { Loader2 } from "lucide-react";
 
 export default function Index() {
@@ -21,5 +22,9 @@ export default function Index() {
     );
   }
   if (status === "anon") return <Navigate to="/login" replace />;
+  // On native mobile app, go to worker mobile UI; on web, go to admin dashboard
+  if (isNativeApp()) {
+    return <Navigate to="/m" replace />;
+  }
   return <Navigate to="/dashboard" replace />;
 }
