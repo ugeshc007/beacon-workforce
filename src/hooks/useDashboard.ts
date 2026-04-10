@@ -55,7 +55,7 @@ export function useDashboardStats() {
         supabase
           .from("projects")
           .select("id", { count: "exact" })
-          .in("status", ["assigned", "in_progress"]),
+          .in("status", ["in_progress"]),
         supabase
           .from("project_assignments")
           .select("employee_id", { count: "exact" })
@@ -232,7 +232,7 @@ export function useActiveProjects() {
       const { data: projects } = await supabase
         .from("projects")
         .select("id, name, client_name, required_technicians, required_helpers, required_supervisors, health_score")
-        .in("status", ["assigned", "in_progress"])
+        .in("status", ["in_progress"])
         .order("name")
         .limit(5);
 
