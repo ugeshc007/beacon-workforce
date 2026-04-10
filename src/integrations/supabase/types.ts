@@ -393,6 +393,53 @@ export type Database = {
           },
         ]
       }
+      employee_notifications: {
+        Row: {
+          created_at: string
+          employee_id: string
+          id: string
+          is_read: boolean
+          message: string | null
+          priority: string
+          reference_id: string | null
+          reference_type: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          id?: string
+          is_read?: boolean
+          message?: string | null
+          priority?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          title: string
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          id?: string
+          is_read?: boolean
+          message?: string | null
+          priority?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_notifications_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employees: {
         Row: {
           auth_id: string | null
@@ -1242,6 +1289,51 @@ export type Database = {
           },
           {
             foreignKeyName: "timesheet_approvals_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      travel_pings: {
+        Row: {
+          accuracy: number | null
+          attendance_log_id: string
+          employee_id: string
+          id: string
+          lat: number
+          lng: number
+          pinged_at: string
+        }
+        Insert: {
+          accuracy?: number | null
+          attendance_log_id: string
+          employee_id: string
+          id?: string
+          lat: number
+          lng: number
+          pinged_at?: string
+        }
+        Update: {
+          accuracy?: number | null
+          attendance_log_id?: string
+          employee_id?: string
+          id?: string
+          lat?: number
+          lng?: number
+          pinged_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "travel_pings_attendance_log_id_fkey"
+            columns: ["attendance_log_id"]
+            isOneToOne: false
+            referencedRelation: "attendance_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "travel_pings_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
