@@ -120,7 +120,126 @@ function BranchDialog({ branch, open, onOpenChange }: {
   );
 }
 
-export default function SettingsPage() {
+// ─── Office dialog ──────────────────────────────────────────
+function OfficeDialog({ office, branchId, open, onOpenChange }: {
+  office?: { id: string; name: string; address: string | null; latitude: number | null; longitude: number | null; gps_radius_meters: number } | null;
+  branchId: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const [name, setName] = useState("");
+  const [address, setAddress] = useState("");
+  const [lat, setLat] = useState("");
+  const [lng, setLng] = useState("");
+  const [radius, setRadius] = useState("100");
+  const create = useCreateOffice();
+  const update = useUpdateOffice();
+  const saving = create.isPending || update.isPending;
+
+  useEffect(() => {
+    if (open) {
+      setName(office?.name ?? "");
+      setAddress(office?.address ?? "");
+      setLat(office?.latitude?.toString() ?? "");
+      setLng(office?.longitude?.toString() ?? "");
+      setRadius(office?.gps_radius_meters?.toString() ?? "100");
+    }
+  }, [open, office]);
+
+  const handleSave = () => {
+    if (!name.trim()) return;
+    const payload = {
+      name: name.trim(),
+      address: address.trim() || undefined,
+      latitude: lat ? parseFloat(lat) : undefined,
+      longitude: lng ? parseFloat(lng) : undefined,
+      gps_radius_meters: parseInt(radius) || 100,
+    };
+    if (office) {
+      update.mutate({ id: office.id, ...payload }, { onSuccess: () => onOpenChange(false) });
+    } else {
+      create.mutate({ branch_id: branchId, ...payload }, { onSuccess: () => onOpenChange(false) });
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-sm">{office ? "Edit Office" : "New Office"}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <Field label="Office Name"><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Head Office" /></Field>
+          <Field label="Address"><Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Street address" /></Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Latitude" hint="e.g. 25.2048">
+              <Input type="number" step="any" value={lat} onChange={(e) => setLat(e.target.value)} placeholder="25.2048" />
+            </Field>
+            <Field label="Longitude" hint="e.g. 55.2708">
+              <Input type="number" step="any" value={lng} onChange={(e) => setLng(e.target.value)} placeholder="55.2708" />
+            </Field>
+          </div>
+          <Field label="GPS Radius (m)" hint="Punch-in valid within this radius of the office.">
+            <Input type="number" value={radius} onChange={(e) => setRadius(e.target.value)} placeholder="100" />
+          </Field>
+        </div>
+        <DialogFooter>
+          <Button size="sm" onClick={handleSave} disabled={saving || !name.trim()}>
+            {saving ? "Saving…" : "Save"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Office list per branch ─────────────────────────────────
+function BranchOfficeList({ branchId }: { branchId: string }) {
+  const { data: offices, isLoading } = useOffices(branchId);
+  const deleteOffice = useDeleteOffice();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingOffice, setEditingOffice] = useState<typeof offices extends (infer T)[] ? T : never | null>(null);
+
+  return (
+    <div className="mt-2 ml-4 space-y-1.5">
+      <div className="flex items-center justify-between">
+        <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Offices</p>
+        <Button size="sm" variant="ghost" className="h-6 text-[11px] px-2" onClick={() => { setEditingOffice(null); setDialogOpen(true); }}>
+          <Plus className="h-3 w-3 mr-1" /> Add Office
+        </Button>
+      </div>
+      {isLoading ? (
+        <Skeleton className="h-8 rounded" />
+      ) : !offices?.length ? (
+        <p className="text-[11px] text-muted-foreground italic">No offices configured. Add one with lat/lng for GPS validation.</p>
+      ) : (
+        offices.map((o) => (
+          <div key={o.id} className="flex items-center justify-between p-2 rounded border border-border/30 bg-muted/10 text-xs">
+            <div>
+              <span className="font-medium text-foreground">{o.name}</span>
+              {o.latitude && o.longitude ? (
+                <span className="text-muted-foreground ml-2">📍 {Number(o.latitude).toFixed(4)}, {Number(o.longitude).toFixed(4)} ({o.gps_radius_meters}m)</span>
+              ) : (
+                <span className="text-amber-400 ml-2">⚠ No coordinates set</span>
+              )}
+            </div>
+            <div className="flex gap-1">
+              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { setEditingOffice(o); setDialogOpen(true); }}>
+                <Pencil className="h-3 w-3" />
+              </Button>
+              <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => deleteOffice.mutate(o.id)}>
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
+        ))
+      )}
+      <OfficeDialog office={editingOffice} branchId={branchId} open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditingOffice(null); }} />
+    </div>
+  );
+}
+
+
   const { isAdmin } = useAuth();
   const { data: settings, isLoading } = useSettings();
   const save = useSaveSettings();
