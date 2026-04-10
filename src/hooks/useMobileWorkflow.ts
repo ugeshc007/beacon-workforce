@@ -98,6 +98,11 @@ export function useMobileWorkflow() {
     if (!employee) return;
     setActionLoading(true);
 
+    // Optimistically advance the step immediately for instant UI feedback
+    const previousStep = step;
+    const next = getNextStep(step, action);
+    if (next) setStep(next);
+
     try {
       const edgeFunctionMap: Record<WorkflowAction, string> = {
         punch_in: "punch-in",
@@ -116,25 +121,24 @@ export function useMobileWorkflow() {
         ...payload,
       };
 
+      setActionLoading(false); // Release loading immediately after optimistic update
+
       const { data, error } = await supabase.functions.invoke(fnName, {
         body: JSON.stringify(body),
       });
 
       if (error) throw error;
 
-      // Advance the step
-      const next = getNextStep(step, action);
-      if (next) setStep(next);
-
-      // Refresh data
-      await fetchData();
+      // Background refresh — don't block UI
+      fetchData();
 
       return { success: true, data };
     } catch (e: any) {
       console.error(`Action ${action} failed:`, e);
-      return { success: false, error: e.message || "Action failed" };
-    } finally {
+      // Rollback optimistic update on failure
+      setStep(previousStep);
       setActionLoading(false);
+      return { success: false, error: e.message || "Action failed" };
     }
   };
 
