@@ -192,7 +192,13 @@ export default function Projects() {
           {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-48 rounded-xl" />)}
         </div>
       ) : !projects?.length ? (
-        <EmptyState icon={FolderKanban} title="No Projects Found" description="Create your first project to start managing installations." actionLabel="Create Project" onAction={handleAdd} />
+        <EmptyState
+          icon={FolderKanban}
+          title="No Projects Found"
+          description={canCreate ? "Create your first project to start managing installations." : "No projects are available for your account yet."}
+          actionLabel={canCreate ? "Create Project" : undefined}
+          onAction={canCreate ? handleAdd : undefined}
+        />
       ) : view === "card" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {projects.map((p) => {
