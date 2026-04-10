@@ -54,7 +54,7 @@ export function AppSidebar() {
   const { permissions } = useMyPermissions();
   const { isAdmin } = useAuth();
 
-  const canView = (module: string) => isAdmin || (permissions.get(module)?.can_view ?? true);
+  const canView = (module: string) => isAdmin || (permissions.get(module)?.can_view ?? false);
 
   const visibleMain = mainNav.filter((item) => canView(item.module));
   const showReports = canView("reports");
