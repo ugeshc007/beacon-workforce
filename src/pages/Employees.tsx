@@ -5,6 +5,8 @@ import { EmployeeFormDialog } from "@/components/employees/EmployeeFormDialog";
 import { EmployeeDetailDrawer } from "@/components/employees/EmployeeDetailDrawer";
 import { MarkLeaveDialog } from "@/components/employees/MarkLeaveDialog";
 import { CsvImportDialog } from "@/components/employees/CsvImportDialog";
+import { CreateLoginDialog } from "@/components/employees/CreateLoginDialog";
+import { ResetPasswordDialog } from "@/components/employees/ResetPasswordDialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
