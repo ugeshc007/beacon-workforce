@@ -267,6 +267,15 @@ export default function Employees() {
                               <DropdownMenuItem onClick={() => { setLeaveEmployee({ id: emp.id, name: emp.name }); setLeaveOpen(true); }}>
                                 <CalendarOff className="mr-2 h-4 w-4" /> Mark on Leave
                               </DropdownMenuItem>
+                              {!emp.auth_id ? (
+                                <DropdownMenuItem onClick={() => { setLoginTarget({ id: emp.id, name: emp.name, email: emp.email }); setLoginOpen(true); }}>
+                                  <KeyRound className="mr-2 h-4 w-4" /> Create Login
+                                </DropdownMenuItem>
+                              ) : (
+                                <DropdownMenuItem onClick={() => { setResetTarget({ id: emp.id, name: emp.name }); setResetOpen(true); }}>
+                                  <RotateCcw className="mr-2 h-4 w-4" /> Reset Password
+                                </DropdownMenuItem>
+                              )}
                             </>
                           )}
                           {canDelete && (
