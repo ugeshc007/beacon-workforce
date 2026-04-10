@@ -367,6 +367,18 @@ export default function Employees() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <CreateLoginDialog
+        open={loginOpen}
+        onOpenChange={setLoginOpen}
+        employee={loginTarget}
+      />
+
+      <ResetPasswordDialog
+        open={resetOpen}
+        onOpenChange={setResetOpen}
+        employee={resetTarget}
+      />
     </div>
   );
 }
