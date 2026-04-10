@@ -503,24 +503,27 @@ function BranchOfficeList({ branchId }: { branchId: string }) {
               ) : (
                 <div className="space-y-2">
                   {branches.map((b) => (
-                    <div key={b.id} className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-muted/20">
-                      <div>
-                        <p className="text-sm font-medium text-foreground">{b.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {[b.city, b.address].filter(Boolean).join(" · ") || "No address"}
-                        </p>
+                    <div key={b.id} className="rounded-lg border border-border/50 bg-muted/20">
+                      <div className="flex items-center justify-between p-3">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{b.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {[b.city, b.address].filter(Boolean).join(" · ") || "No address"}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-[10px]">
+                            {new Date(b.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                          </Badge>
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditingBranch(b); setBranchDialogOpen(true); }}>
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeletingBranch({ id: b.id, name: b.name })}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-[10px]">
-                          {new Date(b.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
-                        </Badge>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditingBranch(b); setBranchDialogOpen(true); }}>
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeletingBranch({ id: b.id, name: b.name })}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
+                      <BranchOfficeList branchId={b.id} />
                     </div>
                   ))}
                 </div>
