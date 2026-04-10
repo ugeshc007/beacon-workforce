@@ -4,7 +4,7 @@ const isDev = process.env.CAPACITOR_DEV === 'true';
 
 const config: CapacitorConfig = {
   appId: 'com.bebright.planner',
-  appName: 'beacon-workforce',
+  appName: 'BeBright Planner',
   webDir: 'dist',
   ...(isDev && {
     server: {
