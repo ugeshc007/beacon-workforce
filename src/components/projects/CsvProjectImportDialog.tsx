@@ -97,7 +97,7 @@ function downloadTemplate(branches: { id: string; name: string }[]) {
     ["Field", "Required", "Format / Notes"],
     ["name", "YES", "Project name"],
     ["branch", "YES", "Branch name (e.g. Dubai, Damam)"],
-    ["status", "YES", "planned / assigned / in_progress / completed"],
+    ["status", "YES", "on_hold / in_progress / completed"],
     ["client_name", "No", "Client company name"],
     ["client_phone", "No", "Phone with country code e.g. +971501234567"],
     ["client_email", "No", "Email address"],
@@ -316,7 +316,7 @@ export function CsvProjectImportDialog({ open, onOpenChange, branches }: Props) 
               <div className="text-xs text-muted-foreground space-y-1">
                 <p><strong>Accepts:</strong> .xlsx or .csv files</p>
                 <p><strong>Required columns:</strong> name, branch, status</p>
-                <p><strong>Status values:</strong> planned, assigned, in_progress, completed</p>
+                <p><strong>Status values:</strong> on_hold, in_progress, completed</p>
                 <p><strong>Date format:</strong> YYYY-MM-DD (auto-converts M/D/YYYY)</p>
                 <p><strong>Branches:</strong> {branches.map(b => b.name).join(", ")}</p>
               </div>
