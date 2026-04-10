@@ -230,9 +230,9 @@ export default function Schedule() {
 
       {/* Week grid */}
       {isLoading ? (
-        <div className="grid grid-cols-7 gap-2">{Array.from({ length: 7 }).map((_, i) => <Skeleton key={i} className="h-32 rounded-xl" />)}</div>
+        <div className="grid grid-cols-1 sm:grid-cols-7 gap-2">{Array.from({ length: 7 }).map((_, i) => <Skeleton key={i} className="h-16 sm:h-32 rounded-xl" />)}</div>
       ) : (
-        <div className="grid grid-cols-7 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-7 gap-2">
           {weekDates.map((date, i) => {
             const da = dayAssignments(date);
             const dc = dayConflicts(date);
@@ -251,34 +251,67 @@ export default function Schedule() {
                 } ${isToday ? "bg-brand/5" : ""} ${isFriday ? "bg-muted/30" : ""}`}
                 onClick={() => setSelectedDay(date === selectedDay ? null : date)}
               >
-                <CardContent className="p-2.5 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className={`text-xs font-medium ${isToday ? "text-brand" : "text-muted-foreground"}`}>
-                      {dayNames[i]}
-                    </span>
-                    <span className={`text-xs font-mono ${isToday ? "text-brand font-bold" : "text-foreground"}`}>
-                      {new Date(date + "T00:00:00").getDate()}
-                    </span>
-                  </div>
-                  <div className="space-y-1 min-h-[60px]">
-                    {da.length === 0 ? (
-                      <p className="text-[10px] text-muted-foreground text-center pt-4">No assignments</p>
-                    ) : (
-                      [...projectGroups].map(([name, count]) => (
-                        <div key={name} className="flex items-center gap-1 text-[10px]">
-                          <Users className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
-                          <span className="truncate text-foreground">{name}</span>
-                          <Badge variant="secondary" className="text-[9px] px-1 py-0 ml-auto">{count}</Badge>
-                        </div>
-                      ))
+                <CardContent className="p-2.5 sm:space-y-2">
+                  {/* Mobile: horizontal row layout */}
+                  <div className="flex sm:hidden items-center gap-3">
+                    <div className="flex items-center gap-2 min-w-[80px]">
+                      <span className={`text-sm font-medium ${isToday ? "text-brand" : "text-muted-foreground"}`}>
+                        {dayNames[i]}
+                      </span>
+                      <span className={`text-sm font-mono ${isToday ? "text-brand font-bold" : "text-foreground"}`}>
+                        {new Date(date + "T00:00:00").getDate()}
+                      </span>
+                    </div>
+                    <div className="flex-1 flex items-center gap-2 overflow-x-auto">
+                      {da.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">No assignments</p>
+                      ) : (
+                        [...projectGroups].map(([name, count]) => (
+                          <div key={name} className="flex items-center gap-1 text-xs shrink-0">
+                            <Users className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-foreground">{name}</span>
+                            <Badge variant="secondary" className="text-[10px] px-1 py-0">{count}</Badge>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    {dc.length > 0 && (
+                      <div className="flex items-center gap-1 shrink-0">
+                        <AlertTriangle className="h-3 w-3 text-status-absent" />
+                        <span className="text-[10px] text-status-absent">{dc.length}</span>
+                      </div>
                     )}
                   </div>
-                  {dc.length > 0 && (
-                    <div className="flex items-center gap-1">
-                      <AlertTriangle className="h-3 w-3 text-status-absent" />
-                      <span className="text-[10px] text-status-absent">{dc.length} conflict{dc.length > 1 ? "s" : ""}</span>
+                  {/* Desktop: original card layout */}
+                  <div className="hidden sm:block space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className={`text-xs font-medium ${isToday ? "text-brand" : "text-muted-foreground"}`}>
+                        {dayNames[i]}
+                      </span>
+                      <span className={`text-xs font-mono ${isToday ? "text-brand font-bold" : "text-foreground"}`}>
+                        {new Date(date + "T00:00:00").getDate()}
+                      </span>
                     </div>
-                  )}
+                    <div className="space-y-1 min-h-[60px]">
+                      {da.length === 0 ? (
+                        <p className="text-[10px] text-muted-foreground text-center pt-4">No assignments</p>
+                      ) : (
+                        [...projectGroups].map(([name, count]) => (
+                          <div key={name} className="flex items-center gap-1 text-[10px]">
+                            <Users className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
+                            <span className="truncate text-foreground">{name}</span>
+                            <Badge variant="secondary" className="text-[9px] px-1 py-0 ml-auto">{count}</Badge>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    {dc.length > 0 && (
+                      <div className="flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3 text-status-absent" />
+                        <span className="text-[10px] text-status-absent">{dc.length} conflict{dc.length > 1 ? "s" : ""}</span>
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             );
