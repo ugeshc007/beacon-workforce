@@ -230,7 +230,11 @@ export function CsvProjectImportDialog({ open, onOpenChange, branches }: Props) 
         toast({ title: "Missing columns", description: `Required: ${missing.join(", ")}`, variant: "destructive" });
         return;
       }
-      setParsed(rows.map((row, i) => validateRow(row, i + 2, branches)));
+      // Filter out completely empty rows (Excel trailing formatting)
+      const nonEmptyRows = rows
+        .map((row, i) => ({ row, idx: i }))
+        .filter(({ row }) => REQUIRED_HEADERS.some(h => row[h] != null && String(row[h]).trim() !== ""));
+      setParsed(nonEmptyRows.map(({ row, idx }) => validateRow(row, idx + 2, branches)));
     };
     reader.readAsArrayBuffer(file);
   };
