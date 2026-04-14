@@ -300,13 +300,18 @@ export function DayAssignmentPanel({
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Staffing summary */}
-        <div className="flex gap-2 text-xs">
+        <div className="flex gap-2 text-xs flex-wrap">
           <Badge variant="outline" className={memberCount >= requiredTech ? "border-status-present/50" : "border-status-absent/50"}>
             Team Members: {memberCount}/{requiredTech}
           </Badge>
           <Badge variant="outline" className={tlCount >= requiredSup ? "border-status-present/50" : "border-status-absent/50"}>
             Team Leaders: {tlCount}/{requiredSup}
           </Badge>
+          {requiredDrivers > 0 && (
+            <Badge variant="outline" className={driverCount >= requiredDrivers ? "border-status-present/50" : "border-status-absent/50"}>
+              Drivers: {driverCount}/{requiredDrivers}
+            </Badge>
+          )}
         </div>
 
         {/* Conflicts */}
