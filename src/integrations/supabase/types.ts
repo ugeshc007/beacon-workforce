@@ -1465,7 +1465,12 @@ export type Database = {
       override_action: "absent" | "replaced" | "added" | "removed"
       project_status: "on_hold" | "in_progress" | "completed"
       report_schedule: "none" | "daily" | "weekly" | "monthly"
-      skill_type: "technician" | "helper" | "team_leader" | "team_member"
+      skill_type:
+        | "technician"
+        | "helper"
+        | "team_leader"
+        | "team_member"
+        | "driver"
       user_role: "admin" | "manager" | "team_leader"
     }
     CompositeTypes: {
@@ -1617,7 +1622,13 @@ export const Constants = {
       override_action: ["absent", "replaced", "added", "removed"],
       project_status: ["on_hold", "in_progress", "completed"],
       report_schedule: ["none", "daily", "weekly", "monthly"],
-      skill_type: ["technician", "helper", "team_leader", "team_member"],
+      skill_type: [
+        "technician",
+        "helper",
+        "team_leader",
+        "team_member",
+        "driver",
+      ],
       user_role: ["admin", "manager", "team_leader"],
     },
   },

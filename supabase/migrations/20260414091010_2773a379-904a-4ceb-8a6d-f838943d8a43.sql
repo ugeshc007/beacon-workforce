@@ -1,0 +1,1 @@
+ALTER TYPE public.skill_type ADD VALUE IF NOT EXISTS 'driver';
