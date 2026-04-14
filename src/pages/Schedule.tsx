@@ -436,7 +436,6 @@ export default function Schedule() {
           </div>
         );
       })()}
-      )}
 
       {!selectedDay && selectedProjectId !== "all" && selectedProject && (
         <DayAssignmentPanel
