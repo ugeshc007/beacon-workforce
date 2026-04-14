@@ -231,6 +231,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
               </div>
             </div>
 
+            <div className="grid grid-cols-3 gap-4">
               <FormField control={form.control} name="hourly_rate" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Hourly Rate (AED)</FormLabel>
