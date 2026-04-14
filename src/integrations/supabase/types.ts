@@ -457,6 +457,7 @@ export type Database = {
           notes: string | null
           overtime_rate: number
           phone: string | null
+          secondary_skills: string[]
           skill_type: Database["public"]["Enums"]["skill_type"]
           standard_hours_per_day: number
         }
@@ -476,6 +477,7 @@ export type Database = {
           notes?: string | null
           overtime_rate?: number
           phone?: string | null
+          secondary_skills?: string[]
           skill_type?: Database["public"]["Enums"]["skill_type"]
           standard_hours_per_day?: number
         }
@@ -495,6 +497,7 @@ export type Database = {
           notes?: string | null
           overtime_rate?: number
           phone?: string | null
+          secondary_skills?: string[]
           skill_type?: Database["public"]["Enums"]["skill_type"]
           standard_hours_per_day?: number
         }

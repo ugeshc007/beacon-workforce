@@ -340,7 +340,7 @@ export function useAvailableEmployees(date: string, projectId: string) {
     queryFn: async () => {
       const { data: employees } = await supabase
         .from("employees")
-        .select("id, name, skill_type")
+        .select("id, name, skill_type, secondary_skills")
         .eq("is_active", true)
         .order("name");
 

@@ -1,0 +1,1 @@
+ALTER TABLE public.employees ADD COLUMN secondary_skills text[] NOT NULL DEFAULT '{}'::text[];
