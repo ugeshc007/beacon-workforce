@@ -87,6 +87,7 @@ export function useAddAssignment() {
       shift_start?: string;
       shift_end?: string;
       assignment_mode?: "manual" | "auto" | "hybrid";
+      assigned_role?: string;
     }) => {
       const { data, error } = await supabase
         .from("project_assignments")
@@ -97,6 +98,7 @@ export function useAddAssignment() {
           shift_start: payload.shift_start ?? null,
           shift_end: payload.shift_end ?? null,
           assignment_mode: payload.assignment_mode ?? "manual",
+          assigned_role: payload.assigned_role ?? "team_member",
         })
         .select()
         .single();
