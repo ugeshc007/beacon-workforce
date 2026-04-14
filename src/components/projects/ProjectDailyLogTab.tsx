@@ -305,19 +305,38 @@ export function ProjectDailyLogTab({ projectId }: Props) {
                       <div key={log.id} className="bg-accent/20 rounded-lg p-3 space-y-2">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 space-y-1">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <p className="text-sm text-foreground">{log.description}</p>
-                              <Badge
-                                variant="outline"
-                                className={`text-[10px] shrink-0 ${
+                              <Select
+                                value={log.status ?? "pending"}
+                                onValueChange={async (v) => {
+                                  try {
+                                    await updateMutation.mutateAsync({
+                                      id: log.id,
+                                      projectId,
+                                      status: v,
+                                    });
+                                    toast({ title: "Status updated" });
+                                  } catch (err: any) {
+                                    toast({ title: "Error", description: err.message, variant: "destructive" });
+                                  }
+                                }}
+                              >
+                                <SelectTrigger className={`h-5 w-auto text-[10px] px-2 py-0 border rounded-full gap-1 ${
                                   log.status === "completed" ? "border-status-present/40 text-status-present" :
                                   log.status === "in_progress" ? "border-brand/40 text-brand" :
                                   log.status === "on_hold" ? "border-status-overtime/40 text-status-overtime" :
                                   "border-muted-foreground/40 text-muted-foreground"
-                                }`}
-                              >
-                                {log.status === "on_hold" ? "On Hold" : log.status === "in_progress" ? "In Progress" : log.status === "completed" ? "Completed" : "Pending"}
-                              </Badge>
+                                }`}>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="on_hold">On Hold</SelectItem>
+                                  <SelectItem value="pending">Pending</SelectItem>
+                                  <SelectItem value="in_progress">In Progress</SelectItem>
+                                  <SelectItem value="completed">Completed</SelectItem>
+                                </SelectContent>
+                              </Select>
                             </div>
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
