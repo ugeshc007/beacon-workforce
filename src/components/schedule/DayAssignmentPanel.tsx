@@ -34,6 +34,7 @@ interface Props {
   requiredTech: number;
   requiredHelp: number;
   requiredSup: number;
+  requiredDrivers?: number;
   conflicts: { employee_id: string; employee_name: string; projects: string[] }[];
   readOnly?: boolean;
 }
@@ -41,6 +42,7 @@ interface Props {
 const skillColors: Record<string, string> = {
   team_member: "bg-brand/15 text-brand border-brand/30",
   team_leader: "bg-status-overtime/15 text-status-overtime border-status-overtime/30",
+  driver: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
 };
 
 export function DayAssignmentPanel({
@@ -51,6 +53,7 @@ export function DayAssignmentPanel({
   requiredTech,
   requiredHelp,
   requiredSup,
+  requiredDrivers = 0,
   conflicts,
   readOnly = false,
 }: Props) {
@@ -90,10 +93,12 @@ export function DayAssignmentPanel({
 
   const memberCount = assignments.filter((a) => a.employee_skill === "team_member").length;
   const tlCount = assignments.filter((a) => a.employee_skill === "team_leader").length;
+  const driverCount = assignments.filter((a) => a.employee_skill === "driver").length;
 
   const needMembers = Math.max(0, requiredTech - memberCount);
   const needTL = Math.max(0, requiredSup - tlCount);
-  const totalToFill = needMembers + needTL;
+  const needDrivers = Math.max(0, requiredDrivers - driverCount);
+  const totalToFill = needMembers + needTL + needDrivers;
 
   const handleAdd = async (employeeId: string) => {
     try {
