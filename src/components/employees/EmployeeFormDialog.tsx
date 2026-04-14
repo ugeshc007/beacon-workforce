@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { DateInput } from "@/components/ui/date-input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
 import { useCreateEmployee, useUpdateEmployee, useBranches } from "@/hooks/useEmployees";
@@ -22,7 +23,7 @@ const schema = z.object({
   phone: z.string().max(20).optional().or(z.literal("")),
   email: z.string().email("Invalid email").max(255).optional().or(z.literal("")),
   designation: z.string().max(100).optional().or(z.literal("")),
-  skill_type: z.enum(["team_member", "team_leader"]),
+  skill_type: z.enum(["team_member", "team_leader", "driver"]),
   branch_id: z.string().uuid("Select a branch"),
   hourly_rate: z.coerce.number().min(0),
   overtime_rate: z.coerce.number().min(0),
