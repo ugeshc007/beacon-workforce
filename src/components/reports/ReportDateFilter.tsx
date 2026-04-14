@@ -35,6 +35,7 @@ const PRESETS: Preset[] = [
       const t = new Date();
       t.setDate(t.getDate() + 1);
       return { start: t, end: t };
+    },
   },
   {
     label: "Next Week",
@@ -44,7 +45,6 @@ const PRESETS: Preset[] = [
       const nextSun = endOfWeek(addDays(today, 7), { weekStartsOn: 1 });
       return { start: nextMon, end: nextSun };
     },
-  },
   },
   {
     label: "This Month",
