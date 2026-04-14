@@ -33,6 +33,7 @@ import {
   MapPin, Share2, FileText, StickyNote,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useDailyLogs } from "@/hooks/useDailyLogs";
 
 const fmt = (ts: string | null) => {
   if (!ts) return "—";
