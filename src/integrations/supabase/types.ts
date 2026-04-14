@@ -938,6 +938,7 @@ export type Database = {
           default_duration_days: number | null
           id: string
           name: string
+          required_drivers: number
           required_helpers: number
           required_supervisors: number
           required_team_members: number
@@ -950,6 +951,7 @@ export type Database = {
           default_duration_days?: number | null
           id?: string
           name: string
+          required_drivers?: number
           required_helpers?: number
           required_supervisors?: number
           required_team_members?: number
@@ -962,6 +964,7 @@ export type Database = {
           default_duration_days?: number | null
           id?: string
           name?: string
+          required_drivers?: number
           required_helpers?: number
           required_supervisors?: number
           required_team_members?: number
@@ -993,6 +996,7 @@ export type Database = {
           name: string
           notes: string | null
           project_value: number | null
+          required_drivers: number
           required_helpers: number
           required_supervisors: number
           required_team_members: number
@@ -1020,6 +1024,7 @@ export type Database = {
           name: string
           notes?: string | null
           project_value?: number | null
+          required_drivers?: number
           required_helpers?: number
           required_supervisors?: number
           required_team_members?: number
@@ -1047,6 +1052,7 @@ export type Database = {
           name?: string
           notes?: string | null
           project_value?: number | null
+          required_drivers?: number
           required_helpers?: number
           required_supervisors?: number
           required_team_members?: number
