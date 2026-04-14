@@ -80,10 +80,21 @@ export function useScheduleReport(start: string, end: string) {
     },
   });
 
+  const employeesQ = useQuery({
+    queryKey: ["schedule-report-all-employees"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("employees")
+        .select("id, name, employee_code")
+        .eq("is_active", true);
+      return data ?? [];
+    },
+  });
+
   const data = useMemo<ScheduleReportData | null>(() => {
     if (!assignmentsQ.data) return null;
     const assignments = assignmentsQ.data as any[];
-    const logs = logsQ.data ?? [];
+    const allActiveEmployees = employeesQ.data ?? [];
     const dates = allDates(start, end);
 
     // Summary
