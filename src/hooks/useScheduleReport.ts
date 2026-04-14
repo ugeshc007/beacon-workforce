@@ -25,6 +25,8 @@ export interface ScheduleReportData {
     project: string;
     location: string;
     teamSize: number;
+    teamNames: string[];
+    tasks: string[];
     tasksLogged: number;
   }[];
   employeeSummary: {
@@ -70,7 +72,7 @@ export function useScheduleReport(start: string, end: string) {
     queryFn: async () => {
       const { data } = await supabase
         .from("project_daily_logs")
-        .select("id, date, project_id")
+        .select("id, date, project_id, description, status")
         .gte("date", start)
         .lte("date", end);
       return data ?? [];
@@ -97,19 +99,24 @@ export function useScheduleReport(start: string, end: string) {
       : 0;
 
     // Daily overview
-    const dailyMap = new Map<string, { project: string; location: string; teamSize: number; tasksLogged: number }>();
+    const dailyMap = new Map<string, { project: string; location: string; teamSize: number; teamNames: string[]; tasks: string[]; tasksLogged: number }>();
     assignments.forEach((a) => {
       const key = `${a.date}|${a.project_id}`;
       const existing = dailyMap.get(key);
+      const empName = a.employees?.name ?? "—";
       if (existing) {
         existing.teamSize += 1;
+        if (!existing.teamNames.includes(empName)) existing.teamNames.push(empName);
       } else {
-        const logCount = logs.filter((l) => l.date === a.date && l.project_id === a.project_id).length;
+        const dayLogs = logs.filter((l: any) => l.date === a.date && l.project_id === a.project_id);
+        const taskDescs = dayLogs.map((l: any) => l.description).filter(Boolean);
         dailyMap.set(key, {
           project: a.projects?.name ?? "—",
           location: a.projects?.site_address ?? "—",
           teamSize: 1,
-          tasksLogged: logCount,
+          teamNames: [empName],
+          tasks: taskDescs,
+          tasksLogged: dayLogs.length,
         });
       }
     });
