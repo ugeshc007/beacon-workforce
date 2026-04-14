@@ -63,6 +63,7 @@ function makeForm(src?: Tables<"projects"> | null, prefill?: ProjectPrefill | nu
     required_technicians: (s as any)?.required_technicians?.toString() ?? "0",
     required_helpers: (s as any)?.required_helpers?.toString() ?? "0",
     required_supervisors: (s as any)?.required_supervisors?.toString() ?? "0",
+    job_card: (s as any)?.job_card ?? "",
   };
 }
 
@@ -145,6 +146,7 @@ export function ProjectFormDialog({ open, onOpenChange, editProject, prefill }: 
       required_technicians: parseInt(form.required_technicians) || 0,
       required_helpers: parseInt(form.required_helpers) || 0,
       required_supervisors: parseInt(form.required_supervisors) || 0,
+      job_card: form.job_card || null,
     };
     try {
       if (editProject) {
@@ -205,7 +207,10 @@ export function ProjectFormDialog({ open, onOpenChange, editProject, prefill }: 
         <div className="space-y-4 py-2 min-h-[220px]">
           {step === 0 && (
             <>
-              <div><Label>Project Name *</Label><Input value={form.name} onChange={(e) => set("name", e.target.value)} /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label>Project Name *</Label><Input value={form.name} onChange={(e) => set("name", e.target.value)} /></div>
+                <div><Label>Job Card</Label><Input value={form.job_card} onChange={(e) => set("job_card", e.target.value)} placeholder="e.g. JC/BB/001" /></div>
+              </div>
               <div className={`grid ${(branches?.length ?? 0) > 1 ? "grid-cols-2" : "grid-cols-1"} gap-3`}>
                 {(branches?.length ?? 0) > 1 && (
                   <div>
