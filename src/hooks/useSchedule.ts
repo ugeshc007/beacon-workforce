@@ -11,6 +11,7 @@ export interface ScheduleAssignment {
   shift_end: string | null;
   assignment_mode: string;
   is_locked: boolean;
+  assigned_role: string;
   employee_name: string;
   employee_skill: string;
   project_name: string;
@@ -29,7 +30,7 @@ export function useWeekAssignments(weekStart: string, weekEnd: string, projectId
     queryFn: async () => {
       let query = supabase
         .from("project_assignments")
-        .select("id, project_id, employee_id, date, shift_start, shift_end, assignment_mode, is_locked, employees(name, skill_type), projects(name)")
+        .select("id, project_id, employee_id, date, shift_start, shift_end, assignment_mode, is_locked, assigned_role, employees(name, skill_type), projects(name)")
         .gte("date", weekStart)
         .lte("date", weekEnd)
         .order("date");
@@ -50,6 +51,7 @@ export function useWeekAssignments(weekStart: string, weekEnd: string, projectId
         shift_end: a.shift_end,
         assignment_mode: a.assignment_mode,
         is_locked: a.is_locked,
+        assigned_role: a.assigned_role ?? a.employees?.skill_type ?? "team_member",
         employee_name: a.employees?.name ?? "Unknown",
         employee_skill: a.employees?.skill_type ?? "helper",
         project_name: a.projects?.name ?? "Unknown",
@@ -85,6 +87,7 @@ export function useAddAssignment() {
       shift_start?: string;
       shift_end?: string;
       assignment_mode?: "manual" | "auto" | "hybrid";
+      assigned_role?: string;
     }) => {
       const { data, error } = await supabase
         .from("project_assignments")
@@ -95,6 +98,7 @@ export function useAddAssignment() {
           shift_start: payload.shift_start ?? null,
           shift_end: payload.shift_end ?? null,
           assignment_mode: payload.assignment_mode ?? "manual",
+          assigned_role: payload.assigned_role ?? "team_member",
         })
         .select()
         .single();

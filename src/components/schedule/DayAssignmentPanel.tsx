@@ -92,9 +92,9 @@ export function DayAssignmentPanel({
   const [reassignKeepOld, setReassignKeepOld] = useState(true);
   const [reassignOldEnd, setReassignOldEnd] = useState("");
 
-  const memberCount = assignments.filter((a) => a.employee_skill === "team_member").length;
-  const tlCount = assignments.filter((a) => a.employee_skill === "team_leader").length;
-  const driverCount = assignments.filter((a) => a.employee_skill === "driver").length;
+  const memberCount = assignments.filter((a) => a.assigned_role === "team_member").length;
+  const tlCount = assignments.filter((a) => a.assigned_role === "team_leader").length;
+  const driverCount = assignments.filter((a) => a.assigned_role === "driver").length;
 
   const needMembers = Math.max(0, requiredTech - memberCount);
   const needTL = Math.max(0, requiredSup - tlCount);
@@ -109,6 +109,7 @@ export function DayAssignmentPanel({
         date,
         shift_start: shiftStart,
         shift_end: shiftEnd,
+        assigned_role: addingSkill ?? "team_member",
       });
       toast({ title: "Employee assigned" });
       setAddingSkill(null);
@@ -233,7 +234,9 @@ export function DayAssignmentPanel({
   const availableForSkill = (skill: string) =>
     (employees ?? []).filter((e) => {
       if (e.on_leave) return false;
-      if (!e.available) return false; // already assigned to this project
+      // Check if already assigned to this role for this project
+      const alreadyInRole = assignments.some(a => a.employee_id === e.id && a.assigned_role === skill);
+      if (alreadyInRole) return false;
       const matchesSkill = e.skill_type === skill || ((e as any).secondary_skills ?? []).includes(skill);
       return matchesSkill;
     });
@@ -292,9 +295,9 @@ export function DayAssignmentPanel({
     lines.push(`📅 ${dayLabel}`);
     lines.push("");
 
-    const members = assignments.filter(a => a.employee_skill === "team_member");
-    const leaders = assignments.filter(a => a.employee_skill === "team_leader");
-    const drivers = assignments.filter(a => a.employee_skill === "driver");
+    const members = assignments.filter(a => a.assigned_role === "team_member");
+    const leaders = assignments.filter(a => a.assigned_role === "team_leader");
+    const drivers = assignments.filter(a => a.assigned_role === "driver");
 
     if (members.length > 0) {
       lines.push("👷 *Team Members:*");
@@ -398,7 +401,7 @@ export function DayAssignmentPanel({
             return (
             <div key={a.id} className="space-y-1">
               <div className="flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-accent/30 transition-colors group">
-                {a.employee_skill === "team_leader" ? (
+                {a.assigned_role === "team_leader" ? (
                   <Shield className="h-3.5 w-3.5 text-status-overtime shrink-0" />
                 ) : (
                   <Users className="h-3.5 w-3.5 text-brand shrink-0" />
@@ -422,8 +425,8 @@ export function DayAssignmentPanel({
                     {formatTime(a.shift_start) || "08:00"}–{formatTime(a.shift_end) || "17:00"}
                   </span>
                 )}
-                <Badge variant="outline" className={`text-[10px] ${skillColors[a.employee_skill] ?? ""}`}>
-                  {a.employee_skill}
+                <Badge variant="outline" className={`text-[10px] ${skillColors[a.assigned_role] ?? ""}`}>
+                  {a.assigned_role}
                 </Badge>
                 {a.assignment_mode !== "manual" && (
                   <Badge variant="secondary" className="text-[10px]">{a.assignment_mode}</Badge>

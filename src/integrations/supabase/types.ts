@@ -723,6 +723,7 @@ export type Database = {
       project_assignments: {
         Row: {
           assigned_by: string | null
+          assigned_role: string
           assignment_mode: Database["public"]["Enums"]["assignment_mode"]
           auto_score: Json | null
           created_at: string
@@ -736,6 +737,7 @@ export type Database = {
         }
         Insert: {
           assigned_by?: string | null
+          assigned_role?: string
           assignment_mode?: Database["public"]["Enums"]["assignment_mode"]
           auto_score?: Json | null
           created_at?: string
@@ -749,6 +751,7 @@ export type Database = {
         }
         Update: {
           assigned_by?: string | null
+          assigned_role?: string
           assignment_mode?: Database["public"]["Enums"]["assignment_mode"]
           auto_score?: Json | null
           created_at?: string
