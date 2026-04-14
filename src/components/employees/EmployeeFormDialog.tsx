@@ -210,7 +210,27 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
               )} />
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            {/* Secondary Skills */}
+            <div>
+              <label className="text-sm font-medium">Secondary Skills</label>
+              <p className="text-xs text-muted-foreground mb-2">Select additional skills this employee can perform</p>
+              <div className="flex gap-4">
+                {ALL_SKILLS.filter(s => s.value !== form.watch("skill_type")).map(skill => (
+                  <label key={skill.value} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <Checkbox
+                      checked={secondarySkills.includes(skill.value)}
+                      onCheckedChange={(checked) => {
+                        setSecondarySkills(prev =>
+                          checked ? [...prev, skill.value] : prev.filter(s => s !== skill.value)
+                        );
+                      }}
+                    />
+                    {skill.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+
               <FormField control={form.control} name="hourly_rate" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Hourly Rate (AED)</FormLabel>
