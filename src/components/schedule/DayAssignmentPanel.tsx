@@ -463,10 +463,10 @@ export function DayAssignmentPanel({
             <Button variant="ghost" size="sm" className="w-full" onClick={() => setAddingSkill(null)}>Cancel</Button>
           </div>
         ) : (
-          <div className="flex gap-2">
-            {(["team_member", "team_leader"] as const).map((skill) => (
+          <div className="flex gap-2 flex-wrap">
+            {(["team_member", "team_leader", "driver"] as const).map((skill) => (
               <Button key={skill} variant="outline" size="sm" className="flex-1 text-xs" onClick={() => setAddingSkill(skill)}>
-                <Plus className="h-3 w-3 mr-1" /> {skill === "team_member" ? "Team Member" : "Team Leader"}
+                <Plus className="h-3 w-3 mr-1" /> {skill === "team_member" ? "Team Member" : skill === "team_leader" ? "Team Leader" : "Driver"}
               </Button>
             ))}
           </div>
@@ -484,6 +484,7 @@ export function DayAssignmentPanel({
                 <ul className="list-disc pl-5 space-y-0.5 text-sm">
                   {needMembers > 0 && <li>{needMembers} team member{needMembers > 1 ? "s" : ""}</li>}
                   {needTL > 0 && <li>{needTL} team leader{needTL > 1 ? "s" : ""}</li>}
+                  {needDrivers > 0 && <li>{needDrivers} driver{needDrivers > 1 ? "s" : ""}</li>}
                 </ul>
                 {/* Shift time for auto-fill */}
                 <div className="flex items-center gap-2 pt-1">
