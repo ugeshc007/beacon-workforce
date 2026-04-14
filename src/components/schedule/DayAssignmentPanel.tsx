@@ -520,7 +520,7 @@ export function DayAssignmentPanel({
           </div>
         ) : (
           <div className="flex gap-2 flex-wrap">
-            {(["team_member", "team_leader", "driver"] as const).map((skill) => (
+            {(["team_leader", "team_member", "driver"] as const).map((skill) => (
               <Button key={skill} variant="outline" size="sm" className="flex-1 text-xs" onClick={() => setAddingSkill(skill)}>
                 <Plus className="h-3 w-3 mr-1" /> {skill === "team_member" ? "Team Member" : skill === "team_leader" ? "Team Leader" : "Driver"}
               </Button>
