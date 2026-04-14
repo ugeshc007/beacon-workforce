@@ -11,6 +11,7 @@ export interface ScheduleAssignment {
   shift_end: string | null;
   assignment_mode: string;
   is_locked: boolean;
+  assigned_role: string;
   employee_name: string;
   employee_skill: string;
   project_name: string;
