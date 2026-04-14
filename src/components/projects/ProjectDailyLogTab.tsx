@@ -45,6 +45,7 @@ export function ProjectDailyLogTab({ projectId }: Props) {
     setCompletionPct("");
     setPhotos([]);
     setExistingPhotos([]);
+    setStatus("pending");
     setShowForm(false);
     setEditingLog(null);
   };
@@ -55,6 +56,7 @@ export function ProjectDailyLogTab({ projectId }: Props) {
     setIssues(log.issues ?? "");
     setCompletionPct(log.completion_pct?.toString() ?? "");
     setExistingPhotos(log.photo_urls ?? []);
+    setStatus(log.status ?? "pending");
     setPhotos([]);
     setShowForm(true);
   };
