@@ -70,6 +70,7 @@ export function DayAssignmentPanel({
   const { data: allProjects } = useProjects({ status: "all" });
   const activeProjects = (allProjects ?? []).filter((p) => ["on_hold", "in_progress"].includes(p.status) && p.id !== projectId);
   const { data: dailyLogs } = useDailyLogs(projectId);
+  const currentProject = (allProjects ?? []).find(p => p.id === projectId);
 
   const [addingSkill, setAddingSkill] = useState<string | null>(null);
   const [shiftStart, setShiftStart] = useState("08:00");
@@ -295,6 +296,8 @@ export function DayAssignmentPanel({
     const lines: string[] = [];
     lines.push(`📋 *Schedule: ${projectName}*`);
     lines.push(`📅 ${dayLabel}`);
+    if (currentProject?.site_address) lines.push(`📍 Location: ${currentProject.site_address}`);
+    if (currentProject?.notes) lines.push(`📝 Scope: ${currentProject.notes}`);
     lines.push("");
 
     const members = assignments.filter(a => a.assigned_role === "team_member");
