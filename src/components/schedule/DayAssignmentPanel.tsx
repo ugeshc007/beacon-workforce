@@ -317,8 +317,19 @@ export function DayAssignmentPanel({
     if (assignments.length === 0) lines.push("No assignments yet.");
     lines.push("");
     lines.push(`Total: ${assignments.length} employee${assignments.length !== 1 ? "s" : ""}`);
+
+    // Add daily logs for this date
+    const logsForDate = (dailyLogs ?? []).filter(l => l.date === date);
+    if (logsForDate.length > 0) {
+      lines.push("");
+      lines.push("📝 *Daily Updates:*");
+      logsForDate.forEach(l => {
+        lines.push(`  • ${l.description}${l.completion_pct !== null ? ` (${l.completion_pct}%)` : ""}${l.issues ? ` ⚠️ ${l.issues}` : ""}`);
+      });
+    }
+
     return lines.join("\n");
-  }, [assignments, projectName, dayLabel]);
+  }, [assignments, projectName, dayLabel, dailyLogs, date]);
 
   const handleCopyClipboard = async () => {
     try {
