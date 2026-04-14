@@ -216,11 +216,51 @@ export default function Schedule() {
             </DropdownMenu>
           )}
 
+          {/* Job Card filter with search */}
+          <div className="relative">
+            <Select
+              value={selectedJobCard}
+              onValueChange={(v) => {
+                setSelectedJobCard(v);
+                setJobCardSearch("");
+                // If a specific job card is chosen, auto-select its project if only one
+                if (v !== "all") {
+                  const matching = activeProjects.filter(p => p.job_card === v);
+                  if (matching.length === 1) {
+                    setSelectedProjectId(matching[0].id);
+                  } else {
+                    setSelectedProjectId("all");
+                  }
+                }
+                setSelectedDay(null);
+              }}
+            >
+              <SelectTrigger className="w-[180px]"><SelectValue placeholder="All Job Cards" /></SelectTrigger>
+              <SelectContent>
+                <div className="px-2 pb-1">
+                  <Input
+                    placeholder="Search job card..."
+                    value={jobCardSearch}
+                    onChange={(e) => setJobCardSearch(e.target.value)}
+                    className="h-8 text-xs"
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
+                  />
+                </div>
+                <SelectItem value="all">All Job Cards</SelectItem>
+                {jobCards
+                  .filter(jc => !jobCardSearch || jc.toLowerCase().includes(jobCardSearch.toLowerCase()))
+                  .map((jc) => <SelectItem key={jc} value={jc}>{jc}</SelectItem>)
+                }
+              </SelectContent>
+            </Select>
+          </div>
+
           <Select value={selectedProjectId} onValueChange={(v) => { setSelectedProjectId(v); setSelectedDay(null); }}>
             <SelectTrigger className="w-[220px]"><SelectValue placeholder="All Projects" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Projects</SelectItem>
-              {activeProjects.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+              {filteredByJobCard.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
             </SelectContent>
           </Select>
           <div className="flex items-center gap-1">
