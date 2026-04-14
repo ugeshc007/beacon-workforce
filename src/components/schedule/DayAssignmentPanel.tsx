@@ -399,7 +399,7 @@ export function DayAssignmentPanel({
             return (
             <div key={a.id} className="space-y-1">
               <div className="flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-accent/30 transition-colors group">
-                {a.employee_skill === "team_leader" ? (
+                {a.assigned_role === "team_leader" ? (
                   <Shield className="h-3.5 w-3.5 text-status-overtime shrink-0" />
                 ) : (
                   <Users className="h-3.5 w-3.5 text-brand shrink-0" />
@@ -423,8 +423,8 @@ export function DayAssignmentPanel({
                     {formatTime(a.shift_start) || "08:00"}–{formatTime(a.shift_end) || "17:00"}
                   </span>
                 )}
-                <Badge variant="outline" className={`text-[10px] ${skillColors[a.employee_skill] ?? ""}`}>
-                  {a.employee_skill}
+                <Badge variant="outline" className={`text-[10px] ${skillColors[a.assigned_role] ?? ""}`}>
+                  {a.assigned_role}
                 </Badge>
                 {a.assignment_mode !== "manual" && (
                   <Badge variant="secondary" className="text-[10px]">{a.assignment_mode}</Badge>
