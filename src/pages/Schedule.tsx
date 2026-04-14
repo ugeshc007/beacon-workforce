@@ -75,7 +75,22 @@ export default function Schedule() {
   const { user } = useAuth();
   const { data: projects } = useProjects({ status: "all", userRole: user?.role, userId: user?.id });
   const activeProjects = (projects ?? []).filter((p) => ["on_hold", "in_progress"].includes(p.status));
-  const { data: assignments, isLoading } = useWeekAssignments(weekStart, weekEnd, selectedProjectId);
+
+  // Unique job cards for filter
+  const jobCards = useMemo(() => {
+    const cards = activeProjects.map(p => p.job_card).filter(Boolean) as string[];
+    return [...new Set(cards)].sort();
+  }, [activeProjects]);
+
+  // Filter by job card first, then use for project selector
+  const filteredByJobCard = selectedJobCard === "all"
+    ? activeProjects
+    : activeProjects.filter(p => p.job_card === selectedJobCard);
+
+  // Auto-select project when job card narrows to one
+  const effectiveProjectId = selectedProjectId;
+
+  const { data: assignments, isLoading } = useWeekAssignments(weekStart, weekEnd, effectiveProjectId);
   const conflicts = useDetectConflicts(assignments ?? []);
   const queryClient = useQueryClient();
 
