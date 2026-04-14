@@ -297,10 +297,10 @@ export function DayAssignmentPanel({
         {/* Staffing summary */}
         <div className="flex gap-2 text-xs">
           <Badge variant="outline" className={memberCount >= requiredTech ? "border-status-present/50" : "border-status-absent/50"}>
-            Members: {memberCount}/{requiredTech}
+            Team Members: {memberCount}/{requiredTech}
           </Badge>
           <Badge variant="outline" className={tlCount >= requiredSup ? "border-status-present/50" : "border-status-absent/50"}>
-            TL: {tlCount}/{requiredSup}
+            Team Leaders: {tlCount}/{requiredSup}
           </Badge>
         </div>
 
@@ -456,7 +456,7 @@ export function DayAssignmentPanel({
           <div className="flex gap-2">
             {(["team_member", "team_leader"] as const).map((skill) => (
               <Button key={skill} variant="outline" size="sm" className="flex-1 text-xs" onClick={() => setAddingSkill(skill)}>
-                <Plus className="h-3 w-3 mr-1" /> {skill === "team_member" ? "Member" : "TL"}
+                <Plus className="h-3 w-3 mr-1" /> {skill === "team_member" ? "Team Member" : "Team Leader"}
               </Button>
             ))}
           </div>
