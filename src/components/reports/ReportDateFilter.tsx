@@ -18,6 +18,17 @@ type Preset = { label: string; getRange: () => { start: Date; end: Date } };
 
 const PRESETS: Preset[] = [
   {
+    label: "Today",
+    getRange: () => ({ start: new Date(), end: new Date() }),
+  },
+  {
+    label: "Yesterday",
+    getRange: () => {
+      const y = subDays(new Date(), 1);
+      return { start: y, end: y };
+    },
+  },
+  {
     label: "This Month",
     getRange: () => ({ start: startOfMonth(new Date()), end: endOfMonth(new Date()) }),
   },
