@@ -47,6 +47,7 @@ export function useCreateDailyLog() {
       photo_urls?: string[];
       posted_by?: string | null;
       employee_id?: string | null;
+      status?: string;
     }) => {
       const { error } = await supabase.from("project_daily_logs").insert(log as any);
       if (error) throw error;
