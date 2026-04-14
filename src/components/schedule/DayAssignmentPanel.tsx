@@ -34,6 +34,7 @@ interface Props {
   requiredTech: number;
   requiredHelp: number;
   requiredSup: number;
+  requiredDrivers?: number;
   conflicts: { employee_id: string; employee_name: string; projects: string[] }[];
   readOnly?: boolean;
 }
@@ -41,6 +42,7 @@ interface Props {
 const skillColors: Record<string, string> = {
   team_member: "bg-brand/15 text-brand border-brand/30",
   team_leader: "bg-status-overtime/15 text-status-overtime border-status-overtime/30",
+  driver: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
 };
 
 export function DayAssignmentPanel({
@@ -51,6 +53,7 @@ export function DayAssignmentPanel({
   requiredTech,
   requiredHelp,
   requiredSup,
+  requiredDrivers = 0,
   conflicts,
   readOnly = false,
 }: Props) {
@@ -90,10 +93,12 @@ export function DayAssignmentPanel({
 
   const memberCount = assignments.filter((a) => a.employee_skill === "team_member").length;
   const tlCount = assignments.filter((a) => a.employee_skill === "team_leader").length;
+  const driverCount = assignments.filter((a) => a.employee_skill === "driver").length;
 
   const needMembers = Math.max(0, requiredTech - memberCount);
   const needTL = Math.max(0, requiredSup - tlCount);
-  const totalToFill = needMembers + needTL;
+  const needDrivers = Math.max(0, requiredDrivers - driverCount);
+  const totalToFill = needMembers + needTL + needDrivers;
 
   const handleAdd = async (employeeId: string) => {
     try {
@@ -295,13 +300,18 @@ export function DayAssignmentPanel({
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Staffing summary */}
-        <div className="flex gap-2 text-xs">
+        <div className="flex gap-2 text-xs flex-wrap">
           <Badge variant="outline" className={memberCount >= requiredTech ? "border-status-present/50" : "border-status-absent/50"}>
             Team Members: {memberCount}/{requiredTech}
           </Badge>
           <Badge variant="outline" className={tlCount >= requiredSup ? "border-status-present/50" : "border-status-absent/50"}>
             Team Leaders: {tlCount}/{requiredSup}
           </Badge>
+          {requiredDrivers > 0 && (
+            <Badge variant="outline" className={driverCount >= requiredDrivers ? "border-status-present/50" : "border-status-absent/50"}>
+              Drivers: {driverCount}/{requiredDrivers}
+            </Badge>
+          )}
         </div>
 
         {/* Conflicts */}
@@ -453,10 +463,10 @@ export function DayAssignmentPanel({
             <Button variant="ghost" size="sm" className="w-full" onClick={() => setAddingSkill(null)}>Cancel</Button>
           </div>
         ) : (
-          <div className="flex gap-2">
-            {(["team_member", "team_leader"] as const).map((skill) => (
+          <div className="flex gap-2 flex-wrap">
+            {(["team_member", "team_leader", "driver"] as const).map((skill) => (
               <Button key={skill} variant="outline" size="sm" className="flex-1 text-xs" onClick={() => setAddingSkill(skill)}>
-                <Plus className="h-3 w-3 mr-1" /> {skill === "team_member" ? "Team Member" : "Team Leader"}
+                <Plus className="h-3 w-3 mr-1" /> {skill === "team_member" ? "Team Member" : skill === "team_leader" ? "Team Leader" : "Driver"}
               </Button>
             ))}
           </div>
@@ -474,6 +484,7 @@ export function DayAssignmentPanel({
                 <ul className="list-disc pl-5 space-y-0.5 text-sm">
                   {needMembers > 0 && <li>{needMembers} team member{needMembers > 1 ? "s" : ""}</li>}
                   {needTL > 0 && <li>{needTL} team leader{needTL > 1 ? "s" : ""}</li>}
+                  {needDrivers > 0 && <li>{needDrivers} driver{needDrivers > 1 ? "s" : ""}</li>}
                 </ul>
                 {/* Shift time for auto-fill */}
                 <div className="flex items-center gap-2 pt-1">

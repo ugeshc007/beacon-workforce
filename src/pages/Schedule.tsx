@@ -329,6 +329,7 @@ export default function Schedule() {
           requiredTech={(selectedProject as any).required_team_members ?? selectedProject.required_technicians + selectedProject.required_helpers}
           requiredHelp={0}
           requiredSup={selectedProject.required_supervisors}
+          requiredDrivers={(selectedProject as any).required_drivers ?? 0}
           conflicts={dayConflicts(selectedDay)}
           readOnly={!canEdit}
         />
@@ -352,6 +353,7 @@ export default function Schedule() {
                   requiredTech={(p as any).required_team_members ?? p.required_technicians + p.required_helpers}
                   requiredHelp={0}
                   requiredSup={p.required_supervisors}
+                  requiredDrivers={(p as any).required_drivers ?? 0}
                   conflicts={dayConflicts(selectedDay).filter((c) =>
                     c.projects.includes(p.name)
                   )}
@@ -371,6 +373,7 @@ export default function Schedule() {
           requiredTech={(selectedProject as any).required_team_members ?? selectedProject.required_technicians + selectedProject.required_helpers}
           requiredHelp={0}
           requiredSup={selectedProject.required_supervisors}
+          requiredDrivers={(selectedProject as any).required_drivers ?? 0}
           conflicts={dayConflicts(today)}
           readOnly={!canEdit}
         />

@@ -63,6 +63,7 @@ function makeForm(src?: Tables<"projects"> | null, prefill?: ProjectPrefill | nu
     required_technicians: (s as any)?.required_technicians?.toString() ?? "0",
     required_helpers: (s as any)?.required_helpers?.toString() ?? "0",
     required_supervisors: (s as any)?.required_supervisors?.toString() ?? "0",
+    required_drivers: (s as any)?.required_drivers?.toString() ?? "0",
     job_card: (s as any)?.job_card ?? "",
   };
 }
@@ -146,6 +147,7 @@ export function ProjectFormDialog({ open, onOpenChange, editProject, prefill }: 
       required_technicians: parseInt(form.required_technicians) || 0,
       required_helpers: parseInt(form.required_helpers) || 0,
       required_supervisors: parseInt(form.required_supervisors) || 0,
+      required_drivers: parseInt((form as any).required_drivers) || 0,
       job_card: form.job_card || null,
     };
     try {
@@ -268,6 +270,7 @@ export function ProjectFormDialog({ open, onOpenChange, editProject, prefill }: 
             <>
               <div><Label>Team Members Required</Label><Input type="number" value={(form as any).required_team_members ?? form.required_technicians + form.required_helpers} onChange={(e) => set("required_team_members" as any, e.target.value)} /></div>
               <div><Label>Team Leaders Required</Label><Input type="number" value={form.required_supervisors} onChange={(e) => set("required_supervisors", e.target.value)} /></div>
+              <div><Label>Drivers Required</Label><Input type="number" value={(form as any).required_drivers ?? "0"} onChange={(e) => set("required_drivers" as any, e.target.value)} /></div>
             </>
           )}
         </div>
