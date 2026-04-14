@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { format } from "date-fns";
 import { useDailyLogs, useCreateDailyLog, useUpdateDailyLog, useDeleteDailyLog, uploadDailyLogPhoto } from "@/hooks/useDailyLogs";
+import type { DailyLog, DailyLogStatus } from "@/hooks/useDailyLogs";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
