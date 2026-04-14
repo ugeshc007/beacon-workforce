@@ -209,6 +209,7 @@ export default function DailyTeam() {
         lines.push(`${i + 1}. ${m.employee_name} (${role}) ⏰ ${shift}`);
       });
 
+    const text = lines.join("\n");
 
     if (navigator.share) {
       navigator.share({ title: `${group.project_name} - Daily Team`, text }).catch(() => {});
