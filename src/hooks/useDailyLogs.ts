@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export type DailyLogStatus = "on_hold" | "pending" | "in_progress" | "completed";
+
 export interface DailyLog {
   id: string;
   project_id: string;
@@ -11,6 +13,7 @@ export interface DailyLog {
   photo_urls: string[];
   posted_by: string | null;
   employee_id: string | null;
+  status: DailyLogStatus;
   created_at: string;
   updated_at: string;
   users?: { name: string } | null;
@@ -44,6 +47,7 @@ export function useCreateDailyLog() {
       photo_urls?: string[];
       posted_by?: string | null;
       employee_id?: string | null;
+      status?: string;
     }) => {
       const { error } = await supabase.from("project_daily_logs").insert(log as any);
       if (error) throw error;
@@ -64,6 +68,7 @@ export function useUpdateDailyLog() {
       completion_pct?: number | null;
       issues?: string | null;
       photo_urls?: string[];
+      status?: string;
     }) => {
       const { error } = await supabase.from("project_daily_logs").update(updates as any).eq("id", id);
       if (error) throw error;

@@ -1,0 +1,1 @@
+ALTER TABLE public.project_daily_logs ADD COLUMN status text NOT NULL DEFAULT 'pending';

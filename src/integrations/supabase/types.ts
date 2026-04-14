@@ -799,6 +799,7 @@ export type Database = {
           photo_urls: string[] | null
           posted_by: string | null
           project_id: string
+          status: string
           updated_at: string
         }
         Insert: {
@@ -812,6 +813,7 @@ export type Database = {
           photo_urls?: string[] | null
           posted_by?: string | null
           project_id: string
+          status?: string
           updated_at?: string
         }
         Update: {
@@ -825,6 +827,7 @@ export type Database = {
           photo_urls?: string[] | null
           posted_by?: string | null
           project_id?: string
+          status?: string
           updated_at?: string
         }
         Relationships: [

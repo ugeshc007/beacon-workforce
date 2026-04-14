@@ -1,18 +1,20 @@
 import { useState, useRef } from "react";
 import { format } from "date-fns";
 import { useDailyLogs, useCreateDailyLog, useUpdateDailyLog, useDeleteDailyLog, uploadDailyLogPhoto } from "@/hooks/useDailyLogs";
+import type { DailyLog, DailyLogStatus } from "@/hooks/useDailyLogs";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import {
   Plus, Send, Camera, AlertTriangle, TrendingUp, Trash2, ImageIcon, X, User, Pencil,
 } from "lucide-react";
-import type { DailyLog } from "@/hooks/useDailyLogs";
+
 
 interface Props {
   projectId: string;
@@ -33,6 +35,7 @@ export function ProjectDailyLogTab({ projectId }: Props) {
   const [completionPct, setCompletionPct] = useState("");
   const [photos, setPhotos] = useState<File[]>([]);
   const [existingPhotos, setExistingPhotos] = useState<string[]>([]);
+  const [status, setStatus] = useState<DailyLogStatus>("pending");
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -42,6 +45,7 @@ export function ProjectDailyLogTab({ projectId }: Props) {
     setCompletionPct("");
     setPhotos([]);
     setExistingPhotos([]);
+    setStatus("pending");
     setShowForm(false);
     setEditingLog(null);
   };
@@ -52,6 +56,7 @@ export function ProjectDailyLogTab({ projectId }: Props) {
     setIssues(log.issues ?? "");
     setCompletionPct(log.completion_pct?.toString() ?? "");
     setExistingPhotos(log.photo_urls ?? []);
+    setStatus(log.status ?? "pending");
     setPhotos([]);
     setShowForm(true);
   };
@@ -80,6 +85,7 @@ export function ProjectDailyLogTab({ projectId }: Props) {
           issues: issues.trim() || null,
           completion_pct: completionPct ? parseInt(completionPct) : null,
           photo_urls: allPhotos,
+          status,
         });
         toast({ title: "Update edited" });
       } else {
@@ -90,6 +96,7 @@ export function ProjectDailyLogTab({ projectId }: Props) {
           completion_pct: completionPct ? parseInt(completionPct) : null,
           photo_urls: allPhotos,
           posted_by: user?.id ?? null,
+          status,
         });
         toast({ title: "Daily update added" });
       }
@@ -157,7 +164,19 @@ export function ProjectDailyLogTab({ projectId }: Props) {
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
               />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Status</label>
+                  <Select value={status} onValueChange={(v) => setStatus(v as DailyLogStatus)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="on_hold">On Hold</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div>
                   <label className="text-xs text-muted-foreground mb-1 block">Completion %</label>
                   <Input
@@ -285,8 +304,21 @@ export function ProjectDailyLogTab({ projectId }: Props) {
                     {entries!.map((log) => (
                       <div key={log.id} className="bg-accent/20 rounded-lg p-3 space-y-2">
                         <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1">
-                            <p className="text-sm text-foreground">{log.description}</p>
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm text-foreground">{log.description}</p>
+                              <Badge
+                                variant="outline"
+                                className={`text-[10px] shrink-0 ${
+                                  log.status === "completed" ? "border-status-present/40 text-status-present" :
+                                  log.status === "in_progress" ? "border-brand/40 text-brand" :
+                                  log.status === "on_hold" ? "border-status-overtime/40 text-status-overtime" :
+                                  "border-muted-foreground/40 text-muted-foreground"
+                                }`}
+                              >
+                                {log.status === "on_hold" ? "On Hold" : log.status === "in_progress" ? "In Progress" : log.status === "completed" ? "Completed" : "Pending"}
+                              </Badge>
+                            </div>
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
                             <Button
