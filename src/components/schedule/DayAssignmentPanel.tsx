@@ -315,9 +315,6 @@ export function DayAssignmentPanel({
     }
 
     if (assignments.length === 0) lines.push("No assignments yet.");
-    lines.push("");
-    lines.push(`Total: ${assignments.length} employee${assignments.length !== 1 ? "s" : ""}`);
-
     // Add daily logs for this date
     const logsForDate = (dailyLogs ?? []).filter(l => l.date === date);
     if (logsForDate.length > 0) {
