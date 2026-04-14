@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { addDays } from "date-fns";
 import { format, subDays, startOfMonth, endOfMonth, subMonths, startOfWeek, endOfWeek, parse, isValid } from "date-fns";
 import { CalendarIcon, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -34,6 +35,15 @@ const PRESETS: Preset[] = [
       const t = new Date();
       t.setDate(t.getDate() + 1);
       return { start: t, end: t };
+    },
+  },
+  {
+    label: "Next Week",
+    getRange: () => {
+      const today = new Date();
+      const nextMon = startOfWeek(addDays(today, 7), { weekStartsOn: 1 });
+      const nextSun = endOfWeek(addDays(today, 7), { weekStartsOn: 1 });
+      return { start: nextMon, end: nextSun };
     },
   },
   {
