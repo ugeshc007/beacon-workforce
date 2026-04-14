@@ -9,6 +9,7 @@ import {
   useCopyPreviousWeek, useApplyToDateRange, useRecurringSchedule,
 } from "@/hooks/useSchedule";
 import { DayAssignmentPanel } from "@/components/schedule/DayAssignmentPanel";
+import { ScheduleTaskSummary } from "@/components/schedule/ScheduleTaskSummary";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
