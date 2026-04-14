@@ -243,7 +243,7 @@ export function ProjectFormDialog({ open, onOpenChange, editProject, prefill }: 
                 <div><Label>Budget (AED)</Label><Input type="number" value={form.budget} onChange={(e) => set("budget", e.target.value)} /></div>
                 <div><Label>Project Value (AED)</Label><Input type="number" value={form.project_value} onChange={(e) => set("project_value", e.target.value)} /></div>
               </div>
-              <div><Label>Notes</Label><Textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={2} /></div>
+              <div><Label>Project Scope</Label><Textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={2} /></div>
             </>
           )}
 
