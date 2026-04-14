@@ -71,7 +71,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
-          <img src="/logo-bebright.webp" alt="BeBright" className="h-9 w-auto shrink-0 invert brightness-200" />
+          <img src="/bebright-logo.png" alt="BeBright" className="h-9 w-auto shrink-0" />
           {!collapsed && (
             <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">Planner</span>
           )}

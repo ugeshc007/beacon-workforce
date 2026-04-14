@@ -77,7 +77,7 @@ export default function ResetPassword() {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-md space-y-8">
         <div className="flex flex-col items-center gap-3">
-          <img src="/logo-bebright.webp" alt="BeBright" className="h-12 w-auto invert brightness-200" />
+          <img src="/bebright-logo.png" alt="BeBright" className="h-12 w-auto" />
           <h1 className="text-2xl font-bold text-gradient-brand">New Password</h1>
         </div>
 
