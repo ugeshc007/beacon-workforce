@@ -233,9 +233,9 @@ export function DayAssignmentPanel({
   const availableForSkill = (skill: string) =>
     (employees ?? []).filter((e) => {
       if (e.on_leave) return false;
-      if (e.skill_type === skill) return true;
-      const secondary: string[] = (e as any).secondary_skills ?? [];
-      return secondary.includes(skill);
+      if (!e.available) return false; // already assigned to this project
+      const matchesSkill = e.skill_type === skill || ((e as any).secondary_skills ?? []).includes(skill);
+      return matchesSkill;
     });
 
   /** Check if selected shift overlaps with any existing slot */
