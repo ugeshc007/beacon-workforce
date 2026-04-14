@@ -35,6 +35,7 @@ export interface ScheduleReportData {
     daysScheduled: number;
     projectsWorked: number;
     totalHours: number;
+    status: "scheduled" | "available";
   }[];
   projectCoverage: {
     project: string;
@@ -79,9 +80,21 @@ export function useScheduleReport(start: string, end: string) {
     },
   });
 
+  const employeesQ = useQuery({
+    queryKey: ["schedule-report-all-employees"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("employees")
+        .select("id, name, employee_code")
+        .eq("is_active", true);
+      return data ?? [];
+    },
+  });
+
   const data = useMemo<ScheduleReportData | null>(() => {
     if (!assignmentsQ.data) return null;
     const assignments = assignmentsQ.data as any[];
+    const allActiveEmployees = employeesQ.data ?? [];
     const logs = logsQ.data ?? [];
     const dates = allDates(start, end);
 
@@ -144,15 +157,29 @@ export function useScheduleReport(start: string, end: string) {
         });
       }
     });
-    const employeeSummary = Array.from(empMap.values())
-      .map((e) => ({
-        name: e.name,
-        code: e.code,
-        daysScheduled: e.dates.size,
-        projectsWorked: e.projects.size,
-        totalHours: Math.round((e.totalMinutes / 60) * 10) / 10,
-      }))
-      .sort((a, b) => b.daysScheduled - a.daysScheduled);
+    const scheduledEmployees = Array.from(empMap.entries()).map(([id, e]) => ({
+      name: e.name,
+      code: e.code,
+      daysScheduled: e.dates.size,
+      projectsWorked: e.projects.size,
+      totalHours: Math.round((e.totalMinutes / 60) * 10) / 10,
+      status: "scheduled" as const,
+    }));
+
+    // Add available (unscheduled) employees
+    const scheduledIds = new Set(empMap.keys());
+    const availableEmployees = allActiveEmployees
+      .filter((emp) => !scheduledIds.has(emp.id))
+      .map((emp) => ({
+        name: emp.name,
+        code: emp.employee_code,
+        daysScheduled: 0,
+        projectsWorked: 0,
+        totalHours: 0,
+        status: "available" as const,
+      }));
+
+    const employeeSummary = [...scheduledEmployees, ...availableEmployees];
 
     // Project coverage
     const projectCoverage = Array.from(uniqueProjectIds).map((pid) => {
@@ -204,9 +231,9 @@ export function useScheduleReport(start: string, end: string) {
       projectCoverage,
       unscheduledDays: unscheduledDays.sort((a, b) => a.date.localeCompare(b.date)),
     };
-  }, [assignmentsQ.data, logsQ.data, start, end]);
+  }, [assignmentsQ.data, logsQ.data, employeesQ.data, start, end]);
 
-  return { data, isLoading: assignmentsQ.isLoading || logsQ.isLoading };
+  return { data, isLoading: assignmentsQ.isLoading || logsQ.isLoading || employeesQ.isLoading };
 }
 
 function calcShiftMinutes(start?: string | null, end?: string | null): number {
