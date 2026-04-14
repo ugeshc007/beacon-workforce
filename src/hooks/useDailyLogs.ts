@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export type DailyLogStatus = "on_hold" | "pending" | "in_progress" | "completed";
+
 export interface DailyLog {
   id: string;
   project_id: string;
@@ -11,6 +13,7 @@ export interface DailyLog {
   photo_urls: string[];
   posted_by: string | null;
   employee_id: string | null;
+  status: DailyLogStatus;
   created_at: string;
   updated_at: string;
   users?: { name: string } | null;
