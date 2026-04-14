@@ -68,7 +68,7 @@ export function ScheduleTaskSummary({ date, projects, onSelectProject }: Props) 
     <div className="space-y-3">
       <h2 className="text-sm font-semibold text-foreground">{dayLabel} — Scheduled Tasks</h2>
       {projects.map((project) => {
-        const logs = (allLogs ?? []).filter((l) => l.project_id === project.id);
+        const logs = (allLogs ?? []).filter((l) => l.project_id === project.id && l.status !== "completed");
         return (
           <Card
             key={project.id}
