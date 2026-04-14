@@ -69,6 +69,7 @@ export function DayAssignmentPanel({
   const reassignEmployee = useReassignEmployee();
   const { data: allProjects } = useProjects({ status: "all" });
   const activeProjects = (allProjects ?? []).filter((p) => ["on_hold", "in_progress"].includes(p.status) && p.id !== projectId);
+  const { data: dailyLogs } = useDailyLogs(projectId);
 
   const [addingSkill, setAddingSkill] = useState<string | null>(null);
   const [shiftStart, setShiftStart] = useState("08:00");
