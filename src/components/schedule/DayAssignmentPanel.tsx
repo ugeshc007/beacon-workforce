@@ -297,7 +297,17 @@ export function DayAssignmentPanel({
     lines.push(`📋 *Schedule: ${projectName}*`);
     lines.push(`📅 ${dayLabel}`);
     if (currentProject?.site_address) lines.push(`📍 Location: ${currentProject.site_address}`);
-    if (currentProject?.notes) lines.push(`📝 Scope: ${currentProject.notes}`);
+
+    // Daily logs as "Task"
+    const logsForDate = (dailyLogs ?? []).filter(l => l.date === date);
+    if (logsForDate.length > 0) {
+      lines.push("");
+      lines.push("📝 *Task:*");
+      logsForDate.forEach(l => {
+        const statusLabel = l.status === "completed" ? "✅" : l.status === "in_progress" ? "🔄" : l.status === "on_hold" ? "⏸️" : "⏳";
+        lines.push(`  ${statusLabel} ${l.description}${l.completion_pct !== null ? ` (${l.completion_pct}%)` : ""}${l.issues ? ` ⚠️ ${l.issues}` : ""}`);
+      });
+    }
     lines.push("");
 
     const members = assignments.filter(a => a.assigned_role === "team_member");
@@ -318,15 +328,6 @@ export function DayAssignmentPanel({
     }
 
     if (assignments.length === 0) lines.push("No assignments yet.");
-    const logsForDate = (dailyLogs ?? []).filter(l => l.date === date);
-    if (logsForDate.length > 0) {
-      lines.push("");
-      lines.push("📝 *Daily Updates:*");
-      logsForDate.forEach(l => {
-        const statusLabel = l.status === "completed" ? "✅" : l.status === "in_progress" ? "🔄" : l.status === "on_hold" ? "⏸️" : "⏳";
-        lines.push(`  ${statusLabel} ${l.description}${l.completion_pct !== null ? ` (${l.completion_pct}%)` : ""}${l.issues ? ` ⚠️ ${l.issues}` : ""}`);
-      });
-    }
 
     return lines.join("\n");
   }, [assignments, projectName, dayLabel, dailyLogs, date, currentProject]);
