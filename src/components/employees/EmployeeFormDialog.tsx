@@ -82,7 +82,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
         phone: employee.phone ?? "",
         email: employee.email ?? "",
         designation: employee.designation ?? "",
-        skill_type: employee.skill_type as "team_member" | "team_leader",
+        skill_type: employee.skill_type as "team_member" | "team_leader" | "driver",
         branch_id: employee.branch_id,
         hourly_rate: Number(employee.hourly_rate),
         overtime_rate: Number(employee.overtime_rate),
@@ -91,8 +91,10 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
         emergency_contact: employee.emergency_contact ?? "",
         notes: employee.notes ?? "",
       });
+      setSecondarySkills((employee as any).secondary_skills ?? []);
     } else {
       form.reset();
+      setSecondarySkills([]);
     }
   }, [employee, open]);
 
@@ -106,6 +108,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
         join_date: values.join_date || null,
         emergency_contact: values.emergency_contact || null,
         notes: values.notes || null,
+        secondary_skills: secondarySkills.filter(s => s !== values.skill_type),
       };
 
       if (isEdit) {
