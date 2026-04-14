@@ -51,6 +51,7 @@ export function useWeekAssignments(weekStart: string, weekEnd: string, projectId
         shift_end: a.shift_end,
         assignment_mode: a.assignment_mode,
         is_locked: a.is_locked,
+        assigned_role: a.assigned_role ?? a.employees?.skill_type ?? "team_member",
         employee_name: a.employees?.name ?? "Unknown",
         employee_skill: a.employees?.skill_type ?? "helper",
         project_name: a.projects?.name ?? "Unknown",
