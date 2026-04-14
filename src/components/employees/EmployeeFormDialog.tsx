@@ -41,12 +41,19 @@ interface Props {
   employee?: Tables<"employees"> | null;
 }
 
+const ALL_SKILLS = [
+  { value: "team_member", label: "Team Member" },
+  { value: "team_leader", label: "Team Leader" },
+  { value: "driver", label: "Driver" },
+];
+
 export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
   const isEdit = !!employee;
   const { toast } = useToast();
   const { data: branches } = useBranches();
   const create = useCreateEmployee();
   const update = useUpdateEmployee();
+  const [secondarySkills, setSecondarySkills] = useState<string[]>([]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
