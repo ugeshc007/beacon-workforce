@@ -14,6 +14,7 @@ import {
   type ScheduleAssignment,
 } from "@/hooks/useSchedule";
 import { useProjects } from "@/hooks/useProjects";
+import { useDailyLogs } from "@/hooks/useDailyLogs";
 import { Lock, LockOpen, Plus, Trash2, AlertTriangle, Zap, User, Clock, Timer, Pencil, ArrowRightLeft, Check, X, Shield, Users, Share2, Copy, MessageCircle } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -68,6 +69,7 @@ export function DayAssignmentPanel({
   const reassignEmployee = useReassignEmployee();
   const { data: allProjects } = useProjects({ status: "all" });
   const activeProjects = (allProjects ?? []).filter((p) => ["on_hold", "in_progress"].includes(p.status) && p.id !== projectId);
+  const { data: dailyLogs } = useDailyLogs(projectId);
 
   const [addingSkill, setAddingSkill] = useState<string | null>(null);
   const [shiftStart, setShiftStart] = useState("08:00");
@@ -315,8 +317,19 @@ export function DayAssignmentPanel({
     if (assignments.length === 0) lines.push("No assignments yet.");
     lines.push("");
     lines.push(`Total: ${assignments.length} employee${assignments.length !== 1 ? "s" : ""}`);
+
+    // Add daily logs for this date
+    const logsForDate = (dailyLogs ?? []).filter(l => l.date === date);
+    if (logsForDate.length > 0) {
+      lines.push("");
+      lines.push("📝 *Daily Updates:*");
+      logsForDate.forEach(l => {
+        lines.push(`  • ${l.description}${l.completion_pct !== null ? ` (${l.completion_pct}%)` : ""}${l.issues ? ` ⚠️ ${l.issues}` : ""}`);
+      });
+    }
+
     return lines.join("\n");
-  }, [assignments, projectName, dayLabel]);
+  }, [assignments, projectName, dayLabel, dailyLogs, date]);
 
   const handleCopyClipboard = async () => {
     try {
