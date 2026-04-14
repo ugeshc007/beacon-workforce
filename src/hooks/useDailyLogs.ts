@@ -68,6 +68,7 @@ export function useUpdateDailyLog() {
       completion_pct?: number | null;
       issues?: string | null;
       photo_urls?: string[];
+      status?: string;
     }) => {
       const { error } = await supabase.from("project_daily_logs").update(updates as any).eq("id", id);
       if (error) throw error;
