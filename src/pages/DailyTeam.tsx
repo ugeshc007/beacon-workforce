@@ -201,8 +201,14 @@ export default function DailyTeam() {
       }
     } catch {}
     lines.push("");
+    const activeMembers = group.members.filter((m) => m.override_action !== "absent" && m.override_action !== "removed");
+    lines.push(`👥 *Team:*`);
+    activeMembers.forEach((m, i) => {
+        const shift = m.shift_start && m.shift_end ? `${m.shift_start.slice(0,5)}–${m.shift_end.slice(0,5)}` : "08:00–17:00";
+        const role = m.skill_type === "team_leader" ? "TL" : m.skill_type === "driver" ? "Driver" : "Member";
+        lines.push(`${i + 1}. ${m.employee_name} (${role}) ⏰ ${shift}`);
+      });
 
-    const text = lines.join("\n");
 
     if (navigator.share) {
       navigator.share({ title: `${group.project_name} - Daily Team`, text }).catch(() => {});
