@@ -14,7 +14,7 @@ import {
   type ScheduleAssignment,
 } from "@/hooks/useSchedule";
 import { useProjects } from "@/hooks/useProjects";
-import { Lock, LockOpen, Plus, Trash2, AlertTriangle, Zap, User, Clock, Timer, Pencil, ArrowRightLeft, Check, X, Shield, Users } from "lucide-react";
+import { Lock, LockOpen, Plus, Trash2, AlertTriangle, Zap, User, Clock, Timer, Pencil, ArrowRightLeft, Check, X, Shield, Users, Share2, Copy, MessageCircle } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -22,9 +22,10 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast as sonnerToast } from "sonner";
 
 interface Props {
   date: string;
@@ -280,6 +281,49 @@ export function DayAssignmentPanel({
     return { label: "Completed", status: "done" as const };
   };
 
+  const formatShareText = useCallback(() => {
+    const lines: string[] = [];
+    lines.push(`📋 *Schedule: ${projectName}*`);
+    lines.push(`📅 ${dayLabel}`);
+    lines.push("");
+
+    const members = assignments.filter(a => a.employee_skill === "team_member");
+    const leaders = assignments.filter(a => a.employee_skill === "team_leader");
+    const drivers = assignments.filter(a => a.employee_skill === "driver");
+
+    if (members.length > 0) {
+      lines.push("👷 *Team Members:*");
+      members.forEach(a => lines.push(`  • ${a.employee_name} (${formatTime(a.shift_start) || "08:00"}–${formatTime(a.shift_end) || "17:00"})`));
+    }
+    if (leaders.length > 0) {
+      lines.push("🛡️ *Team Leaders:*");
+      leaders.forEach(a => lines.push(`  • ${a.employee_name} (${formatTime(a.shift_start) || "08:00"}–${formatTime(a.shift_end) || "17:00"})`));
+    }
+    if (drivers.length > 0) {
+      lines.push("🚗 *Drivers:*");
+      drivers.forEach(a => lines.push(`  • ${a.employee_name} (${formatTime(a.shift_start) || "08:00"}–${formatTime(a.shift_end) || "17:00"})`));
+    }
+
+    if (assignments.length === 0) lines.push("No assignments yet.");
+    lines.push("");
+    lines.push(`Total: ${assignments.length} employee${assignments.length !== 1 ? "s" : ""}`);
+    return lines.join("\n");
+  }, [assignments, projectName, dayLabel]);
+
+  const handleCopyClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(formatShareText());
+      sonnerToast.success("Schedule copied to clipboard");
+    } catch {
+      sonnerToast.error("Failed to copy");
+    }
+  };
+
+  const handleShareWhatsApp = () => {
+    const text = encodeURIComponent(formatShareText());
+    window.open(`https://wa.me/?text=${text}`, "_blank");
+  };
+
   const countdownColor = { upcoming: "text-status-planned", active: "text-status-present", done: "text-muted-foreground" };
 
   return (
@@ -290,12 +334,24 @@ export function DayAssignmentPanel({
             <CardTitle className="text-sm font-semibold">{dayLabel}</CardTitle>
             <p className="text-xs text-muted-foreground mt-0.5">{projectName}</p>
           </div>
-          {!readOnly && (
-            <Button size="sm" variant="outline" onClick={() => setConfirmOpen(true)} disabled={autoLoading || totalToFill === 0}>
-              <Zap className="h-3.5 w-3.5 mr-1" />
-              {autoLoading ? "Assigning…" : "Auto-fill"}
-            </Button>
-          )}
+          <div className="flex items-center gap-1.5">
+            {assignments.length > 0 && (
+              <>
+                <Button size="sm" variant="ghost" onClick={handleCopyClipboard} title="Copy to clipboard" className="h-8 w-8 p-0">
+                  <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+                </Button>
+                <Button size="sm" variant="ghost" onClick={handleShareWhatsApp} title="Share via WhatsApp" className="h-8 w-8 p-0">
+                  <MessageCircle className="h-3.5 w-3.5 text-emerald-400" />
+                </Button>
+              </>
+            )}
+            {!readOnly && (
+              <Button size="sm" variant="outline" onClick={() => setConfirmOpen(true)} disabled={autoLoading || totalToFill === 0}>
+                <Zap className="h-3.5 w-3.5 mr-1" />
+                {autoLoading ? "Assigning…" : "Auto-fill"}
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
