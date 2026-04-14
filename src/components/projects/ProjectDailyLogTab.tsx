@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Plus, Send, Camera, AlertTriangle, TrendingUp, Trash2, ImageIcon, X, User, Pencil,
 } from "lucide-react";
-import type { DailyLog } from "@/hooks/useDailyLogs";
+
 
 interface Props {
   projectId: string;
