@@ -164,7 +164,19 @@ export function ProjectDailyLogTab({ projectId }: Props) {
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
               />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Status</label>
+                  <Select value={status} onValueChange={(v) => setStatus(v as DailyLogStatus)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="on_hold">On Hold</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div>
                   <label className="text-xs text-muted-foreground mb-1 block">Completion %</label>
                   <Input
