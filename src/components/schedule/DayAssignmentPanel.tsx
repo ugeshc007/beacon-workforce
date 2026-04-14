@@ -329,7 +329,7 @@ export function DayAssignmentPanel({
     }
 
     return lines.join("\n");
-  }, [assignments, projectName, dayLabel, dailyLogs, date]);
+  }, [assignments, projectName, dayLabel, dailyLogs, date, currentProject]);
 
   const handleCopyClipboard = async () => {
     try {
