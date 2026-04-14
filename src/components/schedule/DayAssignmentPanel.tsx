@@ -92,9 +92,9 @@ export function DayAssignmentPanel({
   const [reassignKeepOld, setReassignKeepOld] = useState(true);
   const [reassignOldEnd, setReassignOldEnd] = useState("");
 
-  const memberCount = assignments.filter((a) => a.employee_skill === "team_member").length;
-  const tlCount = assignments.filter((a) => a.employee_skill === "team_leader").length;
-  const driverCount = assignments.filter((a) => a.employee_skill === "driver").length;
+  const memberCount = assignments.filter((a) => a.assigned_role === "team_member").length;
+  const tlCount = assignments.filter((a) => a.assigned_role === "team_leader").length;
+  const driverCount = assignments.filter((a) => a.assigned_role === "driver").length;
 
   const needMembers = Math.max(0, requiredTech - memberCount);
   const needTL = Math.max(0, requiredSup - tlCount);
@@ -109,6 +109,7 @@ export function DayAssignmentPanel({
         date,
         shift_start: shiftStart,
         shift_end: shiftEnd,
+        assigned_role: addingSkill ?? "team_member",
       });
       toast({ title: "Employee assigned" });
       setAddingSkill(null);
