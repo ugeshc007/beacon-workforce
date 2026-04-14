@@ -53,6 +53,8 @@ export default function Schedule() {
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState("all");
   const [bulkDialog, setBulkDialog] = useState<BulkDialog>(null);
+  const [jobCardSearch, setJobCardSearch] = useState("");
+  const [selectedJobCard, setSelectedJobCard] = useState("all");
 
   // Apply-to-range state
   const [rangeStart, setRangeStart] = useState("");
