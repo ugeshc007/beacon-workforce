@@ -14,7 +14,7 @@ import {
   type ScheduleAssignment,
 } from "@/hooks/useSchedule";
 import { useProjects } from "@/hooks/useProjects";
-import { Lock, LockOpen, Plus, Trash2, AlertTriangle, Zap, User, Clock, Timer, Pencil, ArrowRightLeft, Check, X, Shield, Users } from "lucide-react";
+import { Lock, LockOpen, Plus, Trash2, AlertTriangle, Zap, User, Clock, Timer, Pencil, ArrowRightLeft, Check, X, Shield, Users, Share2, Copy, MessageCircle } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -22,9 +22,10 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 interface Props {
   date: string;
