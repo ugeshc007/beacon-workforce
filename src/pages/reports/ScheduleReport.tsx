@@ -1,0 +1,264 @@
+import { useState } from "react";
+import { useScheduleReport } from "@/hooks/useScheduleReport";
+import { ReportDateFilter, useReportDateRange } from "@/components/reports/ReportDateFilter";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { StatCard } from "@/components/ui/stat-card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Download, CalendarDays, Users, FolderKanban, UsersRound, AlertTriangle } from "lucide-react";
+import { downloadCsv } from "@/lib/csv-export";
+import { exportReportPdf } from "@/lib/pdf-export";
+
+export default function ScheduleReport() {
+  const [dateRange, setDateRange] = useReportDateRange("This Month");
+  const { data, isLoading } = useScheduleReport(dateRange.start, dateRange.end);
+
+  const handleCsv = (tab: string) => {
+    if (!data) return;
+    if (tab === "daily") {
+      downloadCsv("schedule-daily.csv", ["Date", "Project", "Location", "Team Size", "Tasks Logged"],
+        data.dailyOverview.map((r) => [r.date, r.project, r.location, r.teamSize, r.tasksLogged]));
+    } else if (tab === "employee") {
+      downloadCsv("schedule-employees.csv", ["Employee", "Code", "Days Scheduled", "Projects", "Total Hours"],
+        data.employeeSummary.map((r) => [r.name, r.code, r.daysScheduled, r.projectsWorked, r.totalHours]));
+    } else if (tab === "coverage") {
+      downloadCsv("schedule-coverage.csv", ["Project", "Days Active", "Avg Team", "Required", "Assigned", "Fill Rate %"],
+        data.projectCoverage.map((r) => [r.project, r.daysActive, r.avgTeamSize, r.required, r.assigned, r.fillRate]));
+    } else if (tab === "gaps") {
+      downloadCsv("schedule-gaps.csv", ["Date", "Project", "Required", "Assigned", "Gap"],
+        data.unscheduledDays.map((r) => [r.date, r.project, r.required, r.assigned, r.gap]));
+    }
+  };
+
+  const handlePdf = () => {
+    if (!data) return;
+    exportReportPdf({
+      title: "Schedule Report",
+      subtitle: `${dateRange.start} — ${dateRange.end}`,
+      filename: "schedule-report.pdf",
+      summaryCards: [
+        { label: "Total Assignments", value: String(data.summary.totalAssignments) },
+        { label: "Unique Employees", value: String(data.summary.uniqueEmployees) },
+        { label: "Projects Covered", value: String(data.summary.projectsCovered) },
+        { label: "Avg Team Size", value: String(data.summary.avgTeamSize) },
+      ],
+      tables: [
+        {
+          title: "Daily Schedule Overview",
+          headers: ["Date", "Project", "Location", "Team Size", "Tasks"],
+          rows: data.dailyOverview.map((r) => [r.date, r.project, r.location, r.teamSize, r.tasksLogged]),
+        },
+        {
+          title: "Employee Assignment Summary",
+          headers: ["Employee", "Code", "Days", "Projects", "Hours"],
+          rows: data.employeeSummary.map((r) => [r.name, r.code, r.daysScheduled, r.projectsWorked, r.totalHours]),
+        },
+        {
+          title: "Project Coverage",
+          headers: ["Project", "Days Active", "Avg Team", "Required", "Fill Rate %"],
+          rows: data.projectCoverage.map((r) => [r.project, r.daysActive, r.avgTeamSize, r.required, r.fillRate]),
+        },
+        {
+          title: "Under-Staffed Days",
+          headers: ["Date", "Project", "Required", "Assigned", "Gap"],
+          rows: data.unscheduledDays.map((r) => [r.date, r.project, r.required, r.assigned, r.gap]),
+        },
+      ],
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-foreground">Schedule Report</h1>
+          <p className="text-sm text-muted-foreground">{dateRange.label}</p>
+        </div>
+        <div className="flex items-center gap-1 flex-wrap">
+          <ReportDateFilter value={dateRange} onChange={setDateRange} />
+          <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={handlePdf} disabled={!data}>
+            <Download className="h-3.5 w-3.5" /> PDF
+          </Button>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="grid md:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24" />)}
+        </div>
+      ) : data ? (
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <StatCard title="Total Assignments" value={data.summary.totalAssignments} icon={CalendarDays} />
+            <StatCard title="Unique Employees" value={data.summary.uniqueEmployees} icon={Users} />
+            <StatCard title="Projects Covered" value={data.summary.projectsCovered} icon={FolderKanban} />
+            <StatCard title="Avg Team Size" value={data.summary.avgTeamSize} icon={UsersRound} />
+          </div>
+
+          <Tabs defaultValue="daily">
+            <TabsList>
+              <TabsTrigger value="daily">Daily Overview</TabsTrigger>
+              <TabsTrigger value="employee">Employees</TabsTrigger>
+              <TabsTrigger value="coverage">Coverage</TabsTrigger>
+              <TabsTrigger value="gaps">
+                Gaps {data.unscheduledDays.length > 0 && <Badge variant="destructive" className="ml-1 text-[10px] px-1">{data.unscheduledDays.length}</Badge>}
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="daily" className="space-y-3">
+              <div className="flex justify-end">
+                <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => handleCsv("daily")}>
+                  <Download className="h-3 w-3" /> CSV
+                </Button>
+              </div>
+              <Card>
+                <CardContent className="p-0 overflow-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border text-muted-foreground text-xs">
+                        <th className="text-left p-3">Date</th>
+                        <th className="text-left p-3">Project</th>
+                        <th className="text-left p-3">Location</th>
+                        <th className="text-center p-3">Team</th>
+                        <th className="text-center p-3">Tasks</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.dailyOverview.map((r, i) => (
+                        <tr key={i} className="border-b border-border/50 hover:bg-muted/30">
+                          <td className="p-3 text-foreground">{r.date}</td>
+                          <td className="p-3 font-medium text-foreground">{r.project}</td>
+                          <td className="p-3 text-muted-foreground">{r.location}</td>
+                          <td className="p-3 text-center">{r.teamSize}</td>
+                          <td className="p-3 text-center">{r.tasksLogged}</td>
+                        </tr>
+                      ))}
+                      {data.dailyOverview.length === 0 && (
+                        <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">No assignments found</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="employee" className="space-y-3">
+              <div className="flex justify-end">
+                <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => handleCsv("employee")}>
+                  <Download className="h-3 w-3" /> CSV
+                </Button>
+              </div>
+              <Card>
+                <CardContent className="p-0 overflow-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border text-muted-foreground text-xs">
+                        <th className="text-left p-3">Employee</th>
+                        <th className="text-left p-3">Code</th>
+                        <th className="text-center p-3">Days</th>
+                        <th className="text-center p-3">Projects</th>
+                        <th className="text-center p-3">Hours</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.employeeSummary.map((r, i) => (
+                        <tr key={i} className="border-b border-border/50 hover:bg-muted/30">
+                          <td className="p-3 font-medium text-foreground">{r.name}</td>
+                          <td className="p-3 text-muted-foreground">{r.code}</td>
+                          <td className="p-3 text-center">{r.daysScheduled}</td>
+                          <td className="p-3 text-center">{r.projectsWorked}</td>
+                          <td className="p-3 text-center">{r.totalHours}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="coverage" className="space-y-3">
+              <div className="flex justify-end">
+                <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => handleCsv("coverage")}>
+                  <Download className="h-3 w-3" /> CSV
+                </Button>
+              </div>
+              <Card>
+                <CardContent className="p-0 overflow-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border text-muted-foreground text-xs">
+                        <th className="text-left p-3">Project</th>
+                        <th className="text-center p-3">Days Active</th>
+                        <th className="text-center p-3">Avg Team</th>
+                        <th className="text-center p-3">Required</th>
+                        <th className="text-center p-3">Fill Rate</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.projectCoverage.map((r, i) => (
+                        <tr key={i} className="border-b border-border/50 hover:bg-muted/30">
+                          <td className="p-3 font-medium text-foreground">{r.project}</td>
+                          <td className="p-3 text-center">{r.daysActive}</td>
+                          <td className="p-3 text-center">{r.avgTeamSize}</td>
+                          <td className="p-3 text-center">{r.required}</td>
+                          <td className="p-3 text-center">
+                            <Badge variant={r.fillRate >= 100 ? "default" : r.fillRate >= 80 ? "secondary" : "destructive"} className="text-[10px]">
+                              {r.fillRate}%
+                            </Badge>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="gaps" className="space-y-3">
+              <div className="flex justify-end">
+                <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => handleCsv("gaps")}>
+                  <Download className="h-3 w-3" /> CSV
+                </Button>
+              </div>
+              <Card>
+                <CardContent className="p-0 overflow-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border text-muted-foreground text-xs">
+                        <th className="text-left p-3">Date</th>
+                        <th className="text-left p-3">Project</th>
+                        <th className="text-center p-3">Required</th>
+                        <th className="text-center p-3">Assigned</th>
+                        <th className="text-center p-3">Gap</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.unscheduledDays.map((r, i) => (
+                        <tr key={i} className="border-b border-border/50 hover:bg-muted/30">
+                          <td className="p-3 text-foreground">{r.date}</td>
+                          <td className="p-3 font-medium text-foreground">{r.project}</td>
+                          <td className="p-3 text-center">{r.required}</td>
+                          <td className="p-3 text-center">{r.assigned}</td>
+                          <td className="p-3 text-center">
+                            <Badge variant="destructive" className="text-[10px]">
+                              <AlertTriangle className="h-3 w-3 mr-0.5" /> -{r.gap}
+                            </Badge>
+                          </td>
+                        </tr>
+                      ))}
+                      {data.unscheduledDays.length === 0 && (
+                        <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">All projects fully staffed 🎉</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </>
+      ) : null}
+    </div>
+  );
+}
