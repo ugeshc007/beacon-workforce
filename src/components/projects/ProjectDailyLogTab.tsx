@@ -304,8 +304,21 @@ export function ProjectDailyLogTab({ projectId }: Props) {
                     {entries!.map((log) => (
                       <div key={log.id} className="bg-accent/20 rounded-lg p-3 space-y-2">
                         <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1">
-                            <p className="text-sm text-foreground">{log.description}</p>
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm text-foreground">{log.description}</p>
+                              <Badge
+                                variant="outline"
+                                className={`text-[10px] shrink-0 ${
+                                  log.status === "completed" ? "border-status-present/40 text-status-present" :
+                                  log.status === "in_progress" ? "border-brand/40 text-brand" :
+                                  log.status === "on_hold" ? "border-status-overtime/40 text-status-overtime" :
+                                  "border-muted-foreground/40 text-muted-foreground"
+                                }`}
+                              >
+                                {log.status === "on_hold" ? "On Hold" : log.status === "in_progress" ? "In Progress" : log.status === "completed" ? "Completed" : "Pending"}
+                              </Badge>
+                            </div>
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
                             <Button
