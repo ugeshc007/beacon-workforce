@@ -35,6 +35,7 @@ export function ProjectDailyLogTab({ projectId }: Props) {
   const [completionPct, setCompletionPct] = useState("");
   const [photos, setPhotos] = useState<File[]>([]);
   const [existingPhotos, setExistingPhotos] = useState<string[]>([]);
+  const [status, setStatus] = useState<DailyLogStatus>("pending");
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
