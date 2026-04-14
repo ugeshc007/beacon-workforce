@@ -85,6 +85,7 @@ export function ProjectDailyLogTab({ projectId }: Props) {
           issues: issues.trim() || null,
           completion_pct: completionPct ? parseInt(completionPct) : null,
           photo_urls: allPhotos,
+          status,
         });
         toast({ title: "Update edited" });
       } else {
@@ -95,6 +96,7 @@ export function ProjectDailyLogTab({ projectId }: Props) {
           completion_pct: completionPct ? parseInt(completionPct) : null,
           photo_urls: allPhotos,
           posted_by: user?.id ?? null,
+          status,
         });
         toast({ title: "Daily update added" });
       }
