@@ -293,9 +293,9 @@ export function DayAssignmentPanel({
     lines.push(`📅 ${dayLabel}`);
     lines.push("");
 
-    const members = assignments.filter(a => a.employee_skill === "team_member");
-    const leaders = assignments.filter(a => a.employee_skill === "team_leader");
-    const drivers = assignments.filter(a => a.employee_skill === "driver");
+    const members = assignments.filter(a => a.assigned_role === "team_member");
+    const leaders = assignments.filter(a => a.assigned_role === "team_leader");
+    const drivers = assignments.filter(a => a.assigned_role === "driver");
 
     if (members.length > 0) {
       lines.push("👷 *Team Members:*");
