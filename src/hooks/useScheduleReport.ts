@@ -95,6 +95,7 @@ export function useScheduleReport(start: string, end: string) {
     if (!assignmentsQ.data) return null;
     const assignments = assignmentsQ.data as any[];
     const allActiveEmployees = employeesQ.data ?? [];
+    const logs = logsQ.data ?? [];
     const dates = allDates(start, end);
 
     // Summary
@@ -156,15 +157,29 @@ export function useScheduleReport(start: string, end: string) {
         });
       }
     });
-    const employeeSummary = Array.from(empMap.values())
-      .map((e) => ({
-        name: e.name,
-        code: e.code,
-        daysScheduled: e.dates.size,
-        projectsWorked: e.projects.size,
-        totalHours: Math.round((e.totalMinutes / 60) * 10) / 10,
-      }))
-      .sort((a, b) => b.daysScheduled - a.daysScheduled);
+    const scheduledEmployees = Array.from(empMap.entries()).map(([id, e]) => ({
+      name: e.name,
+      code: e.code,
+      daysScheduled: e.dates.size,
+      projectsWorked: e.projects.size,
+      totalHours: Math.round((e.totalMinutes / 60) * 10) / 10,
+      status: "scheduled" as const,
+    }));
+
+    // Add available (unscheduled) employees
+    const scheduledIds = new Set(empMap.keys());
+    const availableEmployees = allActiveEmployees
+      .filter((emp) => !scheduledIds.has(emp.id))
+      .map((emp) => ({
+        name: emp.name,
+        code: emp.employee_code,
+        daysScheduled: 0,
+        projectsWorked: 0,
+        totalHours: 0,
+        status: "available" as const,
+      }));
+
+    const employeeSummary = [...scheduledEmployees, ...availableEmployees];
 
     // Project coverage
     const projectCoverage = Array.from(uniqueProjectIds).map((pid) => {
