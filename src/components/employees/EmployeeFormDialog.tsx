@@ -182,12 +182,13 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
               )} />
               <FormField control={form.control} name="skill_type" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Skill Type</FormLabel>
+                  <FormLabel>Primary Skill</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                     <SelectContent>
                       <SelectItem value="team_member">Team Member</SelectItem>
                       <SelectItem value="team_leader">Team Leader</SelectItem>
+                      <SelectItem value="driver">Driver</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
