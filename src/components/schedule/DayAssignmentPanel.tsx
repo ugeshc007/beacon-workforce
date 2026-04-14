@@ -234,7 +234,9 @@ export function DayAssignmentPanel({
   const availableForSkill = (skill: string) =>
     (employees ?? []).filter((e) => {
       if (e.on_leave) return false;
-      if (!e.available) return false; // already assigned to this project
+      // Check if already assigned to this role for this project
+      const alreadyInRole = assignments.some(a => a.employee_id === e.id && a.assigned_role === skill);
+      if (alreadyInRole) return false;
       const matchesSkill = e.skill_type === skill || ((e as any).secondary_skills ?? []).includes(skill);
       return matchesSkill;
     });
