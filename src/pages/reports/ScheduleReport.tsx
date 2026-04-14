@@ -21,8 +21,8 @@ export default function ScheduleReport() {
       downloadCsv("schedule-daily.csv", ["Date", "Project", "Location", "Team Size", "Team Members", "Tasks"],
         data.dailyOverview.map((r) => [r.date, r.project, r.location, r.teamSize, r.teamNames.join(", "), r.tasks.join("; ")]));
     } else if (tab === "employee") {
-      downloadCsv("schedule-employees.csv", ["Employee", "Code", "Days Scheduled", "Projects", "Total Hours"],
-        data.employeeSummary.map((r) => [r.name, r.code, r.daysScheduled, r.projectsWorked, r.totalHours]));
+      downloadCsv("schedule-employees.csv", ["Employee", "Code", "Status", "Days Scheduled", "Projects", "Total Hours"],
+        data.employeeSummary.map((r) => [r.name, r.code, r.status === "scheduled" ? "Scheduled" : "Available", r.daysScheduled, r.projectsWorked, r.totalHours]));
     } else if (tab === "coverage") {
       downloadCsv("schedule-coverage.csv", ["Project", "Days Active", "Avg Team", "Required", "Assigned", "Fill Rate %"],
         data.projectCoverage.map((r) => [r.project, r.daysActive, r.avgTeamSize, r.required, r.assigned, r.fillRate]));
@@ -173,6 +173,7 @@ export default function ScheduleReport() {
                       <tr className="border-b border-border text-muted-foreground text-xs">
                         <th className="text-left p-3">Employee</th>
                         <th className="text-left p-3">Code</th>
+                        <th className="text-center p-3">Status</th>
                         <th className="text-center p-3">Days</th>
                         <th className="text-center p-3">Projects</th>
                         <th className="text-center p-3">Hours</th>
@@ -183,6 +184,11 @@ export default function ScheduleReport() {
                         <tr key={i} className="border-b border-border/50 hover:bg-muted/30">
                           <td className="p-3 font-medium text-foreground">{r.name}</td>
                           <td className="p-3 text-muted-foreground">{r.code}</td>
+                          <td className="p-3 text-center">
+                            <Badge variant={r.status === "scheduled" ? "default" : "secondary"} className="text-[10px]">
+                              {r.status === "scheduled" ? "Scheduled" : "Available"}
+                            </Badge>
+                          </td>
                           <td className="p-3 text-center">{r.daysScheduled}</td>
                           <td className="p-3 text-center">{r.projectsWorked}</td>
                           <td className="p-3 text-center">{r.totalHours}</td>
