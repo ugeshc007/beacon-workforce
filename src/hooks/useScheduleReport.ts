@@ -32,9 +32,12 @@ export interface ScheduleReportData {
   employeeSummary: {
     name: string;
     code: string;
+    name: string;
+    code: string;
     daysScheduled: number;
     projectsWorked: number;
     totalHours: number;
+    status: "scheduled" | "available";
   }[];
   projectCoverage: {
     project: string;
