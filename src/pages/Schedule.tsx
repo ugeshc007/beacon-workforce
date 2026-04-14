@@ -9,6 +9,7 @@ import {
   useCopyPreviousWeek, useApplyToDateRange, useRecurringSchedule,
 } from "@/hooks/useSchedule";
 import { DayAssignmentPanel } from "@/components/schedule/DayAssignmentPanel";
+import { ScheduleTaskSummary } from "@/components/schedule/ScheduleTaskSummary";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -55,6 +56,7 @@ export default function Schedule() {
   const [bulkDialog, setBulkDialog] = useState<BulkDialog>(null);
   const [jobCardSearch, setJobCardSearch] = useState("");
   const [selectedJobCard, setSelectedJobCard] = useState("all");
+  const [expandedProjectId, setExpandedProjectId] = useState<string | null>(null);
 
   // Apply-to-range state
   const [rangeStart, setRangeStart] = useState("");
@@ -306,7 +308,7 @@ export default function Schedule() {
                 className={`cursor-pointer transition-all hover:border-brand/40 ${
                   isSelected ? "border-brand ring-1 ring-brand/30" : ""
                 } ${isToday ? "bg-brand/5" : ""} ${isFriday ? "bg-muted/30" : ""}`}
-                onClick={() => setSelectedDay(date === selectedDay ? null : date)}
+                onClick={() => { setSelectedDay(date === selectedDay ? null : date); setExpandedProjectId(null); }}
               >
                 <CardContent className="p-2.5 sm:space-y-2">
                   {/* Mobile: horizontal row layout */}
@@ -392,34 +394,48 @@ export default function Schedule() {
         />
       )}
 
-      {selectedDay && selectedProjectId === "all" && (
-        <div className="space-y-4">
-          {activeProjects.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">No active projects</p>
-          ) : (
-            activeProjects
-              .filter((p) => dayAssignments(selectedDay).some((a) => a.project_id === p.id) || true)
-              .slice(0, 5)
-              .map((p) => (
-                <DayAssignmentPanel
-                  key={p.id}
-                  date={selectedDay}
-                  projectId={p.id}
-                  projectName={p.name}
-                  assignments={dayAssignments(selectedDay).filter((a) => a.project_id === p.id)}
-                  requiredTech={(p as any).required_team_members ?? p.required_technicians + p.required_helpers}
-                  requiredHelp={0}
-                  requiredSup={p.required_supervisors}
-                  requiredDrivers={(p as any).required_drivers ?? 0}
-                  conflicts={dayConflicts(selectedDay).filter((c) =>
-                    c.projects.includes(p.name)
-                  )}
-                  readOnly={!canEdit}
-                />
-              ))
-          )}
-        </div>
-      )}
+      {selectedDay && selectedProjectId === "all" && !expandedProjectId && (() => {
+        const da = dayAssignments(selectedDay);
+        const projectsWithAssignments = activeProjects
+          .filter((p) => da.some((a) => a.project_id === p.id))
+          .map((p) => ({
+            id: p.id,
+            name: p.name,
+            site_address: p.site_address ?? null,
+            assignmentCount: da.filter((a) => a.project_id === p.id).length,
+          }));
+        return (
+          <ScheduleTaskSummary
+            date={selectedDay}
+            projects={projectsWithAssignments}
+            onSelectProject={(pid) => setExpandedProjectId(pid)}
+          />
+        );
+      })()}
+
+      {selectedDay && selectedProjectId === "all" && expandedProjectId && (() => {
+        const ep = activeProjects.find((p) => p.id === expandedProjectId);
+        if (!ep) return null;
+        return (
+          <div className="space-y-2">
+            <Button variant="ghost" size="sm" className="text-xs" onClick={() => setExpandedProjectId(null)}>
+              ← Back to task summary
+            </Button>
+            <DayAssignmentPanel
+              date={selectedDay}
+              projectId={ep.id}
+              projectName={ep.name}
+              assignments={dayAssignments(selectedDay).filter((a) => a.project_id === ep.id)}
+              requiredTech={(ep as any).required_team_members ?? ep.required_technicians + ep.required_helpers}
+              requiredHelp={0}
+              requiredSup={ep.required_supervisors}
+              requiredDrivers={(ep as any).required_drivers ?? 0}
+              conflicts={dayConflicts(selectedDay).filter((c) => c.projects.includes(ep.name))}
+              readOnly={!canEdit}
+            />
+          </div>
+        );
+      })()}
 
       {!selectedDay && selectedProjectId !== "all" && selectedProject && (
         <DayAssignmentPanel
