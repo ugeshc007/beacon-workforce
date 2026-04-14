@@ -32,6 +32,7 @@ import AttendanceReport from "./pages/reports/AttendanceReport";
 import OvertimeReport from "./pages/reports/OvertimeReport";
 import ManpowerReport from "./pages/reports/ManpowerReport";
 import AbsenteeReport from "./pages/reports/AbsenteeReport";
+import ScheduleReport from "./pages/reports/ScheduleReport";
 import SettingsPage from "./pages/SettingsPage";
 import Maintenance from "./pages/Maintenance";
 import MaintenanceDetail from "./pages/MaintenanceDetail";
@@ -99,6 +100,7 @@ const App = () => (
             <Route path="/reports/overtime" element={<ModuleGuard module="reports"><OvertimeReport /></ModuleGuard>} />
             <Route path="/reports/manpower" element={<ModuleGuard module="reports"><ManpowerReport /></ModuleGuard>} />
             <Route path="/reports/absentee" element={<ModuleGuard module="reports"><AbsenteeReport /></ModuleGuard>} />
+            <Route path="/reports/schedule" element={<ModuleGuard module="reports"><ScheduleReport /></ModuleGuard>} />
             <Route path="/settings" element={<ModuleGuard module="settings"><SettingsPage /></ModuleGuard>} />
           </Route>
           <Route path="*" element={<NotFound />} />
