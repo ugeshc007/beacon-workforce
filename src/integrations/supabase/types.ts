@@ -989,6 +989,7 @@ export type Database = {
           end_date: string | null
           health_score: number | null
           id: string
+          job_card: string | null
           name: string
           notes: string | null
           project_value: number | null
@@ -1015,6 +1016,7 @@ export type Database = {
           end_date?: string | null
           health_score?: number | null
           id?: string
+          job_card?: string | null
           name: string
           notes?: string | null
           project_value?: number | null
@@ -1041,6 +1043,7 @@ export type Database = {
           end_date?: string | null
           health_score?: number | null
           id?: string
+          job_card?: string | null
           name?: string
           notes?: string | null
           project_value?: number | null
