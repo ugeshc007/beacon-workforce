@@ -29,6 +29,14 @@ const PRESETS: Preset[] = [
     },
   },
   {
+    label: "Tomorrow",
+    getRange: () => {
+      const t = new Date();
+      t.setDate(t.getDate() + 1);
+      return { start: t, end: t };
+    },
+  },
+  {
     label: "This Month",
     getRange: () => ({ start: startOfMonth(new Date()), end: endOfMonth(new Date()) }),
   },
