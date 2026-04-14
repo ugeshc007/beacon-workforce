@@ -18,8 +18,8 @@ export default function ScheduleReport() {
   const handleCsv = (tab: string) => {
     if (!data) return;
     if (tab === "daily") {
-      downloadCsv("schedule-daily.csv", ["Date", "Project", "Location", "Team Size", "Tasks Logged"],
-        data.dailyOverview.map((r) => [r.date, r.project, r.location, r.teamSize, r.tasksLogged]));
+      downloadCsv("schedule-daily.csv", ["Date", "Project", "Location", "Team Size", "Team Members", "Tasks"],
+        data.dailyOverview.map((r) => [r.date, r.project, r.location, r.teamSize, r.teamNames.join(", "), r.tasks.join("; ")]));
     } else if (tab === "employee") {
       downloadCsv("schedule-employees.csv", ["Employee", "Code", "Days Scheduled", "Projects", "Total Hours"],
         data.employeeSummary.map((r) => [r.name, r.code, r.daysScheduled, r.projectsWorked, r.totalHours]));
@@ -47,8 +47,8 @@ export default function ScheduleReport() {
       tables: [
         {
           title: "Daily Schedule Overview",
-          headers: ["Date", "Project", "Location", "Team Size", "Tasks"],
-          rows: data.dailyOverview.map((r) => [r.date, r.project, r.location, r.teamSize, r.tasksLogged]),
+          headers: ["Date", "Project", "Location", "Team", "Team Members", "Tasks"],
+          rows: data.dailyOverview.map((r) => [r.date, r.project, r.location, r.teamSize, r.teamNames.join(", "), r.tasks.join("; ") || "—"]),
         },
         {
           title: "Employee Assignment Summary",
@@ -121,18 +121,34 @@ export default function ScheduleReport() {
                         <th className="text-left p-3">Date</th>
                         <th className="text-left p-3">Project</th>
                         <th className="text-left p-3">Location</th>
-                        <th className="text-center p-3">Team</th>
-                        <th className="text-center p-3">Tasks</th>
+                        <th className="text-left p-3">Team Members</th>
+                        <th className="text-left p-3">Tasks</th>
                       </tr>
                     </thead>
                     <tbody>
                       {data.dailyOverview.map((r, i) => (
-                        <tr key={i} className="border-b border-border/50 hover:bg-muted/30">
-                          <td className="p-3 text-foreground">{r.date}</td>
+                        <tr key={i} className="border-b border-border/50 hover:bg-muted/30 align-top">
+                          <td className="p-3 text-foreground whitespace-nowrap">{r.date}</td>
                           <td className="p-3 font-medium text-foreground">{r.project}</td>
                           <td className="p-3 text-muted-foreground">{r.location}</td>
-                          <td className="p-3 text-center">{r.teamSize}</td>
-                          <td className="p-3 text-center">{r.tasksLogged}</td>
+                          <td className="p-3">
+                            <div className="flex flex-wrap gap-1">
+                              {r.teamNames.map((name, j) => (
+                                <Badge key={j} variant="secondary" className="text-[10px] font-normal">{name}</Badge>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            {r.tasks.length > 0 ? (
+                              <div className="space-y-0.5">
+                                {r.tasks.map((t, j) => (
+                                  <p key={j} className="text-xs text-foreground">• {t}</p>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">No tasks</span>
+                            )}
+                          </td>
                         </tr>
                       ))}
                       {data.dailyOverview.length === 0 && (
