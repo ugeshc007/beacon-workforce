@@ -25,7 +25,7 @@ import { Label } from "@/components/ui/label";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { toast as sonnerToast } from "sonner";
 
 interface Props {
   date: string;
@@ -313,9 +313,9 @@ export function DayAssignmentPanel({
   const handleCopyClipboard = async () => {
     try {
       await navigator.clipboard.writeText(formatShareText());
-      toast.success("Schedule copied to clipboard");
+      sonnerToast.success("Schedule copied to clipboard");
     } catch {
-      toast.error("Failed to copy");
+      sonnerToast.error("Failed to copy");
     }
   };
 
