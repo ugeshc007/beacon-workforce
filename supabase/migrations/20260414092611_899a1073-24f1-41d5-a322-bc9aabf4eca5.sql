@@ -1,0 +1,1 @@
+ALTER TABLE public.project_assignments ADD COLUMN assigned_role text NOT NULL DEFAULT 'team_member';
