@@ -54,6 +54,27 @@ export function useCreateDailyLog() {
   });
 }
 
+export function useUpdateDailyLog() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, projectId, ...updates }: {
+      id: string;
+      projectId: string;
+      description?: string;
+      completion_pct?: number | null;
+      issues?: string | null;
+      photo_urls?: string[];
+    }) => {
+      const { error } = await supabase.from("project_daily_logs").update(updates as any).eq("id", id);
+      if (error) throw error;
+      return projectId;
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["daily-logs", vars.projectId] });
+    },
+  });
+}
+
 export function useDeleteDailyLog() {
   const qc = useQueryClient();
   return useMutation({
