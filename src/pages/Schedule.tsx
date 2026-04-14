@@ -362,7 +362,21 @@ export default function Schedule() {
         </div>
       )}
 
-      {!selectedDay && (
+      {!selectedDay && selectedProjectId !== "all" && selectedProject && (
+        <DayAssignmentPanel
+          date={today}
+          projectId={selectedProjectId}
+          projectName={selectedProject.name}
+          assignments={dayAssignments(today).filter((a) => a.project_id === selectedProjectId)}
+          requiredTech={(selectedProject as any).required_team_members ?? selectedProject.required_technicians + selectedProject.required_helpers}
+          requiredHelp={0}
+          requiredSup={selectedProject.required_supervisors}
+          conflicts={dayConflicts(today)}
+          readOnly={!canEdit}
+        />
+      )}
+
+      {!selectedDay && selectedProjectId === "all" && (
         <div className="text-center py-8">
           <CalendarDays className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
           <p className="text-sm text-muted-foreground">Click a day to view and manage assignments</p>
