@@ -231,9 +231,9 @@ export function useScheduleReport(start: string, end: string) {
       projectCoverage,
       unscheduledDays: unscheduledDays.sort((a, b) => a.date.localeCompare(b.date)),
     };
-  }, [assignmentsQ.data, logsQ.data, start, end]);
+  }, [assignmentsQ.data, logsQ.data, employeesQ.data, start, end]);
 
-  return { data, isLoading: assignmentsQ.isLoading || logsQ.isLoading };
+  return { data, isLoading: assignmentsQ.isLoading || logsQ.isLoading || employeesQ.isLoading };
 }
 
 function calcShiftMinutes(start?: string | null, end?: string | null): number {
