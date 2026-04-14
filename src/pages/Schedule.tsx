@@ -308,7 +308,7 @@ export default function Schedule() {
                 className={`cursor-pointer transition-all hover:border-brand/40 ${
                   isSelected ? "border-brand ring-1 ring-brand/30" : ""
                 } ${isToday ? "bg-brand/5" : ""} ${isFriday ? "bg-muted/30" : ""}`}
-                onClick={() => setSelectedDay(date === selectedDay ? null : date)}
+                onClick={() => { setSelectedDay(date === selectedDay ? null : date); setExpandedProjectId(null); }}
               >
                 <CardContent className="p-2.5 sm:space-y-2">
                   {/* Mobile: horizontal row layout */}
