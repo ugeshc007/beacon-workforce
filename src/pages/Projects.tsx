@@ -218,6 +218,7 @@ export default function Projects() {
                   <div className="space-y-1.5 text-xs text-muted-foreground">
                     {p.site_address && <div className="flex items-center gap-1.5"><MapPin className="h-3 w-3" /><span className="truncate">{p.site_address}</span></div>}
                     <div className="flex items-center gap-1.5"><Users className="h-3 w-3" />{totalStaff} staff required ({p.required_technicians}T / {p.required_helpers}H / {p.required_supervisors}S)</div>
+                    {p.job_card && <div className="flex items-center gap-1.5"><FileText className="h-3 w-3" /><span className="truncate">Job Card: {p.job_card}</span></div>}
                     {p.start_date && (
                       <div className="flex items-center gap-1.5">
                         <CalendarIcon className="h-3 w-3" />
