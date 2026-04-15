@@ -752,11 +752,3 @@ export default function Schedule() {
     </div>
   );
 }
-              {applyRange.isPending ? "Copying…" : "Copy Schedule"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
