@@ -120,9 +120,9 @@ export default function ScheduleReport() {
                       <tr className="border-b border-border text-muted-foreground text-xs">
                         <th className="text-left p-3">Date</th>
                         <th className="text-left p-3">Project</th>
-                        <th className="text-left p-3">Location</th>
-                        <th className="text-left p-3">Team Members</th>
                         <th className="text-left p-3">Tasks</th>
+                        <th className="text-left p-3">Team Members</th>
+                        <th className="text-left p-3">Location</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -130,14 +130,6 @@ export default function ScheduleReport() {
                         <tr key={i} className="border-b border-border/50 hover:bg-muted/30 align-top">
                           <td className="p-3 text-foreground whitespace-nowrap">{r.date}</td>
                           <td className="p-3 font-medium text-foreground">{r.project}</td>
-                          <td className="p-3 text-muted-foreground">{r.location}</td>
-                          <td className="p-3">
-                            <div className="flex flex-wrap gap-1">
-                              {r.teamNames.map((name, j) => (
-                                <Badge key={j} variant="secondary" className="text-[10px] font-normal">{name}</Badge>
-                              ))}
-                            </div>
-                          </td>
                           <td className="p-3">
                             {r.tasks.length > 0 ? (
                               <div className="space-y-0.5">
@@ -149,6 +141,14 @@ export default function ScheduleReport() {
                               <span className="text-xs text-muted-foreground">No tasks</span>
                             )}
                           </td>
+                          <td className="p-3">
+                            <div className="flex flex-wrap gap-1">
+                              {r.teamNames.map((name, j) => (
+                                <Badge key={j} variant="secondary" className="text-[10px] font-normal">{name}</Badge>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="p-3 text-muted-foreground">{r.location}</td>
                         </tr>
                       ))}
                       {data.dailyOverview.length === 0 && (
