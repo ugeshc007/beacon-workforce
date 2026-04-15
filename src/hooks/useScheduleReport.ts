@@ -111,8 +111,10 @@ export function useScheduleReport(start: string, end: string) {
       ? Math.round((assignments.length / (Object.values(projectDateCounts).reduce((s, v) => s + v.size, 0) || 1)) * 10) / 10
       : 0;
 
-    // Daily overview
-    const dailyMap = new Map<string, { project: string; location: string; teamSize: number; teamNames: string[]; tasks: string[]; tasksLogged: number }>();
+    // Daily overview — merge assignments and daily logs
+    const dailyMap = new Map<string, { project: string; projectId: string; location: string; teamSize: number; teamNames: string[]; tasks: string[]; tasksLogged: number }>();
+    
+    // First pass: build from assignments
     assignments.forEach((a) => {
       const key = `${a.date}|${a.project_id}`;
       const existing = dailyMap.get(key);
@@ -125,6 +127,7 @@ export function useScheduleReport(start: string, end: string) {
         const taskDescs = dayLogs.map((l: any) => l.description).filter(Boolean);
         dailyMap.set(key, {
           project: a.projects?.name ?? "—",
+          projectId: a.project_id,
           location: a.projects?.site_address ?? "—",
           teamSize: 1,
           teamNames: [empName],
@@ -133,9 +136,39 @@ export function useScheduleReport(start: string, end: string) {
         });
       }
     });
+
+    // Second pass: add daily logs that have no assignments (so they still appear)
+    logs.forEach((l: any) => {
+      const key = `${l.date}|${l.project_id}`;
+      const existing = dailyMap.get(key);
+      if (existing) {
+        // Add task if not already present
+        if (l.description && !existing.tasks.includes(l.description)) {
+          existing.tasks.push(l.description);
+          existing.tasksLogged = existing.tasks.length;
+        }
+      } else {
+        // Log exists but no assignment for that date+project — still show it
+        dailyMap.set(key, {
+          project: l.project_id, // will be resolved below
+          projectId: l.project_id,
+          location: "—",
+          teamSize: 0,
+          teamNames: [],
+          tasks: l.description ? [l.description] : [],
+          tasksLogged: l.description ? 1 : 0,
+        });
+      }
+    });
+
     const dailyOverview = Array.from(dailyMap.entries()).map(([key, val]) => ({
       date: key.split("|")[0],
-      ...val,
+      project: val.project,
+      location: val.location,
+      teamSize: val.teamSize,
+      teamNames: val.teamNames,
+      tasks: val.tasks,
+      tasksLogged: val.tasksLogged,
     })).sort((a, b) => a.date.localeCompare(b.date));
 
     // Employee summary
