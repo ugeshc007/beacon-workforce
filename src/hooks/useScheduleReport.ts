@@ -28,6 +28,8 @@ export interface ScheduleReportData {
     teamNames: string[];
     tasks: string[];
     tasksLogged: number;
+    shiftStart: string | null;
+    shiftEnd: string | null;
   }[];
   employeeSummary: {
     name: string;
@@ -112,7 +114,7 @@ export function useScheduleReport(start: string, end: string) {
       : 0;
 
     // Daily overview — merge assignments and daily logs
-    const dailyMap = new Map<string, { project: string; projectId: string; location: string; teamSize: number; teamNames: string[]; tasks: string[]; tasksLogged: number }>();
+    const dailyMap = new Map<string, { project: string; projectId: string; location: string; teamSize: number; teamNames: string[]; tasks: string[]; tasksLogged: number; shiftStart: string | null; shiftEnd: string | null }>();
     
     // First pass: build from assignments
     assignments.forEach((a) => {
@@ -122,6 +124,9 @@ export function useScheduleReport(start: string, end: string) {
       if (existing) {
         existing.teamSize += 1;
         if (!existing.teamNames.includes(empName)) existing.teamNames.push(empName);
+        // Track earliest start and latest end
+        if (a.shift_start && (!existing.shiftStart || a.shift_start < existing.shiftStart)) existing.shiftStart = a.shift_start;
+        if (a.shift_end && (!existing.shiftEnd || a.shift_end > existing.shiftEnd)) existing.shiftEnd = a.shift_end;
       } else {
         const dayLogs = logs.filter((l: any) => l.date === a.date && l.project_id === a.project_id);
         const taskDescs = dayLogs.map((l: any) => l.description).filter(Boolean);
@@ -133,6 +138,8 @@ export function useScheduleReport(start: string, end: string) {
           teamNames: [empName],
           tasks: taskDescs,
           tasksLogged: dayLogs.length,
+          shiftStart: a.shift_start ?? null,
+          shiftEnd: a.shift_end ?? null,
         });
       }
     });
@@ -157,6 +164,8 @@ export function useScheduleReport(start: string, end: string) {
           teamNames: [],
           tasks: l.description ? [l.description] : [],
           tasksLogged: l.description ? 1 : 0,
+          shiftStart: null,
+          shiftEnd: null,
         });
       }
     });
@@ -169,6 +178,8 @@ export function useScheduleReport(start: string, end: string) {
       teamNames: val.teamNames,
       tasks: val.tasks,
       tasksLogged: val.tasksLogged,
+      shiftStart: val.shiftStart,
+      shiftEnd: val.shiftEnd,
     })).sort((a, b) => a.date.localeCompare(b.date));
 
     // Employee summary
