@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { format } from "date-fns";
+import { toLocalDateStr } from "@/lib/utils";
 import { useDailyLogs, useCreateDailyLog, useUpdateDailyLog, useDeleteDailyLog, uploadDailyLogPhoto, getSignedPhotoUrl } from "@/hooks/useDailyLogs";
+import { DateInput } from "@/components/ui/date-input";
 import type { DailyLog, DailyLogStatus } from "@/hooks/useDailyLogs";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
@@ -46,6 +48,7 @@ export function ProjectDailyLogTab({ projectId }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [editingLog, setEditingLog] = useState<DailyLog | null>(null);
   const [description, setDescription] = useState("");
+  const [logDate, setLogDate] = useState(toLocalDateStr(new Date()));
   const [issues, setIssues] = useState("");
   const [completionPct, setCompletionPct] = useState("");
   const [photos, setPhotos] = useState<File[]>([]);
@@ -56,6 +59,7 @@ export function ProjectDailyLogTab({ projectId }: Props) {
 
   const resetForm = () => {
     setDescription("");
+    setLogDate(toLocalDateStr(new Date()));
     setIssues("");
     setCompletionPct("");
     setPhotos([]);
@@ -68,6 +72,7 @@ export function ProjectDailyLogTab({ projectId }: Props) {
   const startEdit = (log: DailyLog) => {
     setEditingLog(log);
     setDescription(log.description);
+    setLogDate(log.date);
     setIssues(log.issues ?? "");
     setCompletionPct(log.completion_pct?.toString() ?? "");
     setExistingPhotos(log.photo_urls ?? []);
