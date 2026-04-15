@@ -310,7 +310,7 @@ export default function Schedule() {
             const dc = dayConflicts(date);
             const isToday = date === today;
             const isSelected = date === selectedDay;
-            const isFriday = i === 4;
+            const isFriday = new Date(date + "T00:00:00").getDay() === 5;
 
             const projectGroups = new Map<string, number>();
             for (const a of da) projectGroups.set(a.project_name, (projectGroups.get(a.project_name) ?? 0) + 1);
