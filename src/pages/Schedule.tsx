@@ -34,21 +34,18 @@ import {
   Copy, CalendarRange, Repeat, MoreVertical, Wrench,
 } from "lucide-react";
 
-function getWeekDates(offset: number) {
+function getDayDates(startOffset: number, count = 7) {
   const now = new Date();
-  const day = now.getDay();
-  const diff = now.getDate() - day + (day === 0 ? -6 : 1) + offset * 7;
-  const monday = new Date(now.getFullYear(), now.getMonth(), diff);
   const dates: string[] = [];
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
+  for (let i = 0; i < count; i++) {
+    const d = new Date(now);
+    d.setDate(now.getDate() + startOffset + i);
     dates.push(d.toISOString().split("T")[0]);
   }
   return dates;
 }
 
-const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const shortDayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 type BulkDialog = "copy" | "apply" | "recurring" | null;
 
