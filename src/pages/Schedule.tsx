@@ -706,43 +706,52 @@ export default function Schedule() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {/* Copy Day Assignments Dialog */}
-      <Dialog open={copyDayDialog} onOpenChange={setCopyDayDialog}>
+      {/* Copy Project Assignments Dialog */}
+      <Dialog open={!!copyProjectDialog} onOpenChange={(v) => { if (!v) setCopyProjectDialog(null); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Copy className="h-5 w-5 text-brand" />Copy Day Schedule</DialogTitle>
+            <DialogTitle className="flex items-center gap-2"><Copy className="h-5 w-5 text-brand" />Copy Project Schedule</DialogTitle>
             <DialogDescription>
-              Copy all project assignments from{" "}
-              <strong>{selectedDay && new Date(selectedDay + "T00:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" })}</strong>{" "}
+              Copy all assignments for <strong>{copyProjectDialog?.projectName}</strong> from{" "}
+              <strong>{copyProjectDialog?.sourceDate && new Date(copyProjectDialog.sourceDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" })}</strong>{" "}
               to another date
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
               <Label className="text-xs">Target Date</Label>
-              <DateInput value={copyDayTargetDate} onChange={setCopyDayTargetDate} className="mt-1" />
+              <DateInput value={copyProjectTargetDate} onChange={setCopyProjectTargetDate} className="mt-1" />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCopyDayDialog(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setCopyProjectDialog(null)}>Cancel</Button>
             <Button
-              disabled={applyRange.isPending || !copyDayTargetDate || !selectedDay}
+              disabled={applyRange.isPending || !copyProjectTargetDate || !copyProjectDialog}
               onClick={async () => {
-                if (!selectedDay) return;
+                if (!copyProjectDialog) return;
                 try {
                   const count = await applyRange.mutateAsync({
-                    sourceDate: selectedDay,
-                    startDate: copyDayTargetDate,
-                    endDate: copyDayTargetDate,
+                    sourceDate: copyProjectDialog.sourceDate,
+                    startDate: copyProjectTargetDate,
+                    endDate: copyProjectTargetDate,
+                    projectId: copyProjectDialog.projectId,
                     skipWeekends: false,
                   });
-                  toast.success(`Copied ${count} assignments to ${new Date(copyDayTargetDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`);
-                  setCopyDayDialog(false);
+                  toast.success(`Copied ${count} assignments to ${new Date(copyProjectTargetDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`);
+                  setCopyProjectDialog(null);
                 } catch (e: any) {
                   toast.error(e.message);
                 }
               }}
             >
+              {applyRange.isPending ? "Copying…" : "Copy Schedule"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
               {applyRange.isPending ? "Copying…" : "Copy Schedule"}
             </Button>
           </DialogFooter>
