@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useProjects } from "@/hooks/useProjects";
+import { useCopyMaintenanceAssignments } from "@/hooks/useMaintenance";
 import { useCanAccess } from "@/hooks/usePermissions";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -60,6 +61,8 @@ export default function Schedule() {
   const [jobCardSearch, setJobCardSearch] = useState("");
   const [selectedJobCard, setSelectedJobCard] = useState("all");
   const [expandedProjectId, setExpandedProjectId] = useState<string | null>(null);
+  const [copyMaintDialog, setCopyMaintDialog] = useState<{ callId: string; companyName: string; sourceDate: string } | null>(null);
+  const [copyMaintTargetDate, setCopyMaintTargetDate] = useState("");
 
   // Apply-to-range state
   const [rangeStart, setRangeStart] = useState("");
@@ -121,6 +124,7 @@ export default function Schedule() {
   const copyWeek = useCopyPreviousWeek();
   const applyRange = useApplyToDateRange();
   const recurring = useRecurringSchedule();
+  const copyMaint = useCopyMaintenanceAssignments();
   const { allowed: canCreate } = useCanAccess("schedule", "can_create");
   const { allowed: canEdit } = useCanAccess("schedule", "can_edit");
 
@@ -462,10 +466,9 @@ export default function Schedule() {
                     {[...maintGroupsForDay.values()].map((mg) => (
                       <div
                         key={mg.id}
-                        className="flex items-center justify-between rounded-lg border border-border/50 p-2.5 cursor-pointer hover:border-status-overtime/40 transition-colors"
-                        onClick={() => navigate(`/maintenance/${mg.id}`)}
+                        className="flex items-center justify-between rounded-lg border border-border/50 p-2.5 hover:border-status-overtime/40 transition-colors"
                       >
-                        <div>
+                        <div className="cursor-pointer flex-1" onClick={() => navigate(`/maintenance/${mg.id}`)}>
                           <p className="text-sm font-medium text-foreground">{mg.company_name}</p>
                           {mg.location && <p className="text-xs text-muted-foreground">{mg.location}</p>}
                         </div>
@@ -473,6 +476,21 @@ export default function Schedule() {
                           <Badge variant="outline" className="text-[10px] border-status-overtime/30 text-status-overtime">
                             {mg.count} staff
                           </Badge>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-[10px] gap-1 border-status-overtime/30 text-status-overtime hover:bg-status-overtime/10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCopyMaintDialog({ callId: mg.id, companyName: mg.company_name, sourceDate: selectedDay! });
+                              // Default target to next day
+                              const next = new Date(selectedDay! + "T00:00:00");
+                              next.setDate(next.getDate() + 1);
+                              setCopyMaintTargetDate(next.toISOString().split("T")[0]);
+                            }}
+                          >
+                            <Copy className="h-3 w-3" /> Copy to Date
+                          </Button>
                         </div>
                       </div>
                     ))}
@@ -631,6 +649,51 @@ export default function Schedule() {
             <Button variant="outline" onClick={() => setBulkDialog(null)}>Cancel</Button>
             <Button onClick={handleRecurring} disabled={recurring.isPending}>
               {recurring.isPending ? "Creating…" : "Create Recurring"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Copy Maintenance Assignments Dialog */}
+      <Dialog open={!!copyMaintDialog} onOpenChange={(v) => { if (!v) setCopyMaintDialog(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Wrench className="h-5 w-5 text-status-overtime" />Copy Maintenance Staff</DialogTitle>
+            <DialogDescription>
+              Copy all staff assignments from <strong>{copyMaintDialog?.companyName}</strong> to another date
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="rounded-lg border border-border p-3 bg-muted/20 text-xs text-muted-foreground space-y-1">
+              <p>Source date: <span className="text-foreground font-medium">
+                {copyMaintDialog?.sourceDate && new Date(copyMaintDialog.sourceDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short", year: "numeric" })}
+              </span></p>
+              <p>Company: <span className="text-foreground font-medium">{copyMaintDialog?.companyName}</span></p>
+            </div>
+            <div>
+              <Label className="text-xs">Target Date</Label>
+              <DateInput value={copyMaintTargetDate} onChange={setCopyMaintTargetDate} className="mt-1" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCopyMaintDialog(null)}>Cancel</Button>
+            <Button
+              disabled={copyMaint.isPending || !copyMaintTargetDate}
+              onClick={async () => {
+                if (!copyMaintDialog) return;
+                try {
+                  const count = await copyMaint.mutateAsync({
+                    maintenanceCallId: copyMaintDialog.callId,
+                    sourceDate: copyMaintDialog.sourceDate,
+                    targetDate: copyMaintTargetDate,
+                  });
+                  toast.success(`Copied ${count} staff to ${new Date(copyMaintTargetDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`);
+                  setCopyMaintDialog(null);
+                } catch (e: any) {
+                  toast.error(e.message);
+                }
+              }}
+            >
+              {copyMaint.isPending ? "Copying…" : "Copy Staff"}
             </Button>
           </DialogFooter>
         </DialogContent>
