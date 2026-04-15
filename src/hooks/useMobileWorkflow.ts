@@ -1,3 +1,4 @@
+import { toLocalDateStr } from "@/lib/utils";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
@@ -40,7 +41,7 @@ export function useMobileWorkflow() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = toLocalDateStr(new Date());
 
   const fetchData = useCallback(async () => {
     if (!employee) return;

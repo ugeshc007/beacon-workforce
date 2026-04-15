@@ -1,3 +1,4 @@
+import { toLocalDateStr } from "@/lib/utils";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,7 +43,7 @@ export function PurchaseInvoiceDialog({ projectId, open, onOpenChange }: Props) 
 
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [supplierName, setSupplierName] = useState("");
-  const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split("T")[0]);
+  const [invoiceDate, setInvoiceDate] = useState(toLocalDateStr(new Date()));
   const [dueDate, setDueDate] = useState("");
   const [currency, setCurrency] = useState("AED");
   const [exchangeRate, setExchangeRate] = useState("1");
@@ -77,7 +78,7 @@ export function PurchaseInvoiceDialog({ projectId, open, onOpenChange }: Props) 
   const reset = () => {
     setInvoiceNumber("");
     setSupplierName("");
-    setInvoiceDate(new Date().toISOString().split("T")[0]);
+    setInvoiceDate(toLocalDateStr(new Date()));
     setDueDate("");
     setCurrency("AED");
     setExchangeRate("1");

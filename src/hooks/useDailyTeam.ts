@@ -1,3 +1,4 @@
+import { toLocalDateStr } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -40,7 +41,7 @@ export interface DailyProjectGroup {
 function todayUAE(): string {
   const now = new Date();
   const uae = new Date(now.getTime() + 4 * 60 * 60 * 1000);
-  return uae.toISOString().split("T")[0];
+  return toLocalDateStr(uae);
 }
 
 export function useDailyTeam(date?: string) {

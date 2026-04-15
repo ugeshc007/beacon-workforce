@@ -1,3 +1,4 @@
+import { toLocalDateStr } from "@/lib/utils";
 import { useState } from "react";
 import { format } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
@@ -57,7 +58,7 @@ export function ProjectExpensesTab({ projectId, expenses }: Props) {
   const [currency, setCurrency] = useState("AED");
   const [exchangeRate, setExchangeRate] = useState("1");
   const [description, setDescription] = useState("");
-  const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split("T")[0]);
+  const [expenseDate, setExpenseDate] = useState(toLocalDateStr(new Date()));
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
 
   const computedAmount = (parseFloat(quantity) || 0) * (parseFloat(unitRate) || 0);
@@ -72,7 +73,7 @@ export function ProjectExpensesTab({ projectId, expenses }: Props) {
     setCurrency("AED");
     setExchangeRate("1");
     setDescription("");
-    setExpenseDate(new Date().toISOString().split("T")[0]);
+    setExpenseDate(toLocalDateStr(new Date()));
     setReceiptFile(null);
   };
 

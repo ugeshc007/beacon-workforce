@@ -1,3 +1,4 @@
+import { toLocalDateStr } from "@/lib/utils";
 import { useState } from "react";
 import { useAttendanceLogs, useAttendanceSummary, type AttendanceLog } from "@/hooks/useAttendance";
 import { useCanAccess } from "@/hooks/usePermissions";
@@ -49,7 +50,7 @@ const statusLabel: Record<string, { text: string; className: string }> = {
 };
 
 export default function Attendance() {
-  const today = new Date().toISOString().split("T")[0];
+  const today = toLocalDateStr(new Date());
   const [date, setDate] = useState(today);
   const [search, setSearch] = useState("");
   const [projectId, setProjectId] = useState("all");
@@ -73,7 +74,7 @@ export default function Attendance() {
   const shiftDate = (delta: number) => {
     const d = new Date(date + "T00:00:00");
     d.setDate(d.getDate() + delta);
-    setDate(d.toISOString().split("T")[0]);
+    setDate(toLocalDateStr(d));
   };
 
   const dateLabel = new Date(date + "T00:00:00").toLocaleDateString("en-GB", {

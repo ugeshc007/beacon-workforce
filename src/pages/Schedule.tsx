@@ -1,3 +1,4 @@
+import { toLocalDateStr } from "@/lib/utils";
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
@@ -40,7 +41,7 @@ function getDayDates(startOffset: number, count = 7) {
   for (let i = 0; i < count; i++) {
     const d = new Date(now);
     d.setDate(now.getDate() + startOffset + i);
-    dates.push(d.toISOString().split("T")[0]);
+    dates.push(toLocalDateStr(d));
   }
   return dates;
 }
@@ -52,7 +53,7 @@ type BulkDialog = "copy" | "apply" | "recurring" | null;
 export default function Schedule() {
   const navigate = useNavigate();
   const [dayOffset, setDayOffset] = useState(0);
-  const [selectedDay, setSelectedDay] = useState<string | null>(new Date().toISOString().split("T")[0]);
+  const [selectedDay, setSelectedDay] = useState<string | null>(toLocalDateStr(new Date()));
   const [selectedProjectId, setSelectedProjectId] = useState("all");
   const [bulkDialog, setBulkDialog] = useState<BulkDialog>(null);
   const [jobCardSearch, setJobCardSearch] = useState("");
@@ -119,7 +120,7 @@ export default function Schedule() {
   }, [queryClient]);
 
   const selectedProject = activeProjects.find((p) => p.id === selectedProjectId);
-  const today = new Date().toISOString().split("T")[0];
+  const today = toLocalDateStr(new Date());
 
   const copyWeek = useCopyPreviousWeek();
   const applyRange = useApplyToDateRange();
@@ -492,7 +493,7 @@ export default function Schedule() {
                               // Default target to next day
                               const next = new Date(selectedDay! + "T00:00:00");
                               next.setDate(next.getDate() + 1);
-                              setCopyMaintTargetDate(next.toISOString().split("T")[0]);
+                              setCopyMaintTargetDate(toLocalDateStr(next));
                             }}
                           >
                             <Copy className="h-3 w-3" /> Copy to Date

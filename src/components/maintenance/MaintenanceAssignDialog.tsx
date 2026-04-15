@@ -1,3 +1,4 @@
+import { toLocalDateStr } from "@/lib/utils";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -20,7 +21,7 @@ interface Props {
 
 export function MaintenanceAssignDialog({ open, onOpenChange, maintenanceCallId, existingEmployeeIds }: Props) {
   const [search, setSearch] = useState("");
-  const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(() => toLocalDateStr(new Date()));
   const [shiftStart, setShiftStart] = useState("08:00");
   const [shiftEnd, setShiftEnd] = useState("17:00");
   const { data: empData, isLoading } = useEmployees({ search, status: "active", pageSize: 50 });

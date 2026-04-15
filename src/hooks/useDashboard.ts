@@ -1,3 +1,4 @@
+import { toLocalDateStr } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
@@ -6,7 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 function todayUAE(): string {
   const now = new Date();
   const uae = new Date(now.getTime() + 4 * 60 * 60 * 1000);
-  return uae.toISOString().split("T")[0];
+  return toLocalDateStr(uae);
 }
 
 export interface DashboardStats {
