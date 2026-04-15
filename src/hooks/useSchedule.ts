@@ -336,7 +336,7 @@ export function useApplyToDateRange() {
       const end = new Date(endDate + "T00:00:00");
 
       for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-        const dateStr = d.toISOString().split("T")[0];
+        const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
         if (dateStr === sourceDate) continue;
         const dow = d.getDay();
         if (skipWeekends && (dow === 0 || dow === 6)) continue;
