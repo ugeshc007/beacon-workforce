@@ -387,6 +387,18 @@ export default function ProjectDetail() {
         <TabsContent value="daily-log">
           <ProjectDailyLogTab projectId={id!} />
         </TabsContent>
+
+        {/* ── Warranty ── */}
+        <TabsContent value="warranty">
+          <WarrantyTab project={project} onUpdate={async (data) => {
+            try {
+              await updateMutation.mutateAsync({ id: id!, ...data });
+              toast({ title: "Warranty updated", description: "Warranty details saved successfully." });
+            } catch (err: any) {
+              toast({ title: "Failed to update warranty", description: err.message, variant: "destructive" });
+            }
+          }} isPending={updateMutation.isPending} />
+        </TabsContent>
       </Tabs>
 
       <ProjectFormDialog open={editOpen} onOpenChange={setEditOpen} editProject={project as Tables<"projects">} />
