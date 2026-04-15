@@ -112,8 +112,9 @@ export function ProjectDailyLogTab({ projectId }: Props) {
         await createMutation.mutateAsync({
           project_id: projectId,
           description: description.trim(),
-          issues: issues.trim() || null,
+          date: logDate,
           completion_pct: completionPct ? parseInt(completionPct) : null,
+          issues: issues.trim() || null,
           photo_urls: allPhotos,
           posted_by: user?.id ?? null,
           status,
