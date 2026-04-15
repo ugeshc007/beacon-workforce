@@ -165,7 +165,59 @@ export function useRemoveFromMaintenance() {
       const { error } = await supabase.from("maintenance_assignments").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["maintenance-assignments"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["maintenance-assignments"] });
+      qc.invalidateQueries({ queryKey: ["schedule-maintenance-assignments"] });
+    },
+  });
+}
+
+/** Copy all maintenance assignments from one date to another date for a given call */
+export function useCopyMaintenanceAssignments() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ maintenanceCallId, sourceDate, targetDate }: {
+      maintenanceCallId: string;
+      sourceDate: string;
+      targetDate: string;
+    }) => {
+      // Get source assignments
+      const { data: source, error } = await supabase
+        .from("maintenance_assignments")
+        .select("employee_id, shift_start, shift_end, maintenance_call_id")
+        .eq("maintenance_call_id", maintenanceCallId)
+        .eq("date", sourceDate);
+      if (error) throw error;
+      if (!source?.length) throw new Error("No assignments found on source date");
+
+      // Check for duplicates on target date
+      const { data: existing } = await supabase
+        .from("maintenance_assignments")
+        .select("employee_id")
+        .eq("maintenance_call_id", maintenanceCallId)
+        .eq("date", targetDate);
+      const existingIds = new Set((existing ?? []).map(e => e.employee_id));
+
+      const rows = source
+        .filter(a => !existingIds.has(a.employee_id))
+        .map(a => ({
+          maintenance_call_id: a.maintenance_call_id,
+          employee_id: a.employee_id,
+          date: targetDate,
+          shift_start: a.shift_start,
+          shift_end: a.shift_end,
+        }));
+
+      if (!rows.length) throw new Error("All staff already assigned on target date");
+
+      const { error: insertErr } = await supabase.from("maintenance_assignments").insert(rows as any);
+      if (insertErr) throw insertErr;
+      return rows.length;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["maintenance-assignments"] });
+      qc.invalidateQueries({ queryKey: ["schedule-maintenance-assignments"] });
+    },
   });
 }
 
