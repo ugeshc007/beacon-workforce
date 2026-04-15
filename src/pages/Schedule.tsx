@@ -442,12 +442,23 @@ export default function Schedule() {
           }));
 
         // Group maintenance by call
-        const maintGroupsForDay = new Map<string, { id: string; company_name: string; location: string | null; count: number; priority: string }>();
+        const maintGroupsForDay = new Map<string, { id: string; company_name: string; location: string | null; count: number; priority: string; scope: string | null; staffNames: string[]; timeLabel: string | null }>();
         for (const m of dm) {
           if (!maintGroupsForDay.has(m.maintenance_call_id)) {
-            maintGroupsForDay.set(m.maintenance_call_id, { id: m.maintenance_call_id, company_name: m.company_name, location: m.location, count: 0, priority: m.priority });
+            maintGroupsForDay.set(m.maintenance_call_id, {
+              id: m.maintenance_call_id,
+              company_name: m.company_name,
+              location: m.location,
+              count: 0,
+              priority: m.priority,
+              scope: m.scope,
+              staffNames: [],
+              timeLabel: m.shift_start || m.shift_end ? `${m.shift_start?.slice(0, 5) ?? "—"} – ${m.shift_end?.slice(0, 5) ?? "—"}` : null,
+            });
           }
-          maintGroupsForDay.get(m.maintenance_call_id)!.count++;
+          const group = maintGroupsForDay.get(m.maintenance_call_id)!;
+          group.count++;
+          if (!group.staffNames.includes(m.employee_name)) group.staffNames.push(m.employee_name);
         }
 
         return (
@@ -477,7 +488,12 @@ export default function Schedule() {
                       >
                         <div className="cursor-pointer flex-1" onClick={() => navigate(`/maintenance/${mg.id}`)}>
                           <p className="text-sm font-medium text-foreground">{mg.company_name}</p>
+                          {mg.scope && <p className="text-xs text-foreground/80">{mg.scope}</p>}
+                          {mg.timeLabel && <p className="text-xs text-muted-foreground">{mg.timeLabel}</p>}
                           {mg.location && <p className="text-xs text-muted-foreground">{mg.location}</p>}
+                          {mg.staffNames.length > 0 && (
+                            <p className="text-xs text-muted-foreground mt-1">Staff: {mg.staffNames.join(", ")}</p>
+                          )}
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge variant="outline" className="text-[10px] border-status-overtime/30 text-status-overtime">

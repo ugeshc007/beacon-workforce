@@ -30,6 +30,7 @@ export interface MaintenanceScheduleItem {
   company_name: string;
   location: string | null;
   priority: string;
+  scope: string | null;
 }
 
 export interface ConflictInfo {
@@ -81,7 +82,7 @@ export function useWeekMaintenanceAssignments(weekStart: string, weekEnd: string
     queryFn: async () => {
       const { data, error } = await supabase
         .from("maintenance_assignments")
-        .select("id, maintenance_call_id, employee_id, date, shift_start, shift_end, employees(name, skill_type), maintenance_calls(company_name, location, priority)")
+        .select("id, maintenance_call_id, employee_id, date, shift_start, shift_end, employees(name, skill_type), maintenance_calls(company_name, location, priority, scope)")
         .gte("date", weekStart)
         .lte("date", weekEnd)
         .order("date");
@@ -100,6 +101,7 @@ export function useWeekMaintenanceAssignments(weekStart: string, weekEnd: string
         company_name: a.maintenance_calls?.company_name ?? "Unknown",
         location: a.maintenance_calls?.location ?? null,
         priority: a.maintenance_calls?.priority ?? "normal",
+        scope: a.maintenance_calls?.scope ?? null,
       })) as MaintenanceScheduleItem[];
     },
   });
