@@ -63,8 +63,8 @@ export default function Schedule() {
   const [expandedProjectId, setExpandedProjectId] = useState<string | null>(null);
   const [copyMaintDialog, setCopyMaintDialog] = useState<{ callId: string; companyName: string; sourceDate: string } | null>(null);
   const [copyMaintTargetDate, setCopyMaintTargetDate] = useState("");
-  const [copyDayDialog, setCopyDayDialog] = useState(false);
-  const [copyDayTargetDate, setCopyDayTargetDate] = useState("");
+  const [copyProjectDialog, setCopyProjectDialog] = useState<{ projectId: string; projectName: string; sourceDate: string } | null>(null);
+  const [copyProjectTargetDate, setCopyProjectTargetDate] = useState("");
 
   // Apply-to-range state
   const [rangeStart, setRangeStart] = useState("");
