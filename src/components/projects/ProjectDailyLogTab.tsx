@@ -186,7 +186,11 @@ export function ProjectDailyLogTab({ projectId }: Props) {
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
               />
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Date</label>
+                  <DateInput value={logDate} onChange={setLogDate} />
+                </div>
                 <div>
                   <label className="text-xs text-muted-foreground mb-1 block">Status</label>
                   <Select value={status} onValueChange={(v) => setStatus(v as DailyLogStatus)}>
