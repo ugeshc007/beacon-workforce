@@ -435,10 +435,10 @@ export default function Schedule() {
           }));
 
         // Group maintenance by call
-        const maintGroupsForDay = new Map<string, { company_name: string; location: string | null; count: number; priority: string }>();
+        const maintGroupsForDay = new Map<string, { id: string; company_name: string; location: string | null; count: number; priority: string }>();
         for (const m of dm) {
           if (!maintGroupsForDay.has(m.maintenance_call_id)) {
-            maintGroupsForDay.set(m.maintenance_call_id, { company_name: m.company_name, location: m.location, count: 0, priority: m.priority });
+            maintGroupsForDay.set(m.maintenance_call_id, { id: m.maintenance_call_id, company_name: m.company_name, location: m.location, count: 0, priority: m.priority });
           }
           maintGroupsForDay.get(m.maintenance_call_id)!.count++;
         }
