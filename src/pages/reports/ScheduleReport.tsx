@@ -18,11 +18,12 @@ export default function ScheduleReport() {
   const handleCsv = (tab: string) => {
     if (!data) return;
     if (tab === "daily") {
-      downloadCsv("schedule-daily.csv", ["Date", "Project", "Location", "Team Size", "Team Members", "Tasks"],
-        data.dailyOverview.map((r) => [r.date, r.project, r.location, r.teamSize, r.teamNames.join(", "), r.tasks.join("; ")]));
+      downloadCsv("schedule-daily.csv", ["Date", "Project", "Tasks", "Team Members", "Location"],
+        data.dailyOverview.map((r) => [r.date, r.project, r.tasks.join("; ") || "—", r.teamNames.join(", "), r.location]));
     } else if (tab === "employee") {
-      downloadCsv("schedule-employees.csv", ["Employee", "Code", "Status", "Days Scheduled", "Projects", "Total Hours"],
-        data.employeeSummary.map((r) => [r.name, r.code, r.status === "scheduled" ? "Scheduled" : "Available", r.daysScheduled, r.projectsWorked, r.totalHours]));
+      const available = data.employeeSummary.filter((r) => r.status !== "scheduled");
+      downloadCsv("schedule-available-employees.csv", ["Employee", "Code"],
+        available.map((r) => [r.name, r.code]));
     } else if (tab === "coverage") {
       downloadCsv("schedule-coverage.csv", ["Project", "Days Active", "Avg Team", "Required", "Assigned", "Fill Rate %"],
         data.projectCoverage.map((r) => [r.project, r.daysActive, r.avgTeamSize, r.required, r.assigned, r.fillRate]));
@@ -47,13 +48,13 @@ export default function ScheduleReport() {
       tables: [
         {
           title: "Daily Schedule Overview",
-          headers: ["Date", "Project", "Location", "Team", "Team Members", "Tasks"],
-          rows: data.dailyOverview.map((r) => [r.date, r.project, r.location, r.teamSize, r.teamNames.join(", "), r.tasks.join("; ") || "—"]),
+          headers: ["Date", "Project", "Tasks", "Team Members", "Location"],
+          rows: data.dailyOverview.map((r) => [r.date, r.project, r.tasks.join("; ") || "—", r.teamNames.join(", "), r.location]),
         },
         {
-          title: "Employee Assignment Summary",
-          headers: ["Employee", "Code", "Days", "Projects", "Hours"],
-          rows: data.employeeSummary.map((r) => [r.name, r.code, r.daysScheduled, r.projectsWorked, r.totalHours]),
+          title: "Available Employees (Not Scheduled)",
+          headers: ["Employee", "Code"],
+          rows: data.employeeSummary.filter((r) => r.status !== "scheduled").map((r) => [r.name, r.code]),
         },
         {
           title: "Project Coverage",
