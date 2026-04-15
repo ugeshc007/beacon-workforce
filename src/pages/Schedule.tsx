@@ -34,27 +34,24 @@ import {
   Copy, CalendarRange, Repeat, MoreVertical, Wrench,
 } from "lucide-react";
 
-function getWeekDates(offset: number) {
+function getDayDates(startOffset: number, count = 7) {
   const now = new Date();
-  const day = now.getDay();
-  const diff = now.getDate() - day + (day === 0 ? -6 : 1) + offset * 7;
-  const monday = new Date(now.getFullYear(), now.getMonth(), diff);
   const dates: string[] = [];
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
+  for (let i = 0; i < count; i++) {
+    const d = new Date(now);
+    d.setDate(now.getDate() + startOffset + i);
     dates.push(d.toISOString().split("T")[0]);
   }
   return dates;
 }
 
-const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const shortDayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 type BulkDialog = "copy" | "apply" | "recurring" | null;
 
 export default function Schedule() {
   const navigate = useNavigate();
-  const [weekOffset, setWeekOffset] = useState(0);
+  const [dayOffset, setDayOffset] = useState(0);
   const [selectedDay, setSelectedDay] = useState<string | null>(new Date().toISOString().split("T")[0]);
   const [selectedProjectId, setSelectedProjectId] = useState("all");
   const [bulkDialog, setBulkDialog] = useState<BulkDialog>(null);
@@ -74,11 +71,12 @@ export default function Schedule() {
   // Recurring state
   const [recurWeeks, setRecurWeeks] = useState(4);
 
-  const weekDates = useMemo(() => getWeekDates(weekOffset), [weekOffset]);
+  const weekDates = useMemo(() => getDayDates(dayOffset), [dayOffset]);
   const weekStart = weekDates[0];
   const weekEnd = weekDates[6];
 
-  const prevWeekDates = useMemo(() => getWeekDates(weekOffset - 1), [weekOffset]);
+  // For "copy previous week" we need the 7 days before the current window
+  const prevWeekDates = useMemo(() => getDayDates(dayOffset - 7), [dayOffset]);
   const prevWeekStart = prevWeekDates[0];
   const prevWeekEnd = prevWeekDates[6];
 
@@ -280,11 +278,11 @@ export default function Schedule() {
             </SelectContent>
           </Select>
           <div className="flex items-center gap-1">
-            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setWeekOffset((w) => w - 1)}>
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setDayOffset((d) => d - 7)}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm" className="text-xs" onClick={() => setWeekOffset(0)}>Today</Button>
-            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setWeekOffset((w) => w + 1)}>
+            <Button variant="outline" size="sm" className="text-xs" onClick={() => setDayOffset(0)}>Today</Button>
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setDayOffset((d) => d + 7)}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
@@ -312,7 +310,7 @@ export default function Schedule() {
             const dc = dayConflicts(date);
             const isToday = date === today;
             const isSelected = date === selectedDay;
-            const isFriday = i === 4;
+            const isFriday = new Date(date + "T00:00:00").getDay() === 5;
 
             const projectGroups = new Map<string, number>();
             for (const a of da) projectGroups.set(a.project_name, (projectGroups.get(a.project_name) ?? 0) + 1);
@@ -333,7 +331,7 @@ export default function Schedule() {
                   <div className="flex sm:hidden items-center gap-3">
                     <div className="flex items-center gap-2 min-w-[80px]">
                       <span className={`text-sm font-medium ${isToday ? "text-brand" : "text-muted-foreground"}`}>
-                        {dayNames[i]}
+                        {shortDayNames[new Date(date + "T00:00:00").getDay()]}
                       </span>
                       <span className={`text-sm font-mono ${isToday ? "text-brand font-bold" : "text-foreground"}`}>
                         {new Date(date + "T00:00:00").getDate()}
@@ -372,7 +370,7 @@ export default function Schedule() {
                   <div className="hidden sm:block space-y-2">
                     <div className="flex items-center justify-between">
                       <span className={`text-xs font-medium ${isToday ? "text-brand" : "text-muted-foreground"}`}>
-                        {dayNames[i]}
+                        {shortDayNames[new Date(date + "T00:00:00").getDay()]}
                       </span>
                       <span className={`text-xs font-mono ${isToday ? "text-brand font-bold" : "text-foreground"}`}>
                         {new Date(date + "T00:00:00").getDate()}
