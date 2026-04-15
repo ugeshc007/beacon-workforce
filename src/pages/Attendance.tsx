@@ -1,3 +1,4 @@
+import { toLocalDateStr } from "@/lib/utils";
 import { useState } from "react";
 import { useAttendanceLogs, useAttendanceSummary, type AttendanceLog } from "@/hooks/useAttendance";
 import { useCanAccess } from "@/hooks/usePermissions";
