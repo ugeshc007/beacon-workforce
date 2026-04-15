@@ -55,7 +55,7 @@ type BulkDialog = "copy" | "apply" | "recurring" | null;
 export default function Schedule() {
   const navigate = useNavigate();
   const [weekOffset, setWeekOffset] = useState(0);
-  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [selectedDay, setSelectedDay] = useState<string | null>(new Date().toISOString().split("T")[0]);
   const [selectedProjectId, setSelectedProjectId] = useState("all");
   const [bulkDialog, setBulkDialog] = useState<BulkDialog>(null);
   const [jobCardSearch, setJobCardSearch] = useState("");
