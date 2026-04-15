@@ -5,8 +5,9 @@ import { useProjects } from "@/hooks/useProjects";
 import { useCanAccess } from "@/hooks/usePermissions";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  useWeekAssignments, useDetectConflicts,
+  useWeekAssignments, useWeekMaintenanceAssignments, useDetectConflicts,
   useCopyPreviousWeek, useApplyToDateRange, useRecurringSchedule,
+  type MaintenanceScheduleItem,
 } from "@/hooks/useSchedule";
 import { DayAssignmentPanel } from "@/components/schedule/DayAssignmentPanel";
 import { ScheduleTaskSummary } from "@/components/schedule/ScheduleTaskSummary";
@@ -28,7 +29,7 @@ import {
 import { toast } from "sonner";
 import {
   ChevronLeft, ChevronRight, CalendarDays, AlertTriangle, Users,
-  Copy, CalendarRange, Repeat, MoreVertical,
+  Copy, CalendarRange, Repeat, MoreVertical, Wrench,
 } from "lucide-react";
 
 function getWeekDates(offset: number) {
@@ -93,6 +94,7 @@ export default function Schedule() {
   const effectiveProjectId = selectedProjectId;
 
   const { data: assignments, isLoading } = useWeekAssignments(weekStart, weekEnd, effectiveProjectId);
+  const { data: maintenanceItems } = useWeekMaintenanceAssignments(weekStart, weekEnd);
   const conflicts = useDetectConflicts(assignments ?? []);
   const queryClient = useQueryClient();
 
@@ -103,6 +105,9 @@ export default function Schedule() {
       .on("postgres_changes", { event: "*", schema: "public", table: "project_assignments" }, () => {
         queryClient.invalidateQueries({ queryKey: ["schedule-assignments"] });
         queryClient.invalidateQueries({ queryKey: ["available-employees"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "maintenance_assignments" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["schedule-maintenance-assignments"] });
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -132,6 +137,7 @@ export default function Schedule() {
   })();
 
   const dayAssignments = (date: string) => (assignments ?? []).filter((a) => a.date === date);
+  const dayMaintenanceItems = (date: string) => (maintenanceItems ?? []).filter((m) => m.date === date);
   const dayConflicts = (date: string) => conflicts.filter((c) => c.date === date);
 
   const handleCopyWeek = async () => {
@@ -294,6 +300,7 @@ export default function Schedule() {
         <div className="grid grid-cols-1 sm:grid-cols-7 gap-2">
           {weekDates.map((date, i) => {
             const da = dayAssignments(date);
+            const dm = dayMaintenanceItems(date);
             const dc = dayConflicts(date);
             const isToday = date === today;
             const isSelected = date === selectedDay;
@@ -301,6 +308,9 @@ export default function Schedule() {
 
             const projectGroups = new Map<string, number>();
             for (const a of da) projectGroups.set(a.project_name, (projectGroups.get(a.project_name) ?? 0) + 1);
+
+            const maintGroups = new Map<string, number>();
+            for (const m of dm) maintGroups.set(m.company_name, (maintGroups.get(m.company_name) ?? 0) + 1);
 
             return (
               <Card
@@ -322,16 +332,25 @@ export default function Schedule() {
                       </span>
                     </div>
                     <div className="flex-1 flex items-center gap-2 overflow-x-auto">
-                      {da.length === 0 ? (
+                      {da.length === 0 && dm.length === 0 ? (
                         <p className="text-xs text-muted-foreground">No assignments</p>
                       ) : (
-                        [...projectGroups].map(([name, count]) => (
-                          <div key={name} className="flex items-center gap-1 text-xs shrink-0">
-                            <Users className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-foreground">{name}</span>
-                            <Badge variant="secondary" className="text-[10px] px-1 py-0">{count}</Badge>
-                          </div>
-                        ))
+                        <>
+                          {[...projectGroups].map(([name, count]) => (
+                            <div key={name} className="flex items-center gap-1 text-xs shrink-0">
+                              <Users className="h-3 w-3 text-muted-foreground" />
+                              <span className="text-foreground">{name}</span>
+                              <Badge variant="secondary" className="text-[10px] px-1 py-0">{count}</Badge>
+                            </div>
+                          ))}
+                          {[...maintGroups].map(([name, count]) => (
+                            <div key={`m-${name}`} className="flex items-center gap-1 text-xs shrink-0">
+                              <Wrench className="h-3 w-3 text-status-overtime shrink-0" />
+                              <span className="text-status-overtime">{name}</span>
+                              <Badge variant="outline" className="text-[10px] px-1 py-0 border-status-overtime/30 text-status-overtime">{count}</Badge>
+                            </div>
+                          ))}
+                        </>
                       )}
                     </div>
                     {dc.length > 0 && (
@@ -352,16 +371,25 @@ export default function Schedule() {
                       </span>
                     </div>
                     <div className="space-y-1 min-h-[60px]">
-                      {da.length === 0 ? (
+                      {da.length === 0 && dm.length === 0 ? (
                         <p className="text-[10px] text-muted-foreground text-center pt-4">No assignments</p>
                       ) : (
-                        [...projectGroups].map(([name, count]) => (
-                          <div key={name} className="flex items-center gap-1 text-[10px]">
-                            <Users className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
-                            <span className="truncate text-foreground">{name}</span>
-                            <Badge variant="secondary" className="text-[9px] px-1 py-0 ml-auto">{count}</Badge>
-                          </div>
-                        ))
+                        <>
+                          {[...projectGroups].map(([name, count]) => (
+                            <div key={name} className="flex items-center gap-1 text-[10px]">
+                              <Users className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
+                              <span className="truncate text-foreground">{name}</span>
+                              <Badge variant="secondary" className="text-[9px] px-1 py-0 ml-auto">{count}</Badge>
+                            </div>
+                          ))}
+                          {[...maintGroups].map(([name, count]) => (
+                            <div key={`m-${name}`} className="flex items-center gap-1 text-[10px]">
+                              <Wrench className="h-2.5 w-2.5 text-status-overtime shrink-0" />
+                              <span className="truncate text-status-overtime">{name}</span>
+                              <Badge variant="outline" className="text-[9px] px-1 py-0 ml-auto border-status-overtime/30 text-status-overtime">{count}</Badge>
+                            </div>
+                          ))}
+                        </>
                       )}
                     </div>
                     {dc.length > 0 && (
@@ -396,6 +424,7 @@ export default function Schedule() {
 
       {selectedDay && selectedProjectId === "all" && !expandedProjectId && (() => {
         const da = dayAssignments(selectedDay);
+        const dm = dayMaintenanceItems(selectedDay);
         const projectsWithAssignments = activeProjects
           .filter((p) => da.some((a) => a.project_id === p.id))
           .map((p) => ({
@@ -404,12 +433,48 @@ export default function Schedule() {
             site_address: p.site_address ?? null,
             assignmentCount: da.filter((a) => a.project_id === p.id).length,
           }));
+
+        // Group maintenance by call
+        const maintGroupsForDay = new Map<string, { company_name: string; location: string | null; count: number; priority: string }>();
+        for (const m of dm) {
+          if (!maintGroupsForDay.has(m.maintenance_call_id)) {
+            maintGroupsForDay.set(m.maintenance_call_id, { company_name: m.company_name, location: m.location, count: 0, priority: m.priority });
+          }
+          maintGroupsForDay.get(m.maintenance_call_id)!.count++;
+        }
+
         return (
-          <ScheduleTaskSummary
-            date={selectedDay}
-            projects={projectsWithAssignments}
-            onSelectProject={(pid) => setExpandedProjectId(pid)}
-          />
+          <div className="space-y-3">
+            <ScheduleTaskSummary
+              date={selectedDay}
+              projects={projectsWithAssignments}
+              onSelectProject={(pid) => setExpandedProjectId(pid)}
+            />
+            {dm.length > 0 && (
+              <Card className="glass-card border-status-overtime/20">
+                <CardContent className="p-4">
+                  <h3 className="text-sm font-semibold text-status-overtime flex items-center gap-2 mb-3">
+                    <Wrench className="h-4 w-4" /> Maintenance Calls
+                  </h3>
+                  <div className="space-y-2">
+                    {[...maintGroupsForDay.values()].map((mg, idx) => (
+                      <div key={idx} className="flex items-center justify-between rounded-lg border border-border/50 p-2.5">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{mg.company_name}</p>
+                          {mg.location && <p className="text-xs text-muted-foreground">{mg.location}</p>}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-[10px] border-status-overtime/30 text-status-overtime">
+                            {mg.count} staff
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         );
       })()}
 
