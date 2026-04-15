@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useProjects } from "@/hooks/useProjects";
@@ -51,6 +52,7 @@ const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 type BulkDialog = "copy" | "apply" | "recurring" | null;
 
 export default function Schedule() {
+  const navigate = useNavigate();
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState("all");
@@ -435,10 +437,10 @@ export default function Schedule() {
           }));
 
         // Group maintenance by call
-        const maintGroupsForDay = new Map<string, { company_name: string; location: string | null; count: number; priority: string }>();
+        const maintGroupsForDay = new Map<string, { id: string; company_name: string; location: string | null; count: number; priority: string }>();
         for (const m of dm) {
           if (!maintGroupsForDay.has(m.maintenance_call_id)) {
-            maintGroupsForDay.set(m.maintenance_call_id, { company_name: m.company_name, location: m.location, count: 0, priority: m.priority });
+            maintGroupsForDay.set(m.maintenance_call_id, { id: m.maintenance_call_id, company_name: m.company_name, location: m.location, count: 0, priority: m.priority });
           }
           maintGroupsForDay.get(m.maintenance_call_id)!.count++;
         }
@@ -457,8 +459,12 @@ export default function Schedule() {
                     <Wrench className="h-4 w-4" /> Maintenance Calls
                   </h3>
                   <div className="space-y-2">
-                    {[...maintGroupsForDay.values()].map((mg, idx) => (
-                      <div key={idx} className="flex items-center justify-between rounded-lg border border-border/50 p-2.5">
+                    {[...maintGroupsForDay.values()].map((mg) => (
+                      <div
+                        key={mg.id}
+                        className="flex items-center justify-between rounded-lg border border-border/50 p-2.5 cursor-pointer hover:border-status-overtime/40 transition-colors"
+                        onClick={() => navigate(`/maintenance/${mg.id}`)}
+                      >
                         <div>
                           <p className="text-sm font-medium text-foreground">{mg.company_name}</p>
                           {mg.location && <p className="text-xs text-muted-foreground">{mg.location}</p>}
