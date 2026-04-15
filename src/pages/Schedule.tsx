@@ -71,11 +71,12 @@ export default function Schedule() {
   // Recurring state
   const [recurWeeks, setRecurWeeks] = useState(4);
 
-  const weekDates = useMemo(() => getWeekDates(weekOffset), [weekOffset]);
+  const weekDates = useMemo(() => getDayDates(dayOffset), [dayOffset]);
   const weekStart = weekDates[0];
   const weekEnd = weekDates[6];
 
-  const prevWeekDates = useMemo(() => getWeekDates(weekOffset - 1), [weekOffset]);
+  // For "copy previous week" we need the 7 days before the current window
+  const prevWeekDates = useMemo(() => getDayDates(dayOffset - 7), [dayOffset]);
   const prevWeekStart = prevWeekDates[0];
   const prevWeekEnd = prevWeekDates[6];
 
@@ -277,11 +278,11 @@ export default function Schedule() {
             </SelectContent>
           </Select>
           <div className="flex items-center gap-1">
-            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setWeekOffset((w) => w - 1)}>
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setDayOffset((d) => d - 7)}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm" className="text-xs" onClick={() => setWeekOffset(0)}>Today</Button>
-            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setWeekOffset((w) => w + 1)}>
+            <Button variant="outline" size="sm" className="text-xs" onClick={() => setDayOffset(0)}>Today</Button>
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setDayOffset((d) => d + 7)}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
