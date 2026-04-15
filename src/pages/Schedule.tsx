@@ -653,6 +653,51 @@ export default function Schedule() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* Copy Maintenance Assignments Dialog */}
+      <Dialog open={!!copyMaintDialog} onOpenChange={(v) => { if (!v) setCopyMaintDialog(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Wrench className="h-5 w-5 text-status-overtime" />Copy Maintenance Staff</DialogTitle>
+            <DialogDescription>
+              Copy all staff assignments from <strong>{copyMaintDialog?.companyName}</strong> to another date
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="rounded-lg border border-border p-3 bg-muted/20 text-xs text-muted-foreground space-y-1">
+              <p>Source date: <span className="text-foreground font-medium">
+                {copyMaintDialog?.sourceDate && new Date(copyMaintDialog.sourceDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short", year: "numeric" })}
+              </span></p>
+              <p>Company: <span className="text-foreground font-medium">{copyMaintDialog?.companyName}</span></p>
+            </div>
+            <div>
+              <Label className="text-xs">Target Date</Label>
+              <DateInput value={copyMaintTargetDate} onChange={setCopyMaintTargetDate} className="mt-1" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCopyMaintDialog(null)}>Cancel</Button>
+            <Button
+              disabled={copyMaint.isPending || !copyMaintTargetDate}
+              onClick={async () => {
+                if (!copyMaintDialog) return;
+                try {
+                  const count = await copyMaint.mutateAsync({
+                    maintenanceCallId: copyMaintDialog.callId,
+                    sourceDate: copyMaintDialog.sourceDate,
+                    targetDate: copyMaintTargetDate,
+                  });
+                  toast.success(`Copied ${count} staff to ${new Date(copyMaintTargetDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`);
+                  setCopyMaintDialog(null);
+                } catch (e: any) {
+                  toast.error(e.message);
+                }
+              }}
+            >
+              {copyMaint.isPending ? "Copying…" : "Copy Staff"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
