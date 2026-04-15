@@ -150,9 +150,9 @@ export function useScheduleReport(start: string, end: string) {
       } else {
         // Log exists but no assignment for that date+project — still show it
         dailyMap.set(key, {
-          project: l.project_id, // will be resolved below
+          project: (l as any).projects?.name ?? "—",
           projectId: l.project_id,
-          location: "—",
+          location: (l as any).projects?.site_address ?? "—",
           teamSize: 0,
           teamNames: [],
           tasks: l.description ? [l.description] : [],
