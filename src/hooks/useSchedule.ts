@@ -17,6 +17,20 @@ export interface ScheduleAssignment {
   project_name: string;
 }
 
+export interface MaintenanceScheduleItem {
+  id: string;
+  maintenance_call_id: string;
+  employee_id: string;
+  date: string;
+  shift_start: string | null;
+  shift_end: string | null;
+  employee_name: string;
+  employee_skill: string;
+  company_name: string;
+  location: string | null;
+  priority: string;
+}
+
 export interface ConflictInfo {
   employee_id: string;
   employee_name: string;
@@ -56,6 +70,36 @@ export function useWeekAssignments(weekStart: string, weekEnd: string, projectId
         employee_skill: a.employees?.skill_type ?? "helper",
         project_name: a.projects?.name ?? "Unknown",
       })) as ScheduleAssignment[];
+    },
+  });
+}
+
+export function useWeekMaintenanceAssignments(weekStart: string, weekEnd: string) {
+  return useQuery({
+    queryKey: ["schedule-maintenance-assignments", weekStart, weekEnd],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("maintenance_assignments")
+        .select("id, maintenance_call_id, employee_id, date, shift_start, shift_end, employees(name, skill_type), maintenance_calls(company_name, location, priority)")
+        .gte("date", weekStart)
+        .lte("date", weekEnd)
+        .order("date");
+
+      if (error) throw error;
+
+      return (data ?? []).map((a: any) => ({
+        id: a.id,
+        maintenance_call_id: a.maintenance_call_id,
+        employee_id: a.employee_id,
+        date: a.date,
+        shift_start: a.shift_start,
+        shift_end: a.shift_end,
+        employee_name: a.employees?.name ?? "Unknown",
+        employee_skill: a.employees?.skill_type ?? "helper",
+        company_name: a.maintenance_calls?.company_name ?? "Unknown",
+        location: a.maintenance_calls?.location ?? null,
+        priority: a.maintenance_calls?.priority ?? "normal",
+      })) as MaintenanceScheduleItem[];
     },
   });
 }
@@ -361,6 +405,12 @@ export function useAvailableEmployees(date: string, projectId: string) {
         .eq("date", date)
         .neq("project_id", projectId);
 
+      // Also check maintenance assignments for this date
+      const { data: maintenanceAssignments } = await supabase
+        .from("maintenance_assignments")
+        .select("employee_id, shift_start, shift_end, maintenance_calls(company_name)")
+        .eq("date", date);
+
       const { data: onLeave } = await supabase
         .from("employee_leave")
         .select("employee_id")
@@ -380,10 +430,19 @@ export function useAvailableEmployees(date: string, projectId: string) {
           project: (a.projects as any)?.name ?? "Other",
         });
       }
+      // Add maintenance slots
+      for (const a of maintenanceAssignments ?? []) {
+        if (!timeSlotsMap.has(a.employee_id)) timeSlotsMap.set(a.employee_id, []);
+        timeSlotsMap.get(a.employee_id)!.push({
+          start: a.shift_start?.slice(0, 5) ?? "08:00",
+          end: a.shift_end?.slice(0, 5) ?? "17:00",
+          project: `🔧 ${(a.maintenance_calls as any)?.company_name ?? "Maintenance"}`,
+        });
+      }
 
       return (employees ?? []).map((e) => ({
         ...e,
-        available: !assignedToProjectIds.has(e.id) && !leaveIds.has(e.id),
+        available: !assignedToProjectIds.has(e.id) && !leaveIds.has(e.id) && !timeSlotsMap.has(e.id),
         on_leave: leaveIds.has(e.id),
         assigned_elsewhere: timeSlotsMap.has(e.id) && !leaveIds.has(e.id),
         existing_slots: timeSlotsMap.get(e.id) ?? [],
