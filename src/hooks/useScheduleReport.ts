@@ -28,6 +28,8 @@ export interface ScheduleReportData {
     teamNames: string[];
     tasks: string[];
     tasksLogged: number;
+    shiftStart: string | null;
+    shiftEnd: string | null;
   }[];
   employeeSummary: {
     name: string;
