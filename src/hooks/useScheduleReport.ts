@@ -34,6 +34,7 @@ export interface ScheduleReportData {
   employeeSummary: {
     name: string;
     code: string;
+    skillType: string;
     daysScheduled: number;
     projectsWorked: number;
     totalHours: number;
@@ -62,7 +63,7 @@ export function useScheduleReport(start: string, end: string) {
     queryFn: async () => {
       const { data } = await supabase
         .from("project_assignments")
-        .select("id, date, project_id, employee_id, shift_start, shift_end, employees(name, employee_code), projects(name, site_address, required_technicians, required_helpers, required_supervisors, required_drivers, required_team_members)")
+        .select("id, date, project_id, employee_id, shift_start, shift_end, employees(name, employee_code, skill_type), projects(name, site_address, required_technicians, required_helpers, required_supervisors, required_drivers, required_team_members)")
         .gte("date", start)
         .lte("date", end)
         .order("date");
@@ -87,7 +88,7 @@ export function useScheduleReport(start: string, end: string) {
     queryFn: async () => {
       const { data } = await supabase
         .from("employees")
-        .select("id, name, employee_code")
+        .select("id, name, employee_code, skill_type")
         .eq("is_active", true);
       return data ?? [];
     },
@@ -183,7 +184,7 @@ export function useScheduleReport(start: string, end: string) {
     })).sort((a, b) => a.date.localeCompare(b.date));
 
     // Employee summary
-    const empMap = new Map<string, { name: string; code: string; dates: Set<string>; projects: Set<string>; totalMinutes: number }>();
+    const empMap = new Map<string, { name: string; code: string; skillType: string; dates: Set<string>; projects: Set<string>; totalMinutes: number }>();
     assignments.forEach((a) => {
       const existing = empMap.get(a.employee_id);
       const shiftMinutes = calcShiftMinutes(a.shift_start, a.shift_end);
@@ -195,6 +196,7 @@ export function useScheduleReport(start: string, end: string) {
         empMap.set(a.employee_id, {
           name: a.employees?.name ?? "—",
           code: a.employees?.employee_code ?? "—",
+          skillType: a.employees?.skill_type ?? "—",
           dates: new Set([a.date]),
           projects: new Set([a.project_id]),
           totalMinutes: shiftMinutes,
@@ -204,6 +206,7 @@ export function useScheduleReport(start: string, end: string) {
     const scheduledEmployees = Array.from(empMap.entries()).map(([id, e]) => ({
       name: e.name,
       code: e.code,
+      skillType: e.skillType,
       daysScheduled: e.dates.size,
       projectsWorked: e.projects.size,
       totalHours: Math.round((e.totalMinutes / 60) * 10) / 10,
@@ -217,6 +220,7 @@ export function useScheduleReport(start: string, end: string) {
       .map((emp) => ({
         name: emp.name,
         code: emp.employee_code,
+        skillType: emp.skill_type ?? "—",
         daysScheduled: 0,
         projectsWorked: 0,
         totalHours: 0,
