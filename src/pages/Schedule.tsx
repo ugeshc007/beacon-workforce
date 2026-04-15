@@ -94,6 +94,7 @@ export default function Schedule() {
   const effectiveProjectId = selectedProjectId;
 
   const { data: assignments, isLoading } = useWeekAssignments(weekStart, weekEnd, effectiveProjectId);
+  const { data: maintenanceItems } = useWeekMaintenanceAssignments(weekStart, weekEnd);
   const conflicts = useDetectConflicts(assignments ?? []);
   const queryClient = useQueryClient();
 
