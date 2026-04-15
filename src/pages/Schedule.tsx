@@ -137,6 +137,7 @@ export default function Schedule() {
   })();
 
   const dayAssignments = (date: string) => (assignments ?? []).filter((a) => a.date === date);
+  const dayMaintenanceItems = (date: string) => (maintenanceItems ?? []).filter((m) => m.date === date);
   const dayConflicts = (date: string) => conflicts.filter((c) => c.date === date);
 
   const handleCopyWeek = async () => {
