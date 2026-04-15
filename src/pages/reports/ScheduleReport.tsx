@@ -121,9 +121,9 @@ export default function ScheduleReport() {
                         <th className="text-left p-3">Date</th>
                         <th className="text-left p-3">Project</th>
                         <th className="text-left p-3">Time</th>
-                        <th className="text-left p-3">Tasks</th>
-                        <th className="text-left p-3">Team Members</th>
                         <th className="text-left p-3">Location</th>
+                        <th className="text-left p-3">Team Members</th>
+                        <th className="text-left p-3">Tasks</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -136,6 +136,14 @@ export default function ScheduleReport() {
                               ? `${r.shiftStart ?? "—"} – ${r.shiftEnd ?? "—"}`
                               : <span className="text-muted-foreground">—</span>}
                           </td>
+                          <td className="p-3 text-muted-foreground">{r.location}</td>
+                          <td className="p-3">
+                            <div className="flex flex-wrap gap-1">
+                              {r.teamNames.map((name, j) => (
+                                <Badge key={j} variant="secondary" className="text-[10px] font-normal">{name}</Badge>
+                              ))}
+                            </div>
+                          </td>
                           <td className="p-3">
                             {r.tasks.length > 0 ? (
                               <div className="space-y-0.5">
@@ -144,17 +152,9 @@ export default function ScheduleReport() {
                                 ))}
                               </div>
                             ) : (
-                              <span className="text-xs text-muted-foreground">No tasks</span>
+                              <span className="text-xs text-muted-foreground">—</span>
                             )}
                           </td>
-                          <td className="p-3">
-                            <div className="flex flex-wrap gap-1">
-                              {r.teamNames.map((name, j) => (
-                                <Badge key={j} variant="secondary" className="text-[10px] font-normal">{name}</Badge>
-                              ))}
-                            </div>
-                          </td>
-                          <td className="p-3 text-muted-foreground">{r.location}</td>
                         </tr>
                       ))}
                       {data.dailyOverview.length === 0 && (
