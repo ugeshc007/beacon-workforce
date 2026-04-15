@@ -300,6 +300,7 @@ export default function Schedule() {
         <div className="grid grid-cols-1 sm:grid-cols-7 gap-2">
           {weekDates.map((date, i) => {
             const da = dayAssignments(date);
+            const dm = dayMaintenanceItems(date);
             const dc = dayConflicts(date);
             const isToday = date === today;
             const isSelected = date === selectedDay;
@@ -307,6 +308,9 @@ export default function Schedule() {
 
             const projectGroups = new Map<string, number>();
             for (const a of da) projectGroups.set(a.project_name, (projectGroups.get(a.project_name) ?? 0) + 1);
+
+            const maintGroups = new Map<string, number>();
+            for (const m of dm) maintGroups.set(m.company_name, (maintGroups.get(m.company_name) ?? 0) + 1);
 
             return (
               <Card
