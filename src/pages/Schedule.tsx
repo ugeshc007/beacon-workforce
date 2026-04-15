@@ -332,16 +332,25 @@ export default function Schedule() {
                       </span>
                     </div>
                     <div className="flex-1 flex items-center gap-2 overflow-x-auto">
-                      {da.length === 0 ? (
+                      {da.length === 0 && dm.length === 0 ? (
                         <p className="text-xs text-muted-foreground">No assignments</p>
                       ) : (
-                        [...projectGroups].map(([name, count]) => (
-                          <div key={name} className="flex items-center gap-1 text-xs shrink-0">
-                            <Users className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-foreground">{name}</span>
-                            <Badge variant="secondary" className="text-[10px] px-1 py-0">{count}</Badge>
-                          </div>
-                        ))
+                        <>
+                          {[...projectGroups].map(([name, count]) => (
+                            <div key={name} className="flex items-center gap-1 text-xs shrink-0">
+                              <Users className="h-3 w-3 text-muted-foreground" />
+                              <span className="text-foreground">{name}</span>
+                              <Badge variant="secondary" className="text-[10px] px-1 py-0">{count}</Badge>
+                            </div>
+                          ))}
+                          {[...maintGroups].map(([name, count]) => (
+                            <div key={`m-${name}`} className="flex items-center gap-1 text-xs shrink-0">
+                              <Wrench className="h-3 w-3 text-status-overtime shrink-0" />
+                              <span className="text-status-overtime">{name}</span>
+                              <Badge variant="outline" className="text-[10px] px-1 py-0 border-status-overtime/30 text-status-overtime">{count}</Badge>
+                            </div>
+                          ))}
+                        </>
                       )}
                     </div>
                     {dc.length > 0 && (
