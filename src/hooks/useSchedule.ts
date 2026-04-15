@@ -104,18 +104,46 @@ export function useWeekMaintenanceAssignments(weekStart: string, weekEnd: string
   });
 }
 
+/** Check if two time ranges overlap. If either has no times set, assume full-day overlap. */
+function timesOverlap(
+  s1: string | null, e1: string | null,
+  s2: string | null, e2: string | null,
+): boolean {
+  // If either assignment has no shift times, treat as full-day → always overlaps
+  if (!s1 || !e1 || !s2 || !e2) return true;
+  // Times are "HH:MM" or "HH:MM:SS" strings — lexicographic comparison works
+  return s1 < e2 && s2 < e1;
+}
+
 export function useDetectConflicts(assignments: ScheduleAssignment[]): ConflictInfo[] {
-  const map = new Map<string, { name: string; projects: Set<string> }>();
+  // Group assignments by employee+date
+  const map = new Map<string, { name: string; entries: { project: string; start: string | null; end: string | null }[] }>();
   for (const a of assignments) {
     const key = `${a.employee_id}::${a.date}`;
-    if (!map.has(key)) map.set(key, { name: a.employee_name, projects: new Set() });
-    map.get(key)!.projects.add(a.project_name);
+    if (!map.has(key)) map.set(key, { name: a.employee_name, entries: [] });
+    map.get(key)!.entries.push({ project: a.project_name, start: a.shift_start, end: a.shift_end });
   }
+
   const conflicts: ConflictInfo[] = [];
   for (const [key, val] of map) {
-    if (val.projects.size > 1) {
+    const { entries } = val;
+    if (entries.length < 2) continue;
+
+    // Check pairwise for actual time overlaps
+    const overlappingProjects = new Set<string>();
+    for (let i = 0; i < entries.length; i++) {
+      for (let j = i + 1; j < entries.length; j++) {
+        if (entries[i].project !== entries[j].project &&
+            timesOverlap(entries[i].start, entries[i].end, entries[j].start, entries[j].end)) {
+          overlappingProjects.add(entries[i].project);
+          overlappingProjects.add(entries[j].project);
+        }
+      }
+    }
+
+    if (overlappingProjects.size > 1) {
       const [employee_id, date] = key.split("::");
-      conflicts.push({ employee_id, employee_name: val.name, date, projects: [...val.projects] });
+      conflicts.push({ employee_id, employee_name: val.name, date, projects: [...overlappingProjects] });
     }
   }
   return conflicts;
