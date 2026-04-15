@@ -102,6 +102,7 @@ export function ProjectDailyLogTab({ projectId }: Props) {
           id: editingLog.id,
           projectId,
           description: description.trim(),
+          date: logDate,
           issues: issues.trim() || null,
           completion_pct: completionPct ? parseInt(completionPct) : null,
           photo_urls: allPhotos,
