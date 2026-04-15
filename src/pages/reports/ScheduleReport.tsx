@@ -120,10 +120,9 @@ export default function ScheduleReport() {
                       <tr className="border-b border-border text-muted-foreground text-xs">
                         <th className="text-left p-3">Date</th>
                         <th className="text-left p-3">Project</th>
-                        <th className="text-left p-3">Time</th>
-                        <th className="text-left p-3">Location</th>
-                        <th className="text-left p-3">Team Members</th>
                         <th className="text-left p-3">Tasks</th>
+                        <th className="text-left p-3">Team Members</th>
+                        <th className="text-left p-3">Location</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -131,19 +130,6 @@ export default function ScheduleReport() {
                         <tr key={i} className="border-b border-border/50 hover:bg-muted/30 align-top">
                           <td className="p-3 text-foreground whitespace-nowrap">{r.date}</td>
                           <td className="p-3 font-medium text-foreground">{r.project}</td>
-                          <td className="p-3 text-foreground whitespace-nowrap text-xs">
-                            {r.shiftStart || r.shiftEnd
-                              ? `${r.shiftStart ?? "—"} – ${r.shiftEnd ?? "—"}`
-                              : <span className="text-muted-foreground">—</span>}
-                          </td>
-                          <td className="p-3 text-muted-foreground">{r.location}</td>
-                          <td className="p-3">
-                            <div className="flex flex-wrap gap-1">
-                              {r.teamNames.map((name, j) => (
-                                <Badge key={j} variant="secondary" className="text-[10px] font-normal">{name}</Badge>
-                              ))}
-                            </div>
-                          </td>
                           <td className="p-3">
                             {r.tasks.length > 0 ? (
                               <div className="space-y-0.5">
@@ -155,10 +141,18 @@ export default function ScheduleReport() {
                               <span className="text-xs text-muted-foreground">—</span>
                             )}
                           </td>
+                          <td className="p-3">
+                            <div className="flex flex-wrap gap-1">
+                              {r.teamNames.map((name, j) => (
+                                <Badge key={j} variant="secondary" className="text-[10px] font-normal">{name}</Badge>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="p-3 text-muted-foreground">{r.location}</td>
                         </tr>
                       ))}
                       {data.dailyOverview.length === 0 && (
-                        <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">No assignments found</td></tr>
+                        <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">No assignments found</td></tr>
                       )}
                     </tbody>
                   </table>
@@ -173,33 +167,31 @@ export default function ScheduleReport() {
                 </Button>
               </div>
               <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Available Employees (Not Scheduled)</CardTitle>
+                </CardHeader>
                 <CardContent className="p-0 overflow-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-border text-muted-foreground text-xs">
                         <th className="text-left p-3">Employee</th>
                         <th className="text-left p-3">Code</th>
-                        <th className="text-center p-3">Status</th>
-                        <th className="text-center p-3">Days</th>
-                        <th className="text-center p-3">Projects</th>
-                        <th className="text-center p-3">Hours</th>
+                        <th className="text-center p-3">Skill</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {data.employeeSummary.map((r, i) => (
+                      {data.employeeSummary.filter((r) => r.status !== "scheduled").map((r, i) => (
                         <tr key={i} className="border-b border-border/50 hover:bg-muted/30">
                           <td className="p-3 font-medium text-foreground">{r.name}</td>
                           <td className="p-3 text-muted-foreground">{r.code}</td>
                           <td className="p-3 text-center">
-                            <Badge variant={r.status === "scheduled" ? "default" : "secondary"} className="text-[10px]">
-                              {r.status === "scheduled" ? "Scheduled" : "Available"}
-                            </Badge>
+                            <Badge variant="secondary" className="text-[10px]">Available</Badge>
                           </td>
-                          <td className="p-3 text-center">{r.daysScheduled}</td>
-                          <td className="p-3 text-center">{r.projectsWorked}</td>
-                          <td className="p-3 text-center">{r.totalHours}</td>
                         </tr>
                       ))}
+                      {data.employeeSummary.filter((r) => r.status !== "scheduled").length === 0 && (
+                        <tr><td colSpan={3} className="p-6 text-center text-muted-foreground">All employees are scheduled</td></tr>
+                      )}
                     </tbody>
                   </table>
                 </CardContent>
