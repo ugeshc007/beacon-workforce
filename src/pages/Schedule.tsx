@@ -61,6 +61,8 @@ export default function Schedule() {
   const [jobCardSearch, setJobCardSearch] = useState("");
   const [selectedJobCard, setSelectedJobCard] = useState("all");
   const [expandedProjectId, setExpandedProjectId] = useState<string | null>(null);
+  const [copyMaintDialog, setCopyMaintDialog] = useState<{ callId: string; companyName: string; sourceDate: string } | null>(null);
+  const [copyMaintTargetDate, setCopyMaintTargetDate] = useState("");
 
   // Apply-to-range state
   const [rangeStart, setRangeStart] = useState("");
