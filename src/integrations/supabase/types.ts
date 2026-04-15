@@ -999,6 +999,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           end_date: string | null
+          has_warranty: boolean
           health_score: number | null
           id: string
           job_card: string | null
@@ -1017,6 +1018,10 @@ export type Database = {
           start_date: string | null
           status: Database["public"]["Enums"]["project_status"]
           template_id: string | null
+          warranty_end_date: string | null
+          warranty_notes: string | null
+          warranty_notification_sent: boolean
+          warranty_start_date: string | null
         }
         Insert: {
           branch_id: string
@@ -1027,6 +1032,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           end_date?: string | null
+          has_warranty?: boolean
           health_score?: number | null
           id?: string
           job_card?: string | null
@@ -1045,6 +1051,10 @@ export type Database = {
           start_date?: string | null
           status?: Database["public"]["Enums"]["project_status"]
           template_id?: string | null
+          warranty_end_date?: string | null
+          warranty_notes?: string | null
+          warranty_notification_sent?: boolean
+          warranty_start_date?: string | null
         }
         Update: {
           branch_id?: string
@@ -1055,6 +1065,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           end_date?: string | null
+          has_warranty?: boolean
           health_score?: number | null
           id?: string
           job_card?: string | null
@@ -1073,6 +1084,10 @@ export type Database = {
           start_date?: string | null
           status?: Database["public"]["Enums"]["project_status"]
           template_id?: string | null
+          warranty_end_date?: string | null
+          warranty_notes?: string | null
+          warranty_notification_sent?: boolean
+          warranty_start_date?: string | null
         }
         Relationships: [
           {
