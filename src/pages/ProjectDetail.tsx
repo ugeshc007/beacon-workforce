@@ -11,11 +11,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   ArrowLeft, MapPin, Phone, Mail, Users, DollarSign, Clock, Wrench,
-  UserPlus, Trash2, Check, CalendarDays,
+  UserPlus, Trash2, Check, CalendarDays, ShieldCheck, ShieldAlert, ShieldOff,
 } from "lucide-react";
 import { useState } from "react";
+import { differenceInDays, format as fnsFormat } from "date-fns";
 import { ProjectFormDialog } from "@/components/projects/ProjectFormDialog";
 import { ProjectCostsTab } from "@/components/projects/ProjectCostsTab";
 import { ProjectExpensesTab } from "@/components/projects/ProjectExpensesTab";
