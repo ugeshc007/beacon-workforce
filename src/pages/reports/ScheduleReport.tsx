@@ -22,8 +22,8 @@ export default function ScheduleReport() {
         data.dailyOverview.map((r) => [r.date, r.project, r.tasks.join("; ") || "—", r.teamNames.join(", "), r.location]));
     } else if (tab === "employee") {
       const available = data.employeeSummary.filter((r) => r.status !== "scheduled");
-      downloadCsv("schedule-available-employees.csv", ["Employee", "Code"],
-        available.map((r) => [r.name, r.code]));
+      downloadCsv("schedule-available-employees.csv", ["Employee", "Code", "Skill"],
+        available.map((r) => [r.name, r.code, r.skillType?.replace("_", " ") ?? "—"]));
     } else if (tab === "coverage") {
       downloadCsv("schedule-coverage.csv", ["Project", "Days Active", "Avg Team", "Required", "Assigned", "Fill Rate %"],
         data.projectCoverage.map((r) => [r.project, r.daysActive, r.avgTeamSize, r.required, r.assigned, r.fillRate]));
@@ -53,8 +53,8 @@ export default function ScheduleReport() {
         },
         {
           title: "Available Employees (Not Scheduled)",
-          headers: ["Employee", "Code"],
-          rows: data.employeeSummary.filter((r) => r.status !== "scheduled").map((r) => [r.name, r.code]),
+          headers: ["Employee", "Code", "Skill"],
+          rows: data.employeeSummary.filter((r) => r.status !== "scheduled").map((r) => [r.name, r.code, r.skillType?.replace("_", " ") ?? "—"]),
         },
         {
           title: "Project Coverage",
@@ -186,7 +186,7 @@ export default function ScheduleReport() {
                           <td className="p-3 font-medium text-foreground">{r.name}</td>
                           <td className="p-3 text-muted-foreground">{r.code}</td>
                           <td className="p-3 text-center">
-                            <Badge variant="secondary" className="text-[10px]">Available</Badge>
+                            <Badge variant="secondary" className="text-[10px] capitalize">{r.skillType?.replace("_", " ") ?? "—"}</Badge>
                           </td>
                         </tr>
                       ))}
