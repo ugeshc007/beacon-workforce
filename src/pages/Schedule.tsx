@@ -453,11 +453,28 @@ export default function Schedule() {
 
         return (
           <div className="space-y-3">
-            <ScheduleTaskSummary
-              date={selectedDay}
-              projects={projectsWithAssignments}
-              onSelectProject={(pid) => setExpandedProjectId(pid)}
-            />
+            <div className="flex items-center justify-between">
+              <ScheduleTaskSummary
+                date={selectedDay}
+                projects={projectsWithAssignments}
+                onSelectProject={(pid) => setExpandedProjectId(pid)}
+              />
+              {da.length > 0 && canCreate && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-xs shrink-0"
+                  onClick={() => {
+                    const next = new Date(selectedDay! + "T00:00:00");
+                    next.setDate(next.getDate() + 1);
+                    setCopyDayTargetDate(next.toISOString().split("T")[0]);
+                    setCopyDayDialog(true);
+                  }}
+                >
+                  <Copy className="h-3.5 w-3.5" /> Copy Day
+                </Button>
+              )}
+            </div>
             {dm.length > 0 && (
               <Card className="glass-card border-status-overtime/20">
                 <CardContent className="p-4">
