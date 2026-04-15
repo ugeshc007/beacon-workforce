@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Users, ChevronRight, ClipboardList } from "lucide-react";
+import { MapPin, Users, ChevronRight, ClipboardList, Copy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
@@ -16,6 +16,7 @@ interface Props {
   date: string;
   projects: ProjectSummary[];
   onSelectProject: (projectId: string) => void;
+  onCopyProject?: (projectId: string, projectName: string) => void;
 }
 
 const statusEmoji: Record<string, string> = {
@@ -32,7 +33,7 @@ const statusColor: Record<string, string> = {
   pending: "text-muted-foreground",
 };
 
-export function ScheduleTaskSummary({ date, projects, onSelectProject }: Props) {
+export function ScheduleTaskSummary({ date, projects, onSelectProject, onCopyProject }: Props) {
   const { data: allLogs } = useQuery({
     queryKey: ["schedule-task-summary", date],
     queryFn: async () => {
@@ -91,6 +92,19 @@ export function ScheduleTaskSummary({ date, projects, onSelectProject }: Props) 
                   <Badge variant="secondary" className="text-[10px]">
                     <Users className="h-3 w-3 mr-1" />{project.assignmentCount}
                   </Badge>
+                  {onCopyProject && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-[10px] gap-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onCopyProject(project.id, project.name);
+                      }}
+                    >
+                      <Copy className="h-3 w-3" /> Copy to Date
+                    </Button>
+                  )}
                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 </div>
               </div>
