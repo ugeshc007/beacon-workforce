@@ -458,7 +458,7 @@ export default function Schedule() {
               onCopyProject={canCreate ? (pid, pName) => {
                 const next = new Date(selectedDay! + "T00:00:00");
                 next.setDate(next.getDate() + 1);
-                setCopyProjectTargetDate(next.toISOString().split("T")[0]);
+                setCopyProjectTargetDate(`${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}-${String(next.getDate()).padStart(2, "0")}`);
                 setCopyProjectDialog({ projectId: pid, projectName: pName, sourceDate: selectedDay! });
               } : undefined}
             />
