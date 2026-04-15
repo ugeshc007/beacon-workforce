@@ -99,6 +99,16 @@ export async function uploadDailyLogPhoto(file: File, projectId: string): Promis
   const path = `${projectId}/${Date.now()}.${ext}`;
   const { error } = await supabase.storage.from("daily-log-photos").upload(path, file);
   if (error) throw error;
-  const { data } = supabase.storage.from("daily-log-photos").getPublicUrl(path);
-  return data.publicUrl;
+  // Store the path - signed URLs will be generated when displaying
+  return path;
+}
+
+export async function getSignedPhotoUrl(path: string): Promise<string> {
+  // If it's already a full URL (legacy public URL), return as-is
+  if (path.startsWith("http")) return path;
+  const { data, error } = await supabase.storage
+    .from("daily-log-photos")
+    .createSignedUrl(path, 3600); // 1 hour expiry
+  if (error || !data?.signedUrl) return path;
+  return data.signedUrl;
 }

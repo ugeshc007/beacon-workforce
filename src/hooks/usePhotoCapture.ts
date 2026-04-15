@@ -71,12 +71,8 @@ export function usePhotoCapture() {
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from("daily-log-photos")
-        .getPublicUrl(fileName);
-
-      return urlData.publicUrl;
+      // Store the path - signed URLs will be generated when displaying
+      return fileName;
     } catch (e: any) {
       console.error("Photo capture failed:", e);
       toast({
