@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { format } from "date-fns";
+import { toLocalDateStr } from "@/lib/utils";
 import { useDailyLogs, useCreateDailyLog, useUpdateDailyLog, useDeleteDailyLog, uploadDailyLogPhoto, getSignedPhotoUrl } from "@/hooks/useDailyLogs";
+import { DateInput } from "@/components/ui/date-input";
 import type { DailyLog, DailyLogStatus } from "@/hooks/useDailyLogs";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
@@ -46,6 +48,7 @@ export function ProjectDailyLogTab({ projectId }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [editingLog, setEditingLog] = useState<DailyLog | null>(null);
   const [description, setDescription] = useState("");
+  const [logDate, setLogDate] = useState(toLocalDateStr(new Date()));
   const [issues, setIssues] = useState("");
   const [completionPct, setCompletionPct] = useState("");
   const [photos, setPhotos] = useState<File[]>([]);
@@ -56,6 +59,7 @@ export function ProjectDailyLogTab({ projectId }: Props) {
 
   const resetForm = () => {
     setDescription("");
+    setLogDate(toLocalDateStr(new Date()));
     setIssues("");
     setCompletionPct("");
     setPhotos([]);
@@ -68,6 +72,7 @@ export function ProjectDailyLogTab({ projectId }: Props) {
   const startEdit = (log: DailyLog) => {
     setEditingLog(log);
     setDescription(log.description);
+    setLogDate(log.date);
     setIssues(log.issues ?? "");
     setCompletionPct(log.completion_pct?.toString() ?? "");
     setExistingPhotos(log.photo_urls ?? []);
@@ -97,6 +102,7 @@ export function ProjectDailyLogTab({ projectId }: Props) {
           id: editingLog.id,
           projectId,
           description: description.trim(),
+          date: logDate,
           issues: issues.trim() || null,
           completion_pct: completionPct ? parseInt(completionPct) : null,
           photo_urls: allPhotos,
@@ -107,8 +113,9 @@ export function ProjectDailyLogTab({ projectId }: Props) {
         await createMutation.mutateAsync({
           project_id: projectId,
           description: description.trim(),
-          issues: issues.trim() || null,
+          date: logDate,
           completion_pct: completionPct ? parseInt(completionPct) : null,
+          issues: issues.trim() || null,
           photo_urls: allPhotos,
           posted_by: user?.id ?? null,
           status,
@@ -179,7 +186,11 @@ export function ProjectDailyLogTab({ projectId }: Props) {
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
               />
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Date</label>
+                  <DateInput value={logDate} onChange={setLogDate} />
+                </div>
                 <div>
                   <label className="text-xs text-muted-foreground mb-1 block">Status</label>
                   <Select value={status} onValueChange={(v) => setStatus(v as DailyLogStatus)}>

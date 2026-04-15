@@ -34,18 +34,31 @@ const statusColor: Record<string, string> = {
 };
 
 export function ScheduleTaskSummary({ date, projects, onSelectProject, onCopyProject }: Props) {
+  // Fetch logs for this date + pending/in_progress from previous dates
   const { data: allLogs } = useQuery({
     queryKey: ["schedule-task-summary", date],
     queryFn: async () => {
       const projectIds = projects.map((p) => p.id);
       if (projectIds.length === 0) return [];
-      const { data } = await supabase
+      
+      // Get logs for this exact date
+      const { data: todayLogs } = await supabase
         .from("project_daily_logs")
-        .select("id, project_id, description, status, completion_pct, issues")
+        .select("id, project_id, description, status, completion_pct, issues, date")
         .eq("date", date)
         .in("project_id", projectIds)
         .order("created_at", { ascending: false });
-      return data ?? [];
+
+      // Get pending/in_progress logs from previous dates (carry forward)
+      const { data: pendingLogs } = await supabase
+        .from("project_daily_logs")
+        .select("id, project_id, description, status, completion_pct, issues, date")
+        .lt("date", date)
+        .in("status", ["pending", "in_progress"])
+        .in("project_id", projectIds)
+        .order("date", { ascending: false });
+
+      return [...(todayLogs ?? []), ...(pendingLogs ?? [])];
     },
     enabled: projects.length > 0,
   });
@@ -70,6 +83,8 @@ export function ScheduleTaskSummary({ date, projects, onSelectProject, onCopyPro
       <h2 className="text-sm font-semibold text-foreground">{dayLabel} — Scheduled Tasks</h2>
       {projects.map((project) => {
         const logs = (allLogs ?? []).filter((l) => l.project_id === project.id && l.status !== "completed");
+        const todayLogs = logs.filter((l) => l.date === date);
+        const carriedLogs = logs.filter((l) => l.date !== date);
         return (
           <Card
             key={project.id}
@@ -109,10 +124,10 @@ export function ScheduleTaskSummary({ date, projects, onSelectProject, onCopyPro
                 </div>
               </div>
 
-              {/* Tasks */}
-              {logs.length > 0 ? (
+              {/* Today's tasks */}
+              {todayLogs.length > 0 && (
                 <div className="space-y-1 pl-1">
-                  {logs.map((log) => (
+                  {todayLogs.map((log) => (
                     <div key={log.id} className="flex items-start gap-2 text-sm">
                       <span className="shrink-0">{statusEmoji[log.status ?? "pending"] ?? "⏳"}</span>
                       <span className={`${statusColor[log.status ?? "pending"]} leading-tight`}>
@@ -127,7 +142,30 @@ export function ScheduleTaskSummary({ date, projects, onSelectProject, onCopyPro
                     </div>
                   ))}
                 </div>
-              ) : (
+              )}
+
+              {/* Carried forward tasks from previous dates */}
+              {carriedLogs.length > 0 && (
+                <div className="space-y-1 pl-1 border-l-2 border-amber-500/30 ml-1 pl-3">
+                  <p className="text-[10px] font-medium text-amber-400 uppercase tracking-wider">Pending from earlier</p>
+                  {carriedLogs.map((log) => (
+                    <div key={log.id} className="flex items-start gap-2 text-sm">
+                      <span className="shrink-0">{statusEmoji[log.status ?? "pending"] ?? "⏳"}</span>
+                      <span className={`${statusColor[log.status ?? "pending"]} leading-tight`}>
+                        {log.description}
+                        <span className="text-muted-foreground text-[10px] ml-1">
+                          (from {new Date(log.date + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" })})
+                        </span>
+                        {log.completion_pct !== null && (
+                          <span className="text-muted-foreground text-xs ml-1">({log.completion_pct}%)</span>
+                        )}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {todayLogs.length === 0 && carriedLogs.length === 0 && (
                 <p className="text-xs text-muted-foreground pl-1">No tasks logged</p>
               )}
             </CardContent>
