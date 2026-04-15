@@ -632,6 +632,48 @@ export type Database = {
           },
         ]
       }
+      maintenance_images: {
+        Row: {
+          caption: string | null
+          created_at: string
+          file_path: string
+          id: string
+          maintenance_call_id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          file_path: string
+          id?: string
+          maintenance_call_id: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          file_path?: string
+          id?: string
+          maintenance_call_id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_images_maintenance_call_id_fkey"
+            columns: ["maintenance_call_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_calls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_images_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
