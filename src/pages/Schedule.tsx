@@ -29,7 +29,7 @@ import {
 import { toast } from "sonner";
 import {
   ChevronLeft, ChevronRight, CalendarDays, AlertTriangle, Users,
-  Copy, CalendarRange, Repeat, MoreVertical,
+  Copy, CalendarRange, Repeat, MoreVertical, Wrench,
 } from "lucide-react";
 
 function getWeekDates(offset: number) {
