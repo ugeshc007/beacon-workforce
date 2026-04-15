@@ -173,36 +173,53 @@ export default function ScheduleReport() {
                   <Download className="h-3 w-3" /> CSV
                 </Button>
               </div>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Available Employees (Not Scheduled)</CardTitle>
-                </CardHeader>
-                <CardContent className="p-0 overflow-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-border text-muted-foreground text-xs">
-                        <th className="text-left p-3">Employee</th>
-                        <th className="text-left p-3">Code</th>
-                        <th className="text-center p-3">Skill</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.employeeSummary.filter((r) => r.status !== "scheduled").map((r, i) => (
-                        <tr key={i} className="border-b border-border/50 hover:bg-muted/30">
-                          <td className="p-3 font-medium text-foreground">{r.name}</td>
-                          <td className="p-3 text-muted-foreground">{r.code}</td>
-                          <td className="p-3 text-center">
-                            <Badge variant="secondary" className="text-[10px] capitalize">{r.skillType?.replace("_", " ") ?? "—"}</Badge>
-                          </td>
-                        </tr>
-                      ))}
-                      {data.employeeSummary.filter((r) => r.status !== "scheduled").length === 0 && (
-                        <tr><td colSpan={3} className="p-6 text-center text-muted-foreground">All employees are scheduled</td></tr>
-                      )}
-                    </tbody>
-                  </table>
-                </CardContent>
-              </Card>
+              {(() => {
+                const available = data.employeeSummary.filter((r) => r.status !== "scheduled");
+                const skillGroups = new Map<string, typeof available>();
+                for (const emp of available) {
+                  const skill = emp.skillType?.replace("_", " ") ?? "other";
+                  if (!skillGroups.has(skill)) skillGroups.set(skill, []);
+                  skillGroups.get(skill)!.push(emp);
+                }
+                const sortedSkills = [...skillGroups.keys()].sort();
+
+                if (available.length === 0) {
+                  return (
+                    <Card>
+                      <CardContent className="p-6 text-center text-muted-foreground">All employees are scheduled</CardContent>
+                    </Card>
+                  );
+                }
+
+                return sortedSkills.map((skill) => (
+                  <Card key={skill}>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground capitalize flex items-center gap-2">
+                        {skill}
+                        <Badge variant="secondary" className="text-[10px]">{skillGroups.get(skill)!.length}</Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0 overflow-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border text-muted-foreground text-xs">
+                            <th className="text-left p-3">Employee</th>
+                            <th className="text-left p-3">Code</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {skillGroups.get(skill)!.map((r, i) => (
+                            <tr key={i} className="border-b border-border/50 hover:bg-muted/30">
+                              <td className="p-3 font-medium text-foreground">{r.name}</td>
+                              <td className="p-3 text-muted-foreground">{r.code}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </CardContent>
+                  </Card>
+                ));
+              })()}
             </TabsContent>
 
             <TabsContent value="coverage" className="space-y-3">
