@@ -65,6 +65,7 @@ export function useUpdateDailyLog() {
       id: string;
       projectId: string;
       description?: string;
+      date?: string;
       completion_pct?: number | null;
       issues?: string | null;
       photo_urls?: string[];
