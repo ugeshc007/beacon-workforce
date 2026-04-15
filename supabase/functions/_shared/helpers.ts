@@ -59,6 +59,32 @@ export function nowTimestamp(): string {
   return new Date().toISOString();
 }
 
+/** Verify JWT and resolve employee_id, ensuring it matches the authenticated user */
+export async function authenticateEmployee(
+  req: Request,
+  supabase: ReturnType<typeof createSupabaseAdmin>,
+  requestedEmployeeId: string
+): Promise<{ error?: Response }> {
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const token = authHeader.replace("Bearer ", "");
+  if (!token) return { error: errorResponse("Unauthorized", 401) };
+
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+  if (error || !user) return { error: errorResponse("Unauthorized", 401) };
+
+  // Verify the authenticated user owns this employee_id
+  const { data: emp } = await supabase
+    .from("employees")
+    .select("id")
+    .eq("id", requestedEmployeeId)
+    .eq("auth_id", user.id)
+    .maybeSingle();
+
+  if (!emp) return { error: errorResponse("Forbidden: employee mismatch", 403) };
+
+  return {};
+}
+
 /** Insert a notification for all managers/admins of a branch */
 export async function notifyBranchManagers(
   supabase: ReturnType<typeof createSupabaseAdmin>,

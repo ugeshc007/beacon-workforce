@@ -1,6 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { format } from "date-fns";
-import { useDailyLogs, useCreateDailyLog, useUpdateDailyLog, useDeleteDailyLog, uploadDailyLogPhoto } from "@/hooks/useDailyLogs";
+import { useDailyLogs, useCreateDailyLog, useUpdateDailyLog, useDeleteDailyLog, uploadDailyLogPhoto, getSignedPhotoUrl } from "@/hooks/useDailyLogs";
 import type { DailyLog, DailyLogStatus } from "@/hooks/useDailyLogs";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,6 +14,21 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Plus, Send, Camera, AlertTriangle, TrendingUp, Trash2, ImageIcon, X, User, Pencil,
 } from "lucide-react";
+function SignedPhoto({ path, index }: { path: string; index: number }) {
+  const [src, setSrc] = useState(path);
+  useEffect(() => {
+    getSignedPhotoUrl(path).then(setSrc);
+  }, [path]);
+  return (
+    <a href={src} target="_blank" rel="noopener noreferrer">
+      <img
+        src={src}
+        className="h-20 w-20 object-cover rounded-md border border-border hover:border-brand transition-colors"
+        alt={`Site photo ${index + 1}`}
+      />
+    </a>
+  );
+}
 
 
 interface Props {
@@ -382,13 +397,7 @@ export function ProjectDailyLogTab({ projectId }: Props) {
                         {log.photo_urls?.length > 0 && (
                           <div className="flex gap-2 flex-wrap mt-1">
                             {log.photo_urls.map((url, i) => (
-                              <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                                <img
-                                  src={url}
-                                  className="h-20 w-20 object-cover rounded-md border border-border hover:border-brand transition-colors"
-                                  alt={`Site photo ${i + 1}`}
-                                />
-                              </a>
+                              <SignedPhoto key={i} path={url} index={i} />
                             ))}
                           </div>
                         )}
