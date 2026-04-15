@@ -12,7 +12,7 @@ function useMorningBriefing() {
     enabled: !!user,
     staleTime: 5 * 60_000,
     queryFn: async () => {
-      const today = new Date().toISOString().split("T")[0];
+      const today = toLocalDateStr(new Date());
 
       const [assignRes, attendanceRes, projectRes, leaveRes] = await Promise.all([
         supabase

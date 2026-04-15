@@ -41,7 +41,7 @@ export default function MobileTeamStatus() {
   const [members, setMembers] = useState<TeamMemberStatus[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = toLocalDateStr(new Date());
 
   useEffect(() => {
     if (!employee) return;

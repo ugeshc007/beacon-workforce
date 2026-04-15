@@ -33,7 +33,7 @@ interface Props {
 const emptyRow = (): Row => ({
   category: "material",
   amount: "",
-  date: new Date().toISOString().split("T")[0],
+  date: toLocalDateStr(new Date()),
   description: "",
 });
 
@@ -94,7 +94,7 @@ export function BulkExpenseDialog({ projectId, open, onOpenChange }: Props) {
         const cat = CATEGORIES.includes(rawCat as any) ? rawCat : "misc";
         const amt = cols[amtIdx] || "";
         const rawDate = dateIdx >= 0 ? cols[dateIdx] : "";
-        let isoDate = new Date().toISOString().split("T")[0];
+        let isoDate = toLocalDateStr(new Date());
         if (rawDate) {
           // Try DD/MM/YYYY or YYYY-MM-DD
           const ddmm = rawDate.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
@@ -143,7 +143,7 @@ export function BulkExpenseDialog({ projectId, open, onOpenChange }: Props) {
 
         const rawCat = catKey ? String(row[catKey]).toLowerCase() : "misc";
         const cat = CATEGORIES.includes(rawCat as any) ? rawCat : "misc";
-        let isoDate = new Date().toISOString().split("T")[0];
+        let isoDate = toLocalDateStr(new Date());
         if (dateKey && row[dateKey]) {
           const val = row[dateKey];
           if (typeof val === "number") {

@@ -120,7 +120,7 @@ export function useProjectStats(projectId: string | null) {
     queryKey: ["project-stats", projectId],
     enabled: !!projectId,
     queryFn: async () => {
-      const today = new Date().toISOString().split("T")[0];
+      const today = toLocalDateStr(new Date());
 
       const [assignRes, expenseRes, attendanceRes] = await Promise.all([
         supabase
@@ -269,7 +269,7 @@ export function useProjectCosts(projectId: string | null) {
         const day = d.getDay();
         const diff = d.getDate() - day + (day === 0 ? -6 : 1);
         const monday = new Date(d.setDate(diff));
-        return monday.toISOString().split("T")[0];
+        return toLocalDateStr(monday);
       };
 
       for (const r of laborRows) {

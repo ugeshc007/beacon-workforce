@@ -26,7 +26,7 @@ export interface TravelLog {
 function todayUAE(): string {
   const now = new Date();
   const uae = new Date(now.getTime() + 4 * 60 * 60 * 1000);
-  return uae.toISOString().split("T")[0];
+  return toLocalDateStr(uae);
 }
 
 export function useTravelLogs(filters: { date: string; projectId?: string; search?: string; delayOnly?: boolean }) {

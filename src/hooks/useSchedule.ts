@@ -297,7 +297,7 @@ export function useCopyPreviousWeek() {
         return {
           project_id: a.project_id,
           employee_id: a.employee_id,
-          date: tgtDate.toISOString().split("T")[0],
+          date: toLocalDateStr(tgtDate),
           shift_start: a.shift_start,
           shift_end: a.shift_end,
           assignment_mode: "manual" as const,
@@ -392,7 +392,7 @@ export function useRecurringSchedule() {
           rows.push({
             project_id: a.project_id,
             employee_id: a.employee_id,
-            date: tgtDate.toISOString().split("T")[0],
+            date: toLocalDateStr(tgtDate),
             shift_start: a.shift_start,
             shift_end: a.shift_end,
             assignment_mode: "manual" as const,

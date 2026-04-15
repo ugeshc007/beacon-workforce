@@ -20,7 +20,7 @@ interface TeamAssignDialogProps {
 
 export function TeamAssignDialog({ open, onOpenChange, projectId, existingEmployeeIds }: TeamAssignDialogProps) {
   const [search, setSearch] = useState("");
-  const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(() => toLocalDateStr(new Date()));
   const [shiftStart, setShiftStart] = useState("08:00");
   const [shiftEnd, setShiftEnd] = useState("17:00");
   const { data: empData, isLoading } = useEmployees({ search, status: "active", pageSize: 50 });

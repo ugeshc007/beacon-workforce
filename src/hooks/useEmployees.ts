@@ -71,7 +71,7 @@ export function useEmployeeStats(employeeId: string | null) {
     queryFn: async () => {
       const now = new Date();
       const firstOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-      const today = now.toISOString().split("T")[0];
+      const today = toLocalDateStr(now);
 
       const [attendance, assignment] = await Promise.all([
         supabase

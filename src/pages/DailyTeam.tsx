@@ -48,7 +48,7 @@ const skillColor: Record<string, string> = {
 function todayUAE(): string {
   const now = new Date();
   const uae = new Date(now.getTime() + 4 * 60 * 60 * 1000);
-  return uae.toISOString().split("T")[0];
+  return toLocalDateStr(uae);
 }
 
 type AbsentDialog = {
@@ -83,7 +83,7 @@ export default function DailyTeam() {
   const shiftDate = (delta: number) => {
     const d = new Date(date + "T00:00:00");
     d.setDate(d.getDate() + delta);
-    setDate(d.toISOString().split("T")[0]);
+    setDate(toLocalDateStr(d));
   };
 
   const dateLabel = new Date(date + "T00:00:00").toLocaleDateString("en-GB", {
