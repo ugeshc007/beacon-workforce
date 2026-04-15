@@ -34,18 +34,31 @@ const statusColor: Record<string, string> = {
 };
 
 export function ScheduleTaskSummary({ date, projects, onSelectProject, onCopyProject }: Props) {
+  // Fetch logs for this date + pending/in_progress from previous dates
   const { data: allLogs } = useQuery({
     queryKey: ["schedule-task-summary", date],
     queryFn: async () => {
       const projectIds = projects.map((p) => p.id);
       if (projectIds.length === 0) return [];
-      const { data } = await supabase
+      
+      // Get logs for this exact date
+      const { data: todayLogs } = await supabase
         .from("project_daily_logs")
-        .select("id, project_id, description, status, completion_pct, issues")
+        .select("id, project_id, description, status, completion_pct, issues, date")
         .eq("date", date)
         .in("project_id", projectIds)
         .order("created_at", { ascending: false });
-      return data ?? [];
+
+      // Get pending/in_progress logs from previous dates (carry forward)
+      const { data: pendingLogs } = await supabase
+        .from("project_daily_logs")
+        .select("id, project_id, description, status, completion_pct, issues, date")
+        .lt("date", date)
+        .in("status", ["pending", "in_progress"])
+        .in("project_id", projectIds)
+        .order("date", { ascending: false });
+
+      return [...(todayLogs ?? []), ...(pendingLogs ?? [])];
     },
     enabled: projects.length > 0,
   });
