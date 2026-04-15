@@ -14,6 +14,21 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Plus, Send, Camera, AlertTriangle, TrendingUp, Trash2, ImageIcon, X, User, Pencil,
 } from "lucide-react";
+function SignedPhoto({ path, index }: { path: string; index: number }) {
+  const [src, setSrc] = useState(path);
+  useEffect(() => {
+    getSignedPhotoUrl(path).then(setSrc);
+  }, [path]);
+  return (
+    <a href={src} target="_blank" rel="noopener noreferrer">
+      <img
+        src={src}
+        className="h-20 w-20 object-cover rounded-md border border-border hover:border-brand transition-colors"
+        alt={`Site photo ${index + 1}`}
+      />
+    </a>
+  );
+}
 
 
 interface Props {
