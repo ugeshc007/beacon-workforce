@@ -124,6 +124,7 @@ export default function Schedule() {
   const copyWeek = useCopyPreviousWeek();
   const applyRange = useApplyToDateRange();
   const recurring = useRecurringSchedule();
+  const copyMaint = useCopyMaintenanceAssignments();
   const { allowed: canCreate } = useCanAccess("schedule", "can_create");
   const { allowed: canEdit } = useCanAccess("schedule", "can_edit");
 
