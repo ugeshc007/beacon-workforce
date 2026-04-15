@@ -73,7 +73,7 @@ export function useScheduleReport(start: string, end: string) {
     queryFn: async () => {
       const { data } = await supabase
         .from("project_daily_logs")
-        .select("id, date, project_id, description, status")
+        .select("id, date, project_id, description, status, projects(name, site_address)")
         .gte("date", start)
         .lte("date", end);
       return data ?? [];
