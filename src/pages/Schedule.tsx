@@ -63,6 +63,8 @@ export default function Schedule() {
   const [expandedProjectId, setExpandedProjectId] = useState<string | null>(null);
   const [copyMaintDialog, setCopyMaintDialog] = useState<{ callId: string; companyName: string; sourceDate: string } | null>(null);
   const [copyMaintTargetDate, setCopyMaintTargetDate] = useState("");
+  const [copyDayDialog, setCopyDayDialog] = useState(false);
+  const [copyDayTargetDate, setCopyDayTargetDate] = useState("");
 
   // Apply-to-range state
   const [rangeStart, setRangeStart] = useState("");
@@ -451,11 +453,28 @@ export default function Schedule() {
 
         return (
           <div className="space-y-3">
-            <ScheduleTaskSummary
-              date={selectedDay}
-              projects={projectsWithAssignments}
-              onSelectProject={(pid) => setExpandedProjectId(pid)}
-            />
+            <div className="flex items-center justify-between">
+              <ScheduleTaskSummary
+                date={selectedDay}
+                projects={projectsWithAssignments}
+                onSelectProject={(pid) => setExpandedProjectId(pid)}
+              />
+              {da.length > 0 && canCreate && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-xs shrink-0"
+                  onClick={() => {
+                    const next = new Date(selectedDay! + "T00:00:00");
+                    next.setDate(next.getDate() + 1);
+                    setCopyDayTargetDate(next.toISOString().split("T")[0]);
+                    setCopyDayDialog(true);
+                  }}
+                >
+                  <Copy className="h-3.5 w-3.5" /> Copy Day
+                </Button>
+              )}
+            </div>
             {dm.length > 0 && (
               <Card className="glass-card border-status-overtime/20">
                 <CardContent className="p-4">
@@ -694,6 +713,48 @@ export default function Schedule() {
               }}
             >
               {copyMaint.isPending ? "Copying…" : "Copy Staff"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Copy Day Assignments Dialog */}
+      <Dialog open={copyDayDialog} onOpenChange={setCopyDayDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Copy className="h-5 w-5 text-brand" />Copy Day Schedule</DialogTitle>
+            <DialogDescription>
+              Copy all project assignments from{" "}
+              <strong>{selectedDay && new Date(selectedDay + "T00:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" })}</strong>{" "}
+              to another date
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-xs">Target Date</Label>
+              <DateInput value={copyDayTargetDate} onChange={setCopyDayTargetDate} className="mt-1" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCopyDayDialog(false)}>Cancel</Button>
+            <Button
+              disabled={applyRange.isPending || !copyDayTargetDate || !selectedDay}
+              onClick={async () => {
+                if (!selectedDay) return;
+                try {
+                  const count = await applyRange.mutateAsync({
+                    sourceDate: selectedDay,
+                    startDate: copyDayTargetDate,
+                    endDate: copyDayTargetDate,
+                    skipWeekends: false,
+                  });
+                  toast.success(`Copied ${count} assignments to ${new Date(copyDayTargetDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`);
+                  setCopyDayDialog(false);
+                } catch (e: any) {
+                  toast.error(e.message);
+                }
+              }}
+            >
+              {applyRange.isPending ? "Copying…" : "Copy Schedule"}
             </Button>
           </DialogFooter>
         </DialogContent>
