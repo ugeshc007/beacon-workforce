@@ -1,4 +1,4 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, todayDate, nowTimestamp } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, todayDate, nowTimestamp, authenticateEmployee } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
@@ -8,6 +8,10 @@ Deno.serve(async (req) => {
     if (!employee_id) return errorResponse("employee_id is required");
 
     const supabase = createSupabaseAdmin();
+
+    const auth = await authenticateEmployee(req, supabase, employee_id);
+    if (auth.error) return auth.error;
+
     const today = todayDate();
     const now = nowTimestamp();
 
@@ -21,7 +25,6 @@ Deno.serve(async (req) => {
     if (!log) return errorResponse("Must punch in first", 400);
     if (!log.break_start_time) return errorResponse("Break not started", 400);
 
-    // Calculate this break duration and add to cumulative
     const breakStart = new Date(log.break_start_time).getTime();
     const breakEnd = new Date(now).getTime();
     const thisBreakMinutes = Math.round((breakEnd - breakStart) / 60000);

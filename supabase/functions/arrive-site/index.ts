@@ -1,4 +1,4 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, haversineDistance, todayDate, nowTimestamp } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, haversineDistance, todayDate, nowTimestamp, authenticateEmployee } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
@@ -11,10 +11,13 @@ Deno.serve(async (req) => {
     }
 
     const supabase = createSupabaseAdmin();
+
+    const auth = await authenticateEmployee(req, supabase, employee_id);
+    if (auth.error) return auth.error;
+
     const today = todayDate();
     const now = nowTimestamp();
 
-    // Get today's attendance log
     const { data: log } = await supabase
       .from("attendance_logs")
       .select("id, project_id")
@@ -24,7 +27,6 @@ Deno.serve(async (req) => {
 
     if (!log) return errorResponse("Must punch in first", 400);
 
-    // Get project site coords
     let valid = false;
     let distance = 0;
 

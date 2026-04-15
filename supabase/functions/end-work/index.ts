@@ -1,4 +1,4 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, todayDate, nowTimestamp, notifyBranchManagers } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, todayDate, nowTimestamp, notifyBranchManagers, authenticateEmployee } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
@@ -8,6 +8,10 @@ Deno.serve(async (req) => {
     if (!employee_id) return errorResponse("employee_id is required");
 
     const supabase = createSupabaseAdmin();
+
+    const auth = await authenticateEmployee(req, supabase, employee_id);
+    if (auth.error) return auth.error;
+
     const today = todayDate();
     const now = nowTimestamp();
 
@@ -21,7 +25,6 @@ Deno.serve(async (req) => {
     if (!log) return errorResponse("Must punch in first", 400);
     if (!log.work_start_time) return errorResponse("Work not started", 400);
 
-    // Get employee rates
     const { data: emp } = await supabase
       .from("employees")
       .select("hourly_rate, overtime_rate, standard_hours_per_day, name, branch_id")
@@ -52,10 +55,8 @@ Deno.serve(async (req) => {
 
     if (error) return errorResponse(error.message, 500);
 
-    // OT threshold alert — notify managers when overtime is detected
     if (overtimeMinutes > 0) {
       try {
-        // Get OT warning threshold from settings
         const { data: setting } = await supabase
           .from("settings")
           .select("value")
@@ -63,8 +64,6 @@ Deno.serve(async (req) => {
           .maybeSingle();
         const otWarningHours = parseFloat(setting?.value ?? "2");
         const otHours = overtimeMinutes / 60;
-
-        // Always notify on OT; high priority if exceeds warning threshold
         const priority = otHours >= otWarningHours ? "critical" : "high";
 
         await notifyBranchManagers(supabase, emp.branch_id, {
