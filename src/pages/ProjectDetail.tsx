@@ -103,6 +103,127 @@ function StageStepper({
   );
 }
 
+function WarrantyTab({ project, onUpdate, isPending }: {
+  project: any;
+  onUpdate: (data: any) => Promise<void>;
+  isPending: boolean;
+}) {
+  const [hasWarranty, setHasWarranty] = useState<boolean>(project.has_warranty ?? false);
+  const [startDate, setStartDate] = useState(project.warranty_start_date ?? "");
+  const [endDate, setEndDate] = useState(project.warranty_end_date ?? "");
+  const [notes, setNotes] = useState(project.warranty_notes ?? "");
+
+  const today = new Date();
+  const expiryDate = endDate ? new Date(endDate) : null;
+  const daysLeft = expiryDate ? differenceInDays(expiryDate, today) : null;
+
+  const warrantyStatus = !hasWarranty
+    ? "none"
+    : !expiryDate
+    ? "unknown"
+    : daysLeft !== null && daysLeft < 0
+    ? "expired"
+    : daysLeft !== null && daysLeft <= 30
+    ? "expiring_soon"
+    : "active";
+
+  const statusConfig = {
+    none: { icon: ShieldOff, label: "No Warranty", color: "text-muted-foreground", bg: "bg-muted/50" },
+    unknown: { icon: ShieldCheck, label: "Warranty (no dates)", color: "text-muted-foreground", bg: "bg-muted/50" },
+    active: { icon: ShieldCheck, label: "Under Warranty", color: "text-status-present", bg: "bg-status-present/10" },
+    expiring_soon: { icon: ShieldAlert, label: "Expiring Soon", color: "text-amber-400", bg: "bg-amber-400/10" },
+    expired: { icon: ShieldOff, label: "Warranty Expired", color: "text-destructive", bg: "bg-destructive/10" },
+  };
+
+  const cfg = statusConfig[warrantyStatus];
+
+  const handleSave = () => {
+    onUpdate({
+      has_warranty: hasWarranty,
+      warranty_start_date: hasWarranty && startDate ? startDate : null,
+      warranty_end_date: hasWarranty && endDate ? endDate : null,
+      warranty_notes: hasWarranty && notes.trim() ? notes.trim() : null,
+    });
+  };
+
+  return (
+    <div className="space-y-4">
+      <Card className="glass-card">
+        <CardContent className="p-6">
+          <div className="flex items-center gap-4">
+            <div className={cn("h-14 w-14 rounded-xl flex items-center justify-center", cfg.bg)}>
+              <cfg.icon className={cn("h-7 w-7", cfg.color)} />
+            </div>
+            <div>
+              <p className={cn("text-lg font-bold", cfg.color)}>{cfg.label}</p>
+              {warrantyStatus === "active" && daysLeft !== null && (
+                <p className="text-sm text-muted-foreground">{daysLeft} days remaining</p>
+              )}
+              {warrantyStatus === "expiring_soon" && daysLeft !== null && (
+                <p className="text-sm text-amber-400">{daysLeft} days until expiry — notification will be sent</p>
+              )}
+              {warrantyStatus === "expired" && daysLeft !== null && (
+                <p className="text-sm text-destructive">Expired {Math.abs(daysLeft)} days ago</p>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="glass-card">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Warranty Details</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-3">
+            <Switch checked={hasWarranty} onCheckedChange={setHasWarranty} id="warranty-toggle" />
+            <Label htmlFor="warranty-toggle" className="text-sm">This project has a warranty</Label>
+          </div>
+
+          {hasWarranty && (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Warranty Start Date</Label>
+                  <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Warranty End Date</Label>
+                  <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Warranty Notes</Label>
+                <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Warranty terms, conditions, coverage details..." rows={3} />
+              </div>
+
+              {endDate && (
+                <div className="rounded-lg border border-border/50 p-3 bg-accent/20">
+                  <p className="text-xs text-muted-foreground mb-1">Notification Schedule</p>
+                  <div className="flex flex-col gap-1 text-sm">
+                    <div className="flex items-center gap-2">
+                      <ShieldAlert className="h-3.5 w-3.5 text-amber-400" />
+                      <span>30 days before: <span className="font-mono text-foreground">{fnsFormat(new Date(new Date(endDate).getTime() - 30 * 86400000), "dd/MM/yyyy")}</span></span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <ShieldOff className="h-3.5 w-3.5 text-destructive" />
+                      <span>Expiry day: <span className="font-mono text-foreground">{fnsFormat(new Date(endDate), "dd/MM/yyyy")}</span></span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          <Button onClick={handleSave} disabled={isPending} size="sm">
+            {isPending ? "Saving..." : "Save Warranty"}
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
