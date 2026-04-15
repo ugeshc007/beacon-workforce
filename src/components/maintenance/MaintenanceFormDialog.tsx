@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,9 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DateInput } from "@/components/ui/date-input";
 import { useCreateMaintenanceCall, useUpdateMaintenanceCall, MaintenanceCall } from "@/hooks/useMaintenance";
 import { useBranches } from "@/hooks/useEmployees";
+import { useProjects } from "@/hooks/useProjects";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Building2 } from "lucide-react";
 
 interface Props {
   open: boolean;
@@ -25,7 +26,21 @@ export function MaintenanceFormDialog({ open, onOpenChange, editCall }: Props) {
   const createMutation = useCreateMaintenanceCall();
   const updateMutation = useUpdateMaintenanceCall();
   const { data: branches } = useBranches();
+  const { data: projects } = useProjects();
   const isEdit = !!editCall;
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+
+  // Extract unique client names from projects
+  const clientNames = useMemo(() => {
+    if (!projects) return [];
+    const names = new Set<string>();
+    projects.forEach((p) => {
+      if (p.client_name?.trim()) names.add(p.client_name.trim());
+    });
+    return Array.from(names).sort((a, b) => a.localeCompare(b));
+  }, [projects]);
 
   const [form, setForm] = useState({
     company_name: "",
@@ -66,6 +81,45 @@ export function MaintenanceFormDialog({ open, onOpenChange, editCall }: Props) {
       });
     }
   }, [editCall, open, user?.branchId]);
+
+  // Filter suggestions based on input
+  const filteredClients = useMemo(() => {
+    if (!form.company_name.trim()) return clientNames;
+    const q = form.company_name.toLowerCase();
+    return clientNames.filter((n) => n.toLowerCase().includes(q));
+  }, [form.company_name, clientNames]);
+
+  // Close suggestions on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(e.target as Node) &&
+        inputRef.current &&
+        !inputRef.current.contains(e.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const selectClient = (name: string) => {
+    setForm((f) => ({ ...f, company_name: name }));
+    setShowSuggestions(false);
+
+    // Auto-fill contact info from project if available
+    const project = projects?.find((p) => p.client_name === name);
+    if (project) {
+      setForm((f) => ({
+        ...f,
+        company_name: name,
+        contact_number: f.contact_number || project.client_phone || "",
+        location: f.location || project.site_address || "",
+      }));
+    }
+  };
 
   const handleSubmit = async () => {
     if (!form.company_name.trim()) {
@@ -119,9 +173,38 @@ export function MaintenanceFormDialog({ open, onOpenChange, editCall }: Props) {
         </DialogHeader>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2">
+            <div className="col-span-2 relative">
               <Label>Company Name *</Label>
-              <Input value={form.company_name} onChange={(e) => set("company_name", e.target.value)} placeholder="Enter company name" />
+              <Input
+                ref={inputRef}
+                value={form.company_name}
+                onChange={(e) => {
+                  set("company_name", e.target.value);
+                  setShowSuggestions(true);
+                }}
+                onFocus={() => setShowSuggestions(true)}
+                placeholder="Enter or select existing client"
+                autoComplete="off"
+              />
+              {showSuggestions && filteredClients.length > 0 && (
+                <div
+                  ref={suggestionsRef}
+                  className="absolute z-50 top-full left-0 right-0 mt-1 max-h-40 overflow-y-auto rounded-md border border-border bg-popover shadow-lg"
+                >
+                  {filteredClients.map((name) => (
+                    <button
+                      key={name}
+                      type="button"
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left hover:bg-accent transition-colors"
+                      onClick={() => selectClient(name)}
+                    >
+                      <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <span className="truncate">{name}</span>
+                      <span className="ml-auto text-[10px] text-muted-foreground">Existing Client</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <div>
               <Label>Contact Number</Label>
