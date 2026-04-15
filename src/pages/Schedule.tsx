@@ -5,8 +5,9 @@ import { useProjects } from "@/hooks/useProjects";
 import { useCanAccess } from "@/hooks/usePermissions";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  useWeekAssignments, useDetectConflicts,
+  useWeekAssignments, useWeekMaintenanceAssignments, useDetectConflicts,
   useCopyPreviousWeek, useApplyToDateRange, useRecurringSchedule,
+  type MaintenanceScheduleItem,
 } from "@/hooks/useSchedule";
 import { DayAssignmentPanel } from "@/components/schedule/DayAssignmentPanel";
 import { ScheduleTaskSummary } from "@/components/schedule/ScheduleTaskSummary";
