@@ -106,6 +106,9 @@ export default function Schedule() {
         queryClient.invalidateQueries({ queryKey: ["schedule-assignments"] });
         queryClient.invalidateQueries({ queryKey: ["available-employees"] });
       })
+      .on("postgres_changes", { event: "*", schema: "public", table: "maintenance_assignments" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["schedule-maintenance-assignments"] });
+      })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [queryClient]);
