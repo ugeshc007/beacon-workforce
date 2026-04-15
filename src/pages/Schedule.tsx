@@ -457,8 +457,12 @@ export default function Schedule() {
                     <Wrench className="h-4 w-4" /> Maintenance Calls
                   </h3>
                   <div className="space-y-2">
-                    {[...maintGroupsForDay.values()].map((mg, idx) => (
-                      <div key={idx} className="flex items-center justify-between rounded-lg border border-border/50 p-2.5">
+                    {[...maintGroupsForDay.values()].map((mg) => (
+                      <div
+                        key={mg.id}
+                        className="flex items-center justify-between rounded-lg border border-border/50 p-2.5 cursor-pointer hover:border-status-overtime/40 transition-colors"
+                        onClick={() => navigate(`/maintenance/${mg.id}`)}
+                      >
                         <div>
                           <p className="text-sm font-medium text-foreground">{mg.company_name}</p>
                           {mg.location && <p className="text-xs text-muted-foreground">{mg.location}</p>}
