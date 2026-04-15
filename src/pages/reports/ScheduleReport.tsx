@@ -18,8 +18,8 @@ export default function ScheduleReport() {
   const handleCsv = (tab: string) => {
     if (!data) return;
     if (tab === "daily") {
-      downloadCsv("schedule-daily.csv", ["Date", "Project", "Time", "Tasks", "Team Members", "Location"],
-        data.dailyOverview.map((r) => [r.date, r.project, r.shiftStart && r.shiftEnd ? `${r.shiftStart.slice(0,5)}–${r.shiftEnd.slice(0,5)}` : "—", r.tasks.join("; ") || "—", r.teamNames.join(", "), r.location]));
+      downloadCsv("schedule-daily.csv", ["Date", "Time", "Project", "Tasks", "Team Members", "Location"],
+        data.dailyOverview.map((r) => [r.date, r.shiftStart && r.shiftEnd ? `${r.shiftStart.slice(0,5)}–${r.shiftEnd.slice(0,5)}` : "—", r.project, r.tasks.join("; ") || "—", r.teamNames.join(", "), r.location]));
     } else if (tab === "employee") {
       const available = data.employeeSummary.filter((r) => r.status !== "scheduled");
       downloadCsv("schedule-available-employees.csv", ["Employee", "Code", "Skill"],
@@ -120,8 +120,8 @@ export default function ScheduleReport() {
                     <thead>
                       <tr className="border-b border-border text-muted-foreground text-xs">
                         <th className="text-left p-3">Date</th>
-                        <th className="text-left p-3">Project</th>
                         <th className="text-left p-3">Time</th>
+                        <th className="text-left p-3">Project</th>
                         <th className="text-left p-3">Tasks</th>
                         <th className="text-left p-3">Team Members</th>
                         <th className="text-left p-3">Location</th>
@@ -131,12 +131,12 @@ export default function ScheduleReport() {
                       {data.dailyOverview.map((r, i) => (
                         <tr key={i} className="border-b border-border/50 hover:bg-muted/30 align-top">
                           <td className="p-3 text-foreground whitespace-nowrap">{r.date}</td>
-                          <td className="p-3 font-medium text-foreground">{r.project}</td>
                           <td className="p-3 text-foreground whitespace-nowrap text-xs">
                             {r.shiftStart || r.shiftEnd
                               ? `${r.shiftStart?.slice(0,5) ?? "—"} – ${r.shiftEnd?.slice(0,5) ?? "—"}`
                               : <span className="text-muted-foreground">—</span>}
                           </td>
+                          <td className="p-3 font-medium text-foreground">{r.project}</td>
                           <td className="p-3">
                             {r.tasks.length > 0 ? (
                               <div className="space-y-0.5">
