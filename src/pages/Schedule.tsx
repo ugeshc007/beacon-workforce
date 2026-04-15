@@ -331,7 +331,7 @@ export default function Schedule() {
                   <div className="flex sm:hidden items-center gap-3">
                     <div className="flex items-center gap-2 min-w-[80px]">
                       <span className={`text-sm font-medium ${isToday ? "text-brand" : "text-muted-foreground"}`}>
-                        {dayNames[i]}
+                        {shortDayNames[new Date(date + "T00:00:00").getDay()]}
                       </span>
                       <span className={`text-sm font-mono ${isToday ? "text-brand font-bold" : "text-foreground"}`}>
                         {new Date(date + "T00:00:00").getDate()}
@@ -370,7 +370,7 @@ export default function Schedule() {
                   <div className="hidden sm:block space-y-2">
                     <div className="flex items-center justify-between">
                       <span className={`text-xs font-medium ${isToday ? "text-brand" : "text-muted-foreground"}`}>
-                        {dayNames[i]}
+                        {shortDayNames[new Date(date + "T00:00:00").getDay()]}
                       </span>
                       <span className={`text-xs font-mono ${isToday ? "text-brand font-bold" : "text-foreground"}`}>
                         {new Date(date + "T00:00:00").getDate()}
