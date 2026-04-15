@@ -424,6 +424,7 @@ export default function Schedule() {
 
       {selectedDay && selectedProjectId === "all" && !expandedProjectId && (() => {
         const da = dayAssignments(selectedDay);
+        const dm = dayMaintenanceItems(selectedDay);
         const projectsWithAssignments = activeProjects
           .filter((p) => da.some((a) => a.project_id === p.id))
           .map((p) => ({
@@ -432,12 +433,48 @@ export default function Schedule() {
             site_address: p.site_address ?? null,
             assignmentCount: da.filter((a) => a.project_id === p.id).length,
           }));
+
+        // Group maintenance by call
+        const maintGroupsForDay = new Map<string, { company_name: string; location: string | null; count: number; priority: string }>();
+        for (const m of dm) {
+          if (!maintGroupsForDay.has(m.maintenance_call_id)) {
+            maintGroupsForDay.set(m.maintenance_call_id, { company_name: m.company_name, location: m.location, count: 0, priority: m.priority });
+          }
+          maintGroupsForDay.get(m.maintenance_call_id)!.count++;
+        }
+
         return (
-          <ScheduleTaskSummary
-            date={selectedDay}
-            projects={projectsWithAssignments}
-            onSelectProject={(pid) => setExpandedProjectId(pid)}
-          />
+          <div className="space-y-3">
+            <ScheduleTaskSummary
+              date={selectedDay}
+              projects={projectsWithAssignments}
+              onSelectProject={(pid) => setExpandedProjectId(pid)}
+            />
+            {dm.length > 0 && (
+              <Card className="glass-card border-status-overtime/20">
+                <CardContent className="p-4">
+                  <h3 className="text-sm font-semibold text-status-overtime flex items-center gap-2 mb-3">
+                    <Wrench className="h-4 w-4" /> Maintenance Calls
+                  </h3>
+                  <div className="space-y-2">
+                    {[...maintGroupsForDay.values()].map((mg, idx) => (
+                      <div key={idx} className="flex items-center justify-between rounded-lg border border-border/50 p-2.5">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{mg.company_name}</p>
+                          {mg.location && <p className="text-xs text-muted-foreground">{mg.location}</p>}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-[10px] border-status-overtime/30 text-status-overtime">
+                            {mg.count} staff
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         );
       })()}
 
