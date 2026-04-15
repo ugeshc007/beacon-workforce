@@ -466,10 +466,9 @@ export default function Schedule() {
                     {[...maintGroupsForDay.values()].map((mg) => (
                       <div
                         key={mg.id}
-                        className="flex items-center justify-between rounded-lg border border-border/50 p-2.5 cursor-pointer hover:border-status-overtime/40 transition-colors"
-                        onClick={() => navigate(`/maintenance/${mg.id}`)}
+                        className="flex items-center justify-between rounded-lg border border-border/50 p-2.5 hover:border-status-overtime/40 transition-colors"
                       >
-                        <div>
+                        <div className="cursor-pointer flex-1" onClick={() => navigate(`/maintenance/${mg.id}`)}>
                           <p className="text-sm font-medium text-foreground">{mg.company_name}</p>
                           {mg.location && <p className="text-xs text-muted-foreground">{mg.location}</p>}
                         </div>
@@ -477,6 +476,21 @@ export default function Schedule() {
                           <Badge variant="outline" className="text-[10px] border-status-overtime/30 text-status-overtime">
                             {mg.count} staff
                           </Badge>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-[10px] gap-1 border-status-overtime/30 text-status-overtime hover:bg-status-overtime/10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCopyMaintDialog({ callId: mg.id, companyName: mg.company_name, sourceDate: selectedDay! });
+                              // Default target to next day
+                              const next = new Date(selectedDay! + "T00:00:00");
+                              next.setDate(next.getDate() + 1);
+                              setCopyMaintTargetDate(next.toISOString().split("T")[0]);
+                            }}
+                          >
+                            <Copy className="h-3 w-3" /> Copy to Date
+                          </Button>
                         </div>
                       </div>
                     ))}
