@@ -52,6 +52,7 @@ const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 type BulkDialog = "copy" | "apply" | "recurring" | null;
 
 export default function Schedule() {
+  const navigate = useNavigate();
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState("all");
