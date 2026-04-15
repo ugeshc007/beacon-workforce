@@ -186,7 +186,7 @@ export default function ScheduleReport() {
                           <td className="p-3 font-medium text-foreground">{r.name}</td>
                           <td className="p-3 text-muted-foreground">{r.code}</td>
                           <td className="p-3 text-center">
-                            <Badge variant="secondary" className="text-[10px]">Available</Badge>
+                            <Badge variant="secondary" className="text-[10px] capitalize">{r.skillType?.replace("_", " ") ?? "—"}</Badge>
                           </td>
                         </tr>
                       ))}
