@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export type DayStatus = "present" | "absent" | "leave" | "future" | "none";
+
 export interface TimesheetRow {
   employee_id: string;
   employee_name: string;
@@ -8,6 +10,8 @@ export interface TimesheetRow {
   skill_type: string;
   dailyHours: Record<string, number>;
   dailyOt: Record<string, number>;
+  dailyWorkMinutes: Record<string, number>;
+  dailyStatus: Record<string, DayStatus>;
   totalHours: number;
   totalOt: number;
   totalBreakMinutes: number;
@@ -16,6 +20,8 @@ export interface TimesheetRow {
   otCost: number;
   totalPay: number;
   daysWorked: number;
+  daysAbsent: number;
+  daysLeave: number;
   approvalStatus: string | null;
   approvalId: string | null;
 }
@@ -77,7 +83,7 @@ export function useTimesheetData(month: string, filters?: { branchId?: string; p
         logsQuery = logsQuery.eq("project_id", filters.projectId);
       }
 
-      const [empRes, logsRes, approvalsRes, projectsRes] = await Promise.all([
+      const [empRes, logsRes, approvalsRes, projectsRes, leaveRes] = await Promise.all([
         empQuery,
         logsQuery,
         supabase
@@ -88,12 +94,31 @@ export function useTimesheetData(month: string, filters?: { branchId?: string; p
           .from("projects")
           .select("id, name")
           .order("name"),
+        supabase
+          .from("employee_leave")
+          .select("employee_id, start_date, end_date")
+          .lte("start_date", endDate)
+          .gte("end_date", startDate),
       ]);
 
       const employees = empRes.data ?? [];
       const logs = logsRes.data ?? [];
       const approvals = (approvalsRes.data ?? []) as any[];
       const projects = projectsRes.data ?? [];
+      const leaves = leaveRes.data ?? [];
+
+      // Build leave lookup: employee_id -> Set of date strings on leave
+      const leaveMap = new Map<string, Set<string>>();
+      for (const lv of leaves) {
+        if (!leaveMap.has(lv.employee_id)) leaveMap.set(lv.employee_id, new Set());
+        const lvSet = leaveMap.get(lv.employee_id)!;
+        const lvStart = new Date(lv.start_date + "T00:00:00");
+        const lvEnd = new Date(lv.end_date + "T00:00:00");
+        for (let d = new Date(lvStart); d <= lvEnd; d.setDate(d.getDate() + 1)) {
+          const ds = d.toISOString().slice(0, 10);
+          if (ds >= startDate && ds <= endDate) lvSet.add(ds);
+        }
+      }
 
       const projectMap = new Map(projects.map((p) => [p.id, p.name]));
 
