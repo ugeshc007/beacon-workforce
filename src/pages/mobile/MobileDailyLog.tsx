@@ -171,8 +171,8 @@ export default function MobileDailyLog() {
           <p className="text-[11px] text-muted-foreground truncate">{assignment?.projectName}</p>
         </div>
         {!showForm && (
-          <Button size="sm" className="gap-1 shrink-0 text-xs px-2 h-7 whitespace-nowrap" onClick={() => setShowForm(true)}>
-            <Plus className="h-3 w-3" /> New
+          <Button size="icon" className="shrink-0 h-8 w-8 rounded-full" onClick={() => setShowForm(true)}>
+            <Plus className="h-4 w-4" />
           </Button>
         )}
       </div>
