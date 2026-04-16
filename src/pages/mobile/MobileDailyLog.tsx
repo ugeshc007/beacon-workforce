@@ -44,7 +44,7 @@ const statusConfig: Record<string, { label: string; color: string }> = {
 
 export default function MobileDailyLog() {
   const { employee } = useMobileAuth();
-  const { assignment } = useMobileWorkflow();
+  const { assignment, loading: workflowLoading } = useMobileWorkflow();
   const { toast } = useToast();
   const { captureAndUpload, uploading: cameraUploading } = usePhotoCapture();
 
@@ -151,6 +151,14 @@ export default function MobileDailyLog() {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
   };
+
+  if (workflowLoading) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-brand" />
+      </div>
+    );
+  }
 
   if (!projectId) {
     return (
