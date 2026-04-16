@@ -1,3 +1,5 @@
+import { useMemo } from "react";
+
 interface Props {
   lat: number;
   lng: number;
@@ -5,25 +7,34 @@ interface Props {
 }
 
 export default function MiniMap({ lat, lng, label }: Props) {
-  const zoom = 15;
-  const width = 400;
-  const height = 200;
-
-  // Use Stamen/Stadia tiles via static image — always English labels
-  const staticMapUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lng}&zoom=${zoom}&size=${width}x${height}&markers=${lat},${lng},ol-marker&maptype=mapnik`;
-
   const openStreetMapUrl = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=16/${lat}/${lng}`;
+
+  const blobUrl = useMemo(() => {
+    const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>
+<style>html,body,#m{margin:0;padding:0;height:100%;width:100%}</style>
+</head><body>
+<div id="m"></div>
+<script>
+var map=L.map('m',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,touchZoom:false}).setView([${lat},${lng}],15);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',{maxZoom:19}).addTo(map);
+L.circleMarker([${lat},${lng}],{radius:7,color:'#0EA5E9',fillColor:'#0EA5E9',fillOpacity:0.9,weight:2}).addTo(map);
+<\/script></body></html>`;
+    return URL.createObjectURL(new Blob([html], { type: "text/html" }));
+  }, [lat, lng]);
 
   return (
     <div className="space-y-1">
-      <a href={openStreetMapUrl} target="_blank" rel="noopener noreferrer">
-        <img
-          src={staticMapUrl}
-          alt={`Map showing ${label} at ${lat.toFixed(4)}, ${lng.toFixed(4)}`}
-          className="h-32 w-full rounded-md border border-border object-cover bg-muted/20"
-          loading="lazy"
-        />
-      </a>
+      <iframe
+        src={blobUrl}
+        title={`Map showing ${label}`}
+        className="h-32 w-full rounded-md border border-border"
+        style={{ border: 0 }}
+        sandbox="allow-scripts"
+      />
       <a
         href={openStreetMapUrl}
         target="_blank"
