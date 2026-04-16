@@ -17,6 +17,7 @@ export interface DailyLog {
   created_at: string;
   updated_at: string;
   users?: { name: string } | null;
+  employees?: { name: string } | null;
 }
 
 export function useDailyLogs(projectId: string | null) {
@@ -26,7 +27,7 @@ export function useDailyLogs(projectId: string | null) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("project_daily_logs")
-        .select("*, users(name)")
+        .select("*, users(name), employees(name)")
         .eq("project_id", projectId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
