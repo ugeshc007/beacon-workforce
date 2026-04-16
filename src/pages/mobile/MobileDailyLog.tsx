@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
 import { useMobileWorkflow } from "@/hooks/useMobileWorkflow";
 import { useDailyLogs, useCreateDailyLog, useUpdateDailyLog, uploadDailyLogPhoto, getSignedPhotoUrl } from "@/hooks/useDailyLogs";
@@ -121,6 +122,17 @@ export default function MobileDailyLog() {
         employee_id: employee?.id || null,
         status,
       });
+      // Notify branch managers
+      try {
+        await supabase.functions.invoke("notify-daily-log", {
+          body: {
+            project_id: projectId,
+            employee_name: employee?.name || "Employee",
+            description: description.trim(),
+            status,
+          },
+        });
+      } catch {}
       toast({ title: "Daily update posted ✓" });
       resetForm();
     } catch (err: any) {
