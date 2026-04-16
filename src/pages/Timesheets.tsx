@@ -378,7 +378,7 @@ export default function Timesheets() {
                                       {ot > 0 && <span className="text-[8px] text-status-overtime">+{ot}h</span>}
                                     </div>
                                   ) : status === "leave" ? (
-                                    <span className="text-[10px] font-bold text-blue-400">L</span>
+                                    <span className="text-[10px] font-bold text-status-planned">L</span>
                                   ) : status === "absent" ? (
                                     <span className="text-[10px] font-bold text-status-absent">A</span>
                                   ) : (
