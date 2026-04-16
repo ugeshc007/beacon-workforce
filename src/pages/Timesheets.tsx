@@ -365,8 +365,8 @@ export default function Timesheets() {
                             </td>
                             <td className="text-center py-2 px-1 text-xs font-mono">{row.daysWorked}</td>
                             {dayHeaders.map((d) => {
-                              const status = row.dailyStatus[d.date] as DayStatus | undefined;
-                              const mins = row.dailyWorkMinutes[d.date];
+                              const status = row.dailyStatus?.[d.date] as DayStatus | undefined;
+                              const mins = row.dailyWorkMinutes?.[d.date];
                               const ot = row.dailyOt[d.date];
                               return (
                                 <td key={d.date} className="text-center py-2 px-0.5">
