@@ -163,16 +163,16 @@ export default function MobileDailyLog() {
   }
 
   return (
-    <div className="flex flex-col gap-3 px-3 pt-3 pb-24 safe-area-inset max-w-full overflow-x-hidden">
+    <div className="flex flex-col gap-3 px-3 pt-3 pb-24 safe-area-inset w-full overflow-x-hidden box-border">
       {/* Header */}
-      <div className="flex items-start gap-2">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-lg font-bold text-foreground leading-tight">Daily Log</h1>
-          <p className="text-xs text-muted-foreground truncate">{assignment?.projectName}</p>
+      <div className="flex items-center gap-2 w-full min-w-0">
+        <div className="min-w-0 flex-1 overflow-hidden">
+          <h1 className="text-base font-bold text-foreground leading-tight truncate">Daily Log</h1>
+          <p className="text-[11px] text-muted-foreground truncate">{assignment?.projectName}</p>
         </div>
         {!showForm && (
-          <Button size="sm" className="gap-1 shrink-0 text-xs px-2.5 h-8" onClick={() => setShowForm(true)}>
-            <Plus className="h-3.5 w-3.5" /> New
+          <Button size="sm" className="gap-1 shrink-0 text-xs px-2 h-7 whitespace-nowrap" onClick={() => setShowForm(true)}>
+            <Plus className="h-3 w-3" /> New
           </Button>
         )}
       </div>
