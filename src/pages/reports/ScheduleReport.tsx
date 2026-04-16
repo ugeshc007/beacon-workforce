@@ -18,8 +18,8 @@ export default function ScheduleReport() {
   const handleCsv = (tab: string) => {
     if (!data) return;
     if (tab === "daily") {
-      downloadCsv("schedule-daily.csv", ["Date", "Time", "Project", "Tasks", "Team Members", "Location"],
-        data.dailyOverview.map((r) => [r.date, r.shiftStart && r.shiftEnd ? `${r.shiftStart.slice(0,5)}–${r.shiftEnd.slice(0,5)}` : "—", r.project, r.tasks.join("; ") || "—", r.teamNames.join(", "), r.location]));
+      downloadCsv("schedule-daily.csv", ["Date", "Time", "Project", "Tasks", "Staff (Skill - Name)", "Location"],
+        data.dailyOverview.map((r) => [r.date, r.shiftStart && r.shiftEnd ? `${r.shiftStart.slice(0,5)}–${r.shiftEnd.slice(0,5)}` : "—", r.project, r.tasks.join("; ") || "—", r.teamMembers.map(m => `${m.skill} - ${m.name}`).join(", "), r.location]));
     } else if (tab === "employee") {
       const available = data.employeeSummary.filter((r) => r.status !== "scheduled");
       downloadCsv("schedule-available-employees.csv", ["Employee", "Code", "Skill"],
@@ -48,8 +48,8 @@ export default function ScheduleReport() {
       tables: [
         {
           title: "Daily Schedule Overview",
-          headers: ["Date", "Time", "Project", "Tasks", "Team Members", "Location"],
-          rows: data.dailyOverview.map((r) => [r.date, r.shiftStart && r.shiftEnd ? `${r.shiftStart.slice(0,5)}–${r.shiftEnd.slice(0,5)}` : "—", r.project, r.tasks.join("; ") || "—", r.teamNames.join(", "), r.location]),
+          headers: ["Date", "Time", "Project", "Tasks", "Staff (Skill - Name)", "Location"],
+          rows: data.dailyOverview.map((r) => [r.date, r.shiftStart && r.shiftEnd ? `${r.shiftStart.slice(0,5)}–${r.shiftEnd.slice(0,5)}` : "—", r.project, r.tasks.join("; ") || "—", r.teamMembers.map(m => `${m.skill} - ${m.name}`).join(", "), r.location]),
         },
         {
           title: "Available Employees (Not Scheduled)",
@@ -123,7 +123,7 @@ export default function ScheduleReport() {
                         <th className="text-left p-3">Time</th>
                         <th className="text-left p-3">Project</th>
                         <th className="text-left p-3">Tasks</th>
-                        <th className="text-left p-3">Team Members</th>
+                        <th className="text-left p-3">Staff</th>
                         <th className="text-left p-3">Location</th>
                       </tr>
                     </thead>
@@ -149,10 +149,14 @@ export default function ScheduleReport() {
                             )}
                           </td>
                           <td className="p-3">
-                            <div className="flex flex-wrap gap-1">
-                              {r.teamNames.map((name, j) => (
-                                <Badge key={j} variant="secondary" className="text-[10px] font-normal">{name}</Badge>
+                            <div className="space-y-0.5">
+                              {r.teamMembers.map((m, j) => (
+                                <div key={j} className="flex items-center gap-1.5">
+                                  <Badge variant="outline" className="text-[9px] font-medium px-1 py-0 capitalize shrink-0">{m.skill}</Badge>
+                                  <span className="text-xs text-foreground">{m.name}</span>
+                                </div>
                               ))}
+                              {r.teamMembers.length === 0 && <span className="text-xs text-muted-foreground">—</span>}
                             </div>
                           </td>
                           <td className="p-3 text-muted-foreground">{r.location}</td>
