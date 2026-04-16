@@ -1,23 +1,12 @@
-import { useState } from "react";
+import { lazy, Suspense } from "react";
 import type { AttendanceLog } from "@/hooks/useAttendance";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, MapPinOff, ShieldAlert, Clock, CheckCircle2 } from "lucide-react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
 
-// Fix default marker icon
-const defaultIcon = L.icon({
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-});
-L.Marker.prototype.options.icon = defaultIcon;
+const MiniMap = lazy(() => import("./MiniMap"));
 
 interface Props {
   log: AttendanceLog | null;
@@ -192,22 +181,9 @@ export function AttendanceDetailDrawer({ log, open, onOpenChange }: Props) {
                               📍 {Number(step.lat).toFixed(6)}, {Number(step.lng).toFixed(6)}
                               {step.accuracy != null && <span className="ml-1">(±{Math.round(Number(step.accuracy))}m)</span>}
                             </p>
-                            <div className="h-32 w-full rounded-md overflow-hidden border border-border">
-                              <MapContainer
-                                center={[Number(step.lat), Number(step.lng)]}
-                                zoom={15}
-                                scrollWheelZoom={false}
-                                dragging={false}
-                                zoomControl={false}
-                                attributionControl={false}
-                                style={{ height: "100%", width: "100%" }}
-                              >
-                                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                                <Marker position={[Number(step.lat), Number(step.lng)]}>
-                                  <Popup>{step.label}</Popup>
-                                </Marker>
-                              </MapContainer>
-                            </div>
+                            <Suspense fallback={<div className="h-32 w-full rounded-md bg-muted animate-pulse" />}>
+                              <MiniMap lat={Number(step.lat)} lng={Number(step.lng)} label={step.label} />
+                            </Suspense>
                           </div>
                         )}
                         {step.distance != null && (
