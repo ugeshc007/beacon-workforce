@@ -75,7 +75,7 @@ export function useTimesheetData(month: string, filters?: { branchId?: string; p
 
       let logsQuery = supabase
         .from("attendance_logs")
-        .select("employee_id, date, total_work_minutes, overtime_minutes, regular_cost, overtime_cost, break_minutes, travel_start_time, site_arrival_time, project_id")
+        .select("employee_id, date, total_work_minutes, overtime_minutes, regular_cost, overtime_cost, break_minutes, travel_start_time, site_arrival_time, work_start_time, work_end_time, project_id")
         .gte("date", startDate)
         .lte("date", endDate);
 
@@ -163,7 +163,12 @@ export function useTimesheetData(month: string, filters?: { branchId?: string; p
         const lvSet = empLeaveSet(emp.id);
 
         for (const log of empLogs) {
-          const mins = log.total_work_minutes ?? 0;
+          // Compute work minutes: use stored value, or fall back to work_start/end timestamps
+          let mins = log.total_work_minutes ?? 0;
+          if (mins === 0 && log.work_start_time && log.work_end_time) {
+            const diff = new Date(log.work_end_time).getTime() - new Date(log.work_start_time).getTime();
+            mins = Math.max(0, Math.round(diff / 60000) - (log.break_minutes ?? 0));
+          }
           const h = Math.round((mins / 60) * 10) / 10;
           const ot = Math.round(((log.overtime_minutes ?? 0) / 60) * 10) / 10;
           dailyHours[log.date] = h;
