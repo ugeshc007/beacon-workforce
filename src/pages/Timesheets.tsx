@@ -78,7 +78,7 @@ export default function Timesheets() {
     if (skillFilter !== "all") {
       rows = rows.filter((r) => r.skill_type === skillFilter);
     }
-    return rows.filter((r) => r.daysWorked > 0);
+    return rows;
   }, [data, search, skillFilter]);
 
   // Summary stats
