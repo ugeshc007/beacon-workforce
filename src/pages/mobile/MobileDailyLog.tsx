@@ -44,7 +44,7 @@ const statusConfig: Record<string, { label: string; color: string }> = {
 
 export default function MobileDailyLog() {
   const { employee } = useMobileAuth();
-  const { assignment } = useMobileWorkflow();
+  const { assignment, loading: workflowLoading } = useMobileWorkflow();
   const { toast } = useToast();
   const { captureAndUpload, uploading: cameraUploading } = usePhotoCapture();
 
