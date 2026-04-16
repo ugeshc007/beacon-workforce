@@ -75,7 +75,7 @@ export function useTimesheetData(month: string, filters?: { branchId?: string; p
 
       let logsQuery = supabase
         .from("attendance_logs")
-        .select("employee_id, date, total_work_minutes, overtime_minutes, regular_cost, overtime_cost, break_minutes, travel_start_time, site_arrival_time, project_id")
+        .select("employee_id, date, total_work_minutes, overtime_minutes, regular_cost, overtime_cost, break_minutes, travel_start_time, site_arrival_time, work_start_time, work_end_time, project_id")
         .gte("date", startDate)
         .lte("date", endDate);
 
