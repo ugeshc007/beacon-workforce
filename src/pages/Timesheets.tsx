@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useTimesheetData, useApproveTimesheet, type TimesheetRow, type ProjectTimesheetRow } from "@/hooks/useTimesheets";
+import { useTimesheetData, useApproveTimesheet, type TimesheetRow, type ProjectTimesheetRow, type DayStatus } from "@/hooks/useTimesheets";
 import { useAuth } from "@/hooks/useAuth";
 import { useCanAccess } from "@/hooks/usePermissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -365,15 +365,22 @@ export default function Timesheets() {
                             </td>
                             <td className="text-center py-2 px-1 text-xs font-mono">{row.daysWorked}</td>
                             {dayHeaders.map((d) => {
-                              const hrs = row.dailyHours[d.date];
+                              const status = row.dailyStatus[d.date] as DayStatus | undefined;
+                              const mins = row.dailyWorkMinutes[d.date];
                               const ot = row.dailyOt[d.date];
                               return (
                                 <td key={d.date} className="text-center py-2 px-0.5">
-                                  {hrs != null ? (
+                                  {status === "present" ? (
                                     <div className="flex flex-col items-center">
-                                      <span className={`text-[10px] font-mono ${ot > 0 ? "text-status-overtime font-semibold" : "text-foreground"}`}>{hrs}</span>
-                                      {ot > 0 && <span className="text-[8px] text-status-overtime">+{ot}</span>}
+                                      <span className={`text-[10px] font-mono ${ot > 0 ? "text-status-overtime font-semibold" : "text-foreground"}`}>
+                                        {Math.floor((mins || 0) / 60)}:{String((mins || 0) % 60).padStart(2, "0")}
+                                      </span>
+                                      {ot > 0 && <span className="text-[8px] text-status-overtime">+{ot}h</span>}
                                     </div>
+                                  ) : status === "leave" ? (
+                                    <span className="text-[10px] font-bold text-blue-400">L</span>
+                                  ) : status === "absent" ? (
+                                    <span className="text-[10px] font-bold text-status-absent">A</span>
                                   ) : (
                                     <span className="text-[10px] text-muted-foreground/30">—</span>
                                   )}
