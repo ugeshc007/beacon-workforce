@@ -12,20 +12,20 @@ export default function MobileProfile() {
   const { isAvailable: biometricAvailable, isEnabled: biometricEnabled, toggleBiometric } = useBiometricAuth();
   const navigate = useNavigate();
 
-  // Theme state
+  // Theme state — CSS default is dark (:root), light is toggled via .light class
   const [isDark, setIsDark] = useState(() => {
     if (typeof window === "undefined") return true;
     const saved = localStorage.getItem("bebright-theme");
     if (saved) return saved === "dark";
-    return document.documentElement.classList.contains("dark");
+    return !document.documentElement.classList.contains("light");
   });
 
   useEffect(() => {
     if (isDark) {
-      document.documentElement.classList.add("dark");
+      document.documentElement.classList.remove("light");
       localStorage.setItem("bebright-theme", "dark");
     } else {
-      document.documentElement.classList.remove("dark");
+      document.documentElement.classList.add("light");
       localStorage.setItem("bebright-theme", "light");
     }
   }, [isDark]);
@@ -83,17 +83,17 @@ export default function MobileProfile() {
           <Switch checked={isDark} onCheckedChange={setIsDark} />
         </div>
 
-        {/* Biometric toggle (native only) */}
+        {/* Biometric toggle (native only — requires plugin) */}
         {biometricAvailable && (
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between opacity-60">
             <div className="flex items-center gap-2">
               <Fingerprint className="h-4 w-4 text-muted-foreground" />
               <div>
                 <span className="text-sm text-foreground">Biometric Unlock</span>
-                <p className="text-[11px] text-muted-foreground">Use fingerprint or face to unlock</p>
+                <p className="text-[11px] text-muted-foreground">Coming soon — requires native plugin</p>
               </div>
             </div>
-            <Switch checked={biometricEnabled} onCheckedChange={toggleBiometric} />
+            <Switch checked={biometricEnabled} onCheckedChange={toggleBiometric} disabled />
           </div>
         )}
       </Card>
