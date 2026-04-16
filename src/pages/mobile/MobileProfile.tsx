@@ -85,15 +85,15 @@ export default function MobileProfile() {
 
         {/* Biometric toggle (native only — requires plugin) */}
         {biometricAvailable && (
-          <div className="flex items-center justify-between opacity-60">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Fingerprint className="h-4 w-4 text-muted-foreground" />
               <div>
                 <span className="text-sm text-foreground">Biometric Unlock</span>
-                <p className="text-[11px] text-muted-foreground">Coming soon — requires native plugin</p>
+                <p className="text-[11px] text-muted-foreground">Use fingerprint or face to unlock</p>
               </div>
             </div>
-            <Switch checked={biometricEnabled} onCheckedChange={toggleBiometric} disabled />
+            <Switch checked={biometricEnabled} onCheckedChange={toggleBiometric} />
           </div>
         )}
       </Card>
