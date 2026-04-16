@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { formatWorkedMinutes } from "@/lib/timesheet-display";
 
 function todayUAE(): string {
   const now = new Date();
@@ -373,7 +374,7 @@ export default function Timesheets() {
                                   {status === "present" ? (
                                     <div className="flex flex-col items-center">
                                       <span className={`text-[10px] font-mono ${ot > 0 ? "text-status-overtime font-semibold" : "text-foreground"}`}>
-                                        {Math.floor((mins || 0) / 60)}:{String((mins || 0) % 60).padStart(2, "0")}
+                                        {formatWorkedMinutes(mins || 0)}
                                       </span>
                                       {ot > 0 && <span className="text-[8px] text-status-overtime">+{ot}h</span>}
                                     </div>

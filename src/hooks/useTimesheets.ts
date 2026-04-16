@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { getDisplayWorkedMinutes } from "@/lib/timesheet-display";
 
 export type DayStatus = "present" | "absent" | "leave" | "future" | "none";
 
@@ -75,7 +76,7 @@ export function useTimesheetData(month: string, filters?: { branchId?: string; p
 
       let logsQuery = supabase
         .from("attendance_logs")
-        .select("employee_id, date, total_work_minutes, overtime_minutes, regular_cost, overtime_cost, break_minutes, travel_start_time, site_arrival_time, work_start_time, work_end_time, project_id")
+        .select("employee_id, date, total_work_minutes, overtime_minutes, regular_cost, overtime_cost, break_minutes, travel_start_time, site_arrival_time, work_start_time, work_end_time, office_punch_in, office_punch_out, project_id")
         .gte("date", startDate)
         .lte("date", endDate);
 
@@ -169,11 +170,12 @@ export function useTimesheetData(month: string, filters?: { branchId?: string; p
             const diff = new Date(log.work_end_time).getTime() - new Date(log.work_start_time).getTime();
             mins = Math.max(0, Math.round(diff / 60000));
           }
+          const displayMins = getDisplayWorkedMinutes(log);
           const h = Math.round((mins / 60) * 10) / 10;
           const ot = Math.round(((log.overtime_minutes ?? 0) / 60) * 10) / 10;
           dailyHours[log.date] = h;
           dailyOt[log.date] = ot;
-          dailyWorkMinutes[log.date] = mins;
+          dailyWorkMinutes[log.date] = displayMins;
           dailyStatus[log.date] = "present";
           totalHours += h;
           totalOt += ot;
@@ -283,6 +285,7 @@ export function useTimesheetData(month: string, filters?: { branchId?: string; p
         employees: employees.map((e) => ({ id: e.id, name: e.name })),
       };
     },
+    refetchInterval: 30000,
   });
 }
 
