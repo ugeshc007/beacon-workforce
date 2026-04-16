@@ -18,8 +18,8 @@ export default function ScheduleReport() {
   const handleCsv = (tab: string) => {
     if (!data) return;
     if (tab === "daily") {
-      downloadCsv("schedule-daily.csv", ["Date", "Time", "Project", "Tasks", "Team Members", "Location"],
-        data.dailyOverview.map((r) => [r.date, r.shiftStart && r.shiftEnd ? `${r.shiftStart.slice(0,5)}–${r.shiftEnd.slice(0,5)}` : "—", r.project, r.tasks.join("; ") || "—", r.teamNames.join(", "), r.location]));
+      downloadCsv("schedule-daily.csv", ["Date", "Time", "Project", "Tasks", "Staff (Skill - Name)", "Location"],
+        data.dailyOverview.map((r) => [r.date, r.shiftStart && r.shiftEnd ? `${r.shiftStart.slice(0,5)}–${r.shiftEnd.slice(0,5)}` : "—", r.project, r.tasks.join("; ") || "—", r.teamMembers.map(m => `${m.skill} - ${m.name}`).join(", "), r.location]));
     } else if (tab === "employee") {
       const available = data.employeeSummary.filter((r) => r.status !== "scheduled");
       downloadCsv("schedule-available-employees.csv", ["Employee", "Code", "Skill"],
