@@ -306,13 +306,13 @@ export default function MobileDailyLog() {
             return (
               <Card key={log.id} className="p-3 border-border/50 bg-card space-y-2">
                 {/* Description + status */}
-                <div className="flex items-start justify-between gap-2">
-                  <p className="text-sm text-foreground flex-1">{log.description}</p>
+                <div className="flex items-start justify-between gap-1.5">
+                  <p className="text-sm text-foreground flex-1 break-words min-w-0">{log.description}</p>
                   <Select
                     value={log.status ?? "pending"}
                     onValueChange={(v) => handleStatusChange(log.id, v)}
                   >
-                    <SelectTrigger className={`h-6 w-auto text-[10px] px-2 py-0 border rounded-full gap-1 shrink-0 ${sc.color}`}>
+                    <SelectTrigger className={`h-6 w-auto text-[10px] px-2 py-0 border rounded-full gap-1 shrink-0 max-w-[100px] ${sc.color}`}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
