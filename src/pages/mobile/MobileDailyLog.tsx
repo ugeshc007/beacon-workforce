@@ -151,16 +151,16 @@ export default function MobileDailyLog() {
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 pb-24 safe-area-inset">
+    <div className="flex flex-col gap-3 px-3 pt-3 pb-24 safe-area-inset max-w-full overflow-x-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-foreground">Daily Log</h1>
-          <p className="text-sm text-muted-foreground truncate">{assignment?.projectName}</p>
+      <div className="flex items-start gap-2">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-lg font-bold text-foreground leading-tight">Daily Log</h1>
+          <p className="text-xs text-muted-foreground truncate">{assignment?.projectName}</p>
         </div>
         {!showForm && (
-          <Button size="sm" className="gap-1.5" onClick={() => setShowForm(true)}>
-            <Plus className="h-3.5 w-3.5" /> New Update
+          <Button size="sm" className="gap-1 shrink-0 text-xs px-2.5 h-8" onClick={() => setShowForm(true)}>
+            <Plus className="h-3.5 w-3.5" /> New
           </Button>
         )}
       </div>
