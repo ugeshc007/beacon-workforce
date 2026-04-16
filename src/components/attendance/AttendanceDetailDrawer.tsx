@@ -174,10 +174,15 @@ export function AttendanceDetailDrawer({ log, open, onOpenChange }: Props) {
                     {completed && (step.lat != null || step.distance != null) && (
                       <div className="mt-1 space-y-1">
                         {step.lat != null && step.lng != null && (
-                          <p className="text-[10px] font-mono text-muted-foreground">
+                          <a
+                            href={`https://www.google.com/maps?q=${Number(step.lat).toFixed(6)},${Number(step.lng).toFixed(6)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[10px] font-mono text-brand hover:underline inline-flex items-center gap-0.5"
+                          >
                             📍 {Number(step.lat).toFixed(6)}, {Number(step.lng).toFixed(6)}
-                            {step.accuracy != null && <span className="ml-1">(±{Math.round(Number(step.accuracy))}m)</span>}
-                          </p>
+                            {step.accuracy != null && <span className="ml-1 text-muted-foreground">(±{Math.round(Number(step.accuracy))}m)</span>}
+                          </a>
                         )}
                         {step.distance != null && (
                           <div className="flex items-center gap-1.5">
