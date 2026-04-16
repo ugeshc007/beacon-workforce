@@ -1,3 +1,4 @@
+import { toLocalDateStr } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
@@ -11,9 +12,25 @@ export interface ScheduleAssignment {
   shift_end: string | null;
   assignment_mode: string;
   is_locked: boolean;
+  assigned_role: string;
   employee_name: string;
   employee_skill: string;
   project_name: string;
+}
+
+export interface MaintenanceScheduleItem {
+  id: string;
+  maintenance_call_id: string;
+  employee_id: string;
+  date: string;
+  shift_start: string | null;
+  shift_end: string | null;
+  employee_name: string;
+  employee_skill: string;
+  company_name: string;
+  location: string | null;
+  priority: string;
+  scope: string | null;
 }
 
 export interface ConflictInfo {
@@ -29,7 +46,7 @@ export function useWeekAssignments(weekStart: string, weekEnd: string, projectId
     queryFn: async () => {
       let query = supabase
         .from("project_assignments")
-        .select("id, project_id, employee_id, date, shift_start, shift_end, assignment_mode, is_locked, employees(name, skill_type), projects(name)")
+        .select("id, project_id, employee_id, date, shift_start, shift_end, assignment_mode, is_locked, assigned_role, employees(name, skill_type), projects(name)")
         .gte("date", weekStart)
         .lte("date", weekEnd)
         .order("date");
@@ -50,6 +67,7 @@ export function useWeekAssignments(weekStart: string, weekEnd: string, projectId
         shift_end: a.shift_end,
         assignment_mode: a.assignment_mode,
         is_locked: a.is_locked,
+        assigned_role: a.assigned_role ?? a.employees?.skill_type ?? "team_member",
         employee_name: a.employees?.name ?? "Unknown",
         employee_skill: a.employees?.skill_type ?? "helper",
         project_name: a.projects?.name ?? "Unknown",
@@ -58,18 +76,77 @@ export function useWeekAssignments(weekStart: string, weekEnd: string, projectId
   });
 }
 
+export function useWeekMaintenanceAssignments(weekStart: string, weekEnd: string) {
+  return useQuery({
+    queryKey: ["schedule-maintenance-assignments", weekStart, weekEnd],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("maintenance_assignments")
+        .select("id, maintenance_call_id, employee_id, date, shift_start, shift_end, employees(name, skill_type), maintenance_calls(company_name, location, priority, scope)")
+        .gte("date", weekStart)
+        .lte("date", weekEnd)
+        .order("date");
+
+      if (error) throw error;
+
+      return (data ?? []).map((a: any) => ({
+        id: a.id,
+        maintenance_call_id: a.maintenance_call_id,
+        employee_id: a.employee_id,
+        date: a.date,
+        shift_start: a.shift_start,
+        shift_end: a.shift_end,
+        employee_name: a.employees?.name ?? "Unknown",
+        employee_skill: a.employees?.skill_type ?? "helper",
+        company_name: a.maintenance_calls?.company_name ?? "Unknown",
+        location: a.maintenance_calls?.location ?? null,
+        priority: a.maintenance_calls?.priority ?? "normal",
+        scope: a.maintenance_calls?.scope ?? null,
+      })) as MaintenanceScheduleItem[];
+    },
+  });
+}
+
+/** Check if two time ranges overlap. If either has no times set, assume full-day overlap. */
+function timesOverlap(
+  s1: string | null, e1: string | null,
+  s2: string | null, e2: string | null,
+): boolean {
+  // If either assignment has no shift times, treat as full-day → always overlaps
+  if (!s1 || !e1 || !s2 || !e2) return true;
+  // Times are "HH:MM" or "HH:MM:SS" strings — lexicographic comparison works
+  return s1 < e2 && s2 < e1;
+}
+
 export function useDetectConflicts(assignments: ScheduleAssignment[]): ConflictInfo[] {
-  const map = new Map<string, { name: string; projects: Set<string> }>();
+  // Group assignments by employee+date
+  const map = new Map<string, { name: string; entries: { project: string; start: string | null; end: string | null }[] }>();
   for (const a of assignments) {
     const key = `${a.employee_id}::${a.date}`;
-    if (!map.has(key)) map.set(key, { name: a.employee_name, projects: new Set() });
-    map.get(key)!.projects.add(a.project_name);
+    if (!map.has(key)) map.set(key, { name: a.employee_name, entries: [] });
+    map.get(key)!.entries.push({ project: a.project_name, start: a.shift_start, end: a.shift_end });
   }
+
   const conflicts: ConflictInfo[] = [];
   for (const [key, val] of map) {
-    if (val.projects.size > 1) {
+    const { entries } = val;
+    if (entries.length < 2) continue;
+
+    // Check pairwise for actual time overlaps
+    const overlappingProjects = new Set<string>();
+    for (let i = 0; i < entries.length; i++) {
+      for (let j = i + 1; j < entries.length; j++) {
+        if (entries[i].project !== entries[j].project &&
+            timesOverlap(entries[i].start, entries[i].end, entries[j].start, entries[j].end)) {
+          overlappingProjects.add(entries[i].project);
+          overlappingProjects.add(entries[j].project);
+        }
+      }
+    }
+
+    if (overlappingProjects.size > 1) {
       const [employee_id, date] = key.split("::");
-      conflicts.push({ employee_id, employee_name: val.name, date, projects: [...val.projects] });
+      conflicts.push({ employee_id, employee_name: val.name, date, projects: [...overlappingProjects] });
     }
   }
   return conflicts;
@@ -85,6 +162,7 @@ export function useAddAssignment() {
       shift_start?: string;
       shift_end?: string;
       assignment_mode?: "manual" | "auto" | "hybrid";
+      assigned_role?: string;
     }) => {
       const { data, error } = await supabase
         .from("project_assignments")
@@ -95,6 +173,7 @@ export function useAddAssignment() {
           shift_start: payload.shift_start ?? null,
           shift_end: payload.shift_end ?? null,
           assignment_mode: payload.assignment_mode ?? "manual",
+          assigned_role: payload.assigned_role ?? "team_member",
         })
         .select()
         .single();
@@ -221,7 +300,7 @@ export function useCopyPreviousWeek() {
         return {
           project_id: a.project_id,
           employee_id: a.employee_id,
-          date: tgtDate.toISOString().split("T")[0],
+          date: toLocalDateStr(tgtDate),
           shift_start: a.shift_start,
           shift_end: a.shift_end,
           assignment_mode: "manual" as const,
@@ -260,7 +339,7 @@ export function useApplyToDateRange() {
       const end = new Date(endDate + "T00:00:00");
 
       for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-        const dateStr = d.toISOString().split("T")[0];
+        const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
         if (dateStr === sourceDate) continue;
         const dow = d.getDay();
         if (skipWeekends && (dow === 0 || dow === 6)) continue;
@@ -316,7 +395,7 @@ export function useRecurringSchedule() {
           rows.push({
             project_id: a.project_id,
             employee_id: a.employee_id,
-            date: tgtDate.toISOString().split("T")[0],
+            date: toLocalDateStr(tgtDate),
             shift_start: a.shift_start,
             shift_end: a.shift_end,
             assignment_mode: "manual" as const,
@@ -340,7 +419,7 @@ export function useAvailableEmployees(date: string, projectId: string) {
     queryFn: async () => {
       const { data: employees } = await supabase
         .from("employees")
-        .select("id, name, skill_type")
+        .select("id, name, skill_type, secondary_skills")
         .eq("is_active", true)
         .order("name");
 
@@ -356,6 +435,12 @@ export function useAvailableEmployees(date: string, projectId: string) {
         .select("employee_id, shift_start, shift_end, projects(name)")
         .eq("date", date)
         .neq("project_id", projectId);
+
+      // Also check maintenance assignments for this date
+      const { data: maintenanceAssignments } = await supabase
+        .from("maintenance_assignments")
+        .select("employee_id, shift_start, shift_end, maintenance_calls(company_name)")
+        .eq("date", date);
 
       const { data: onLeave } = await supabase
         .from("employee_leave")
@@ -376,10 +461,19 @@ export function useAvailableEmployees(date: string, projectId: string) {
           project: (a.projects as any)?.name ?? "Other",
         });
       }
+      // Add maintenance slots
+      for (const a of maintenanceAssignments ?? []) {
+        if (!timeSlotsMap.has(a.employee_id)) timeSlotsMap.set(a.employee_id, []);
+        timeSlotsMap.get(a.employee_id)!.push({
+          start: a.shift_start?.slice(0, 5) ?? "08:00",
+          end: a.shift_end?.slice(0, 5) ?? "17:00",
+          project: `🔧 ${(a.maintenance_calls as any)?.company_name ?? "Maintenance"}`,
+        });
+      }
 
       return (employees ?? []).map((e) => ({
         ...e,
-        available: !assignedToProjectIds.has(e.id) && !leaveIds.has(e.id),
+        available: !assignedToProjectIds.has(e.id) && !leaveIds.has(e.id) && !timeSlotsMap.has(e.id),
         on_leave: leaveIds.has(e.id),
         assigned_elsewhere: timeSlotsMap.has(e.id) && !leaveIds.has(e.id),
         existing_slots: timeSlotsMap.get(e.id) ?? [],

@@ -1,4 +1,4 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, todayDate, nowTimestamp, notifyBranchManagers } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, todayDate, nowTimestamp, notifyBranchManagers, authenticateEmployee } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
@@ -8,6 +8,10 @@ Deno.serve(async (req) => {
     if (!employee_id) return errorResponse("employee_id is required");
 
     const supabase = createSupabaseAdmin();
+
+    const auth = await authenticateEmployee(req, supabase, employee_id);
+    if (auth.error) return auth.error;
+
     const today = todayDate();
     const now = nowTimestamp();
 
@@ -30,7 +34,6 @@ Deno.serve(async (req) => {
     // Late work start detection
     let is_late = false;
     try {
-      // Get shift_start from today's assignment
       const { data: assignment } = await supabase
         .from("project_assignments")
         .select("shift_start")
@@ -39,7 +42,6 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (assignment?.shift_start) {
-        // Get threshold from settings
         const { data: setting } = await supabase
           .from("settings")
           .select("value")
@@ -47,7 +49,6 @@ Deno.serve(async (req) => {
           .maybeSingle();
         const thresholdMin = parseInt(setting?.value ?? "15", 10);
 
-        // Build shift start timestamp in UAE time (UTC+4)
         const shiftTimeParts = assignment.shift_start.split(":");
         const shiftDate = new Date(today + "T00:00:00+04:00");
         shiftDate.setHours(parseInt(shiftTimeParts[0]), parseInt(shiftTimeParts[1]), 0, 0);
@@ -57,7 +58,6 @@ Deno.serve(async (req) => {
           is_late = true;
           const lateMin = Math.round((new Date(now).getTime() - shiftDate.getTime()) / 60000);
 
-          // Get employee info for notification
           const { data: emp } = await supabase
             .from("employees")
             .select("name, branch_id")
@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
         }
       }
     } catch (_) {
-      // Non-critical — don't fail the main operation
+      // Non-critical
     }
 
     return jsonResponse({ success: true, attendance_id: log.id, timestamp: now, is_late });

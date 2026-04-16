@@ -211,6 +211,7 @@ export default function Projects() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-foreground truncate">{p.name}</p>
+                      {p.job_card && <p className="text-[10px] text-brand font-mono">JC: {p.job_card}</p>}
                       <p className="text-xs text-muted-foreground">{p.client_name ?? "No client"}</p>
                     </div>
                     <StatusBadge status={statusMap[p.status] ?? "planned"} />

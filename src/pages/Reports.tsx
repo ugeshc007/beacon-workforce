@@ -1,8 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
-import { BarChart3, Users, DollarSign, Briefcase, TrendingUp, Clock, CalendarX, AlertTriangle, UserCheck } from "lucide-react";
+import { BarChart3, Users, DollarSign, Briefcase, TrendingUp, Clock, CalendarX, AlertTriangle, UserCheck, CalendarDays } from "lucide-react";
 
 const reports = [
+  { title: "Schedule", description: "Daily assignments, employee coverage, team sizes, and staffing gaps.", icon: CalendarDays, path: "/reports/schedule", color: "text-brand bg-brand/10" },
   { title: "Staff Utilization", description: "Employee utilization rates, capacity trends, and skill breakdown.", icon: Users, path: "/reports/utilization", color: "text-brand bg-brand/10" },
   { title: "Attendance", description: "Punch-in rates, daily attendance trends, and punctuality analysis.", icon: UserCheck, path: "/reports/attendance", color: "text-status-present bg-status-present/10" },
   { title: "Overtime", description: "OT hours, costs, daily trends, and top overtime employees.", icon: Clock, path: "/reports/overtime", color: "text-status-overtime bg-status-overtime/10" },

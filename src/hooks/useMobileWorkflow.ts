@@ -1,3 +1,4 @@
+import { toLocalDateStr } from "@/lib/utils";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
@@ -40,7 +41,7 @@ export function useMobileWorkflow() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = toLocalDateStr(new Date());
 
   const fetchData = useCallback(async () => {
     if (!employee) return;
@@ -98,6 +99,11 @@ export function useMobileWorkflow() {
     if (!employee) return;
     setActionLoading(true);
 
+    // Optimistically advance the step immediately for instant UI feedback
+    const previousStep = step;
+    const next = getNextStep(step, action);
+    if (next) setStep(next);
+
     try {
       const edgeFunctionMap: Record<WorkflowAction, string> = {
         punch_in: "punch-in",
@@ -116,25 +122,24 @@ export function useMobileWorkflow() {
         ...payload,
       };
 
+      setActionLoading(false); // Release loading immediately after optimistic update
+
       const { data, error } = await supabase.functions.invoke(fnName, {
         body: JSON.stringify(body),
       });
 
       if (error) throw error;
 
-      // Advance the step
-      const next = getNextStep(step, action);
-      if (next) setStep(next);
-
-      // Refresh data
-      await fetchData();
+      // Background refresh — don't block UI
+      fetchData();
 
       return { success: true, data };
     } catch (e: any) {
       console.error(`Action ${action} failed:`, e);
-      return { success: false, error: e.message || "Action failed" };
-    } finally {
+      // Rollback optimistic update on failure
+      setStep(previousStep);
       setActionLoading(false);
+      return { success: false, error: e.message || "Action failed" };
     }
   };
 

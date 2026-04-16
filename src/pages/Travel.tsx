@@ -1,3 +1,4 @@
+import { toLocalDateStr } from "@/lib/utils";
 import { useState } from "react";
 import { useTravelLogs, type TravelLog } from "@/hooks/useTravel";
 import { useProjects } from "@/hooks/useProjects";
@@ -24,7 +25,7 @@ const fmt = (ts: string | null) => {
 function todayUAE(): string {
   const now = new Date();
   const uae = new Date(now.getTime() + 4 * 60 * 60 * 1000);
-  return uae.toISOString().split("T")[0];
+  return toLocalDateStr(uae);
 }
 
 export default function Travel() {
@@ -40,7 +41,7 @@ export default function Travel() {
   const shiftDate = (delta: number) => {
     const d = new Date(date + "T00:00:00");
     d.setDate(d.getDate() + delta);
-    setDate(d.toISOString().split("T")[0]);
+    setDate(toLocalDateStr(d));
   };
 
   const dateLabel = new Date(date + "T00:00:00").toLocaleDateString("en-GB", {

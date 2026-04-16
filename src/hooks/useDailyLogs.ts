@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export type DailyLogStatus = "on_hold" | "pending" | "in_progress" | "completed";
+
 export interface DailyLog {
   id: string;
   project_id: string;
@@ -11,6 +13,7 @@ export interface DailyLog {
   photo_urls: string[];
   posted_by: string | null;
   employee_id: string | null;
+  status: DailyLogStatus;
   created_at: string;
   updated_at: string;
   users?: { name: string } | null;
@@ -44,12 +47,36 @@ export function useCreateDailyLog() {
       photo_urls?: string[];
       posted_by?: string | null;
       employee_id?: string | null;
+      status?: string;
     }) => {
       const { error } = await supabase.from("project_daily_logs").insert(log as any);
       if (error) throw error;
     },
     onSuccess: (_d, vars) => {
       qc.invalidateQueries({ queryKey: ["daily-logs", vars.project_id] });
+    },
+  });
+}
+
+export function useUpdateDailyLog() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, projectId, ...updates }: {
+      id: string;
+      projectId: string;
+      description?: string;
+      date?: string;
+      completion_pct?: number | null;
+      issues?: string | null;
+      photo_urls?: string[];
+      status?: string;
+    }) => {
+      const { error } = await supabase.from("project_daily_logs").update(updates as any).eq("id", id);
+      if (error) throw error;
+      return projectId;
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["daily-logs", vars.projectId] });
     },
   });
 }
@@ -73,6 +100,16 @@ export async function uploadDailyLogPhoto(file: File, projectId: string): Promis
   const path = `${projectId}/${Date.now()}.${ext}`;
   const { error } = await supabase.storage.from("daily-log-photos").upload(path, file);
   if (error) throw error;
-  const { data } = supabase.storage.from("daily-log-photos").getPublicUrl(path);
-  return data.publicUrl;
+  // Store the path - signed URLs will be generated when displaying
+  return path;
+}
+
+export async function getSignedPhotoUrl(path: string): Promise<string> {
+  // If it's already a full URL (legacy public URL), return as-is
+  if (path.startsWith("http")) return path;
+  const { data, error } = await supabase.storage
+    .from("daily-log-photos")
+    .createSignedUrl(path, 3600); // 1 hour expiry
+  if (error || !data?.signedUrl) return path;
+  return data.signedUrl;
 }

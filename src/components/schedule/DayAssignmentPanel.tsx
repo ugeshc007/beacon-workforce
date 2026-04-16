@@ -14,7 +14,8 @@ import {
   type ScheduleAssignment,
 } from "@/hooks/useSchedule";
 import { useProjects } from "@/hooks/useProjects";
-import { Lock, LockOpen, Plus, Trash2, AlertTriangle, Zap, User, Clock, Timer, Pencil, ArrowRightLeft, Check, X, Shield, Users } from "lucide-react";
+import { useDailyLogs } from "@/hooks/useDailyLogs";
+import { Lock, LockOpen, Plus, Trash2, AlertTriangle, Zap, User, Clock, Timer, Pencil, ArrowRightLeft, Check, X, Shield, Users, Share2, Copy, MessageCircle } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -22,9 +23,10 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast as sonnerToast } from "sonner";
 
 interface Props {
   date: string;
@@ -34,6 +36,7 @@ interface Props {
   requiredTech: number;
   requiredHelp: number;
   requiredSup: number;
+  requiredDrivers?: number;
   conflicts: { employee_id: string; employee_name: string; projects: string[] }[];
   readOnly?: boolean;
 }
@@ -41,6 +44,7 @@ interface Props {
 const skillColors: Record<string, string> = {
   team_member: "bg-brand/15 text-brand border-brand/30",
   team_leader: "bg-status-overtime/15 text-status-overtime border-status-overtime/30",
+  driver: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
 };
 
 export function DayAssignmentPanel({
@@ -51,6 +55,7 @@ export function DayAssignmentPanel({
   requiredTech,
   requiredHelp,
   requiredSup,
+  requiredDrivers = 0,
   conflicts,
   readOnly = false,
 }: Props) {
@@ -64,6 +69,8 @@ export function DayAssignmentPanel({
   const reassignEmployee = useReassignEmployee();
   const { data: allProjects } = useProjects({ status: "all" });
   const activeProjects = (allProjects ?? []).filter((p) => ["on_hold", "in_progress"].includes(p.status) && p.id !== projectId);
+  const { data: dailyLogs } = useDailyLogs(projectId);
+  const currentProject = (allProjects ?? []).find(p => p.id === projectId);
 
   const [addingSkill, setAddingSkill] = useState<string | null>(null);
   const [shiftStart, setShiftStart] = useState("08:00");
@@ -88,12 +95,14 @@ export function DayAssignmentPanel({
   const [reassignKeepOld, setReassignKeepOld] = useState(true);
   const [reassignOldEnd, setReassignOldEnd] = useState("");
 
-  const memberCount = assignments.filter((a) => a.employee_skill === "team_member").length;
-  const tlCount = assignments.filter((a) => a.employee_skill === "team_leader").length;
+  const memberCount = assignments.filter((a) => a.assigned_role === "team_member").length;
+  const tlCount = assignments.filter((a) => a.assigned_role === "team_leader").length;
+  const driverCount = assignments.filter((a) => a.assigned_role === "driver").length;
 
   const needMembers = Math.max(0, requiredTech - memberCount);
   const needTL = Math.max(0, requiredSup - tlCount);
-  const totalToFill = needMembers + needTL;
+  const needDrivers = Math.max(0, requiredDrivers - driverCount);
+  const totalToFill = needMembers + needTL + needDrivers;
 
   const handleAdd = async (employeeId: string) => {
     try {
@@ -103,6 +112,7 @@ export function DayAssignmentPanel({
         date,
         shift_start: shiftStart,
         shift_end: shiftEnd,
+        assigned_role: addingSkill ?? "team_member",
       });
       toast({ title: "Employee assigned" });
       setAddingSkill(null);
@@ -225,7 +235,14 @@ export function DayAssignmentPanel({
   });
 
   const availableForSkill = (skill: string) =>
-    (employees ?? []).filter((e) => e.skill_type === skill && !e.on_leave);
+    (employees ?? []).filter((e) => {
+      if (e.on_leave) return false;
+      // Check if already assigned to this role for this project
+      const alreadyInRole = assignments.some(a => a.employee_id === e.id && a.assigned_role === skill);
+      if (alreadyInRole) return false;
+      const matchesSkill = e.skill_type === skill || ((e as any).secondary_skills ?? []).includes(skill);
+      return matchesSkill;
+    });
 
   /** Check if selected shift overlaps with any existing slot */
   const hasOverlap = (slots: { start: string; end: string; project: string }[]) => {
@@ -275,6 +292,60 @@ export function DayAssignmentPanel({
     return { label: "Completed", status: "done" as const };
   };
 
+  const formatShareText = useCallback(() => {
+    const lines: string[] = [];
+    lines.push(`📋 *Schedule: ${projectName}*`);
+    lines.push(`📅 ${dayLabel}`);
+    if (currentProject?.site_address) lines.push(`📍 Location: ${currentProject.site_address}`);
+
+    // Daily logs as "Task"
+    const logsForDate = (dailyLogs ?? []).filter(l => l.date === date);
+    if (logsForDate.length > 0) {
+      lines.push("");
+      lines.push("📝 *Task:*");
+      logsForDate.forEach(l => {
+        const statusLabel = l.status === "completed" ? "✅" : l.status === "in_progress" ? "🔄" : l.status === "on_hold" ? "⏸️" : "⏳";
+        lines.push(`  ${statusLabel} ${l.description}${l.completion_pct !== null ? ` (${l.completion_pct}%)` : ""}${l.issues ? ` ⚠️ ${l.issues}` : ""}`);
+      });
+    }
+    lines.push("");
+
+    const members = assignments.filter(a => a.assigned_role === "team_member");
+    const leaders = assignments.filter(a => a.assigned_role === "team_leader");
+    const drivers = assignments.filter(a => a.assigned_role === "driver");
+
+    if (members.length > 0) {
+      lines.push("👷 *Team Members:*");
+      members.forEach(a => lines.push(`  • ${a.employee_name} (${formatTime(a.shift_start) || "08:00"}–${formatTime(a.shift_end) || "17:00"})`));
+    }
+    if (leaders.length > 0) {
+      lines.push("🛡️ *Team Leaders:*");
+      leaders.forEach(a => lines.push(`  • ${a.employee_name} (${formatTime(a.shift_start) || "08:00"}–${formatTime(a.shift_end) || "17:00"})`));
+    }
+    if (drivers.length > 0) {
+      lines.push("🚗 *Drivers:*");
+      drivers.forEach(a => lines.push(`  • ${a.employee_name} (${formatTime(a.shift_start) || "08:00"}–${formatTime(a.shift_end) || "17:00"})`));
+    }
+
+    if (assignments.length === 0) lines.push("No assignments yet.");
+
+    return lines.join("\n");
+  }, [assignments, projectName, dayLabel, dailyLogs, date, currentProject]);
+
+  const handleCopyClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(formatShareText());
+      sonnerToast.success("Schedule copied to clipboard");
+    } catch {
+      sonnerToast.error("Failed to copy");
+    }
+  };
+
+  const handleShareWhatsApp = () => {
+    const text = encodeURIComponent(formatShareText());
+    window.open(`https://wa.me/?text=${text}`, "_blank");
+  };
+
   const countdownColor = { upcoming: "text-status-planned", active: "text-status-present", done: "text-muted-foreground" };
 
   return (
@@ -285,23 +356,40 @@ export function DayAssignmentPanel({
             <CardTitle className="text-sm font-semibold">{dayLabel}</CardTitle>
             <p className="text-xs text-muted-foreground mt-0.5">{projectName}</p>
           </div>
-          {!readOnly && (
-            <Button size="sm" variant="outline" onClick={() => setConfirmOpen(true)} disabled={autoLoading || totalToFill === 0}>
-              <Zap className="h-3.5 w-3.5 mr-1" />
-              {autoLoading ? "Assigning…" : "Auto-fill"}
-            </Button>
-          )}
+          <div className="flex items-center gap-1.5">
+            {assignments.length > 0 && (
+              <>
+                <Button size="sm" variant="ghost" onClick={handleCopyClipboard} title="Copy to clipboard" className="h-8 w-8 p-0">
+                  <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+                </Button>
+                <Button size="sm" variant="ghost" onClick={handleShareWhatsApp} title="Share via WhatsApp" className="h-8 w-8 p-0">
+                  <MessageCircle className="h-3.5 w-3.5 text-emerald-400" />
+                </Button>
+              </>
+            )}
+            {!readOnly && (
+              <Button size="sm" variant="outline" onClick={() => setConfirmOpen(true)} disabled={autoLoading || totalToFill === 0}>
+                <Zap className="h-3.5 w-3.5 mr-1" />
+                {autoLoading ? "Assigning…" : "Auto-fill"}
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Staffing summary */}
-        <div className="flex gap-2 text-xs">
+        <div className="flex gap-2 text-xs flex-wrap">
           <Badge variant="outline" className={memberCount >= requiredTech ? "border-status-present/50" : "border-status-absent/50"}>
-            Members: {memberCount}/{requiredTech}
+            Team Members: {memberCount}/{requiredTech}
           </Badge>
           <Badge variant="outline" className={tlCount >= requiredSup ? "border-status-present/50" : "border-status-absent/50"}>
-            TL: {tlCount}/{requiredSup}
+            Team Leaders: {tlCount}/{requiredSup}
           </Badge>
+          {requiredDrivers > 0 && (
+            <Badge variant="outline" className={driverCount >= requiredDrivers ? "border-status-present/50" : "border-status-absent/50"}>
+              Drivers: {driverCount}/{requiredDrivers}
+            </Badge>
+          )}
         </div>
 
         {/* Conflicts */}
@@ -327,7 +415,7 @@ export function DayAssignmentPanel({
             return (
             <div key={a.id} className="space-y-1">
               <div className="flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-accent/30 transition-colors group">
-                {a.employee_skill === "team_leader" ? (
+                {a.assigned_role === "team_leader" ? (
                   <Shield className="h-3.5 w-3.5 text-status-overtime shrink-0" />
                 ) : (
                   <Users className="h-3.5 w-3.5 text-brand shrink-0" />
@@ -351,8 +439,8 @@ export function DayAssignmentPanel({
                     {formatTime(a.shift_start) || "08:00"}–{formatTime(a.shift_end) || "17:00"}
                   </span>
                 )}
-                <Badge variant="outline" className={`text-[10px] ${skillColors[a.employee_skill] ?? ""}`}>
-                  {a.employee_skill}
+                <Badge variant="outline" className={`text-[10px] ${skillColors[a.assigned_role] ?? ""}`}>
+                  {a.assigned_role}
                 </Badge>
                 {a.assignment_mode !== "manual" && (
                   <Badge variant="secondary" className="text-[10px]">{a.assignment_mode}</Badge>
@@ -453,10 +541,10 @@ export function DayAssignmentPanel({
             <Button variant="ghost" size="sm" className="w-full" onClick={() => setAddingSkill(null)}>Cancel</Button>
           </div>
         ) : (
-          <div className="flex gap-2">
-            {(["team_member", "team_leader"] as const).map((skill) => (
+          <div className="flex gap-2 flex-wrap">
+            {(["team_leader", "team_member", "driver"] as const).map((skill) => (
               <Button key={skill} variant="outline" size="sm" className="flex-1 text-xs" onClick={() => setAddingSkill(skill)}>
-                <Plus className="h-3 w-3 mr-1" /> {skill === "team_member" ? "Member" : "TL"}
+                <Plus className="h-3 w-3 mr-1" /> {skill === "team_member" ? "Team Member" : skill === "team_leader" ? "Team Leader" : "Driver"}
               </Button>
             ))}
           </div>
@@ -474,6 +562,7 @@ export function DayAssignmentPanel({
                 <ul className="list-disc pl-5 space-y-0.5 text-sm">
                   {needMembers > 0 && <li>{needMembers} team member{needMembers > 1 ? "s" : ""}</li>}
                   {needTL > 0 && <li>{needTL} team leader{needTL > 1 ? "s" : ""}</li>}
+                  {needDrivers > 0 && <li>{needDrivers} driver{needDrivers > 1 ? "s" : ""}</li>}
                 </ul>
                 {/* Shift time for auto-fill */}
                 <div className="flex items-center gap-2 pt-1">

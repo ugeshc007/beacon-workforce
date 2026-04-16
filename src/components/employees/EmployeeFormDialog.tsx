@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { DateInput } from "@/components/ui/date-input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
 import { useCreateEmployee, useUpdateEmployee, useBranches } from "@/hooks/useEmployees";
@@ -22,7 +23,7 @@ const schema = z.object({
   phone: z.string().max(20).optional().or(z.literal("")),
   email: z.string().email("Invalid email").max(255).optional().or(z.literal("")),
   designation: z.string().max(100).optional().or(z.literal("")),
-  skill_type: z.enum(["team_member", "team_leader"]),
+  skill_type: z.enum(["team_member", "team_leader", "driver"]),
   branch_id: z.string().uuid("Select a branch"),
   hourly_rate: z.coerce.number().min(0),
   overtime_rate: z.coerce.number().min(0),
@@ -40,12 +41,19 @@ interface Props {
   employee?: Tables<"employees"> | null;
 }
 
+const ALL_SKILLS = [
+  { value: "team_member", label: "Team Member" },
+  { value: "team_leader", label: "Team Leader" },
+  { value: "driver", label: "Driver" },
+];
+
 export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
   const isEdit = !!employee;
   const { toast } = useToast();
   const { data: branches } = useBranches();
   const create = useCreateEmployee();
   const update = useUpdateEmployee();
+  const [secondarySkills, setSecondarySkills] = useState<string[]>([]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -74,7 +82,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
         phone: employee.phone ?? "",
         email: employee.email ?? "",
         designation: employee.designation ?? "",
-        skill_type: employee.skill_type as "team_member" | "team_leader",
+        skill_type: employee.skill_type as "team_member" | "team_leader" | "driver",
         branch_id: employee.branch_id,
         hourly_rate: Number(employee.hourly_rate),
         overtime_rate: Number(employee.overtime_rate),
@@ -83,8 +91,10 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
         emergency_contact: employee.emergency_contact ?? "",
         notes: employee.notes ?? "",
       });
+      setSecondarySkills((employee as any).secondary_skills ?? []);
     } else {
       form.reset();
+      setSecondarySkills([]);
     }
   }, [employee, open]);
 
@@ -98,6 +108,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
         join_date: values.join_date || null,
         emergency_contact: values.emergency_contact || null,
         notes: values.notes || null,
+        secondary_skills: secondarySkills.filter(s => s !== values.skill_type),
       };
 
       if (isEdit) {
@@ -171,12 +182,13 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
               )} />
               <FormField control={form.control} name="skill_type" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Skill Type</FormLabel>
+                  <FormLabel>Primary Skill</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                     <SelectContent>
                       <SelectItem value="team_member">Team Member</SelectItem>
                       <SelectItem value="team_leader">Team Leader</SelectItem>
+                      <SelectItem value="driver">Driver</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -196,6 +208,27 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
                   <FormMessage />
                 </FormItem>
               )} />
+            </div>
+
+            {/* Secondary Skills */}
+            <div>
+              <label className="text-sm font-medium">Secondary Skills</label>
+              <p className="text-xs text-muted-foreground mb-2">Select additional skills this employee can perform</p>
+              <div className="flex gap-4">
+                {ALL_SKILLS.filter(s => s.value !== form.watch("skill_type")).map(skill => (
+                  <label key={skill.value} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <Checkbox
+                      checked={secondarySkills.includes(skill.value)}
+                      onCheckedChange={(checked) => {
+                        setSecondarySkills(prev =>
+                          checked ? [...prev, skill.value] : prev.filter(s => s !== skill.value)
+                        );
+                      }}
+                    />
+                    {skill.label}
+                  </label>
+                ))}
+              </div>
             </div>
 
             <div className="grid grid-cols-3 gap-4">

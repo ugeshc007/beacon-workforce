@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { addDays } from "date-fns";
 import { format, subDays, startOfMonth, endOfMonth, subMonths, startOfWeek, endOfWeek, parse, isValid } from "date-fns";
 import { CalendarIcon, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -17,6 +18,34 @@ export interface DateRange {
 type Preset = { label: string; getRange: () => { start: Date; end: Date } };
 
 const PRESETS: Preset[] = [
+  {
+    label: "Today",
+    getRange: () => ({ start: new Date(), end: new Date() }),
+  },
+  {
+    label: "Yesterday",
+    getRange: () => {
+      const y = subDays(new Date(), 1);
+      return { start: y, end: y };
+    },
+  },
+  {
+    label: "Tomorrow",
+    getRange: () => {
+      const t = new Date();
+      t.setDate(t.getDate() + 1);
+      return { start: t, end: t };
+    },
+  },
+  {
+    label: "Next Week",
+    getRange: () => {
+      const today = new Date();
+      const nextMon = startOfWeek(addDays(today, 7), { weekStartsOn: 1 });
+      const nextSun = endOfWeek(addDays(today, 7), { weekStartsOn: 1 });
+      return { start: nextMon, end: nextSun };
+    },
+  },
   {
     label: "This Month",
     getRange: () => ({ start: startOfMonth(new Date()), end: endOfMonth(new Date()) }),

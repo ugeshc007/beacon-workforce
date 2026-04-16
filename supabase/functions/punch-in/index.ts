@@ -1,4 +1,4 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, haversineDistance, todayDate, nowTimestamp, notifyBranchManagers } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, haversineDistance, todayDate, nowTimestamp, notifyBranchManagers, authenticateEmployee } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
@@ -11,6 +11,11 @@ Deno.serve(async (req) => {
     }
 
     const supabase = createSupabaseAdmin();
+
+    // Authenticate and verify employee ownership
+    const auth = await authenticateEmployee(req, supabase, employee_id);
+    if (auth.error) return auth.error;
+
     const today = todayDate();
 
     // Get employee branch + office + name

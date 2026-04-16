@@ -457,6 +457,7 @@ export type Database = {
           notes: string | null
           overtime_rate: number
           phone: string | null
+          secondary_skills: string[]
           skill_type: Database["public"]["Enums"]["skill_type"]
           standard_hours_per_day: number
         }
@@ -476,6 +477,7 @@ export type Database = {
           notes?: string | null
           overtime_rate?: number
           phone?: string | null
+          secondary_skills?: string[]
           skill_type?: Database["public"]["Enums"]["skill_type"]
           standard_hours_per_day?: number
         }
@@ -495,6 +497,7 @@ export type Database = {
           notes?: string | null
           overtime_rate?: number
           phone?: string | null
+          secondary_skills?: string[]
           skill_type?: Database["public"]["Enums"]["skill_type"]
           standard_hours_per_day?: number
         }
@@ -629,6 +632,48 @@ export type Database = {
           },
         ]
       }
+      maintenance_images: {
+        Row: {
+          caption: string | null
+          created_at: string
+          file_path: string
+          id: string
+          maintenance_call_id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          file_path: string
+          id?: string
+          maintenance_call_id: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          file_path?: string
+          id?: string
+          maintenance_call_id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_images_maintenance_call_id_fkey"
+            columns: ["maintenance_call_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_calls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_images_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -720,6 +765,7 @@ export type Database = {
       project_assignments: {
         Row: {
           assigned_by: string | null
+          assigned_role: string
           assignment_mode: Database["public"]["Enums"]["assignment_mode"]
           auto_score: Json | null
           created_at: string
@@ -733,6 +779,7 @@ export type Database = {
         }
         Insert: {
           assigned_by?: string | null
+          assigned_role?: string
           assignment_mode?: Database["public"]["Enums"]["assignment_mode"]
           auto_score?: Json | null
           created_at?: string
@@ -746,6 +793,7 @@ export type Database = {
         }
         Update: {
           assigned_by?: string | null
+          assigned_role?: string
           assignment_mode?: Database["public"]["Enums"]["assignment_mode"]
           auto_score?: Json | null
           created_at?: string
@@ -793,6 +841,7 @@ export type Database = {
           photo_urls: string[] | null
           posted_by: string | null
           project_id: string
+          status: string
           updated_at: string
         }
         Insert: {
@@ -806,6 +855,7 @@ export type Database = {
           photo_urls?: string[] | null
           posted_by?: string | null
           project_id: string
+          status?: string
           updated_at?: string
         }
         Update: {
@@ -819,6 +869,7 @@ export type Database = {
           photo_urls?: string[] | null
           posted_by?: string | null
           project_id?: string
+          status?: string
           updated_at?: string
         }
         Relationships: [
@@ -938,6 +989,7 @@ export type Database = {
           default_duration_days: number | null
           id: string
           name: string
+          required_drivers: number
           required_helpers: number
           required_supervisors: number
           required_team_members: number
@@ -950,6 +1002,7 @@ export type Database = {
           default_duration_days?: number | null
           id?: string
           name: string
+          required_drivers?: number
           required_helpers?: number
           required_supervisors?: number
           required_team_members?: number
@@ -962,6 +1015,7 @@ export type Database = {
           default_duration_days?: number | null
           id?: string
           name?: string
+          required_drivers?: number
           required_helpers?: number
           required_supervisors?: number
           required_team_members?: number
@@ -987,11 +1041,14 @@ export type Database = {
           created_at: string
           created_by: string | null
           end_date: string | null
+          has_warranty: boolean
           health_score: number | null
           id: string
+          job_card: string | null
           name: string
           notes: string | null
           project_value: number | null
+          required_drivers: number
           required_helpers: number
           required_supervisors: number
           required_team_members: number
@@ -1003,6 +1060,10 @@ export type Database = {
           start_date: string | null
           status: Database["public"]["Enums"]["project_status"]
           template_id: string | null
+          warranty_end_date: string | null
+          warranty_notes: string | null
+          warranty_notification_sent: boolean
+          warranty_start_date: string | null
         }
         Insert: {
           branch_id: string
@@ -1013,11 +1074,14 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           end_date?: string | null
+          has_warranty?: boolean
           health_score?: number | null
           id?: string
+          job_card?: string | null
           name: string
           notes?: string | null
           project_value?: number | null
+          required_drivers?: number
           required_helpers?: number
           required_supervisors?: number
           required_team_members?: number
@@ -1029,6 +1093,10 @@ export type Database = {
           start_date?: string | null
           status?: Database["public"]["Enums"]["project_status"]
           template_id?: string | null
+          warranty_end_date?: string | null
+          warranty_notes?: string | null
+          warranty_notification_sent?: boolean
+          warranty_start_date?: string | null
         }
         Update: {
           branch_id?: string
@@ -1039,11 +1107,14 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           end_date?: string | null
+          has_warranty?: boolean
           health_score?: number | null
           id?: string
+          job_card?: string | null
           name?: string
           notes?: string | null
           project_value?: number | null
+          required_drivers?: number
           required_helpers?: number
           required_supervisors?: number
           required_team_members?: number
@@ -1055,6 +1126,10 @@ export type Database = {
           start_date?: string | null
           status?: Database["public"]["Enums"]["project_status"]
           template_id?: string | null
+          warranty_end_date?: string | null
+          warranty_notes?: string | null
+          warranty_notification_sent?: boolean
+          warranty_start_date?: string | null
         }
         Relationships: [
           {
@@ -1465,7 +1540,12 @@ export type Database = {
       override_action: "absent" | "replaced" | "added" | "removed"
       project_status: "on_hold" | "in_progress" | "completed"
       report_schedule: "none" | "daily" | "weekly" | "monthly"
-      skill_type: "technician" | "helper" | "team_leader" | "team_member"
+      skill_type:
+        | "technician"
+        | "helper"
+        | "team_leader"
+        | "team_member"
+        | "driver"
       user_role: "admin" | "manager" | "team_leader"
     }
     CompositeTypes: {
@@ -1617,7 +1697,13 @@ export const Constants = {
       override_action: ["absent", "replaced", "added", "removed"],
       project_status: ["on_hold", "in_progress", "completed"],
       report_schedule: ["none", "daily", "weekly", "monthly"],
-      skill_type: ["technician", "helper", "team_leader", "team_member"],
+      skill_type: [
+        "technician",
+        "helper",
+        "team_leader",
+        "team_member",
+        "driver",
+      ],
       user_role: ["admin", "manager", "team_leader"],
     },
   },

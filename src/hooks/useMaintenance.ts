@@ -165,6 +165,144 @@ export function useRemoveFromMaintenance() {
       const { error } = await supabase.from("maintenance_assignments").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["maintenance-assignments"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["maintenance-assignments"] });
+      qc.invalidateQueries({ queryKey: ["schedule-maintenance-assignments"] });
+    },
+  });
+}
+
+/** Copy all maintenance assignments from one date to another date for a given call */
+export function useCopyMaintenanceAssignments() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ maintenanceCallId, sourceDate, targetDate }: {
+      maintenanceCallId: string;
+      sourceDate: string;
+      targetDate: string;
+    }) => {
+      // Get source assignments
+      const { data: source, error } = await supabase
+        .from("maintenance_assignments")
+        .select("employee_id, shift_start, shift_end, maintenance_call_id")
+        .eq("maintenance_call_id", maintenanceCallId)
+        .eq("date", sourceDate);
+      if (error) throw error;
+      if (!source?.length) throw new Error("No assignments found on source date");
+
+      // Check for duplicates on target date
+      const { data: existing } = await supabase
+        .from("maintenance_assignments")
+        .select("employee_id")
+        .eq("maintenance_call_id", maintenanceCallId)
+        .eq("date", targetDate);
+      const existingIds = new Set((existing ?? []).map(e => e.employee_id));
+
+      const rows = source
+        .filter(a => !existingIds.has(a.employee_id))
+        .map(a => ({
+          maintenance_call_id: a.maintenance_call_id,
+          employee_id: a.employee_id,
+          date: targetDate,
+          shift_start: a.shift_start,
+          shift_end: a.shift_end,
+        }));
+
+      if (!rows.length) throw new Error("All staff already assigned on target date");
+
+      const { error: insertErr } = await supabase.from("maintenance_assignments").insert(rows as any);
+      if (insertErr) throw insertErr;
+      return rows.length;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["maintenance-assignments"] });
+      qc.invalidateQueries({ queryKey: ["schedule-maintenance-assignments"] });
+    },
+  });
+}
+
+// ── Maintenance Images ──
+
+export interface MaintenanceImage {
+  id: string;
+  maintenance_call_id: string;
+  file_path: string;
+  caption: string | null;
+  uploaded_by: string | null;
+  created_at: string;
+  users?: { name: string } | null;
+  signedUrl?: string;
+}
+
+export function useMaintenanceImages(callId: string | null) {
+  return useQuery({
+    queryKey: ["maintenance-images", callId],
+    enabled: !!callId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("maintenance_images")
+        .select("*, users:uploaded_by(name)")
+        .eq("maintenance_call_id", callId!)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+
+      // Generate signed URLs for all images
+      const images = (data ?? []) as unknown as MaintenanceImage[];
+      const withUrls = await Promise.all(
+        images.map(async (img) => {
+          const { data: urlData } = await supabase.storage
+            .from("maintenance-images")
+            .createSignedUrl(img.file_path, 3600);
+          return { ...img, signedUrl: urlData?.signedUrl ?? "" };
+        })
+      );
+      return withUrls;
+    },
+  });
+}
+
+export function useUploadMaintenanceImage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      callId,
+      file,
+      caption,
+      uploadedBy,
+    }: {
+      callId: string;
+      file: File;
+      caption?: string;
+      uploadedBy?: string;
+    }) => {
+      const ext = file.name.split(".").pop();
+      const path = `${callId}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+      const { error: uploadErr } = await supabase.storage
+        .from("maintenance-images")
+        .upload(path, file, { upsert: false });
+      if (uploadErr) throw uploadErr;
+
+      const { error: dbErr } = await supabase.from("maintenance_images").insert({
+        maintenance_call_id: callId,
+        file_path: path,
+        caption: caption || null,
+        uploaded_by: uploadedBy || null,
+      } as any);
+      if (dbErr) throw dbErr;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["maintenance-images"] }),
+  });
+}
+
+export function useDeleteMaintenanceImage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, filePath }: { id: string; filePath: string }) => {
+      await supabase.storage.from("maintenance-images").remove([filePath]);
+      const { error } = await supabase.from("maintenance_images").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["maintenance-images"] }),
   });
 }

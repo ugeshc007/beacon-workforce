@@ -1,3 +1,4 @@
+import { toLocalDateStr } from "@/lib/utils";
 import { useState } from "react";
 import {
   useDailyTeam,
@@ -33,6 +34,7 @@ import {
   MapPin, Share2, FileText, StickyNote,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const fmt = (ts: string | null) => {
   if (!ts) return "—";
@@ -47,7 +49,7 @@ const skillColor: Record<string, string> = {
 function todayUAE(): string {
   const now = new Date();
   const uae = new Date(now.getTime() + 4 * 60 * 60 * 1000);
-  return uae.toISOString().split("T")[0];
+  return toLocalDateStr(uae);
 }
 
 type AbsentDialog = {
@@ -82,7 +84,7 @@ export default function DailyTeam() {
   const shiftDate = (delta: number) => {
     const d = new Date(date + "T00:00:00");
     d.setDate(d.getDate() + delta);
-    setDate(d.toISOString().split("T")[0]);
+    setDate(toLocalDateStr(d));
   };
 
   const dateLabel = new Date(date + "T00:00:00").toLocaleDateString("en-GB", {
@@ -176,19 +178,35 @@ export default function DailyTeam() {
   const totalAssigned = groups?.reduce((s, g) => s + g.members.length, 0) ?? 0;
   const totalPresent = groups?.reduce((s, g) => s + g.members.filter((m) => m.punch_in).length, 0) ?? 0;
 
-  const handleShare = (group: DailyProjectGroup) => {
+  const handleShare = async (group: DailyProjectGroup) => {
     const lines: string[] = [];
     lines.push(`📋 *${group.project_name}*`);
     lines.push(`📅 ${new Date(date + "T00:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short", year: "numeric" })}`);
     if (group.site_address) lines.push(`📍 Location: ${group.site_address}`);
-    if (group.notes) lines.push(`📝 Scope: ${group.notes}`);
+
+    // Fetch daily logs as "Task"
+    try {
+      const { data: logs } = await supabase
+        .from("project_daily_logs")
+        .select("description, completion_pct, issues, status")
+        .eq("project_id", group.project_id)
+        .eq("date", date)
+        .order("created_at", { ascending: false });
+      if (logs && logs.length > 0) {
+        lines.push("");
+        lines.push("📝 *Task:*");
+        logs.forEach((l: any) => {
+          const statusLabel = l.status === "completed" ? "✅" : l.status === "in_progress" ? "🔄" : l.status === "on_hold" ? "⏸️" : "⏳";
+          lines.push(`  ${statusLabel} ${l.description}${l.completion_pct !== null ? ` (${l.completion_pct}%)` : ""}${l.issues ? ` ⚠️ ${l.issues}` : ""}`);
+        });
+      }
+    } catch {}
     lines.push("");
-    lines.push(`👥 *Team (${group.members.filter((m) => m.override_action !== "absent" && m.override_action !== "removed").length} members):*`);
-    group.members
-      .filter((m) => m.override_action !== "absent" && m.override_action !== "removed")
-      .forEach((m, i) => {
+    const activeMembers = group.members.filter((m) => m.override_action !== "absent" && m.override_action !== "removed");
+    lines.push(`👥 *Team:*`);
+    activeMembers.forEach((m, i) => {
         const shift = m.shift_start && m.shift_end ? `${m.shift_start.slice(0,5)}–${m.shift_end.slice(0,5)}` : "08:00–17:00";
-        const role = m.skill_type === "team_leader" ? "TL" : "Member";
+        const role = m.skill_type === "team_leader" ? "TL" : m.skill_type === "driver" ? "Driver" : "Member";
         lines.push(`${i + 1}. ${m.employee_name} (${role}) ⏰ ${shift}`);
       });
 
