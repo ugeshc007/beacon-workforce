@@ -45,6 +45,7 @@ import MobileTimesheet from "./pages/mobile/MobileTimesheet";
 import MobileNotifications from "./pages/mobile/MobileNotifications";
 import MobileProfile from "./pages/mobile/MobileProfile";
 import MobileTeamStatus from "./pages/mobile/MobileTeamStatus";
+import MobileDailyLog from "./pages/mobile/MobileDailyLog";
 
 const queryClient = new QueryClient();
 
@@ -62,6 +63,7 @@ const App = () => (
             <Route path="timesheet" element={<MobileTimesheet />} />
             <Route path="notifications" element={<MobileNotifications />} />
             <Route path="team" element={<MobileTeamStatus />} />
+            <Route path="daily-log" element={<MobileDailyLog />} />
             <Route path="profile" element={<MobileProfile />} />
           </Route>
 

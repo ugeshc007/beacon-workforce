@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
 import { Card } from "@/components/ui/card";
 import { Loader2, Clock, Calendar } from "lucide-react";
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, parseISO } from "date-fns";
+import { format, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
+import { formatWorkedMinutes, getDisplayWorkedMinutes } from "@/lib/timesheet-display";
 
 interface DayLog {
   date: string;
@@ -13,12 +14,15 @@ interface DayLog {
   overtime_cost: number | null;
   office_punch_in: string | null;
   office_punch_out: string | null;
+  work_start_time: string | null;
+  work_end_time: string | null;
 }
 
 export default function MobileTimesheet() {
   const { employee } = useMobileAuth();
   const [logs, setLogs] = useState<DayLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [now, setNow] = useState(new Date());
 
   const today = new Date();
   const weekStart = startOfWeek(today, { weekStartsOn: 1 });
@@ -26,12 +30,17 @@ export default function MobileTimesheet() {
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
   useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 30000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
     if (!employee) return;
 
     const fetch = async () => {
       const { data } = await supabase
         .from("attendance_logs")
-        .select("date, total_work_minutes, overtime_minutes, regular_cost, overtime_cost, office_punch_in, office_punch_out")
+        .select("date, total_work_minutes, overtime_minutes, regular_cost, overtime_cost, office_punch_in, office_punch_out, work_start_time, work_end_time")
         .eq("employee_id", employee.id)
         .gte("date", format(weekStart, "yyyy-MM-dd"))
         .lte("date", format(weekEnd, "yyyy-MM-dd"))
@@ -53,16 +62,8 @@ export default function MobileTimesheet() {
 
   const logMap = new Map(logs.map((l) => [l.date, l]));
 
-  const totalWorked = logs.reduce((sum, l) => sum + (l.total_work_minutes || 0), 0);
+  const totalWorked = logs.reduce((sum, l) => sum + getDisplayWorkedMinutes(l, now), 0);
   const totalOT = logs.reduce((sum, l) => sum + (l.overtime_minutes || 0), 0);
-
-  const fmtHours = (mins: number) => {
-    const h = Math.floor(mins / 60);
-    const m = mins % 60;
-    if (h === 0 && m === 0) return "0m";
-    if (h === 0) return `${m}m`;
-    return `${h}h ${m}m`;
-  };
 
   return (
     <div className="flex flex-col gap-4 p-4 pb-24 safe-area-inset">
@@ -75,14 +76,14 @@ export default function MobileTimesheet() {
             <Clock className="h-4 w-4 text-brand" />
             <span className="text-xs text-muted-foreground">This Week</span>
           </div>
-          <p className="text-lg font-bold text-foreground">{fmtHours(totalWorked)}</p>
+          <p className="text-lg font-bold text-foreground">{formatWorkedMinutes(totalWorked)}</p>
         </Card>
         <Card className="p-4 border-border/50 bg-card">
           <div className="flex items-center gap-2 mb-1">
             <Clock className="h-4 w-4 text-amber-400" />
             <span className="text-xs text-muted-foreground">Overtime</span>
           </div>
-          <p className="text-lg font-bold text-amber-400">{fmtHours(totalOT)}</p>
+          <p className="text-lg font-bold text-amber-400">{formatWorkedMinutes(totalOT)}</p>
         </Card>
       </div>
 
@@ -98,6 +99,7 @@ export default function MobileTimesheet() {
           const log = logMap.get(dateStr);
           const isToday = dateStr === format(today, "yyyy-MM-dd");
           const isFuture = day > today;
+          const displayMinutes = log ? getDisplayWorkedMinutes(log, now) : 0;
 
           return (
             <Card
@@ -123,11 +125,11 @@ export default function MobileTimesheet() {
                   {log ? (
                     <>
                       <p className="text-sm font-semibold text-foreground">
-                        {fmtHours(log.total_work_minutes || 0)}
+                        {formatWorkedMinutes(displayMinutes)}
                       </p>
                       {(log.overtime_minutes || 0) > 0 && (
                         <p className="text-xs text-amber-400">
-                          +{fmtHours(log.overtime_minutes || 0)} OT
+                          +{formatWorkedMinutes(log.overtime_minutes || 0)} OT
                         </p>
                       )}
                     </>
