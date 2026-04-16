@@ -88,12 +88,9 @@ export default function MobileHome() {
           is_spoofed: gps.reading.isMock,
         };
 
-        if (gps.needsMapFallback) {
-          toast({
-            title: "Low GPS Accuracy",
-            description: `Accuracy: ${Math.round(gps.reading.accuracy)}m. You can proceed or pick manually.`,
-          });
-        }
+      if (gps.needsMapFallback) {
+        // Low accuracy — proceed silently, button status is enough feedback
+      }
       }
     }
 
@@ -124,9 +121,7 @@ export default function MobileHome() {
     }
 
     const result = await executeAction(action, payload);
-    if (result?.success) {
-      toast({ title: "Success", description: `${actionLabels[action]} completed.` });
-    } else {
+    if (!result?.success) {
       toast({ title: "Failed", description: result?.error || "Something went wrong.", variant: "destructive" });
     }
   };

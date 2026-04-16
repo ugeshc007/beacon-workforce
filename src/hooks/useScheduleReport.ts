@@ -26,6 +26,7 @@ export interface ScheduleReportData {
     location: string;
     teamSize: number;
     teamNames: string[];
+    teamMembers: { name: string; skill: string }[];
     tasks: string[];
     tasksLogged: number;
     shiftStart: string | null;
@@ -115,17 +116,18 @@ export function useScheduleReport(start: string, end: string) {
       : 0;
 
     // Daily overview — merge assignments and daily logs
-    const dailyMap = new Map<string, { project: string; projectId: string; location: string; teamSize: number; teamNames: string[]; tasks: string[]; tasksLogged: number; shiftStart: string | null; shiftEnd: string | null }>();
+    const dailyMap = new Map<string, { project: string; projectId: string; location: string; teamSize: number; teamNames: string[]; teamMembers: { name: string; skill: string }[]; tasks: string[]; tasksLogged: number; shiftStart: string | null; shiftEnd: string | null }>();
     
     // First pass: build from assignments
     assignments.forEach((a) => {
       const key = `${a.date}|${a.project_id}`;
       const existing = dailyMap.get(key);
       const empName = a.employees?.name ?? "—";
+      const empSkill = (a.employees?.skill_type ?? "helper").replace("_", " ");
       if (existing) {
         existing.teamSize += 1;
         if (!existing.teamNames.includes(empName)) existing.teamNames.push(empName);
-        // Track earliest start and latest end
+        existing.teamMembers.push({ name: empName, skill: empSkill });
         if (a.shift_start && (!existing.shiftStart || a.shift_start < existing.shiftStart)) existing.shiftStart = a.shift_start;
         if (a.shift_end && (!existing.shiftEnd || a.shift_end > existing.shiftEnd)) existing.shiftEnd = a.shift_end;
       } else {
@@ -137,6 +139,7 @@ export function useScheduleReport(start: string, end: string) {
           location: a.projects?.site_address ?? "—",
           teamSize: 1,
           teamNames: [empName],
+          teamMembers: [{ name: empName, skill: empSkill }],
           tasks: taskDescs,
           tasksLogged: dayLogs.length,
           shiftStart: a.shift_start ?? null,
@@ -163,6 +166,7 @@ export function useScheduleReport(start: string, end: string) {
           location: (l as any).projects?.site_address ?? "—",
           teamSize: 0,
           teamNames: [],
+          teamMembers: [],
           tasks: l.description ? [l.description] : [],
           tasksLogged: l.description ? 1 : 0,
           shiftStart: null,
@@ -177,6 +181,7 @@ export function useScheduleReport(start: string, end: string) {
       location: val.location,
       teamSize: val.teamSize,
       teamNames: val.teamNames,
+      teamMembers: val.teamMembers,
       tasks: val.tasks,
       tasksLogged: val.tasksLogged,
       shiftStart: val.shiftStart,

@@ -1,10 +1,10 @@
-import { useState } from "react";
 import type { AttendanceLog } from "@/hooks/useAttendance";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, MapPinOff, ShieldAlert, Clock, CheckCircle2 } from "lucide-react";
+import MiniMap from "./MiniMap";
 
 interface Props {
   log: AttendanceLog | null;
@@ -174,10 +174,13 @@ export function AttendanceDetailDrawer({ log, open, onOpenChange }: Props) {
                     {completed && (step.lat != null || step.distance != null) && (
                       <div className="mt-1 space-y-1">
                         {step.lat != null && step.lng != null && (
-                          <p className="text-[10px] font-mono text-muted-foreground">
-                            📍 {Number(step.lat).toFixed(6)}, {Number(step.lng).toFixed(6)}
-                            {step.accuracy != null && <span className="ml-1">(±{Math.round(Number(step.accuracy))}m)</span>}
-                          </p>
+                          <div className="space-y-1.5">
+                            <p className="text-[10px] font-mono text-muted-foreground">
+                              📍 {Number(step.lat).toFixed(6)}, {Number(step.lng).toFixed(6)}
+                              {step.accuracy != null && <span className="ml-1">(±{Math.round(Number(step.accuracy))}m)</span>}
+                            </p>
+                            <MiniMap lat={Number(step.lat)} lng={Number(step.lng)} label={step.label} />
+                          </div>
                         )}
                         {step.distance != null && (
                           <div className="flex items-center gap-1.5">
