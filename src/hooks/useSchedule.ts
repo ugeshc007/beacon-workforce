@@ -178,6 +178,18 @@ export function useAddAssignment() {
         .select()
         .single();
       if (error) throw error;
+      // Notify employee via mobile notification
+      try {
+        await supabase.functions.invoke("notify-assignment", {
+          body: {
+            employee_id: payload.employee_id,
+            project_id: payload.project_id,
+            date: payload.date,
+            shift_start: payload.shift_start,
+            shift_end: payload.shift_end,
+          },
+        });
+      } catch {}
       return data;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["schedule-assignments"] }),
