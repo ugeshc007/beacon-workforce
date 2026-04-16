@@ -152,6 +152,14 @@ export default function MobileDailyLog() {
     }
   };
 
+  if (workflowLoading) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-brand" />
+      </div>
+    );
+  }
+
   if (!projectId) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] p-4 text-center">
