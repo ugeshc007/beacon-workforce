@@ -124,9 +124,7 @@ export default function MobileHome() {
     }
 
     const result = await executeAction(action, payload);
-    if (result?.success) {
-      toast({ title: "Success", description: `${actionLabels[action]} completed.` });
-    } else {
+    if (!result?.success) {
       toast({ title: "Failed", description: result?.error || "Something went wrong.", variant: "destructive" });
     }
   };
