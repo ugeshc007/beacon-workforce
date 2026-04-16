@@ -401,7 +401,7 @@ export function ProjectDailyLogTab({ projectId }: Props) {
                           )}
                           <span className="flex items-center gap-1 ml-auto">
                             <User className="h-3 w-3" />
-                            {log.users?.name ?? "Unknown"} · {format(new Date(log.created_at), "HH:mm")}
+                            {log.users?.name ?? log.employees?.name ?? "Unknown"} · {format(new Date(log.created_at), "HH:mm")}
                           </span>
                         </div>
 
