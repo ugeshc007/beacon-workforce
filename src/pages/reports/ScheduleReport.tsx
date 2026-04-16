@@ -123,7 +123,7 @@ export default function ScheduleReport() {
                         <th className="text-left p-3">Time</th>
                         <th className="text-left p-3">Project</th>
                         <th className="text-left p-3">Tasks</th>
-                        <th className="text-left p-3">Team Members</th>
+                        <th className="text-left p-3">Staff</th>
                         <th className="text-left p-3">Location</th>
                       </tr>
                     </thead>
@@ -149,10 +149,14 @@ export default function ScheduleReport() {
                             )}
                           </td>
                           <td className="p-3">
-                            <div className="flex flex-wrap gap-1">
-                              {r.teamNames.map((name, j) => (
-                                <Badge key={j} variant="secondary" className="text-[10px] font-normal">{name}</Badge>
+                            <div className="space-y-0.5">
+                              {r.teamMembers.map((m, j) => (
+                                <div key={j} className="flex items-center gap-1.5">
+                                  <Badge variant="outline" className="text-[9px] font-medium px-1 py-0 capitalize shrink-0">{m.skill}</Badge>
+                                  <span className="text-xs text-foreground">{m.name}</span>
+                                </div>
                               ))}
+                              {r.teamMembers.length === 0 && <span className="text-xs text-muted-foreground">—</span>}
                             </div>
                           </td>
                           <td className="p-3 text-muted-foreground">{r.location}</td>
