@@ -48,8 +48,8 @@ export default function ScheduleReport() {
       tables: [
         {
           title: "Daily Schedule Overview",
-          headers: ["Date", "Time", "Project", "Tasks", "Team Members", "Location"],
-          rows: data.dailyOverview.map((r) => [r.date, r.shiftStart && r.shiftEnd ? `${r.shiftStart.slice(0,5)}–${r.shiftEnd.slice(0,5)}` : "—", r.project, r.tasks.join("; ") || "—", r.teamNames.join(", "), r.location]),
+          headers: ["Date", "Time", "Project", "Tasks", "Staff (Skill - Name)", "Location"],
+          rows: data.dailyOverview.map((r) => [r.date, r.shiftStart && r.shiftEnd ? `${r.shiftStart.slice(0,5)}–${r.shiftEnd.slice(0,5)}` : "—", r.project, r.tasks.join("; ") || "—", r.teamMembers.map(m => `${m.skill} - ${m.name}`).join(", "), r.location]),
         },
         {
           title: "Available Employees (Not Scheduled)",
