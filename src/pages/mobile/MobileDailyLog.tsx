@@ -121,6 +121,17 @@ export default function MobileDailyLog() {
         employee_id: employee?.id || null,
         status,
       });
+      // Notify branch managers
+      try {
+        await supabase.functions.invoke("notify-daily-log", {
+          body: {
+            project_id: projectId,
+            employee_name: employee?.name || "Employee",
+            description: description.trim(),
+            status,
+          },
+        });
+      } catch {}
       toast({ title: "Daily update posted ✓" });
       resetForm();
     } catch (err: any) {

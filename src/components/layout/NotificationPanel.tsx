@@ -8,6 +8,8 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNotifications, useUnreadCount, useMarkNotificationRead, useMarkAllRead } from "@/hooks/useNotifications";
 import { formatDistanceToNow } from "date-fns";
+import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 const priorityColor: Record<string, string> = {
   urgent: "bg-destructive",
@@ -21,9 +23,19 @@ export function NotificationPanel() {
   const unreadCount = useUnreadCount();
   const markRead = useMarkNotificationRead();
   const markAll = useMarkAllRead();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+
+  const handleNotificationClick = (n: any) => {
+    if (!n.is_read) markRead.mutate(n.id);
+    if (n.reference_type === "project" && n.reference_id) {
+      setOpen(false);
+      navigate(`/projects/${n.reference_id}`);
+    }
+  };
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground relative">
           <Bell className="h-4 w-4" />
@@ -57,7 +69,8 @@ export function NotificationPanel() {
               {notifications.map((n) => (
                 <div
                   key={n.id}
-                  className={`px-4 py-3 flex gap-3 transition-colors ${!n.is_read ? "bg-brand/5" : ""}`}
+                  className={`px-4 py-3 flex gap-3 transition-colors cursor-pointer hover:bg-muted/50 ${!n.is_read ? "bg-brand/5" : ""}`}
+                  onClick={() => handleNotificationClick(n)}
                 >
                   <div className={`h-2 w-2 rounded-full mt-1.5 shrink-0 ${priorityColor[n.priority] ?? priorityColor.normal}`} />
                   <div className="flex-1 min-w-0">
@@ -76,7 +89,7 @@ export function NotificationPanel() {
                       variant="ghost"
                       size="icon"
                       className="h-6 w-6 shrink-0 text-muted-foreground hover:text-brand"
-                      onClick={() => markRead.mutate(n.id)}
+                      onClick={(e) => { e.stopPropagation(); markRead.mutate(n.id); }}
                     >
                       <Check className="h-3 w-3" />
                     </Button>
