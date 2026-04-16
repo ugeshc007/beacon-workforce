@@ -38,10 +38,9 @@ export default function MiniMap({ lat, lng, label }: Props) {
       <div className="h-32 w-full overflow-hidden rounded-md border border-border bg-muted/20">
         <iframe
           title={`${label} map preview`}
-          src={embedUrl}
+          src={blobUrl}
           className="h-full w-full border-0"
           loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
         />
       </div>
       <a
