@@ -5,6 +5,19 @@ import {
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, MapPinOff, ShieldAlert, Clock, CheckCircle2 } from "lucide-react";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+// Fix default marker icon
+const defaultIcon = L.icon({
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+});
+L.Marker.prototype.options.icon = defaultIcon;
 
 interface Props {
   log: AttendanceLog | null;
@@ -174,15 +187,28 @@ export function AttendanceDetailDrawer({ log, open, onOpenChange }: Props) {
                     {completed && (step.lat != null || step.distance != null) && (
                       <div className="mt-1 space-y-1">
                         {step.lat != null && step.lng != null && (
-                          <a
-                            href={`https://www.google.com/maps?q=${Number(step.lat).toFixed(6)},${Number(step.lng).toFixed(6)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[10px] font-mono text-brand hover:underline inline-flex items-center gap-0.5"
-                          >
-                            📍 {Number(step.lat).toFixed(6)}, {Number(step.lng).toFixed(6)}
-                            {step.accuracy != null && <span className="ml-1 text-muted-foreground">(±{Math.round(Number(step.accuracy))}m)</span>}
-                          </a>
+                          <div className="space-y-1.5">
+                            <p className="text-[10px] font-mono text-muted-foreground">
+                              📍 {Number(step.lat).toFixed(6)}, {Number(step.lng).toFixed(6)}
+                              {step.accuracy != null && <span className="ml-1">(±{Math.round(Number(step.accuracy))}m)</span>}
+                            </p>
+                            <div className="h-32 w-full rounded-md overflow-hidden border border-border">
+                              <MapContainer
+                                center={[Number(step.lat), Number(step.lng)]}
+                                zoom={15}
+                                scrollWheelZoom={false}
+                                dragging={false}
+                                zoomControl={false}
+                                attributionControl={false}
+                                style={{ height: "100%", width: "100%" }}
+                              >
+                                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                                <Marker position={[Number(step.lat), Number(step.lng)]}>
+                                  <Popup>{step.label}</Popup>
+                                </Marker>
+                              </MapContainer>
+                            </div>
+                          </div>
                         )}
                         {step.distance != null && (
                           <div className="flex items-center gap-1.5">
