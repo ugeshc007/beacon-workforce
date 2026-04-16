@@ -167,7 +167,7 @@ export default function MobileDailyLog() {
 
       {/* New Update Form */}
       {showForm && (
-        <Card className="p-4 border-brand/30 bg-brand/5 space-y-3">
+        <Card className="p-3 border-brand/30 bg-brand/5 space-y-2.5 overflow-hidden">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Post Update</p>
 
           <Textarea
