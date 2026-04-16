@@ -167,7 +167,7 @@ export function useTimesheetData(month: string, filters?: { branchId?: string; p
           let mins = log.total_work_minutes ?? 0;
           if (mins === 0 && log.work_start_time && log.work_end_time) {
             const diff = new Date(log.work_end_time).getTime() - new Date(log.work_start_time).getTime();
-            mins = Math.max(0, Math.round(diff / 60000) - (log.break_minutes ?? 0));
+            mins = Math.max(0, Math.round(diff / 60000));
           }
           const h = Math.round((mins / 60) * 10) / 10;
           const ot = Math.round(((log.overtime_minutes ?? 0) / 60) * 10) / 10;
