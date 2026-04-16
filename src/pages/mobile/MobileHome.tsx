@@ -88,12 +88,9 @@ export default function MobileHome() {
           is_spoofed: gps.reading.isMock,
         };
 
-        if (gps.needsMapFallback) {
-          toast({
-            title: "Low GPS Accuracy",
-            description: `Accuracy: ${Math.round(gps.reading.accuracy)}m. You can proceed or pick manually.`,
-          });
-        }
+      if (gps.needsMapFallback) {
+        // Low accuracy — proceed silently, button status is enough feedback
+      }
       }
     }
 
