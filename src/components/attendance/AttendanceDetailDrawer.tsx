@@ -1,12 +1,10 @@
-import { lazy, Suspense } from "react";
 import type { AttendanceLog } from "@/hooks/useAttendance";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, MapPinOff, ShieldAlert, Clock, CheckCircle2 } from "lucide-react";
-
-const MiniMap = lazy(() => import("./MiniMap"));
+import MiniMap from "./MiniMap";
 
 interface Props {
   log: AttendanceLog | null;
@@ -181,9 +179,7 @@ export function AttendanceDetailDrawer({ log, open, onOpenChange }: Props) {
                               📍 {Number(step.lat).toFixed(6)}, {Number(step.lng).toFixed(6)}
                               {step.accuracy != null && <span className="ml-1">(±{Math.round(Number(step.accuracy))}m)</span>}
                             </p>
-                            <Suspense fallback={<div className="h-32 w-full rounded-md bg-muted animate-pulse" />}>
-                              <MiniMap lat={Number(step.lat)} lng={Number(step.lng)} label={step.label} />
-                            </Suspense>
+                            <MiniMap lat={Number(step.lat)} lng={Number(step.lng)} label={step.label} />
                           </div>
                         )}
                         {step.distance != null && (
