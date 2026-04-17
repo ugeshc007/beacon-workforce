@@ -70,13 +70,18 @@ export function MobileAuthProvider({ children }: { children: ReactNode }) {
       if (!mounted) return;
       setSession(session);
       if (session?.user) {
+        setLoading(true);
         setTimeout(async () => {
           if (!mounted) return;
           const emp = await fetchEmployee(session.user.id);
-          if (mounted) setEmployee(emp);
+          if (mounted) {
+            setEmployee(emp);
+            setLoading(false);
+          }
         }, 0);
       } else {
         setEmployee(null);
+        setLoading(false);
       }
     });
 
