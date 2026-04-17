@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import bebrightLogo from "@/assets/bebright-logo.png";
 
 export default function MobileLogin() {
   const [email, setEmail] = useState("");
@@ -39,8 +40,8 @@ export default function MobileLogin() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-background px-6 safe-area-inset">
       {/* Logo area */}
       <div className="flex flex-col items-center gap-4 mb-8">
-        <div className="w-16 h-16 rounded-2xl flex items-center justify-center">
-          <img src="/app-icon.png" alt="BeBright" className="w-14 h-14 object-contain" />
+        <div className="w-20 h-20 flex items-center justify-center">
+          <img src={bebrightLogo} alt="BeBright" className="w-full h-full object-contain drop-shadow-lg" />
         </div>
         <div className="text-center">
           <h1 className="text-2xl font-bold text-foreground">BeBright</h1>
