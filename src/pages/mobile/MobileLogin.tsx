@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
 import { Button } from "@/components/ui/button";
@@ -13,9 +13,16 @@ export default function MobileLogin() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn } = useMobileAuth();
+  const { signIn, session, loading: authLoading } = useMobileAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Redirect once the auth context has the session
+  useEffect(() => {
+    if (session && !authLoading) {
+      navigate("/m", { replace: true });
+    }
+  }, [session, authLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,7 +40,7 @@ export default function MobileLogin() {
     }
 
     toast({ title: "Welcome!", description: "You're signed in." });
-    navigate("/m", { replace: true });
+    // navigation handled by effect above once session propagates
   };
 
   return (
