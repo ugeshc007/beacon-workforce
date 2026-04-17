@@ -6,6 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import { useNavigate } from "react-router-dom";
 import { LogOut, User, Shield, Building2, Moon, Sun, Fingerprint } from "lucide-react";
 import { useEffect, useState } from "react";
+import { APP_VERSION, APP_BUILD } from "@/lib/app-version";
 
 export default function MobileProfile() {
   const { employee, signOut } = useMobileAuth();
@@ -108,6 +109,9 @@ export default function MobileProfile() {
           <LogOut className="mr-2 h-5 w-5" />
           Sign Out
         </Button>
+        <p className="text-center text-[11px] text-muted-foreground/70 mt-3">
+          BeBright Planner • v{APP_VERSION} (build {APP_BUILD})
+        </p>
       </div>
     </div>
   );
