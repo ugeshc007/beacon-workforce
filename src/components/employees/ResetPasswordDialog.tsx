@@ -13,15 +13,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 const schema = z.object({
-  new_password: z
-    .string()
-    .min(8, "Minimum 8 characters")
-    .regex(/[A-Za-z]/, "Must contain a letter")
-    .regex(/[0-9]/, "Must contain a number")
-    .refine((v) => !/^(demo|test|password|12345678|qwerty)/i.test(v), {
-      message: "Too common — choose something less guessable",
-    }),
-  confirm_password: z.string().min(8, "Minimum 8 characters"),
+  new_password: z.string().min(6, "Minimum 6 characters"),
+  confirm_password: z.string().min(6, "Minimum 6 characters"),
 }).refine((d) => d.new_password === d.confirm_password, {
   message: "Passwords don't match",
   path: ["confirm_password"],
@@ -94,69 +87,33 @@ export function ResetPasswordDialog({ open, onOpenChange, employee }: Props) {
             <FormField
               control={form.control}
               name="new_password"
-              render={({ field }) => {
-                const v = field.value || "";
-                const checks = [
-                  { ok: v.length >= 8, label: "At least 8 characters" },
-                  { ok: /[A-Za-z]/.test(v), label: "Contains a letter" },
-                  { ok: /[0-9]/.test(v), label: "Contains a number" },
-                  { ok: v.length > 0 && !/^(demo|test|password|12345678|qwerty)/i.test(v), label: "Not a common password" },
-                ];
-                const suggestion = `BeBright${new Date().getFullYear()}!`;
-                return (
-                  <FormItem>
-                    <FormLabel>New Password</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Input
-                          type={showPw ? "text" : "password"}
-                          placeholder="Min 8 chars, letters + numbers"
-                          {...field}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="absolute right-0 top-0 h-full px-3"
-                          onClick={() => setShowPw(!showPw)}
-                        >
-                          {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </Button>
-                      </div>
-                    </FormControl>
-
-                    <div className="rounded-md border border-border bg-muted/30 p-2.5 mt-2 space-y-1.5">
-                      <p className="text-xs font-medium text-foreground">Password must have:</p>
-                      <ul className="space-y-1">
-                        {checks.map((c, i) => (
-                          <li key={i} className="flex items-center gap-2 text-xs">
-                            <span className={c.ok ? "text-status-present" : "text-muted-foreground"}>
-                              {c.ok ? "✓" : "○"}
-                            </span>
-                            <span className={c.ok ? "text-foreground" : "text-muted-foreground"}>
-                              {c.label}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                      <p className="text-xs text-muted-foreground pt-1">
-                        Try:{" "}
-                        <button
-                          type="button"
-                          className="font-mono text-primary hover:underline"
-                          onClick={() => {
-                            field.onChange(suggestion);
-                            form.setValue("confirm_password", suggestion);
-                          }}
-                        >
-                          {suggestion}
-                        </button>
-                      </p>
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>New Password</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Input
+                        type={showPw ? "text" : "password"}
+                        placeholder="Minimum 6 characters"
+                        {...field}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-0 top-0 h-full px-3"
+                        onClick={() => setShowPw(!showPw)}
+                      >
+                        {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
                     </div>
-                    <FormMessage />
-                  </FormItem>
-                );
-              }}
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground">
+                    At least 6 characters. Share securely with the employee.
+                  </p>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
 
             <FormField
