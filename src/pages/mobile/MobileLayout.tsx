@@ -13,8 +13,20 @@ export default function MobileLayout() {
     );
   }
 
-  if (!session || !employee) {
+  if (!session) {
     return <Navigate to="/m/login" replace />;
+  }
+
+  if (!employee) {
+    // Session exists but no linked employee record — show error instead of redirect loop
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6 text-center gap-3">
+        <p className="text-base font-semibold text-foreground">No employee profile linked</p>
+        <p className="text-sm text-muted-foreground">
+          Your account isn't linked to an employee record. Please contact your supervisor.
+        </p>
+      </div>
+    );
   }
 
   const isTeamLeader = employee.isTeamLeader;
