@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import bebrightLogo from "@/assets/bebright-logo.png";
+import { APP_VERSION, APP_BUILD } from "@/lib/app-version";
 
 export default function MobileLogin() {
   const [email, setEmail] = useState("");
@@ -112,6 +113,10 @@ export default function MobileLogin() {
 
         <p className="text-center text-xs text-muted-foreground">
           Contact your supervisor if you need access.
+        </p>
+
+        <p className="text-center text-[10px] text-muted-foreground/70 pt-2">
+          v{APP_VERSION} (build {APP_BUILD})
         </p>
       </div>
     </div>
