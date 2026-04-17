@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import bebrightLogo from "@/assets/bebright-logo.png";
 
 export default function MobileLogin() {
   const [email, setEmail] = useState("");
