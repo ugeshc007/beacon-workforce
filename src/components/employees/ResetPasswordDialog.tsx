@@ -13,15 +13,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 const schema = z.object({
-  new_password: z
-    .string()
-    .min(8, "Minimum 8 characters")
-    .regex(/[A-Za-z]/, "Must contain a letter")
-    .regex(/[0-9]/, "Must contain a number")
-    .refine((v) => !/^(demo|test|password|12345678|qwerty)/i.test(v), {
-      message: "Too common — choose something less guessable",
-    }),
-  confirm_password: z.string().min(8, "Minimum 8 characters"),
+  new_password: z.string().min(6, "Minimum 6 characters"),
+  confirm_password: z.string().min(6, "Minimum 6 characters"),
 }).refine((d) => d.new_password === d.confirm_password, {
   message: "Passwords don't match",
   path: ["confirm_password"],
