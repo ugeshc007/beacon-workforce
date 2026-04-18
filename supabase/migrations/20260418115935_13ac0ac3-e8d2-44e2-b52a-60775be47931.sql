@@ -1,0 +1,16 @@
+ALTER TABLE public.attendance_logs
+  ADD COLUMN IF NOT EXISTS return_travel_start_time timestamptz,
+  ADD COLUMN IF NOT EXISTS return_travel_start_lat numeric,
+  ADD COLUMN IF NOT EXISTS return_travel_start_lng numeric,
+  ADD COLUMN IF NOT EXISTS return_travel_start_accuracy numeric,
+  ADD COLUMN IF NOT EXISTS office_arrival_time timestamptz,
+  ADD COLUMN IF NOT EXISTS office_arrival_lat numeric,
+  ADD COLUMN IF NOT EXISTS office_arrival_lng numeric,
+  ADD COLUMN IF NOT EXISTS office_arrival_accuracy numeric,
+  ADD COLUMN IF NOT EXISTS office_arrival_distance_m numeric,
+  ADD COLUMN IF NOT EXISTS office_arrival_valid boolean,
+  ADD COLUMN IF NOT EXISTS office_punch_out_lat numeric,
+  ADD COLUMN IF NOT EXISTS office_punch_out_lng numeric,
+  ADD COLUMN IF NOT EXISTS office_punch_out_accuracy numeric,
+  ADD COLUMN IF NOT EXISTS office_punch_out_distance_m numeric,
+  ADD COLUMN IF NOT EXISTS office_punch_out_valid boolean;

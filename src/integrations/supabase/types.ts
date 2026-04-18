@@ -77,6 +77,12 @@ export type Database = {
           idempotency_key: string | null
           is_manual_override: boolean | null
           notes: string | null
+          office_arrival_accuracy: number | null
+          office_arrival_distance_m: number | null
+          office_arrival_lat: number | null
+          office_arrival_lng: number | null
+          office_arrival_time: string | null
+          office_arrival_valid: boolean | null
           office_punch_in: string | null
           office_punch_in_accuracy: number | null
           office_punch_in_distance_m: number | null
@@ -85,12 +91,21 @@ export type Database = {
           office_punch_in_spoofed: boolean | null
           office_punch_in_valid: boolean | null
           office_punch_out: string | null
+          office_punch_out_accuracy: number | null
+          office_punch_out_distance_m: number | null
+          office_punch_out_lat: number | null
+          office_punch_out_lng: number | null
+          office_punch_out_valid: boolean | null
           override_by: string | null
           override_reason: string | null
           overtime_cost: number | null
           overtime_minutes: number | null
           project_id: string | null
           regular_cost: number | null
+          return_travel_start_accuracy: number | null
+          return_travel_start_lat: number | null
+          return_travel_start_lng: number | null
+          return_travel_start_time: string | null
           site_arrival_accuracy: number | null
           site_arrival_distance_m: number | null
           site_arrival_lat: number | null
@@ -117,6 +132,12 @@ export type Database = {
           idempotency_key?: string | null
           is_manual_override?: boolean | null
           notes?: string | null
+          office_arrival_accuracy?: number | null
+          office_arrival_distance_m?: number | null
+          office_arrival_lat?: number | null
+          office_arrival_lng?: number | null
+          office_arrival_time?: string | null
+          office_arrival_valid?: boolean | null
           office_punch_in?: string | null
           office_punch_in_accuracy?: number | null
           office_punch_in_distance_m?: number | null
@@ -125,12 +146,21 @@ export type Database = {
           office_punch_in_spoofed?: boolean | null
           office_punch_in_valid?: boolean | null
           office_punch_out?: string | null
+          office_punch_out_accuracy?: number | null
+          office_punch_out_distance_m?: number | null
+          office_punch_out_lat?: number | null
+          office_punch_out_lng?: number | null
+          office_punch_out_valid?: boolean | null
           override_by?: string | null
           override_reason?: string | null
           overtime_cost?: number | null
           overtime_minutes?: number | null
           project_id?: string | null
           regular_cost?: number | null
+          return_travel_start_accuracy?: number | null
+          return_travel_start_lat?: number | null
+          return_travel_start_lng?: number | null
+          return_travel_start_time?: string | null
           site_arrival_accuracy?: number | null
           site_arrival_distance_m?: number | null
           site_arrival_lat?: number | null
@@ -157,6 +187,12 @@ export type Database = {
           idempotency_key?: string | null
           is_manual_override?: boolean | null
           notes?: string | null
+          office_arrival_accuracy?: number | null
+          office_arrival_distance_m?: number | null
+          office_arrival_lat?: number | null
+          office_arrival_lng?: number | null
+          office_arrival_time?: string | null
+          office_arrival_valid?: boolean | null
           office_punch_in?: string | null
           office_punch_in_accuracy?: number | null
           office_punch_in_distance_m?: number | null
@@ -165,12 +201,21 @@ export type Database = {
           office_punch_in_spoofed?: boolean | null
           office_punch_in_valid?: boolean | null
           office_punch_out?: string | null
+          office_punch_out_accuracy?: number | null
+          office_punch_out_distance_m?: number | null
+          office_punch_out_lat?: number | null
+          office_punch_out_lng?: number | null
+          office_punch_out_valid?: boolean | null
           override_by?: string | null
           override_reason?: string | null
           overtime_cost?: number | null
           overtime_minutes?: number | null
           project_id?: string | null
           regular_cost?: number | null
+          return_travel_start_accuracy?: number | null
+          return_travel_start_lat?: number | null
+          return_travel_start_lng?: number | null
+          return_travel_start_time?: string | null
           site_arrival_accuracy?: number | null
           site_arrival_distance_m?: number | null
           site_arrival_lat?: number | null
