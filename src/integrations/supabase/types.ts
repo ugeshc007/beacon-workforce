@@ -292,7 +292,7 @@ export type Database = {
       }
       custom_skills: {
         Row: {
-          base_skill_type: Database["public"]["Enums"]["skill_type"]
+          base_skill_type: Database["public"]["Enums"]["skill_type"] | null
           created_at: string
           created_by: string | null
           id: string
@@ -300,7 +300,7 @@ export type Database = {
           name: string
         }
         Insert: {
-          base_skill_type?: Database["public"]["Enums"]["skill_type"]
+          base_skill_type?: Database["public"]["Enums"]["skill_type"] | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -308,7 +308,7 @@ export type Database = {
           name: string
         }
         Update: {
-          base_skill_type?: Database["public"]["Enums"]["skill_type"]
+          base_skill_type?: Database["public"]["Enums"]["skill_type"] | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -1347,6 +1347,57 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      skill_permissions: {
+        Row: {
+          can_create: boolean
+          can_delete: boolean
+          can_edit: boolean
+          can_view: boolean
+          custom_skill_id: string
+          id: string
+          module: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          can_create?: boolean
+          can_delete?: boolean
+          can_edit?: boolean
+          can_view?: boolean
+          custom_skill_id: string
+          id?: string
+          module: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          can_create?: boolean
+          can_delete?: boolean
+          can_edit?: boolean
+          can_view?: boolean
+          custom_skill_id?: string
+          id?: string
+          module?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_permissions_custom_skill_id_fkey"
+            columns: ["custom_skill_id"]
+            isOneToOne: false
+            referencedRelation: "custom_skills"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_permissions_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "users"
