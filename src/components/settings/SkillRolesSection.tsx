@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -93,27 +93,15 @@ function SkillDialog({ open, onOpenChange, skill }: { open: boolean; onOpenChang
   const update = useUpdateCustomSkill();
   const { toast } = useToast();
 
-  // sync on open
-  useState(() => {
-    // noop placeholder to satisfy linter
-  });
-
-  // reset when dialog opens
-  if (open && skill && name === "" && skill.name) {
-    // initialize once
-    setName(skill.name);
-    setBaseType(skill.base_skill_type);
-    setIsActive(skill.is_active);
-  }
-
-  const handleClose = (v: boolean) => {
-    if (!v) {
-      setName("");
-      setBaseType("team_member");
-      setIsActive(true);
+  useEffect(() => {
+    if (open) {
+      setName(skill?.name ?? "");
+      setBaseType(skill?.base_skill_type ?? "team_member");
+      setIsActive(skill?.is_active ?? true);
     }
-    onOpenChange(v);
-  };
+  }, [open, skill]);
+
+  const handleClose = (v: boolean) => onOpenChange(v);
 
   const handleSave = async () => {
     if (!name.trim()) {
