@@ -14,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
 import { useCreateEmployee, useUpdateEmployee, useBranches } from "@/hooks/useEmployees";
+import { useCustomSkills } from "@/hooks/useCustomSkills";
 import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -24,6 +25,7 @@ const schema = z.object({
   email: z.string().email("Invalid email").max(255).optional().or(z.literal("")),
   designation: z.string().max(100).optional().or(z.literal("")),
   skill_type: z.enum(["team_member", "team_leader", "driver"]),
+  custom_skill_id: z.string().optional().or(z.literal("")),
   branch_id: z.string().uuid("Select a branch"),
   hourly_rate: z.coerce.number().min(0),
   overtime_rate: z.coerce.number().min(0),
@@ -51,6 +53,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
   const isEdit = !!employee;
   const { toast } = useToast();
   const { data: branches } = useBranches();
+  const { data: customSkills } = useCustomSkills(true);
   const create = useCreateEmployee();
   const update = useUpdateEmployee();
   const [secondarySkills, setSecondarySkills] = useState<string[]>([]);
@@ -64,6 +67,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
       email: "",
       designation: "",
       skill_type: "team_member",
+      custom_skill_id: "",
       branch_id: "",
       hourly_rate: 25,
       overtime_rate: 37.5,
@@ -83,6 +87,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
         email: employee.email ?? "",
         designation: employee.designation ?? "",
         skill_type: employee.skill_type as "team_member" | "team_leader" | "driver",
+        custom_skill_id: (employee as any).custom_skill_id ?? "",
         branch_id: employee.branch_id,
         hourly_rate: Number(employee.hourly_rate),
         overtime_rate: Number(employee.overtime_rate),
@@ -100,14 +105,16 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
 
   const onSubmit = async (values: FormValues) => {
     try {
+      const { custom_skill_id, ...rest } = values;
       const payload = {
-        ...values,
+        ...rest,
         phone: values.phone || null,
         email: values.email || null,
         designation: values.designation || null,
         join_date: values.join_date || null,
         emergency_contact: values.emergency_contact || null,
         notes: values.notes || null,
+        custom_skill_id: custom_skill_id || null,
         secondary_skills: secondarySkills.filter(s => s !== values.skill_type),
       };
 
@@ -209,6 +216,24 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
                 </FormItem>
               )} />
             </div>
+
+            {customSkills && customSkills.length > 0 && (
+              <FormField control={form.control} name="custom_skill_id" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Custom Skill Role <span className="text-muted-foreground text-xs font-normal">(optional)</span></FormLabel>
+                  <Select onValueChange={(v) => field.onChange(v === "__none__" ? "" : v)} value={field.value || "__none__"}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="None" /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      <SelectItem value="__none__">None</SelectItem>
+                      {customSkills.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )} />
+            )}
 
             {/* Secondary Skills */}
             <div>
