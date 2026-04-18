@@ -65,8 +65,8 @@ export default function CostReports() {
           {data && (<>
             <Button variant="outline" size="sm" className="text-xs ml-2" onClick={() => {
               downloadCsv(`project-costs-${dateRange.start}-${dateRange.end}.csv`,
-                ["Project", "Status", "Budget", "Labor", "OT", "Expenses", "Total", "Variance", "% Used", "Forecasted Final", "Value", "Margin %"],
-                data.byProject.map((p) => [p.name, p.status, p.budget, p.laborCost, p.otCost, p.expenses, p.totalCost, p.variance, p.pctUsed, p.forecastedFinal, p.projectValue, p.margin])
+                ["Project", "Status", "Budget", "Labor", "OT", "Expenses", "Total", "Variance", "% Used", "Forecasted Final", "Value", "Margin %", "Travel→Site (h)", "Return→Office (h)", "Total Travel (h)"],
+                data.byProject.map((p) => [p.name, p.status, p.budget, p.laborCost, p.otCost, p.expenses, p.totalCost, p.variance, p.pctUsed, p.forecastedFinal, p.projectValue, p.margin, (p.travelToSiteMinutes / 60).toFixed(1), (p.travelReturnMinutes / 60).toFixed(1), (p.travelTotalMinutes / 60).toFixed(1)])
               );
             }}><Download className="h-3.5 w-3.5 mr-1" />CSV</Button>
             <Button variant="outline" size="sm" className="text-xs" onClick={() => {
@@ -81,9 +81,9 @@ export default function CostReports() {
                   { label: "OT Cost", value: `AED ${data.totalOt.toLocaleString()}` },
                 ],
                 tables: [{
-                  title: "Budget vs Actual",
-                  headers: ["Project", "Status", "Budget", "Labor", "OT", "Expenses", "Total", "Variance", "% Used"],
-                  rows: data.byProject.map((p) => [p.name, p.status, `AED ${p.budget.toLocaleString()}`, `AED ${p.laborCost.toLocaleString()}`, `AED ${p.otCost.toLocaleString()}`, `AED ${p.expenses.toLocaleString()}`, `AED ${p.totalCost.toLocaleString()}`, `AED ${p.variance.toLocaleString()}`, `${p.pctUsed}%`]),
+                  title: "Budget vs Actual (incl. Travel Time)",
+                  headers: ["Project", "Status", "Budget", "Labor", "OT", "Expenses", "Total", "Variance", "% Used", "Travel (h)"],
+                  rows: data.byProject.map((p) => [p.name, p.status, `AED ${p.budget.toLocaleString()}`, `AED ${p.laborCost.toLocaleString()}`, `AED ${p.otCost.toLocaleString()}`, `AED ${p.expenses.toLocaleString()}`, `AED ${p.totalCost.toLocaleString()}`, `AED ${p.variance.toLocaleString()}`, `${p.pctUsed}%`, (p.travelTotalMinutes / 60).toFixed(1)]),
                 }],
               });
             }}><Download className="h-3.5 w-3.5 mr-1" />PDF</Button>
@@ -215,6 +215,7 @@ export default function CostReports() {
                         <th className="text-right py-2 font-medium">Variance</th>
                         <th className="text-right py-2 font-medium">% Used</th>
                         <th className="text-right py-2 font-medium">Forecasted Final</th>
+                        <th className="text-right py-2 font-medium" title="Total travel time to site + back to office for this project">Travel (h)</th>
                         <th className="py-2 font-medium w-[100px]"></th>
                       </tr>
                     </thead>
@@ -244,6 +245,9 @@ export default function CostReports() {
                           <td className={`py-2 text-right font-mono text-xs font-medium ${p.forecastedFinal > p.budget && p.budget > 0 ? "text-status-absent" : "text-foreground"}`}>
                             {p.budget > 0 ? `AED ${p.forecastedFinal.toLocaleString()}` : "—"}
                           </td>
+                          <td className="py-2 text-right font-mono text-xs text-status-traveling">
+                            {p.travelTotalMinutes > 0 ? `${(p.travelTotalMinutes / 60).toFixed(1)}h` : "—"}
+                          </td>
                           <td className="py-2">
                             <Button variant="ghost" size="sm" className="text-[10px] h-6" onClick={(e) => { e.stopPropagation(); setDrillProject(p); }}>
                               Details
@@ -262,6 +266,12 @@ export default function CostReports() {
                         </td>
                         <td className="py-2 text-right font-mono text-xs">
                           {data.totalBudget > 0 ? `${Math.round((data.totalCost / data.totalBudget) * 100)}%` : "—"}
+                        </td>
+                        <td className="py-2 text-right font-mono text-xs text-status-traveling">
+                          {(() => {
+                            const total = data.byProject.reduce((s, p) => s + p.travelTotalMinutes, 0);
+                            return total > 0 ? `${(total / 60).toFixed(1)}h` : "—";
+                          })()}
                         </td>
                         <td colSpan={2} />
                       </tr>
@@ -355,6 +365,31 @@ export default function CostReports() {
                   </>
                 )}
               </div>
+
+              {/* Travel time breakdown */}
+              {drillProject && drillProject.travelTotalMinutes > 0 && (
+                <div className="rounded-lg border border-status-traveling/30 bg-status-traveling/5 p-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">Travel Time (this period)</p>
+                  <div className="grid grid-cols-3 gap-3 text-center">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">→ Site</p>
+                      <p className="text-sm font-bold font-mono">{(drillProject.travelToSiteMinutes / 60).toFixed(1)}h</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">← Office</p>
+                      <p className="text-sm font-bold font-mono">{(drillProject.travelReturnMinutes / 60).toFixed(1)}h</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">Total</p>
+                      <p className="text-sm font-bold font-mono text-status-traveling">{(drillProject.travelTotalMinutes / 60).toFixed(1)}h</p>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground text-center mt-2">
+                    Across {drillProject.travelEntriesCount} attendance day{drillProject.travelEntriesCount === 1 ? "" : "s"}
+                    {drillProject.travelEntriesCount > 0 && ` · avg ${Math.round(drillProject.travelTotalMinutes / drillProject.travelEntriesCount)} min/day`}
+                  </p>
+                </div>
+              )}
 
               {/* Daily costs chart */}
               {drillProject && drillProject.dailyCosts.length > 0 && (
