@@ -290,6 +290,41 @@ export type Database = {
           },
         ]
       }
+      custom_skills: {
+        Row: {
+          base_skill_type: Database["public"]["Enums"]["skill_type"]
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          name: string
+        }
+        Insert: {
+          base_skill_type?: Database["public"]["Enums"]["skill_type"]
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+        }
+        Update: {
+          base_skill_type?: Database["public"]["Enums"]["skill_type"]
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_skills_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_team_overrides: {
         Row: {
           action: Database["public"]["Enums"]["override_action"]
@@ -490,6 +525,7 @@ export type Database = {
           auth_id: string | null
           branch_id: string
           created_at: string
+          custom_skill_id: string | null
           designation: string | null
           email: string | null
           emergency_contact: string | null
@@ -510,6 +546,7 @@ export type Database = {
           auth_id?: string | null
           branch_id: string
           created_at?: string
+          custom_skill_id?: string | null
           designation?: string | null
           email?: string | null
           emergency_contact?: string | null
@@ -530,6 +567,7 @@ export type Database = {
           auth_id?: string | null
           branch_id?: string
           created_at?: string
+          custom_skill_id?: string | null
           designation?: string | null
           email?: string | null
           emergency_contact?: string | null
@@ -552,6 +590,13 @@ export type Database = {
             columns: ["branch_id"]
             isOneToOne: false
             referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employees_custom_skill_id_fkey"
+            columns: ["custom_skill_id"]
+            isOneToOne: false
+            referencedRelation: "custom_skills"
             referencedColumns: ["id"]
           },
         ]
