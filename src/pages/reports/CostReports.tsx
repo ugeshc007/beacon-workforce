@@ -366,6 +366,31 @@ export default function CostReports() {
                 )}
               </div>
 
+              {/* Travel time breakdown */}
+              {drillProject && drillProject.travelTotalMinutes > 0 && (
+                <div className="rounded-lg border border-status-traveling/30 bg-status-traveling/5 p-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">Travel Time (this period)</p>
+                  <div className="grid grid-cols-3 gap-3 text-center">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">→ Site</p>
+                      <p className="text-sm font-bold font-mono">{(drillProject.travelToSiteMinutes / 60).toFixed(1)}h</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">← Office</p>
+                      <p className="text-sm font-bold font-mono">{(drillProject.travelReturnMinutes / 60).toFixed(1)}h</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">Total</p>
+                      <p className="text-sm font-bold font-mono text-status-traveling">{(drillProject.travelTotalMinutes / 60).toFixed(1)}h</p>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground text-center mt-2">
+                    Across {drillProject.travelEntriesCount} attendance day{drillProject.travelEntriesCount === 1 ? "" : "s"}
+                    {drillProject.travelEntriesCount > 0 && ` · avg ${Math.round(drillProject.travelTotalMinutes / drillProject.travelEntriesCount)} min/day`}
+                  </p>
+                </div>
+              )}
+
               {/* Daily costs chart */}
               {drillProject && drillProject.dailyCosts.length > 0 && (
                 <div>
