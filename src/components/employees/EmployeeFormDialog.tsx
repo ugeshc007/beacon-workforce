@@ -217,6 +217,24 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
               )} />
             </div>
 
+            {customSkills && customSkills.length > 0 && (
+              <FormField control={form.control} name="custom_skill_id" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Custom Skill Role <span className="text-muted-foreground text-xs font-normal">(optional)</span></FormLabel>
+                  <Select onValueChange={(v) => field.onChange(v === "__none__" ? "" : v)} value={field.value || "__none__"}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="None" /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      <SelectItem value="__none__">None</SelectItem>
+                      {customSkills.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )} />
+            )}
+
             {/* Secondary Skills */}
             <div>
               <label className="text-sm font-medium">Secondary Skills</label>
