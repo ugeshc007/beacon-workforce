@@ -27,7 +27,8 @@ import {
   useSystemAuditLog, useAssignmentAuditLog,
   type SettingsMap,
 } from "@/hooks/useSettings";
-import { useRolePermissions, useUpdatePermission } from "@/hooks/usePermissions";
+import { useRolePermissions, useUpdatePermission, useSkillPermissions, useUpdateSkillPermission } from "@/hooks/usePermissions";
+import { useCustomSkills } from "@/hooks/useCustomSkills";
 import { useAuth } from "@/hooks/useAuth";
 import { DateInput } from "@/components/ui/date-input";
 import { downloadCsv } from "@/lib/csv-export";
@@ -792,12 +793,17 @@ const ROLES = ["admin", "manager", "team_leader"];
 
 function PermissionMatrix() {
   const { data: permissions, isLoading } = useRolePermissions();
+  const { data: skillPerms, isLoading: skillsLoading } = useSkillPermissions();
+  const { data: customSkills } = useCustomSkills();
   const updatePerm = useUpdatePermission();
+  const updateSkillPerm = useUpdateSkillPermission();
 
-  if (isLoading) return <Skeleton className="h-64 rounded-xl" />;
+  if (isLoading || skillsLoading) return <Skeleton className="h-64 rounded-xl" />;
 
   const getPermission = (role: string, module: string) =>
     permissions?.find((p) => p.role === role && p.module === module);
+  const getSkillPermission = (skillId: string, module: string) =>
+    skillPerms?.find((p) => p.custom_skill_id === skillId && p.module === module);
 
   return (
     <Card className="glass-card">
@@ -805,14 +811,18 @@ function PermissionMatrix() {
         <CardTitle className="text-sm flex items-center gap-2">
           <Shield className="h-4 w-4 text-brand" /> Permission Matrix
         </CardTitle>
-        <CardDescription className="text-xs">Configure what each role can do per module. Changes take effect immediately.</CardDescription>
+        <CardDescription className="text-xs">
+          Configure what each role and custom skill can do per module. Strict mode: a user must have permission from BOTH their role AND skill.
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto space-y-8">
+          {/* System roles */}
           {ROLES.map((role) => (
-            <div key={role} className="mb-6 last:mb-0">
+            <div key={role}>
               <h3 className="text-sm font-semibold capitalize text-foreground mb-3 flex items-center gap-2">
                 <Badge variant={role === "admin" ? "default" : "outline"} className="text-[10px]">{role}</Badge>
+                <span className="text-[10px] text-muted-foreground font-normal">System role</span>
               </h3>
               <table className="w-full text-sm">
                 <thead>
@@ -849,6 +859,54 @@ function PermissionMatrix() {
               </table>
             </div>
           ))}
+
+          {/* Custom skills */}
+          {customSkills && customSkills.length > 0 && (
+            <div className="pt-4 border-t border-border">
+              <h2 className="text-xs uppercase tracking-wide text-muted-foreground mb-4">Custom Skill Roles</h2>
+              {customSkills.map((skill) => (
+                <div key={skill.id} className="mb-6 last:mb-0">
+                  <h3 className="text-sm font-semibold capitalize text-foreground mb-3 flex items-center gap-2">
+                    <Badge variant="outline" className="text-[10px] border-brand/40 text-brand">{skill.name}</Badge>
+                    {!skill.is_active && <Badge variant="secondary" className="text-[10px]">Inactive</Badge>}
+                  </h3>
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-xs text-muted-foreground border-b border-border">
+                        <th className="text-left py-2 font-medium w-40">Module</th>
+                        <th className="text-center py-2 font-medium">View</th>
+                        <th className="text-center py-2 font-medium">Create</th>
+                        <th className="text-center py-2 font-medium">Edit</th>
+                        <th className="text-center py-2 font-medium">Delete</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {MODULES.map((mod) => {
+                        const perm = getSkillPermission(skill.id, mod);
+                        if (!perm) return null;
+                        return (
+                          <tr key={mod} className="border-b border-border/50 last:border-0">
+                            <td className="py-2 capitalize font-medium">{mod}</td>
+                            {ACTIONS.map((action) => (
+                              <td key={action} className="py-2 text-center">
+                                <Checkbox
+                                  checked={perm[action]}
+                                  disabled={updateSkillPerm.isPending}
+                                  onCheckedChange={(checked) => {
+                                    updateSkillPerm.mutate({ id: perm.id, field: action, value: !!checked });
+                                  }}
+                                />
+                              </td>
+                            ))}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
