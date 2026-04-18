@@ -7,6 +7,8 @@ export type WorkflowStep =
   | "working"        // Work started
   | "on_break"       // Break in progress
   | "work_done"      // Work ended
+  | "returning"      // Traveling back to office
+  | "at_office"      // Arrived back at office
   | "punched_out";   // Day complete
 
 export type WorkflowAction =
@@ -17,6 +19,8 @@ export type WorkflowAction =
   | "start_break"
   | "end_break"
   | "end_work"
+  | "start_return_travel"
+  | "arrive_office"
   | "punch_out";
 
 const transitions: Record<WorkflowStep, WorkflowAction[]> = {
@@ -26,7 +30,9 @@ const transitions: Record<WorkflowStep, WorkflowAction[]> = {
   at_site: ["start_work"],
   working: ["start_break", "end_work"],
   on_break: ["end_break"],
-  work_done: ["punch_out"],
+  work_done: ["start_return_travel"],
+  returning: ["arrive_office"],
+  at_office: ["punch_out"],
   punched_out: [],
 };
 
@@ -46,6 +52,8 @@ export function getNextStep(current: WorkflowStep, action: WorkflowAction): Work
     start_break: "on_break",
     end_break: "working",
     end_work: "work_done",
+    start_return_travel: "returning",
+    arrive_office: "at_office",
     punch_out: "punched_out",
   };
 
@@ -60,10 +68,14 @@ export function deriveStepFromLog(log: {
   break_start_time?: string | null;
   break_end_time?: string | null;
   work_end_time?: string | null;
+  return_travel_start_time?: string | null;
+  office_arrival_time?: string | null;
   office_punch_out?: string | null;
 } | null): WorkflowStep {
   if (!log || !log.office_punch_in) return "idle";
   if (log.office_punch_out) return "punched_out";
+  if (log.office_arrival_time) return "at_office";
+  if (log.return_travel_start_time) return "returning";
   if (log.work_end_time) return "work_done";
   if (log.break_start_time && !log.break_end_time) return "on_break";
   if (log.work_start_time) return "working";
@@ -80,6 +92,8 @@ export const actionLabels: Record<WorkflowAction, string> = {
   start_break: "Take Break",
   end_break: "End Break",
   end_work: "End Work",
+  start_return_travel: "Start Return Travel",
+  arrive_office: "Arrived at Office",
   punch_out: "Punch Out",
 };
 
@@ -91,6 +105,8 @@ export const stepLabels: Record<WorkflowStep, string> = {
   working: "Working",
   on_break: "On Break",
   work_done: "Work Done",
+  returning: "Returning to Office",
+  at_office: "At Office",
   punched_out: "Day Complete",
 };
 
@@ -102,5 +118,7 @@ export const stepColors: Record<WorkflowStep, string> = {
   working: "text-green-400",
   on_break: "text-orange-400",
   work_done: "text-purple-400",
+  returning: "text-amber-400",
+  at_office: "text-blue-400",
   punched_out: "text-muted-foreground",
 };

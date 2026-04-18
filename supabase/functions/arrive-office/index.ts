@@ -5,8 +5,10 @@ Deno.serve(async (req) => {
 
   try {
     const { employee_id, lat, lng, accuracy } = await req.json();
-    if (!employee_id) return errorResponse("employee_id is required");
-    if (lat == null || lng == null) return errorResponse("lat and lng are required for punch out");
+
+    if (!employee_id || lat == null || lng == null) {
+      return errorResponse("employee_id, lat, and lng are required");
+    }
 
     const supabase = createSupabaseAdmin();
 
@@ -18,14 +20,15 @@ Deno.serve(async (req) => {
 
     const { data: log } = await supabase
       .from("attendance_logs")
-      .select("id")
+      .select("id, return_travel_start_time")
       .eq("employee_id", employee_id)
       .eq("date", today)
       .maybeSingle();
 
     if (!log) return errorResponse("No attendance record for today", 400);
+    if (!log.return_travel_start_time) return errorResponse("Must start return travel first", 400);
 
-    // Validate office GPS
+    // Get employee's office for GPS validation
     const { data: emp } = await supabase
       .from("employees")
       .select("branch_id")
@@ -52,12 +55,12 @@ Deno.serve(async (req) => {
     const { error } = await supabase
       .from("attendance_logs")
       .update({
-        office_punch_out: now,
-        office_punch_out_lat: lat,
-        office_punch_out_lng: lng,
-        office_punch_out_accuracy: accuracy ?? null,
-        office_punch_out_distance_m: Math.round(distance),
-        office_punch_out_valid: valid,
+        office_arrival_time: now,
+        office_arrival_lat: lat,
+        office_arrival_lng: lng,
+        office_arrival_accuracy: accuracy ?? null,
+        office_arrival_distance_m: Math.round(distance),
+        office_arrival_valid: valid,
       })
       .eq("id", log.id);
 

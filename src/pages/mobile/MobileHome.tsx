@@ -14,7 +14,14 @@ import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useRef } from "react";
 
 /** Actions that require GPS */
-const GPS_ACTIONS: WorkflowAction[] = ["punch_in", "start_travel", "arrive_site"];
+const GPS_ACTIONS: WorkflowAction[] = [
+  "punch_in",
+  "start_travel",
+  "arrive_site",
+  "start_return_travel",
+  "arrive_office",
+  "punch_out",
+];
 
 /** Actions that require hold-to-confirm */
 const CRITICAL_ACTIONS: WorkflowAction[] = ["punch_in", "end_work", "punch_out"];
@@ -55,9 +62,9 @@ export default function MobileHome() {
     return () => autoSyncCleanup.current?.();
   }, []);
 
-  // Background tracking: start when traveling, stop otherwise
+  // Background tracking: start when traveling (to site OR back to office), stop otherwise
   useEffect(() => {
-    if (step === "traveling" && employee && attendanceLog) {
+    if ((step === "traveling" || step === "returning") && employee && attendanceLog) {
       startTracking(employee.id, attendanceLog.id);
     } else {
       stopTracking();
@@ -211,8 +218,8 @@ export default function MobileHome() {
       <Card className="p-4 border-border/50 bg-card">
         <p className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wider">Today's Progress</p>
         <div className="flex items-center gap-1">
-          {(["idle", "punched_in", "traveling", "at_site", "working", "work_done", "punched_out"] as const).map((s, i) => {
-            const steps = ["idle", "punched_in", "traveling", "at_site", "working", "work_done", "punched_out"];
+          {(["idle", "punched_in", "traveling", "at_site", "working", "work_done", "returning", "at_office", "punched_out"] as const).map((s, i) => {
+            const steps = ["idle", "punched_in", "traveling", "at_site", "working", "work_done", "returning", "at_office", "punched_out"];
             const currentIdx = steps.indexOf(step);
             const isComplete = i <= currentIdx;
             const isCurrent = s === step;

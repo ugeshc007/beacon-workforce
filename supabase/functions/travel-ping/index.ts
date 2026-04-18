@@ -25,16 +25,21 @@ Deno.serve(async (req) => {
       return errorResponse("attendance_log_id, lat, lng are required");
     }
 
-    // Verify the attendance log belongs to this employee and has travel started
+    // Verify log belongs to this employee and a travel leg is active
+    // (either morning travel-to-site OR return travel-to-office)
     const { data: log } = await supabase
       .from("attendance_logs")
-      .select("id, employee_id, travel_start_time, site_arrival_time")
+      .select("id, employee_id, travel_start_time, site_arrival_time, return_travel_start_time, office_arrival_time")
       .eq("id", attendance_log_id)
       .eq("employee_id", emp.id)
       .single();
     if (!log) return errorResponse("Attendance log not found or not yours", 404);
-    if (!log.travel_start_time) return errorResponse("Travel not started yet");
-    if (log.site_arrival_time) return errorResponse("Already arrived at site");
+
+    const morningLegActive = log.travel_start_time && !log.site_arrival_time;
+    const returnLegActive = log.return_travel_start_time && !log.office_arrival_time;
+    if (!morningLegActive && !returnLegActive) {
+      return errorResponse("No active travel leg to ping");
+    }
 
     const { error: insertErr } = await supabase
       .from("travel_pings")

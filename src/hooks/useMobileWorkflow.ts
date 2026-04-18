@@ -30,6 +30,8 @@ interface AttendanceLog {
   break_start_time: string | null;
   break_end_time: string | null;
   work_end_time: string | null;
+  return_travel_start_time: string | null;
+  office_arrival_time: string | null;
   office_punch_out: string | null;
 }
 
@@ -76,7 +78,7 @@ export function useMobileWorkflow() {
       // Fetch today's attendance log
       const { data: logs } = await supabase
         .from("attendance_logs")
-        .select("id, office_punch_in, travel_start_time, site_arrival_time, work_start_time, break_start_time, break_end_time, work_end_time, office_punch_out")
+        .select("id, office_punch_in, travel_start_time, site_arrival_time, work_start_time, break_start_time, break_end_time, work_end_time, return_travel_start_time, office_arrival_time, office_punch_out")
         .eq("employee_id", employee.id)
         .eq("date", today)
         .limit(1);
@@ -113,6 +115,8 @@ export function useMobileWorkflow() {
         start_break: "start-break",
         end_break: "end-break",
         end_work: "end-work",
+        start_return_travel: "start-return-travel",
+        arrive_office: "arrive-office",
         punch_out: "punch-out",
       };
 
