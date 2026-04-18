@@ -32,6 +32,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { DateInput } from "@/components/ui/date-input";
 import { downloadCsv } from "@/lib/csv-export";
 import LocationPickerMap from "@/components/settings/LocationPickerMap";
+import { SkillRolesSection } from "@/components/settings/SkillRolesSection";
 
 // ─── helpers ────────────────────────────────────────────────
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
@@ -309,6 +310,7 @@ export default function SettingsPage() {
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="branches">Branches</TabsTrigger>
           {isAdmin && <TabsTrigger value="permissions">Roles</TabsTrigger>}
+          {isAdmin && <TabsTrigger value="skills">Skill Roles</TabsTrigger>}
           <TabsTrigger value="system">System</TabsTrigger>
         </TabsList>
 
@@ -586,6 +588,13 @@ export default function SettingsPage() {
         {isAdmin && (
           <TabsContent value="permissions">
             <PermissionMatrix />
+          </TabsContent>
+        )}
+
+        {/* ── Skill Roles ─────────────────── */}
+        {isAdmin && (
+          <TabsContent value="skills">
+            <SkillRolesSection />
           </TabsContent>
         )}
 
