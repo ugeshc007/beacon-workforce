@@ -215,6 +215,7 @@ export default function CostReports() {
                         <th className="text-right py-2 font-medium">Variance</th>
                         <th className="text-right py-2 font-medium">% Used</th>
                         <th className="text-right py-2 font-medium">Forecasted Final</th>
+                        <th className="text-right py-2 font-medium" title="Total travel time to site + back to office for this project">Travel (h)</th>
                         <th className="py-2 font-medium w-[100px]"></th>
                       </tr>
                     </thead>
@@ -244,6 +245,9 @@ export default function CostReports() {
                           <td className={`py-2 text-right font-mono text-xs font-medium ${p.forecastedFinal > p.budget && p.budget > 0 ? "text-status-absent" : "text-foreground"}`}>
                             {p.budget > 0 ? `AED ${p.forecastedFinal.toLocaleString()}` : "—"}
                           </td>
+                          <td className="py-2 text-right font-mono text-xs text-status-traveling">
+                            {p.travelTotalMinutes > 0 ? `${(p.travelTotalMinutes / 60).toFixed(1)}h` : "—"}
+                          </td>
                           <td className="py-2">
                             <Button variant="ghost" size="sm" className="text-[10px] h-6" onClick={(e) => { e.stopPropagation(); setDrillProject(p); }}>
                               Details
@@ -262,6 +266,12 @@ export default function CostReports() {
                         </td>
                         <td className="py-2 text-right font-mono text-xs">
                           {data.totalBudget > 0 ? `${Math.round((data.totalCost / data.totalBudget) * 100)}%` : "—"}
+                        </td>
+                        <td className="py-2 text-right font-mono text-xs text-status-traveling">
+                          {(() => {
+                            const total = data.byProject.reduce((s, p) => s + p.travelTotalMinutes, 0);
+                            return total > 0 ? `${(total / 60).toFixed(1)}h` : "—";
+                          })()}
                         </td>
                         <td colSpan={2} />
                       </tr>
