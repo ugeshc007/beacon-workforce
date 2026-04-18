@@ -223,6 +223,11 @@ export interface CostProjectRow {
   margin: number;
   startDate: string | null;
   endDate: string | null;
+  // Travel time aggregates (minutes), based on attendance_logs timestamps
+  travelToSiteMinutes: number;   // travel_start_time → site_arrival_time
+  travelReturnMinutes: number;   // return_travel_start_time → office_arrival_time
+  travelTotalMinutes: number;    // sum of the two
+  travelEntriesCount: number;    // # of attendance rows that had at least one travel leg
   dailyCosts: { date: string; labor: number; ot: number; expenses: number }[];
 }
 
@@ -249,7 +254,7 @@ export function useCostData(start: string, end: string, filters?: {
 
       const [logsRes, expensesRes, projectsRes, branchRes] = await Promise.all([
         supabase.from("attendance_logs")
-          .select("project_id, date, regular_cost, overtime_cost")
+          .select("project_id, date, regular_cost, overtime_cost, travel_start_time, site_arrival_time, return_travel_start_time, office_arrival_time")
           .gte("date", start).lte("date", end),
         supabase.from("project_expenses")
           .select("project_id, date, amount_aed, category, status")
@@ -271,6 +276,7 @@ export function useCostData(start: string, end: string, filters?: {
         name: string; status: string; budget: number; projectValue: number;
         laborCost: number; otCost: number; expenses: number;
         startDate: string | null; endDate: string | null;
+        travelToSiteMin: number; travelReturnMin: number; travelEntries: number;
         dailyCosts: Map<string, { labor: number; ot: number; expenses: number }>;
       }>();
       for (const p of projects) {
@@ -279,9 +285,16 @@ export function useCostData(start: string, end: string, filters?: {
           projectValue: Number(p.project_value ?? 0),
           laborCost: 0, otCost: 0, expenses: 0,
           startDate: p.start_date, endDate: p.end_date,
+          travelToSiteMin: 0, travelReturnMin: 0, travelEntries: 0,
           dailyCosts: new Map(),
         });
       }
+
+      const diffMin = (a?: string | null, b?: string | null) => {
+        if (!a || !b) return 0;
+        const ms = new Date(b).getTime() - new Date(a).getTime();
+        return ms > 0 ? Math.round(ms / 60000) : 0;
+      };
 
       for (const l of logs) {
         if (l.project_id && projMap.has(l.project_id)) {
@@ -294,6 +307,13 @@ export function useCostData(start: string, end: string, filters?: {
           const dc = p.dailyCosts.get(l.date)!;
           dc.labor += reg;
           dc.ot += ot;
+
+          // Travel legs (minutes)
+          const toSite = diffMin(l.travel_start_time, l.site_arrival_time);
+          const back = diffMin(l.return_travel_start_time, l.office_arrival_time);
+          p.travelToSiteMin += toSite;
+          p.travelReturnMin += back;
+          if (toSite > 0 || back > 0) p.travelEntries += 1;
         }
       }
       for (const e of expenses) {
@@ -340,7 +360,12 @@ export function useCostData(start: string, end: string, filters?: {
           laborCost: Math.round(p.laborCost), otCost: Math.round(p.otCost),
           expenses: Math.round(p.expenses), totalCost, variance, pctUsed,
           forecastedFinal, grossProfit, margin,
-          startDate: p.startDate, endDate: p.endDate, dailyCosts,
+          startDate: p.startDate, endDate: p.endDate,
+          travelToSiteMinutes: p.travelToSiteMin,
+          travelReturnMinutes: p.travelReturnMin,
+          travelTotalMinutes: p.travelToSiteMin + p.travelReturnMin,
+          travelEntriesCount: p.travelEntries,
+          dailyCosts,
         };
       }).sort((a, b) => b.totalCost - a.totalCost);
 
