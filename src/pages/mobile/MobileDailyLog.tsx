@@ -167,6 +167,30 @@ export default function MobileDailyLog() {
       return;
     }
 
+    // OFFLINE: queue locally, sync later
+    if (!navigator.onLine) {
+      try {
+        await enqueueDailyLog({
+          project_id: projectId,
+          employee_id: employee?.id || null,
+          employee_name: employee?.name || "Employee",
+          description: description.trim(),
+          issues: issues.trim() || null,
+          completion_pct: completionPct ? parseInt(completionPct) : null,
+          status,
+          task_start_date: taskStartDate || null,
+          task_end_date: taskEndDate || null,
+          photos: offlinePhotos.map(({ data, ext }) => ({ data, ext })),
+        });
+        toast({ title: "Saved Offline", description: "Will upload when back online." });
+        getPendingDailyLogCount().then(setPendingCount);
+        resetForm();
+      } catch (err: any) {
+        toast({ title: "Queue failed", description: err.message, variant: "destructive" });
+      }
+      return;
+    }
+
     setUploading(true);
     try {
       await createMutation.mutateAsync({
@@ -180,7 +204,6 @@ export default function MobileDailyLog() {
         task_start_date: taskStartDate || null,
         task_end_date: taskEndDate || null,
       });
-      // Notify branch managers
       try {
         await supabase.functions.invoke("notify-daily-log", {
           body: {
@@ -198,6 +221,17 @@ export default function MobileDailyLog() {
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleManualSync = async () => {
+    if (!navigator.onLine) {
+      toast({ title: "Still offline", variant: "destructive" });
+      return;
+    }
+    const { synced, failed } = await syncPendingDailyLogs();
+    if (synced > 0) toast({ title: `Synced ${synced} log${synced > 1 ? "s" : ""}` });
+    if (failed > 0) toast({ title: `${failed} failed`, variant: "destructive" });
+    getPendingDailyLogCount().then(setPendingCount);
   };
 
   const handleStatusChange = async (logId: string, newStatus: string) => {
