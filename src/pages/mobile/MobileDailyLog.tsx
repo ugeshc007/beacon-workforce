@@ -231,6 +231,27 @@ export default function MobileDailyLog() {
             </div>
           </div>
 
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Task Start</label>
+              <Input
+                type="date"
+                value={taskStartDate}
+                onChange={(e) => setTaskStartDate(e.target.value)}
+                className="bg-background"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Task End</label>
+              <Input
+                type="date"
+                value={taskEndDate}
+                onChange={(e) => setTaskEndDate(e.target.value)}
+                className="bg-background"
+              />
+            </div>
+          </div>
+
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">Issues / Blockers</label>
             <Textarea
@@ -352,6 +373,14 @@ export default function MobileDailyLog() {
 
                 {/* Meta row */}
                 <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                  {(log.task_start_date || log.task_end_date) && (
+                    <span className="flex items-center gap-1 text-brand">
+                      <CalendarRange className="h-3 w-3" />
+                      {log.task_start_date ? format(new Date(log.task_start_date + "T00:00:00"), "dd MMM") : "—"}
+                      {" → "}
+                      {log.task_end_date ? format(new Date(log.task_end_date + "T00:00:00"), "dd MMM") : "—"}
+                    </span>
+                  )}
                   {log.completion_pct !== null && (
                     <span className="flex items-center gap-1">
                       <TrendingUp className="h-3 w-3 text-brand" />
