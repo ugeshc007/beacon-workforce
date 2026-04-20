@@ -5,6 +5,7 @@ import { useMobileAuth } from "@/hooks/useMobileAuth";
 import { useMobileWorkflow } from "@/hooks/useMobileWorkflow";
 import { useDailyLogs, useCreateDailyLog, useUpdateDailyLog, uploadDailyLogPhoto, getSignedPhotoUrl } from "@/hooks/useDailyLogs";
 import { usePhotoCapture } from "@/hooks/usePhotoCapture";
+import { enqueueDailyLog, fileToBase64, syncPendingDailyLogs, initDailyLogAutoSync, getPendingDailyLogCount } from "@/lib/offline-daily-logs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -63,7 +64,22 @@ export default function MobileDailyLog() {
   const [taskStartDate, setTaskStartDate] = useState("");
   const [taskEndDate, setTaskEndDate] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
+  // Local photos for offline mode (kept as base64 in queue, previewed via blob URL)
+  const [offlinePhotos, setOfflinePhotos] = useState<{ data: string; ext: string; previewUrl: string }[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Auto-sync queued daily logs on mount + network reconnect
+  useEffect(() => {
+    const cleanup = initDailyLogAutoSync();
+    const refreshCount = () => getPendingDailyLogCount().then(setPendingCount);
+    refreshCount();
+    const interval = window.setInterval(refreshCount, 5000);
+    return () => {
+      cleanup();
+      window.clearInterval(interval);
+    };
+  }, []);
 
   const resetForm = () => {
     setDescription("");
@@ -72,6 +88,10 @@ export default function MobileDailyLog() {
     setStatus("in_progress");
     setPhotos([]);
     setLocalPhotos([]);
+    setOfflinePhotos((prev) => {
+      prev.forEach((p) => URL.revokeObjectURL(p.previewUrl));
+      return [];
+    });
     setTaskStartDate("");
     setTaskEndDate("");
     setShowForm(false);
@@ -79,15 +99,40 @@ export default function MobileDailyLog() {
 
   const handleCameraCapture = async () => {
     if (!projectId) return;
-    const path = await captureAndUpload(projectId);
-    if (path) {
-      setPhotos((prev) => [...prev, path]);
+    // Offline: capture via file input + base64
+    if (!navigator.onLine) {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
+      input.capture = "environment";
+      input.onchange = async () => {
+        const f = input.files?.[0];
+        if (!f) return;
+        const b64 = await fileToBase64(f);
+        const previewUrl = URL.createObjectURL(f);
+        setOfflinePhotos((prev) => [...prev, { ...b64, previewUrl }]);
+      };
+      input.click();
+      return;
     }
+    const path = await captureAndUpload(projectId);
+    if (path) setPhotos((prev) => [...prev, path]);
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !projectId) return;
     const files = Array.from(e.target.files);
+
+    // Offline: encode to base64 and store locally
+    if (!navigator.onLine) {
+      for (const file of files) {
+        const b64 = await fileToBase64(file);
+        const previewUrl = URL.createObjectURL(file);
+        setOfflinePhotos((prev) => [...prev, { ...b64, previewUrl }]);
+      }
+      return;
+    }
+
     setUploading(true);
     try {
       for (const file of files) {
@@ -103,6 +148,13 @@ export default function MobileDailyLog() {
 
   const removePhoto = (idx: number) => {
     setPhotos((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const removeOfflinePhoto = (idx: number) => {
+    setOfflinePhotos((prev) => {
+      URL.revokeObjectURL(prev[idx].previewUrl);
+      return prev.filter((_, i) => i !== idx);
+    });
   };
 
   const handleSubmit = async () => {
