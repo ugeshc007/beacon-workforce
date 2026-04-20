@@ -413,7 +413,24 @@ export function DayAssignmentPanel({
                 <Button size="sm" variant="ghost" onClick={handleShareWhatsApp} title="Share via WhatsApp" className="h-8 w-8 p-0">
                   <MessageCircle className="h-3.5 w-3.5 text-emerald-400" />
                 </Button>
-              </>
+            </>
+            )}
+            {!readOnly && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setLogOpen(true)}
+                title="Add daily log"
+                className="h-8 px-2 gap-1 text-brand hover:text-brand"
+              >
+                <FileText className="h-3.5 w-3.5" />
+                <span className="text-xs hidden sm:inline">Log</span>
+                {dailyLogs && dailyLogs.length > 0 && (
+                  <Badge variant="outline" className="h-4 px-1 text-[10px] border-brand/40 text-brand ml-0.5">
+                    {dailyLogs.filter(l => l.date === date).length}
+                  </Badge>
+                )}
+              </Button>
             )}
             {!readOnly && (
               <Button size="sm" variant="outline" onClick={() => setConfirmOpen(true)} disabled={autoLoading || totalToFill === 0}>
