@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { DailyLogStatus } from "@/hooks/useDailyLogs";
 import {
   Plus, Send, Camera, AlertTriangle, TrendingUp, ImageIcon, X, User, FileText,
-  CheckCircle2, Clock, Loader2,
+  CheckCircle2, Clock, Loader2, CalendarRange,
 } from "lucide-react";
 
 function SignedPhoto({ path, index }: { path: string; index: number }) {
@@ -60,6 +60,8 @@ export default function MobileDailyLog() {
   const [status, setStatus] = useState<DailyLogStatus>("in_progress");
   const [photos, setPhotos] = useState<string[]>([]); // storage paths
   const [localPhotos, setLocalPhotos] = useState<File[]>([]);
+  const [taskStartDate, setTaskStartDate] = useState("");
+  const [taskEndDate, setTaskEndDate] = useState("");
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -70,6 +72,8 @@ export default function MobileDailyLog() {
     setStatus("in_progress");
     setPhotos([]);
     setLocalPhotos([]);
+    setTaskStartDate("");
+    setTaskEndDate("");
     setShowForm(false);
   };
 
@@ -121,6 +125,8 @@ export default function MobileDailyLog() {
         photo_urls: photos,
         employee_id: employee?.id || null,
         status,
+        task_start_date: taskStartDate || null,
+        task_end_date: taskEndDate || null,
       });
       // Notify branch managers
       try {
