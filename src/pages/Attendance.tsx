@@ -1,6 +1,6 @@
 import { toLocalDateStr } from "@/lib/utils";
 import { useState } from "react";
-import { useAttendanceLogs, useAttendanceSummary, type AttendanceLog } from "@/hooks/useAttendance";
+import { useAttendanceLogs, useAttendanceSummary, computeLiveCost, type AttendanceLog } from "@/hooks/useAttendance";
 import { useCanAccess } from "@/hooks/usePermissions";
 import { useProjects } from "@/hooks/useProjects";
 import { AttendanceTimeline } from "@/components/attendance/AttendanceTimeline";
