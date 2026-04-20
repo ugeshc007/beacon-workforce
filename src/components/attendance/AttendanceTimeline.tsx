@@ -14,7 +14,11 @@ const steps = [
   { key: "travel_start_time", label: "Travel", color: "bg-status-traveling" },
   { key: "site_arrival_time", label: "On Site", color: "bg-status-present" },
   { key: "work_start_time", label: "Working", color: "bg-status-present" },
+  { key: "break_start_time", label: "Break Start", color: "bg-orange-400" },
+  { key: "break_end_time", label: "Break End", color: "bg-status-present" },
   { key: "work_end_time", label: "Work End", color: "bg-status-overtime" },
+  { key: "return_travel_start_time", label: "Returning", color: "bg-status-traveling" },
+  { key: "office_arrival_time", label: "At Office", color: "bg-brand" },
   { key: "office_punch_out", label: "Punch Out", color: "bg-muted-foreground" },
 ] as const;
 
