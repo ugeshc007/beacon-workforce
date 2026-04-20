@@ -31,7 +31,10 @@ const fmt = (ts: string | null) => {
 
 function deriveStatus(log: AttendanceLog): string {
   if (log.office_punch_out) return "completed";
+  if ((log as any).office_arrival_time) return "at_office";
+  if ((log as any).return_travel_start_time) return "returning";
   if (log.work_end_time) return "work_ended";
+  if (log.break_start_time && !log.break_end_time) return "on_break";
   if (log.work_start_time) return "working";
   if (log.site_arrival_time) return "on_site";
   if (log.travel_start_time) return "traveling";
@@ -41,7 +44,10 @@ function deriveStatus(log: AttendanceLog): string {
 
 const statusLabel: Record<string, { text: string; className: string }> = {
   completed: { text: "Completed", className: "bg-muted text-muted-foreground" },
+  at_office: { text: "At Office", className: "bg-primary/20 text-primary border-primary/30" },
+  returning: { text: "Returning", className: "bg-status-traveling/20 text-status-traveling border-status-traveling/30" },
   work_ended: { text: "Work Ended", className: "bg-status-overtime/20 text-status-overtime border-status-overtime/30" },
+  on_break: { text: "On Break", className: "bg-orange-400/20 text-orange-400 border-orange-400/30" },
   working: { text: "Working", className: "bg-status-present/20 text-status-present border-status-present/30" },
   on_site: { text: "On Site", className: "bg-status-present/20 text-status-present border-status-present/30" },
   traveling: { text: "Traveling", className: "bg-status-traveling/20 text-status-traveling border-status-traveling/30" },
