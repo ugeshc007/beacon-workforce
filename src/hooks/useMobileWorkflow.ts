@@ -2,6 +2,7 @@ import { toLocalDateStr } from "@/lib/utils";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
+import { cacheData, getCachedData } from "@/lib/offline-queue";
 import {
   WorkflowStep,
   WorkflowAction,
@@ -49,6 +50,24 @@ export function useMobileWorkflow() {
     if (!employee) return;
     setLoading(true);
 
+    const cacheKeyAssignment = `assignment_${employee.id}_${today}`;
+    const cacheKeyLog = `attendance_${employee.id}_${today}`;
+
+    // OFFLINE: hydrate from cache
+    if (!navigator.onLine) {
+      const [cachedAssignment, cachedLog] = await Promise.all([
+        getCachedData<TodayAssignment | null>(cacheKeyAssignment),
+        getCachedData<AttendanceLog | null>(cacheKeyLog),
+      ]);
+      if (cachedAssignment) setAssignment(cachedAssignment.data);
+      if (cachedLog) {
+        setAttendanceLog(cachedLog.data);
+        setStep(deriveStepFromLog(cachedLog.data));
+      }
+      setLoading(false);
+      return;
+    }
+
     try {
       // Fetch today's assignment
       const { data: assignments } = await supabase
@@ -58,10 +77,11 @@ export function useMobileWorkflow() {
         .eq("date", today)
         .limit(1);
 
+      let assignmentValue: TodayAssignment | null = null;
       if (assignments && assignments.length > 0) {
         const a = assignments[0];
         const project = a.projects as any;
-        setAssignment({
+        assignmentValue = {
           projectId: a.project_id,
           projectName: project?.name || "Unknown",
           siteAddress: project?.site_address,
@@ -70,10 +90,10 @@ export function useMobileWorkflow() {
           siteLat: project?.site_latitude,
           siteLng: project?.site_longitude,
           siteRadius: project?.site_gps_radius || 100,
-        });
-      } else {
-        setAssignment(null);
+        };
       }
+      setAssignment(assignmentValue);
+      cacheData(cacheKeyAssignment, assignmentValue).catch(() => {});
 
       // Fetch today's attendance log
       const { data: logs } = await supabase
@@ -86,8 +106,19 @@ export function useMobileWorkflow() {
       const log = logs?.[0] || null;
       setAttendanceLog(log);
       setStep(deriveStepFromLog(log));
+      cacheData(cacheKeyLog, log).catch(() => {});
     } catch (e) {
       console.error("Failed to fetch workflow data", e);
+      // Fallback to cache on network error
+      const [cachedAssignment, cachedLog] = await Promise.all([
+        getCachedData<TodayAssignment | null>(cacheKeyAssignment),
+        getCachedData<AttendanceLog | null>(cacheKeyLog),
+      ]);
+      if (cachedAssignment) setAssignment(cachedAssignment.data);
+      if (cachedLog) {
+        setAttendanceLog(cachedLog.data);
+        setStep(deriveStepFromLog(cachedLog.data));
+      }
     } finally {
       setLoading(false);
     }
