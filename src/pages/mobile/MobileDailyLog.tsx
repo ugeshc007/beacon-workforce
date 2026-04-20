@@ -5,6 +5,7 @@ import { useMobileAuth } from "@/hooks/useMobileAuth";
 import { useMobileWorkflow } from "@/hooks/useMobileWorkflow";
 import { useDailyLogs, useCreateDailyLog, useUpdateDailyLog, uploadDailyLogPhoto, getSignedPhotoUrl } from "@/hooks/useDailyLogs";
 import { usePhotoCapture } from "@/hooks/usePhotoCapture";
+import { enqueueDailyLog, fileToBase64, syncPendingDailyLogs, initDailyLogAutoSync, getPendingDailyLogCount } from "@/lib/offline-daily-logs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -63,7 +64,22 @@ export default function MobileDailyLog() {
   const [taskStartDate, setTaskStartDate] = useState("");
   const [taskEndDate, setTaskEndDate] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
+  // Local photos for offline mode (kept as base64 in queue, previewed via blob URL)
+  const [offlinePhotos, setOfflinePhotos] = useState<{ data: string; ext: string; previewUrl: string }[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Auto-sync queued daily logs on mount + network reconnect
+  useEffect(() => {
+    const cleanup = initDailyLogAutoSync();
+    const refreshCount = () => getPendingDailyLogCount().then(setPendingCount);
+    refreshCount();
+    const interval = window.setInterval(refreshCount, 5000);
+    return () => {
+      cleanup();
+      window.clearInterval(interval);
+    };
+  }, []);
 
   const resetForm = () => {
     setDescription("");
@@ -72,6 +88,10 @@ export default function MobileDailyLog() {
     setStatus("in_progress");
     setPhotos([]);
     setLocalPhotos([]);
+    setOfflinePhotos((prev) => {
+      prev.forEach((p) => URL.revokeObjectURL(p.previewUrl));
+      return [];
+    });
     setTaskStartDate("");
     setTaskEndDate("");
     setShowForm(false);
@@ -79,15 +99,40 @@ export default function MobileDailyLog() {
 
   const handleCameraCapture = async () => {
     if (!projectId) return;
-    const path = await captureAndUpload(projectId);
-    if (path) {
-      setPhotos((prev) => [...prev, path]);
+    // Offline: capture via file input + base64
+    if (!navigator.onLine) {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
+      input.capture = "environment";
+      input.onchange = async () => {
+        const f = input.files?.[0];
+        if (!f) return;
+        const b64 = await fileToBase64(f);
+        const previewUrl = URL.createObjectURL(f);
+        setOfflinePhotos((prev) => [...prev, { ...b64, previewUrl }]);
+      };
+      input.click();
+      return;
     }
+    const path = await captureAndUpload(projectId);
+    if (path) setPhotos((prev) => [...prev, path]);
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !projectId) return;
     const files = Array.from(e.target.files);
+
+    // Offline: encode to base64 and store locally
+    if (!navigator.onLine) {
+      for (const file of files) {
+        const b64 = await fileToBase64(file);
+        const previewUrl = URL.createObjectURL(file);
+        setOfflinePhotos((prev) => [...prev, { ...b64, previewUrl }]);
+      }
+      return;
+    }
+
     setUploading(true);
     try {
       for (const file of files) {
@@ -105,6 +150,13 @@ export default function MobileDailyLog() {
     setPhotos((prev) => prev.filter((_, i) => i !== idx));
   };
 
+  const removeOfflinePhoto = (idx: number) => {
+    setOfflinePhotos((prev) => {
+      URL.revokeObjectURL(prev[idx].previewUrl);
+      return prev.filter((_, i) => i !== idx);
+    });
+  };
+
   const handleSubmit = async () => {
     if (!description.trim()) {
       toast({ title: "Description required", variant: "destructive" });
@@ -112,6 +164,30 @@ export default function MobileDailyLog() {
     }
     if (!projectId) {
       toast({ title: "No project assigned today", variant: "destructive" });
+      return;
+    }
+
+    // OFFLINE: queue locally, sync later
+    if (!navigator.onLine) {
+      try {
+        await enqueueDailyLog({
+          project_id: projectId,
+          employee_id: employee?.id || null,
+          employee_name: employee?.name || "Employee",
+          description: description.trim(),
+          issues: issues.trim() || null,
+          completion_pct: completionPct ? parseInt(completionPct) : null,
+          status,
+          task_start_date: taskStartDate || null,
+          task_end_date: taskEndDate || null,
+          photos: offlinePhotos.map(({ data, ext }) => ({ data, ext })),
+        });
+        toast({ title: "Saved Offline", description: "Will upload when back online." });
+        getPendingDailyLogCount().then(setPendingCount);
+        resetForm();
+      } catch (err: any) {
+        toast({ title: "Queue failed", description: err.message, variant: "destructive" });
+      }
       return;
     }
 
@@ -128,7 +204,6 @@ export default function MobileDailyLog() {
         task_start_date: taskStartDate || null,
         task_end_date: taskEndDate || null,
       });
-      // Notify branch managers
       try {
         await supabase.functions.invoke("notify-daily-log", {
           body: {
@@ -146,6 +221,17 @@ export default function MobileDailyLog() {
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleManualSync = async () => {
+    if (!navigator.onLine) {
+      toast({ title: "Still offline", variant: "destructive" });
+      return;
+    }
+    const { synced, failed } = await syncPendingDailyLogs();
+    if (synced > 0) toast({ title: `Synced ${synced} log${synced > 1 ? "s" : ""}` });
+    if (failed > 0) toast({ title: `${failed} failed`, variant: "destructive" });
+    getPendingDailyLogCount().then(setPendingCount);
   };
 
   const handleStatusChange = async (logId: string, newStatus: string) => {
@@ -184,6 +270,17 @@ export default function MobileDailyLog() {
           <h1 className="text-base font-bold text-foreground leading-tight truncate">Daily Log</h1>
           <p className="text-[11px] text-muted-foreground truncate">{assignment?.projectName}</p>
         </div>
+        {pendingCount > 0 && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="shrink-0 h-8 gap-1 px-2 text-[11px] border-status-overtime/50 text-status-overtime"
+            onClick={handleManualSync}
+          >
+            <Loader2 className="h-3 w-3" />
+            {pendingCount} queued
+          </Button>
+        )}
         {!showForm && (
           <Button size="icon" className="shrink-0 h-8 w-8 rounded-full" onClick={() => setShowForm(true)}>
             <Plus className="h-4 w-4" />
@@ -299,14 +396,32 @@ export default function MobileDailyLog() {
               />
             </div>
 
-            {photos.length > 0 && (
+            {(photos.length > 0 || offlinePhotos.length > 0) && (
               <div className="flex gap-2 mt-2 flex-wrap">
                 {photos.map((path, i) => (
-                  <div key={i} className="relative group">
+                  <div key={`p-${i}`} className="relative group">
                     <SignedPhoto path={path} index={i} />
                     <button
-                      className="absolute -top-1.5 -right-1.5 bg-destructive text-white rounded-full h-5 w-5 flex items-center justify-center"
+                      className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground rounded-full h-5 w-5 flex items-center justify-center"
                       onClick={() => removePhoto(i)}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+                {offlinePhotos.map((p, i) => (
+                  <div key={`o-${i}`} className="relative group">
+                    <img
+                      src={p.previewUrl}
+                      className="h-20 w-20 object-cover rounded-lg border border-status-overtime/50"
+                      alt={`Queued ${i + 1}`}
+                    />
+                    <span className="absolute bottom-0 left-0 right-0 bg-status-overtime/80 text-[9px] text-center text-foreground rounded-b-lg">
+                      offline
+                    </span>
+                    <button
+                      className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground rounded-full h-5 w-5 flex items-center justify-center"
+                      onClick={() => removeOfflinePhoto(i)}
                     >
                       <X className="h-3 w-3" />
                     </button>

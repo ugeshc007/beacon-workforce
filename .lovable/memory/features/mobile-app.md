@@ -20,8 +20,9 @@ type: feature
 - `src/hooks/usePhotoCapture.ts` — Camera capture + upload to daily-log-photos bucket
 - `src/hooks/useBiometricAuth.ts` — Biometric auth toggle + verification
 - `src/lib/workflow-engine.ts` — Pure state machine
-- `src/lib/offline-queue.ts` — Offline queue with idempotency keys
-- `src/lib/offline-sync.ts` — Auto-sync engine with retry + reconnect
+- `src/lib/offline-queue.ts` — Offline queue with idempotency keys + cacheData/getCachedData helpers
+- `src/lib/offline-sync.ts` — Auto-sync engine for workflow actions
+- `src/lib/offline-daily-logs.ts` — Offline queue + sync for daily logs (incl. base64 photos)
 - `src/lib/gps.ts` — GPS module with accuracy detection + map fallback trigger
 - `src/lib/capacitor.ts` — Native platform detection
 - `src/components/mobile/HoldToConfirm.tsx` — Hold-to-confirm button with haptics
