@@ -23,8 +23,7 @@ const GPS_ACTIONS: WorkflowAction[] = [
   "punch_out",
 ];
 
-/** Actions that require hold-to-confirm */
-const CRITICAL_ACTIONS: WorkflowAction[] = ["punch_in", "end_work", "punch_out"];
+// All workflow actions require hold-to-confirm to prevent accidental taps
 
 export default function MobileHome() {
   const { employee } = useMobileAuth();
@@ -236,46 +235,32 @@ export default function MobileHome() {
         </div>
       </Card>
 
-      {/* Main Action Button — hold-to-confirm for critical actions */}
+      {/* Main Action Button — hold-to-confirm */}
       {primaryAction && (
-        CRITICAL_ACTIONS.includes(primaryAction) ? (
-          <HoldToConfirm
-            onConfirm={() => handleAction(primaryAction)}
-            disabled={actionLoading}
-            loading={actionLoading}
-          >
-            {actionLoading ? (
-              <Loader2 className="h-6 w-6 animate-spin" />
-            ) : (
-              <CheckCircle2 className="h-6 w-6" />
-            )}
-            {actionLabels[primaryAction]}
-          </HoldToConfirm>
-        ) : (
-          <Button
-            className="h-16 text-lg font-bold rounded-2xl shadow-lg"
-            onClick={() => handleAction(primaryAction)}
-            disabled={actionLoading}
-          >
-            {actionLoading ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <CheckCircle2 className="mr-2 h-6 w-6" />}
-            {actionLabels[primaryAction]}
-          </Button>
-        )
+        <HoldToConfirm
+          onConfirm={() => handleAction(primaryAction)}
+          disabled={actionLoading}
+          loading={actionLoading}
+          variant="primary"
+        >
+          <CheckCircle2 className="h-6 w-6" />
+          {actionLabels[primaryAction]}
+        </HoldToConfirm>
       )}
 
-      {/* Secondary Actions */}
+      {/* Secondary Actions — also hold-to-confirm */}
       {secondaryActions.length > 0 && (
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2">
           {secondaryActions.map((action) => (
-            <Button
+            <HoldToConfirm
               key={action}
-              variant="outline"
-              className="flex-1 h-12"
-              onClick={() => handleAction(action)}
+              onConfirm={() => handleAction(action)}
               disabled={actionLoading}
+              loading={actionLoading}
+              variant="secondary"
             >
               {actionLabels[action]}
-            </Button>
+            </HoldToConfirm>
           ))}
         </div>
       )}
