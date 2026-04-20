@@ -1,6 +1,6 @@
 import { toLocalDateStr } from "@/lib/utils";
 import { useState } from "react";
-import { useAttendanceLogs, useAttendanceSummary, type AttendanceLog } from "@/hooks/useAttendance";
+import { useAttendanceLogs, useAttendanceSummary, computeLiveCost, type AttendanceLog } from "@/hooks/useAttendance";
 import { useCanAccess } from "@/hooks/usePermissions";
 import { useProjects } from "@/hooks/useProjects";
 import { AttendanceTimeline } from "@/components/attendance/AttendanceTimeline";
@@ -180,7 +180,8 @@ export default function Attendance() {
                   {filteredLogs.map((log) => {
                     const otH = ((log.overtime_minutes ?? 0) / 60).toFixed(1);
                     const totalH = log.total_work_minutes != null ? (log.total_work_minutes / 60).toFixed(1) : "—";
-                    const cost = Number(log.regular_cost ?? 0) + Number(log.overtime_cost ?? 0);
+                    const cost = computeLiveCost(log);
+                    const isLiveCost = cost > 0 && !log.work_end_time;
                     const status = deriveStatus(log);
                     const sl = statusLabel[status];
                     const breakMin = log.break_minutes ?? 0;
@@ -239,7 +240,11 @@ export default function Attendance() {
                           <Badge variant="outline" className={`text-[9px] ${sl.className}`}>{sl.text}</Badge>
                         </td>
                         <td className="py-2.5 text-right font-mono text-xs text-muted-foreground">
-                          {cost > 0 ? `AED ${Math.round(cost)}` : "—"}
+                          {cost > 0 ? (
+                            <span className={isLiveCost ? "text-status-traveling" : ""} title={isLiveCost ? "Live estimate (work in progress)" : undefined}>
+                              AED {Math.round(cost)}{isLiveCost ? "*" : ""}
+                            </span>
+                          ) : "—"}
                         </td>
                         <td className="py-2.5" onClick={(e) => e.stopPropagation()}>
                           <DropdownMenu>
