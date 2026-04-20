@@ -17,6 +17,7 @@ import { useProjects } from "@/hooks/useProjects";
 import { useDailyLogs, useCreateDailyLog, type DailyLogStatus } from "@/hooks/useDailyLogs";
 import { useAuth } from "@/hooks/useAuth";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { DateInput } from "@/components/ui/date-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Lock, LockOpen, Plus, Trash2, AlertTriangle, Zap, User, Clock, Timer, Pencil, ArrowRightLeft, Check, X, Shield, Users, Share2, Copy, MessageCircle, FileText } from "lucide-react";
 import {
@@ -761,11 +762,11 @@ export function DayAssignmentPanel({
               </div>
               <div>
                 <Label className="text-xs text-muted-foreground mb-1 block">Task Start</Label>
-                <Input type="date" value={logTaskStart} onChange={(e) => setLogTaskStart(e.target.value)} />
+                <DateInput value={logTaskStart} onChange={setLogTaskStart} />
               </div>
               <div>
                 <Label className="text-xs text-muted-foreground mb-1 block">Task End</Label>
-                <Input type="date" value={logTaskEnd} onChange={(e) => setLogTaskEnd(e.target.value)} />
+                <DateInput value={logTaskEnd} onChange={setLogTaskEnd} />
               </div>
             </div>
 
