@@ -715,6 +715,80 @@ export function DayAssignmentPanel({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Daily log quick entry */}
+      <Dialog open={logOpen} onOpenChange={(o) => { setLogOpen(o); if (!o) resetLogForm(); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-brand" />
+              Add Daily Log
+            </DialogTitle>
+            <p className="text-xs text-muted-foreground">{projectName} · {dayLabel}</p>
+          </DialogHeader>
+
+          <div className="space-y-3 pt-1">
+            <Textarea
+              placeholder="What was done? Describe progress…"
+              value={logDescription}
+              onChange={(e) => setLogDescription(e.target.value)}
+              rows={3}
+            />
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1 block">Status</Label>
+                <Select value={logStatus} onValueChange={(v) => setLogStatus(v as DailyLogStatus)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="on_hold">On Hold</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1 block">Completion %</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  placeholder="e.g. 45"
+                  value={logCompletion}
+                  onChange={(e) => setLogCompletion(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1 block">Task Start</Label>
+                <Input type="date" value={logTaskStart} onChange={(e) => setLogTaskStart(e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1 block">Task End</Label>
+                <Input type="date" value={logTaskEnd} onChange={(e) => setLogTaskEnd(e.target.value)} />
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs text-muted-foreground mb-1 block">Issues / Blockers</Label>
+              <Textarea
+                placeholder="Any problems or blockers?"
+                value={logIssues}
+                onChange={(e) => setLogIssues(e.target.value)}
+                rows={2}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setLogOpen(false)}>Cancel</Button>
+            <Button onClick={handleSubmitLog} disabled={createDailyLog.isPending} className="gap-1.5">
+              <FileText className="h-3.5 w-3.5" />
+              {createDailyLog.isPending ? "Posting…" : "Post Log"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
