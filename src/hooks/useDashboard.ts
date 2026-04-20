@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { computeLiveCost } from "@/hooks/useAttendance";
 
 function todayUAE(): string {
   const now = new Date();
