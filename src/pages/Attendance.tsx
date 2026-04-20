@@ -180,7 +180,8 @@ export default function Attendance() {
                   {filteredLogs.map((log) => {
                     const otH = ((log.overtime_minutes ?? 0) / 60).toFixed(1);
                     const totalH = log.total_work_minutes != null ? (log.total_work_minutes / 60).toFixed(1) : "—";
-                    const cost = Number(log.regular_cost ?? 0) + Number(log.overtime_cost ?? 0);
+                    const cost = computeLiveCost(log);
+                    const isLiveCost = cost > 0 && !log.work_end_time;
                     const status = deriveStatus(log);
                     const sl = statusLabel[status];
                     const breakMin = log.break_minutes ?? 0;
