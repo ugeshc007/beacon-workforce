@@ -14,8 +14,11 @@ import {
   type ScheduleAssignment,
 } from "@/hooks/useSchedule";
 import { useProjects } from "@/hooks/useProjects";
-import { useDailyLogs } from "@/hooks/useDailyLogs";
-import { Lock, LockOpen, Plus, Trash2, AlertTriangle, Zap, User, Clock, Timer, Pencil, ArrowRightLeft, Check, X, Shield, Users, Share2, Copy, MessageCircle } from "lucide-react";
+import { useDailyLogs, useCreateDailyLog, type DailyLogStatus } from "@/hooks/useDailyLogs";
+import { useAuth } from "@/hooks/useAuth";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Lock, LockOpen, Plus, Trash2, AlertTriangle, Zap, User, Clock, Timer, Pencil, ArrowRightLeft, Check, X, Shield, Users, Share2, Copy, MessageCircle, FileText } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -79,6 +82,51 @@ export function DayAssignmentPanel({
   const [autoShiftEnd, setAutoShiftEnd] = useState("17:00");
   const [autoLoading, setAutoLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+
+  // Daily log quick entry
+  const { user } = useAuth();
+  const createDailyLog = useCreateDailyLog();
+  const [logOpen, setLogOpen] = useState(false);
+  const [logDescription, setLogDescription] = useState("");
+  const [logStatus, setLogStatus] = useState<DailyLogStatus>("in_progress");
+  const [logCompletion, setLogCompletion] = useState("");
+  const [logIssues, setLogIssues] = useState("");
+  const [logTaskStart, setLogTaskStart] = useState("");
+  const [logTaskEnd, setLogTaskEnd] = useState("");
+
+  const resetLogForm = () => {
+    setLogDescription("");
+    setLogStatus("in_progress");
+    setLogCompletion("");
+    setLogIssues("");
+    setLogTaskStart("");
+    setLogTaskEnd("");
+  };
+
+  const handleSubmitLog = async () => {
+    if (!logDescription.trim()) {
+      toast({ title: "Description required", variant: "destructive" });
+      return;
+    }
+    try {
+      await createDailyLog.mutateAsync({
+        project_id: projectId,
+        date,
+        description: logDescription.trim(),
+        status: logStatus,
+        completion_pct: logCompletion ? parseInt(logCompletion) : null,
+        issues: logIssues.trim() || null,
+        posted_by: user?.id ?? null,
+        task_start_date: logTaskStart || null,
+        task_end_date: logTaskEnd || null,
+      });
+      toast({ title: "Daily log posted" });
+      resetLogForm();
+      setLogOpen(false);
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+  };
 
   // Edit time state
   const [editingId, setEditingId] = useState<string | null>(null);
