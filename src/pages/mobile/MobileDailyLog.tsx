@@ -396,14 +396,32 @@ export default function MobileDailyLog() {
               />
             </div>
 
-            {photos.length > 0 && (
+            {(photos.length > 0 || offlinePhotos.length > 0) && (
               <div className="flex gap-2 mt-2 flex-wrap">
                 {photos.map((path, i) => (
-                  <div key={i} className="relative group">
+                  <div key={`p-${i}`} className="relative group">
                     <SignedPhoto path={path} index={i} />
                     <button
-                      className="absolute -top-1.5 -right-1.5 bg-destructive text-white rounded-full h-5 w-5 flex items-center justify-center"
+                      className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground rounded-full h-5 w-5 flex items-center justify-center"
                       onClick={() => removePhoto(i)}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+                {offlinePhotos.map((p, i) => (
+                  <div key={`o-${i}`} className="relative group">
+                    <img
+                      src={p.previewUrl}
+                      className="h-20 w-20 object-cover rounded-lg border border-status-overtime/50"
+                      alt={`Queued ${i + 1}`}
+                    />
+                    <span className="absolute bottom-0 left-0 right-0 bg-status-overtime/80 text-[9px] text-center text-foreground rounded-b-lg">
+                      offline
+                    </span>
+                    <button
+                      className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground rounded-full h-5 w-5 flex items-center justify-center"
+                      onClick={() => removeOfflinePhoto(i)}
                     >
                       <X className="h-3 w-3" />
                     </button>
