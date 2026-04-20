@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { computeLiveCost } from "@/hooks/useAttendance";
 
 function todayUAE(): string {
   const now = new Date();
@@ -63,11 +64,11 @@ export function useDashboardStats() {
           .eq("date", today),
         supabase
           .from("attendance_logs")
-          .select("employee_id, office_punch_in, travel_start_time, site_arrival_time, work_start_time, work_end_time, overtime_minutes, regular_cost, overtime_cost")
+          .select("employee_id, office_punch_in, travel_start_time, site_arrival_time, work_start_time, work_end_time, break_start_time, break_end_time, break_minutes, overtime_minutes, regular_cost, overtime_cost, employees(hourly_rate)")
           .eq("date", today),
       ]);
 
-      const logs = attendanceRes.data ?? [];
+      const logs = (attendanceRes.data ?? []) as any[];
       const assignedCount = assignmentsRes.count ?? 0;
 
       let present = 0;
@@ -84,7 +85,7 @@ export function useDashboardStats() {
         if (log.travel_start_time && !log.site_arrival_time) traveling++;
         if (log.office_punch_in) present++;
         totalOtMin += log.overtime_minutes ?? 0;
-        totalCost += Number(log.regular_cost ?? 0) + Number(log.overtime_cost ?? 0);
+        totalCost += computeLiveCost(log);
       }
 
       const absent = Math.max(0, assignedCount - punchedIds.size);
