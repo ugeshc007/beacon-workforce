@@ -82,8 +82,18 @@ export function useAttendanceSummary(date: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("attendance_logs")
-        .select("office_punch_in, travel_start_time, site_arrival_time, work_start_time, work_end_time, office_punch_out, overtime_minutes, regular_cost, overtime_cost")
+        .select("work_start_time, work_end_time, break_start_time, break_end_time, break_minutes, office_punch_in, travel_start_time, site_arrival_time, office_punch_out, overtime_minutes, regular_cost, overtime_cost, employees(hourly_rate)")
         .eq("date", date);
+
+      if (error) throw error;
+      const logs = (data ?? []) as any[];
+
+      const punchedIn = logs.filter((l) => l.office_punch_in).length;
+      const onSite = logs.filter((l) => l.site_arrival_time).length;
+      const working = logs.filter((l) => l.work_start_time && !l.work_end_time).length;
+      const completed = logs.filter((l) => l.office_punch_out).length;
+      const totalOtMin = logs.reduce((s, l) => s + (l.overtime_minutes ?? 0), 0);
+      const totalCost = logs.reduce((s, l) => s + computeLiveCost(l), 0);
 
       if (error) throw error;
       const logs = data ?? [];
