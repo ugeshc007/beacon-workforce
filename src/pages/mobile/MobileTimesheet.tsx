@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
 import { Card } from "@/components/ui/card";
-import { Loader2, Clock, Calendar } from "lucide-react";
+import { Loader2, Clock, Calendar, WifiOff } from "lucide-react";
 import { format, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
 import { formatWorkedMinutes, getDisplayWorkedMinutes } from "@/lib/timesheet-display";
+import { cacheData, getCachedData } from "@/lib/offline-queue";
 
 interface DayLog {
   date: string;
@@ -23,6 +24,7 @@ export default function MobileTimesheet() {
   const [logs, setLogs] = useState<DayLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState(new Date());
+  const [fromCache, setFromCache] = useState(false);
 
   const today = new Date();
   const weekStart = startOfWeek(today, { weekStartsOn: 1 });
@@ -36,17 +38,41 @@ export default function MobileTimesheet() {
 
   useEffect(() => {
     if (!employee) return;
+    const cacheKey = `timesheet_${employee.id}_${format(weekStart, "yyyy-MM-dd")}`;
 
     const fetch = async () => {
-      const { data } = await supabase
-        .from("attendance_logs")
-        .select("date, total_work_minutes, overtime_minutes, regular_cost, overtime_cost, office_punch_in, office_punch_out, work_start_time, work_end_time")
-        .eq("employee_id", employee.id)
-        .gte("date", format(weekStart, "yyyy-MM-dd"))
-        .lte("date", format(weekEnd, "yyyy-MM-dd"))
-        .order("date", { ascending: true });
-      setLogs((data as DayLog[]) || []);
-      setLoading(false);
+      if (!navigator.onLine) {
+        const cached = await getCachedData<DayLog[]>(cacheKey);
+        if (cached) {
+          setLogs(cached.data);
+          setFromCache(true);
+        }
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from("attendance_logs")
+          .select("date, total_work_minutes, overtime_minutes, regular_cost, overtime_cost, office_punch_in, office_punch_out, work_start_time, work_end_time")
+          .eq("employee_id", employee.id)
+          .gte("date", format(weekStart, "yyyy-MM-dd"))
+          .lte("date", format(weekEnd, "yyyy-MM-dd"))
+          .order("date", { ascending: true });
+        if (error) throw error;
+        const result = (data as DayLog[]) || [];
+        setLogs(result);
+        setFromCache(false);
+        cacheData(cacheKey, result).catch(() => {});
+      } catch {
+        const cached = await getCachedData<DayLog[]>(cacheKey);
+        if (cached) {
+          setLogs(cached.data);
+          setFromCache(true);
+        }
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetch();
