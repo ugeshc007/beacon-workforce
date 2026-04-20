@@ -93,7 +93,15 @@ export default function MobileTimesheet() {
 
   return (
     <div className="flex flex-col gap-4 p-4 pb-24 safe-area-inset">
-      <h1 className="text-xl font-bold text-foreground">Timesheet</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold text-foreground">Timesheet</h1>
+        {fromCache && (
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <WifiOff className="h-3 w-3" />
+            Offline (cached)
+          </div>
+        )}
+      </div>
 
       {/* Weekly summary */}
       <div className="grid grid-cols-2 gap-3">
