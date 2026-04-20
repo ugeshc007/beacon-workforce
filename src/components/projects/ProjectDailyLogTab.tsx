@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Plus, Send, Camera, AlertTriangle, TrendingUp, Trash2, ImageIcon, X, User, Pencil,
+  Plus, Send, Camera, AlertTriangle, TrendingUp, Trash2, ImageIcon, X, User, Pencil, CalendarRange,
 } from "lucide-react";
 function SignedPhoto({ path, index }: { path: string; index: number }) {
   const [src, setSrc] = useState(path);
@@ -405,6 +405,14 @@ export function ProjectDailyLogTab({ projectId }: Props) {
                         </div>
 
                         <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                          {(log.task_start_date || log.task_end_date) && (
+                            <span className="flex items-center gap-1 text-brand">
+                              <CalendarRange className="h-3 w-3" />
+                              {log.task_start_date ? format(new Date(log.task_start_date + "T00:00:00"), "dd MMM") : "—"}
+                              {" → "}
+                              {log.task_end_date ? format(new Date(log.task_end_date + "T00:00:00"), "dd MMM") : "—"}
+                            </span>
+                          )}
                           {log.completion_pct !== null && (
                             <span className="flex items-center gap-1">
                               <TrendingUp className="h-3 w-3 text-brand" />
