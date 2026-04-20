@@ -274,7 +274,7 @@ export default function MobileDailyLog() {
           <Button
             size="sm"
             variant="outline"
-            className="shrink-0 h-8 gap-1 px-2 text-[11px] border-amber-500/50 text-amber-400"
+            className="shrink-0 h-8 gap-1 px-2 text-[11px] border-status-overtime/50 text-status-overtime"
             onClick={handleManualSync}
           >
             <Loader2 className="h-3 w-3" />
