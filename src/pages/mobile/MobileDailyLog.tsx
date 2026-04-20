@@ -270,6 +270,17 @@ export default function MobileDailyLog() {
           <h1 className="text-base font-bold text-foreground leading-tight truncate">Daily Log</h1>
           <p className="text-[11px] text-muted-foreground truncate">{assignment?.projectName}</p>
         </div>
+        {pendingCount > 0 && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="shrink-0 h-8 gap-1 px-2 text-[11px] border-amber-500/50 text-amber-400"
+            onClick={handleManualSync}
+          >
+            <Loader2 className="h-3 w-3" />
+            {pendingCount} queued
+          </Button>
+        )}
         {!showForm && (
           <Button size="icon" className="shrink-0 h-8 w-8 rounded-full" onClick={() => setShowForm(true)}>
             <Plus className="h-4 w-4" />
