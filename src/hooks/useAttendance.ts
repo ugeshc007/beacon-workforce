@@ -95,15 +95,6 @@ export function useAttendanceSummary(date: string) {
       const totalOtMin = logs.reduce((s, l) => s + (l.overtime_minutes ?? 0), 0);
       const totalCost = logs.reduce((s, l) => s + computeLiveCost(l), 0);
 
-      if (error) throw error;
-      const logs = data ?? [];
-
-      const punchedIn = logs.filter((l) => l.office_punch_in).length;
-      const onSite = logs.filter((l) => l.site_arrival_time).length;
-      const working = logs.filter((l) => l.work_start_time && !l.work_end_time).length;
-      const completed = logs.filter((l) => l.office_punch_out).length;
-      const totalOtMin = logs.reduce((s, l) => s + (l.overtime_minutes ?? 0), 0);
-      const totalCost = logs.reduce((s, l) => s + Number(l.regular_cost ?? 0) + Number(l.overtime_cost ?? 0), 0);
 
       return { total: logs.length, punchedIn, onSite, working, completed, totalOtMin, totalCost };
     },
