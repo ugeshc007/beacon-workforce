@@ -932,6 +932,8 @@ export type Database = {
           posted_by: string | null
           project_id: string
           status: string
+          task_end_date: string | null
+          task_start_date: string | null
           updated_at: string
         }
         Insert: {
@@ -946,6 +948,8 @@ export type Database = {
           posted_by?: string | null
           project_id: string
           status?: string
+          task_end_date?: string | null
+          task_start_date?: string | null
           updated_at?: string
         }
         Update: {
@@ -960,6 +964,8 @@ export type Database = {
           posted_by?: string | null
           project_id?: string
           status?: string
+          task_end_date?: string | null
+          task_start_date?: string | null
           updated_at?: string
         }
         Relationships: [
