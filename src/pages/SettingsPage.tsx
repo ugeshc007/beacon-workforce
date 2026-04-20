@@ -610,7 +610,7 @@ export default function SettingsPage() {
                 </div>
                 <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
                   <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Backend</p>
-                  <p className="text-sm font-medium text-foreground mt-0.5">Lovable Cloud</p>
+                  <p className="text-sm font-medium text-foreground mt-0.5">Cloud</p>
                 </div>
                 <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
                   <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Region</p>
