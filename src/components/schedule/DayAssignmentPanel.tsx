@@ -761,11 +761,11 @@ export function DayAssignmentPanel({
               </div>
               <div>
                 <Label className="text-xs text-muted-foreground mb-1 block">Task Start</Label>
-                <Input type="date" value={logTaskStart} onChange={(e) => setLogTaskStart(e.target.value)} />
+                <DateInput value={logTaskStart} onChange={setLogTaskStart} />
               </div>
               <div>
                 <Label className="text-xs text-muted-foreground mb-1 block">Task End</Label>
-                <Input type="date" value={logTaskEnd} onChange={(e) => setLogTaskEnd(e.target.value)} />
+                <DateInput value={logTaskEnd} onChange={setLogTaskEnd} />
               </div>
             </div>
 
