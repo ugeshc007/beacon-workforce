@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Plus, Send, Camera, AlertTriangle, TrendingUp, Trash2, ImageIcon, X, User, Pencil,
+  Plus, Send, Camera, AlertTriangle, TrendingUp, Trash2, ImageIcon, X, User, Pencil, CalendarRange,
 } from "lucide-react";
 function SignedPhoto({ path, index }: { path: string; index: number }) {
   const [src, setSrc] = useState(path);
@@ -54,6 +54,8 @@ export function ProjectDailyLogTab({ projectId }: Props) {
   const [photos, setPhotos] = useState<File[]>([]);
   const [existingPhotos, setExistingPhotos] = useState<string[]>([]);
   const [status, setStatus] = useState<DailyLogStatus>("pending");
+  const [taskStartDate, setTaskStartDate] = useState("");
+  const [taskEndDate, setTaskEndDate] = useState("");
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -65,6 +67,8 @@ export function ProjectDailyLogTab({ projectId }: Props) {
     setPhotos([]);
     setExistingPhotos([]);
     setStatus("pending");
+    setTaskStartDate("");
+    setTaskEndDate("");
     setShowForm(false);
     setEditingLog(null);
   };
@@ -77,6 +81,8 @@ export function ProjectDailyLogTab({ projectId }: Props) {
     setCompletionPct(log.completion_pct?.toString() ?? "");
     setExistingPhotos(log.photo_urls ?? []);
     setStatus(log.status ?? "pending");
+    setTaskStartDate(log.task_start_date ?? "");
+    setTaskEndDate(log.task_end_date ?? "");
     setPhotos([]);
     setShowForm(true);
   };
@@ -107,6 +113,8 @@ export function ProjectDailyLogTab({ projectId }: Props) {
           completion_pct: completionPct ? parseInt(completionPct) : null,
           photo_urls: allPhotos,
           status,
+          task_start_date: taskStartDate || null,
+          task_end_date: taskEndDate || null,
         });
         toast({ title: "Update edited" });
       } else {
@@ -119,6 +127,8 @@ export function ProjectDailyLogTab({ projectId }: Props) {
           photo_urls: allPhotos,
           posted_by: user?.id ?? null,
           status,
+          task_start_date: taskStartDate || null,
+          task_end_date: taskEndDate || null,
         });
         toast({ title: "Daily update added" });
       }
@@ -186,10 +196,18 @@ export function ProjectDailyLogTab({ projectId }: Props) {
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
               />
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Date</label>
+                  <label className="text-xs text-muted-foreground mb-1 block">Log Date</label>
                   <DateInput value={logDate} onChange={setLogDate} />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Task Start Date</label>
+                  <DateInput value={taskStartDate} onChange={setTaskStartDate} />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Task End Date</label>
+                  <DateInput value={taskEndDate} onChange={setTaskEndDate} />
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground mb-1 block">Status</label>
@@ -387,6 +405,14 @@ export function ProjectDailyLogTab({ projectId }: Props) {
                         </div>
 
                         <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                          {(log.task_start_date || log.task_end_date) && (
+                            <span className="flex items-center gap-1 text-brand">
+                              <CalendarRange className="h-3 w-3" />
+                              {log.task_start_date ? format(new Date(log.task_start_date + "T00:00:00"), "dd MMM") : "—"}
+                              {" → "}
+                              {log.task_end_date ? format(new Date(log.task_end_date + "T00:00:00"), "dd MMM") : "—"}
+                            </span>
+                          )}
                           {log.completion_pct !== null && (
                             <span className="flex items-center gap-1">
                               <TrendingUp className="h-3 w-3 text-brand" />

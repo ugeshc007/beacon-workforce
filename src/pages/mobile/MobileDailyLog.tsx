@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { DailyLogStatus } from "@/hooks/useDailyLogs";
 import {
   Plus, Send, Camera, AlertTriangle, TrendingUp, ImageIcon, X, User, FileText,
-  CheckCircle2, Clock, Loader2,
+  CheckCircle2, Clock, Loader2, CalendarRange,
 } from "lucide-react";
 
 function SignedPhoto({ path, index }: { path: string; index: number }) {
@@ -60,6 +60,8 @@ export default function MobileDailyLog() {
   const [status, setStatus] = useState<DailyLogStatus>("in_progress");
   const [photos, setPhotos] = useState<string[]>([]); // storage paths
   const [localPhotos, setLocalPhotos] = useState<File[]>([]);
+  const [taskStartDate, setTaskStartDate] = useState("");
+  const [taskEndDate, setTaskEndDate] = useState("");
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -70,6 +72,8 @@ export default function MobileDailyLog() {
     setStatus("in_progress");
     setPhotos([]);
     setLocalPhotos([]);
+    setTaskStartDate("");
+    setTaskEndDate("");
     setShowForm(false);
   };
 
@@ -121,6 +125,8 @@ export default function MobileDailyLog() {
         photo_urls: photos,
         employee_id: employee?.id || null,
         status,
+        task_start_date: taskStartDate || null,
+        task_end_date: taskEndDate || null,
       });
       // Notify branch managers
       try {
@@ -220,6 +226,27 @@ export default function MobileDailyLog() {
                 placeholder="e.g. 45"
                 value={completionPct}
                 onChange={(e) => setCompletionPct(e.target.value)}
+                className="bg-background"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Task Start</label>
+              <Input
+                type="date"
+                value={taskStartDate}
+                onChange={(e) => setTaskStartDate(e.target.value)}
+                className="bg-background"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Task End</label>
+              <Input
+                type="date"
+                value={taskEndDate}
+                onChange={(e) => setTaskEndDate(e.target.value)}
                 className="bg-background"
               />
             </div>
@@ -346,6 +373,14 @@ export default function MobileDailyLog() {
 
                 {/* Meta row */}
                 <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                  {(log.task_start_date || log.task_end_date) && (
+                    <span className="flex items-center gap-1 text-brand">
+                      <CalendarRange className="h-3 w-3" />
+                      {log.task_start_date ? format(new Date(log.task_start_date + "T00:00:00"), "dd MMM") : "—"}
+                      {" → "}
+                      {log.task_end_date ? format(new Date(log.task_end_date + "T00:00:00"), "dd MMM") : "—"}
+                    </span>
+                  )}
                   {log.completion_pct !== null && (
                     <span className="flex items-center gap-1">
                       <TrendingUp className="h-3 w-3 text-brand" />
