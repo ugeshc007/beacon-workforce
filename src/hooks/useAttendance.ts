@@ -3,9 +3,40 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 
 export type AttendanceLog = Tables<"attendance_logs"> & {
-  employees?: { name: string; employee_code: string; skill_type: string } | null;
+  employees?: { name: string; employee_code: string; skill_type: string; hourly_rate?: number } | null;
   projects?: { name: string } | null;
+  live_cost?: number;
 };
+
+/** Estimate live labor cost for an in-progress shift (work started but not ended). */
+export function computeLiveCost(log: {
+  work_start_time?: string | null;
+  work_end_time?: string | null;
+  break_start_time?: string | null;
+  break_end_time?: string | null;
+  break_minutes?: number | null;
+  regular_cost?: number | null;
+  overtime_cost?: number | null;
+  employees?: { hourly_rate?: number } | null;
+}): number {
+  const finalCost = Number(log.regular_cost ?? 0) + Number(log.overtime_cost ?? 0);
+  if (finalCost > 0) return finalCost;
+  if (!log.work_start_time || log.work_end_time) return 0;
+  const rate = Number(log.employees?.hourly_rate ?? 0);
+  if (!rate) return 0;
+  const start = new Date(log.work_start_time).getTime();
+  const end = Date.now();
+  let elapsedMin = Math.max(0, (end - start) / 60000);
+  // subtract break time (completed or in-progress)
+  if (log.break_start_time && log.break_end_time) {
+    elapsedMin -= Math.max(0, (new Date(log.break_end_time).getTime() - new Date(log.break_start_time).getTime()) / 60000);
+  } else if (log.break_start_time && !log.break_end_time) {
+    elapsedMin -= Math.max(0, (end - new Date(log.break_start_time).getTime()) / 60000);
+  } else if (log.break_minutes) {
+    elapsedMin -= log.break_minutes;
+  }
+  return Math.max(0, (elapsedMin / 60) * rate);
+}
 
 export function useAttendanceLogs(filters: {
   date: string;
