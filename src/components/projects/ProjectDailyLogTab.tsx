@@ -54,6 +54,8 @@ export function ProjectDailyLogTab({ projectId }: Props) {
   const [photos, setPhotos] = useState<File[]>([]);
   const [existingPhotos, setExistingPhotos] = useState<string[]>([]);
   const [status, setStatus] = useState<DailyLogStatus>("pending");
+  const [taskStartDate, setTaskStartDate] = useState("");
+  const [taskEndDate, setTaskEndDate] = useState("");
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -65,6 +67,8 @@ export function ProjectDailyLogTab({ projectId }: Props) {
     setPhotos([]);
     setExistingPhotos([]);
     setStatus("pending");
+    setTaskStartDate("");
+    setTaskEndDate("");
     setShowForm(false);
     setEditingLog(null);
   };
@@ -77,6 +81,8 @@ export function ProjectDailyLogTab({ projectId }: Props) {
     setCompletionPct(log.completion_pct?.toString() ?? "");
     setExistingPhotos(log.photo_urls ?? []);
     setStatus(log.status ?? "pending");
+    setTaskStartDate(log.task_start_date ?? "");
+    setTaskEndDate(log.task_end_date ?? "");
     setPhotos([]);
     setShowForm(true);
   };
@@ -107,6 +113,8 @@ export function ProjectDailyLogTab({ projectId }: Props) {
           completion_pct: completionPct ? parseInt(completionPct) : null,
           photo_urls: allPhotos,
           status,
+          task_start_date: taskStartDate || null,
+          task_end_date: taskEndDate || null,
         });
         toast({ title: "Update edited" });
       } else {
@@ -119,6 +127,8 @@ export function ProjectDailyLogTab({ projectId }: Props) {
           photo_urls: allPhotos,
           posted_by: user?.id ?? null,
           status,
+          task_start_date: taskStartDate || null,
+          task_end_date: taskEndDate || null,
         });
         toast({ title: "Daily update added" });
       }
