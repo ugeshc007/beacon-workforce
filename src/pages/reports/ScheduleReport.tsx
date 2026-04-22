@@ -19,7 +19,7 @@ export default function ScheduleReport() {
     if (!data) return;
     if (tab === "daily") {
       downloadCsv("schedule-daily.csv", ["Date", "Time", "Project", "Tasks", "Staff (Skill - Name)", "Location"],
-        data.dailyOverview.map((r) => [r.date, r.shiftStart && r.shiftEnd ? `${r.shiftStart.slice(0,5)}–${r.shiftEnd.slice(0,5)}` : "—", r.project, r.tasks.join("; ") || "—", r.teamMembers.map(m => `${m.skill} - ${m.name}`).join(", "), r.location]));
+        data.dailyOverview.map((r) => [r.date, r.shiftStart && r.shiftEnd ? `${r.shiftStart.slice(0,5)}–${r.shiftEnd.slice(0,5)}` : "—", r.project, r.tasks.join("; ") || "—", r.teamMembers.map(m => `${m.skill} - ${m.name}`).join("\n"), r.location]));
     } else if (tab === "employee") {
       const available = data.employeeSummary.filter((r) => r.status !== "scheduled");
       downloadCsv("schedule-available-employees.csv", ["Employee", "Code", "Skill"],
@@ -49,7 +49,7 @@ export default function ScheduleReport() {
         {
           title: "Daily Schedule Overview",
           headers: ["Date", "Time", "Project", "Tasks", "Staff (Skill - Name)", "Location"],
-          rows: data.dailyOverview.map((r) => [r.date, r.shiftStart && r.shiftEnd ? `${r.shiftStart.slice(0,5)}–${r.shiftEnd.slice(0,5)}` : "—", r.project, r.tasks.join("; ") || "—", r.teamMembers.map(m => `${m.skill} - ${m.name}`).join(", "), r.location]),
+          rows: data.dailyOverview.map((r) => [r.date, r.shiftStart && r.shiftEnd ? `${r.shiftStart.slice(0,5)}–${r.shiftEnd.slice(0,5)}` : "—", r.project, r.tasks.join("; ") || "—", r.teamMembers.map(m => `${m.skill} - ${m.name}`).join("\n"), r.location]),
         },
         {
           title: "Available Employees (Not Scheduled)",
