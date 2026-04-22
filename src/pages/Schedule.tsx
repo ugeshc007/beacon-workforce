@@ -455,6 +455,7 @@ export default function Schedule() {
       {selectedDay && selectedProjectId === "all" && !expandedProjectId && (() => {
         const da = dayAssignments(selectedDay);
         const dm = dayMaintenanceItems(selectedDay);
+        const dv = daySiteVisits(selectedDay);
         const projectsWithAssignments = activeProjects
           .filter((p) => da.some((a) => a.project_id === p.id))
           .slice()
