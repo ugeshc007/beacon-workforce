@@ -104,6 +104,17 @@ export function AttendanceOverrideDialog({ log, open, onOpenChange }: Props) {
             <div><Label className="text-xs">Work Start</Label><Input type="datetime-local" value={form.work_start_time} onChange={(e) => set("work_start_time", e.target.value)} /></div>
           </div>
           <div className="grid grid-cols-2 gap-3">
+            <div><Label className="text-xs">Break Start</Label><Input type="datetime-local" value={form.break_start_time} onChange={(e) => set("break_start_time", e.target.value)} /></div>
+            <div><Label className="text-xs">Break End</Label><Input type="datetime-local" value={form.break_end_time} onChange={(e) => set("break_end_time", e.target.value)} /></div>
+          </div>
+          {(form.break_start_time || form.break_end_time) && (
+            <div className="flex justify-end">
+              <Button type="button" variant="ghost" size="sm" onClick={clearBreak} className="h-7 text-xs text-destructive hover:text-destructive">
+                Clear Break (accidental tap)
+              </Button>
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-3">
             <div><Label className="text-xs">Work End</Label><Input type="datetime-local" value={form.work_end_time} onChange={(e) => set("work_end_time", e.target.value)} /></div>
             <div><Label className="text-xs">Punch Out</Label><Input type="datetime-local" value={form.office_punch_out} onChange={(e) => set("office_punch_out", e.target.value)} /></div>
           </div>
