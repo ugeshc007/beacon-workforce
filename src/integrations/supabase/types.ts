@@ -523,6 +523,7 @@ export type Database = {
       employees: {
         Row: {
           auth_id: string | null
+          basic_salary: number
           branch_id: string
           created_at: string
           custom_skill_id: string | null
@@ -544,6 +545,7 @@ export type Database = {
         }
         Insert: {
           auth_id?: string | null
+          basic_salary?: number
           branch_id: string
           created_at?: string
           custom_skill_id?: string | null
@@ -565,6 +567,7 @@ export type Database = {
         }
         Update: {
           auth_id?: string | null
+          basic_salary?: number
           branch_id?: string
           created_at?: string
           custom_skill_id?: string | null
