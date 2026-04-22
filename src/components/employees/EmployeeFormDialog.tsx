@@ -300,7 +300,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
                 <FormItem>
                   <FormLabel>OT Rate (AED) — auto from Basic Salary</FormLabel>
                   <FormControl><Input type="number" step="0.01" readOnly className="bg-muted/40" {...field} /></FormControl>
-                  <p className="text-[10px] text-muted-foreground mt-1">Formula: (Basic × 12) ÷ 368 ÷ 9</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">Formula: (Basic × 12) ÷ 368 ÷ {settingsStdHours} (std work hours from Settings)</p>
                   <FormMessage />
                 </FormItem>
               )} />
