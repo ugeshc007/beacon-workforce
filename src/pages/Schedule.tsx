@@ -8,7 +8,7 @@ import { useCopyMaintenanceAssignments } from "@/hooks/useMaintenance";
 import { useCanAccess } from "@/hooks/usePermissions";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  useWeekAssignments, useWeekMaintenanceAssignments, useDetectConflicts,
+  useWeekAssignments, useWeekMaintenanceAssignments, useWeekSiteVisits, useDetectConflicts,
   useCopyPreviousWeek, useApplyToDateRange, useRecurringSchedule,
   type MaintenanceScheduleItem,
 } from "@/hooks/useSchedule";
@@ -32,7 +32,7 @@ import {
 import { toast } from "sonner";
 import {
   ChevronLeft, ChevronRight, CalendarDays, AlertTriangle, Users,
-  Copy, CalendarRange, Repeat, MoreVertical, Wrench,
+  Copy, CalendarRange, Repeat, MoreVertical, Wrench, MapPin,
 } from "lucide-react";
 
 function getDayDates(startOffset: number, count = 7) {
@@ -101,6 +101,7 @@ export default function Schedule() {
 
   const { data: assignments, isLoading } = useWeekAssignments(weekStart, weekEnd, effectiveProjectId);
   const { data: maintenanceItems } = useWeekMaintenanceAssignments(weekStart, weekEnd);
+  const { data: siteVisitItems } = useWeekSiteVisits(weekStart, weekEnd);
   const conflicts = useDetectConflicts(assignments ?? []);
   const queryClient = useQueryClient();
 
@@ -114,6 +115,9 @@ export default function Schedule() {
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "maintenance_assignments" }, () => {
         queryClient.invalidateQueries({ queryKey: ["schedule-maintenance-assignments"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "site_visits" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["schedule-site-visits"] });
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -145,6 +149,7 @@ export default function Schedule() {
 
   const dayAssignments = (date: string) => (assignments ?? []).filter((a) => a.date === date);
   const dayMaintenanceItems = (date: string) => (maintenanceItems ?? []).filter((m) => m.date === date);
+  const daySiteVisits = (date: string) => (siteVisitItems ?? []).filter((v) => v.date === date);
   const dayConflicts = (date: string) => conflicts.filter((c) => c.date === date);
 
   const handleCopyWeek = async () => {
