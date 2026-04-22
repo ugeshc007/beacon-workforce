@@ -34,6 +34,7 @@ import { DateInput } from "@/components/ui/date-input";
 import { downloadCsv } from "@/lib/csv-export";
 import LocationPickerMap from "@/components/settings/LocationPickerMap";
 import { SkillRolesSection } from "@/components/settings/SkillRolesSection";
+import { PublicHolidaysSection } from "@/components/settings/PublicHolidaysSection";
 
 // ─── helpers ────────────────────────────────────────────────
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
@@ -312,6 +313,7 @@ export default function SettingsPage() {
           <TabsTrigger value="branches">Branches</TabsTrigger>
           {isAdmin && <TabsTrigger value="permissions">Roles</TabsTrigger>}
           {isAdmin && <TabsTrigger value="skills">Skill Roles</TabsTrigger>}
+          {isAdmin && <TabsTrigger value="holidays">Public Holidays</TabsTrigger>}
           <TabsTrigger value="system">System</TabsTrigger>
         </TabsList>
 
@@ -603,6 +605,13 @@ export default function SettingsPage() {
         {isAdmin && (
           <TabsContent value="skills">
             <SkillRolesSection />
+          </TabsContent>
+        )}
+
+        {/* ── Public Holidays ─────────────── */}
+        {isAdmin && (
+          <TabsContent value="holidays">
+            <PublicHolidaysSection />
           </TabsContent>
         )}
 
