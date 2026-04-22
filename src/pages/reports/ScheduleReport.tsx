@@ -148,10 +148,10 @@ export default function ScheduleReport() {
                               <span className="text-xs text-muted-foreground">—</span>
                             )}
                           </td>
-                          <td className="p-3">
-                            <div className="space-y-0.5">
+                          <td className="p-3 min-w-[220px]">
+                            <div className="flex flex-col gap-1">
                               {r.teamMembers.map((m, j) => (
-                                <div key={j} className="flex items-center gap-1.5">
+                                <div key={j} className="flex items-center gap-1.5 whitespace-nowrap">
                                   <Badge variant="outline" className="text-[9px] font-medium px-1 py-0 capitalize shrink-0">{m.skill}</Badge>
                                   <span className="text-xs text-foreground">{m.name}</span>
                                 </div>
