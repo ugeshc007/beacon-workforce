@@ -313,6 +313,7 @@ export default function SettingsPage() {
           <TabsTrigger value="branches">Branches</TabsTrigger>
           {isAdmin && <TabsTrigger value="permissions">Roles</TabsTrigger>}
           {isAdmin && <TabsTrigger value="skills">Skill Roles</TabsTrigger>}
+          {isAdmin && <TabsTrigger value="holidays">Public Holidays</TabsTrigger>}
           <TabsTrigger value="system">System</TabsTrigger>
         </TabsList>
 
