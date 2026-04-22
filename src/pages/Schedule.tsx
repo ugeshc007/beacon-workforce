@@ -434,6 +434,12 @@ export default function Schedule() {
         const dm = dayMaintenanceItems(selectedDay);
         const projectsWithAssignments = activeProjects
           .filter((p) => da.some((a) => a.project_id === p.id))
+          .slice()
+          .sort((a, b) => {
+            const ta = (a as any).created_at ? new Date((a as any).created_at).getTime() : 0;
+            const tb = (b as any).created_at ? new Date((b as any).created_at).getTime() : 0;
+            return tb - ta; // newest first
+          })
           .map((p) => ({
             id: p.id,
             name: p.name,
