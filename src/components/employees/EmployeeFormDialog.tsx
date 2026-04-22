@@ -27,6 +27,7 @@ const schema = z.object({
   skill_type: z.enum(["team_member", "team_leader", "driver"]),
   custom_skill_id: z.string().optional().or(z.literal("")),
   branch_id: z.string().uuid("Select a branch"),
+  basic_salary: z.coerce.number().min(0),
   hourly_rate: z.coerce.number().min(0),
   overtime_rate: z.coerce.number().min(0),
   standard_hours_per_day: z.coerce.number().min(1).max(24),
@@ -34,6 +35,12 @@ const schema = z.object({
   emergency_contact: z.string().max(100).optional().or(z.literal("")),
   notes: z.string().max(500).optional().or(z.literal("")),
 });
+
+// OT Rate = (basic_salary * 12) / 368 / 9
+const calcOtRate = (basicSalary: number): number => {
+  if (!basicSalary || basicSalary <= 0) return 0;
+  return Math.round(((basicSalary * 12) / 368 / 9) * 100) / 100;
+};
 
 type FormValues = z.infer<typeof schema>;
 
