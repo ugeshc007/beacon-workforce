@@ -106,6 +106,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
         skill_type: employee.skill_type as "team_member" | "team_leader" | "driver",
         custom_skill_id: (employee as any).custom_skill_id ?? "",
         branch_id: employee.branch_id,
+        basic_salary: Number((employee as any).basic_salary ?? 0),
         hourly_rate: Number(employee.hourly_rate),
         overtime_rate: Number(employee.overtime_rate),
         standard_hours_per_day: Number(employee.standard_hours_per_day),
