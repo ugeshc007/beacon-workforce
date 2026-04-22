@@ -583,6 +583,11 @@ export default function Schedule() {
                 </CardContent>
               </Card>
             )}
+          </div>
+        );
+      })()}
+
+      {selectedDay && selectedProjectId === "all" && expandedProjectId && (() => {
         const ep = activeProjects.find((p) => p.id === expandedProjectId);
         if (!ep) return null;
         return (
