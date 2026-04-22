@@ -37,10 +37,10 @@ const schema = z.object({
   notes: z.string().max(500).optional().or(z.literal("")),
 });
 
-// OT Rate = (basic_salary * 12) / 368 / 9
-const calcOtRate = (basicSalary: number): number => {
-  if (!basicSalary || basicSalary <= 0) return 0;
-  return Math.round(((basicSalary * 12) / 368 / 9) * 100) / 100;
+// OT Rate = (basic_salary * 12) / 368 / standard_work_hours
+const calcOtRate = (basicSalary: number, standardHours: number): number => {
+  if (!basicSalary || basicSalary <= 0 || !standardHours || standardHours <= 0) return 0;
+  return Math.round(((basicSalary * 12) / 368 / standardHours) * 100) / 100;
 };
 
 type FormValues = z.infer<typeof schema>;
