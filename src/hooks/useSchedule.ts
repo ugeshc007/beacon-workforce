@@ -120,6 +120,36 @@ export function useWeekMaintenanceAssignments(weekStart: string, weekEnd: string
   });
 }
 
+export function useWeekSiteVisits(weekStart: string, weekEnd: string) {
+  return useQuery({
+    queryKey: ["schedule-site-visits", weekStart, weekEnd],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("site_visits")
+        .select("id, visit_date, client_name, site_address, project_type, priority, status, assigned_employee_id, employees!site_visits_assigned_employee_id_fkey(name, skill_type)")
+        .gte("visit_date", weekStart)
+        .lte("visit_date", weekEnd)
+        .not("assigned_employee_id", "is", null)
+        .order("visit_date");
+
+      if (error) throw error;
+
+      return (data ?? []).map((v: any) => ({
+        id: v.id,
+        date: v.visit_date,
+        client_name: v.client_name,
+        site_address: v.site_address,
+        project_type: v.project_type,
+        priority: v.priority,
+        status: v.status,
+        employee_id: v.assigned_employee_id,
+        employee_name: v.employees?.name ?? "Unknown",
+        employee_skill: v.employees?.skill_type ?? "helper",
+      })) as SiteVisitScheduleItem[];
+    },
+  });
+}
+
 /** Check if two time ranges overlap. If either has no times set, assume full-day overlap. */
 function timesOverlap(
   s1: string | null, e1: string | null,
