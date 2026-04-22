@@ -313,6 +313,7 @@ export default function Schedule() {
           {weekDates.map((date, i) => {
             const da = dayAssignments(date);
             const dm = dayMaintenanceItems(date);
+            const dv = daySiteVisits(date);
             const dc = dayConflicts(date);
             const isToday = date === today;
             const isSelected = date === selectedDay;
@@ -323,6 +324,9 @@ export default function Schedule() {
 
             const maintGroups = new Map<string, number>();
             for (const m of dm) maintGroups.set(m.company_name, (maintGroups.get(m.company_name) ?? 0) + 1);
+
+            const visitGroups = new Map<string, number>();
+            for (const v of dv) visitGroups.set(v.client_name, (visitGroups.get(v.client_name) ?? 0) + 1);
 
             return (
               <Card
@@ -344,7 +348,7 @@ export default function Schedule() {
                       </span>
                     </div>
                     <div className="flex-1 flex items-center gap-2 overflow-x-auto">
-                      {da.length === 0 && dm.length === 0 ? (
+                      {da.length === 0 && dm.length === 0 && dv.length === 0 ? (
                         <p className="text-xs text-muted-foreground">No assignments</p>
                       ) : (
                         <>
@@ -360,6 +364,13 @@ export default function Schedule() {
                               <Wrench className="h-3 w-3 text-status-overtime shrink-0" />
                               <span className="text-status-overtime">{name}</span>
                               <Badge variant="outline" className="text-[10px] px-1 py-0 border-status-overtime/30 text-status-overtime">{count}</Badge>
+                            </div>
+                          ))}
+                          {[...visitGroups].map(([name, count]) => (
+                            <div key={`v-${name}`} className="flex items-center gap-1 text-xs shrink-0">
+                              <MapPin className="h-3 w-3 text-status-planned shrink-0" />
+                              <span className="text-status-planned">{name}</span>
+                              <Badge variant="outline" className="text-[10px] px-1 py-0 border-status-planned/30 text-status-planned">{count}</Badge>
                             </div>
                           ))}
                         </>
@@ -383,7 +394,7 @@ export default function Schedule() {
                       </span>
                     </div>
                     <div className="space-y-1 min-h-[60px]">
-                      {da.length === 0 && dm.length === 0 ? (
+                      {da.length === 0 && dm.length === 0 && dv.length === 0 ? (
                         <p className="text-[10px] text-muted-foreground text-center pt-4">No assignments</p>
                       ) : (
                         <>
@@ -399,6 +410,13 @@ export default function Schedule() {
                               <Wrench className="h-2.5 w-2.5 text-status-overtime shrink-0" />
                               <span className="truncate text-status-overtime">{name}</span>
                               <Badge variant="outline" className="text-[9px] px-1 py-0 ml-auto border-status-overtime/30 text-status-overtime">{count}</Badge>
+                            </div>
+                          ))}
+                          {[...visitGroups].map(([name, count]) => (
+                            <div key={`v-${name}`} className="flex items-center gap-1 text-[10px]">
+                              <MapPin className="h-2.5 w-2.5 text-status-planned shrink-0" />
+                              <span className="truncate text-status-planned">{name}</span>
+                              <Badge variant="outline" className="text-[9px] px-1 py-0 ml-auto border-status-planned/30 text-status-planned">{count}</Badge>
                             </div>
                           ))}
                         </>
