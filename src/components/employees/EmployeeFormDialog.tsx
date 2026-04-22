@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
 import { useCreateEmployee, useUpdateEmployee, useBranches } from "@/hooks/useEmployees";
 import { useCustomSkills } from "@/hooks/useCustomSkills";
+import { useSettings } from "@/hooks/useSettings";
 import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -36,10 +37,10 @@ const schema = z.object({
   notes: z.string().max(500).optional().or(z.literal("")),
 });
 
-// OT Rate = (basic_salary * 12) / 368 / 9
-const calcOtRate = (basicSalary: number): number => {
-  if (!basicSalary || basicSalary <= 0) return 0;
-  return Math.round(((basicSalary * 12) / 368 / 9) * 100) / 100;
+// OT Rate = (basic_salary * 12) / 368 / standard_work_hours
+const calcOtRate = (basicSalary: number, standardHours: number): number => {
+  if (!basicSalary || basicSalary <= 0 || !standardHours || standardHours <= 0) return 0;
+  return Math.round(((basicSalary * 12) / 368 / standardHours) * 100) / 100;
 };
 
 type FormValues = z.infer<typeof schema>;
@@ -61,9 +62,12 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
   const { toast } = useToast();
   const { data: branches } = useBranches();
   const { data: customSkills } = useCustomSkills(true);
+  const { data: settings } = useSettings();
   const create = useCreateEmployee();
   const update = useUpdateEmployee();
   const [secondarySkills, setSecondarySkills] = useState<string[]>([]);
+
+  const settingsStdHours = Number(settings?.standard_work_hours ?? 9) || 9;
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -86,14 +90,14 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
     },
   });
 
-  // Auto-recalc OT rate whenever basic_salary changes
+  // Auto-recalc OT rate whenever basic_salary or settings standard hours change
   const basicSalary = form.watch("basic_salary");
   useEffect(() => {
-    const calculated = calcOtRate(Number(basicSalary));
+    const calculated = calcOtRate(Number(basicSalary), settingsStdHours);
     if (calculated > 0) {
       form.setValue("overtime_rate", calculated, { shouldValidate: true });
     }
-  }, [basicSalary]);
+  }, [basicSalary, settingsStdHours]);
 
   useEffect(() => {
     if (employee) {
@@ -296,7 +300,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
                 <FormItem>
                   <FormLabel>OT Rate (AED) — auto from Basic Salary</FormLabel>
                   <FormControl><Input type="number" step="0.01" readOnly className="bg-muted/40" {...field} /></FormControl>
-                  <p className="text-[10px] text-muted-foreground mt-1">Formula: (Basic × 12) ÷ 368 ÷ 9</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">Formula: (Basic × 12) ÷ 368 ÷ {settingsStdHours} (std work hours from Settings)</p>
                   <FormMessage />
                 </FormItem>
               )} />
