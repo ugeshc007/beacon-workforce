@@ -34,6 +34,7 @@ import { DateInput } from "@/components/ui/date-input";
 import { downloadCsv } from "@/lib/csv-export";
 import LocationPickerMap from "@/components/settings/LocationPickerMap";
 import { SkillRolesSection } from "@/components/settings/SkillRolesSection";
+import { PublicHolidaysSection } from "@/components/settings/PublicHolidaysSection";
 
 // ─── helpers ────────────────────────────────────────────────
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
