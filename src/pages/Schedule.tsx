@@ -550,11 +550,39 @@ export default function Schedule() {
                 </CardContent>
               </Card>
             )}
-          </div>
-        );
-      })()}
-
-      {selectedDay && selectedProjectId === "all" && expandedProjectId && (() => {
+            {dv.length > 0 && (
+              <Card className="glass-card border-status-planned/20">
+                <CardContent className="p-4">
+                  <h3 className="text-sm font-semibold text-status-planned flex items-center gap-2 mb-3">
+                    <MapPin className="h-4 w-4" /> Site Visits
+                  </h3>
+                  <div className="space-y-2">
+                    {dv.map((v) => (
+                      <div
+                        key={v.id}
+                        className="flex items-center justify-between rounded-lg border border-border/50 p-2.5 hover:border-status-planned/40 transition-colors cursor-pointer"
+                        onClick={() => navigate(`/site-visits/${v.id}`)}
+                      >
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-foreground">{v.client_name}</p>
+                          {v.project_type && <p className="text-xs text-foreground/80">{v.project_type}</p>}
+                          {v.site_address && <p className="text-xs text-muted-foreground">{v.site_address}</p>}
+                          <p className="text-xs text-muted-foreground mt-1">Assigned: {v.employee_name}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-[10px] border-status-planned/30 text-status-planned capitalize">
+                            {v.priority}
+                          </Badge>
+                          <Badge variant="outline" className="text-[10px] capitalize">
+                            {v.status.replace("_", " ")}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
         const ep = activeProjects.find((p) => p.id === expandedProjectId);
         if (!ep) return null;
         return (
