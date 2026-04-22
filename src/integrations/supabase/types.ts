@@ -1417,6 +1417,194 @@ export type Database = {
           },
         ]
       }
+      site_visit_photos: {
+        Row: {
+          caption: string | null
+          created_at: string
+          file_path: string
+          id: string
+          site_visit_id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          file_path: string
+          id?: string
+          site_visit_id: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          file_path?: string
+          id?: string
+          site_visit_id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_visit_photos_site_visit_id_fkey"
+            columns: ["site_visit_id"]
+            isOneToOne: false
+            referencedRelation: "site_visits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_visit_photos_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      site_visits: {
+        Row: {
+          admin_notes: string | null
+          assigned_by: string | null
+          assigned_employee_id: string | null
+          branch_id: string
+          challenges: string | null
+          client_contact: string | null
+          client_email: string | null
+          client_name: string
+          completed_at: string | null
+          converted_to_project_id: string | null
+          created_at: string
+          data_availability: string | null
+          employee_notes: string | null
+          environmental_notes: string | null
+          id: string
+          internet_available: boolean | null
+          lead_source: string | null
+          mounting_type: string | null
+          power_availability: string | null
+          priority: Database["public"]["Enums"]["site_visit_priority"]
+          project_type: string | null
+          recommendations: string | null
+          scope_brief: string | null
+          screen_size: string | null
+          screen_type: string | null
+          signature_url: string | null
+          signed_by_name: string | null
+          site_accessibility: string | null
+          site_address: string | null
+          site_dimensions: string | null
+          site_latitude: number | null
+          site_longitude: number | null
+          status: Database["public"]["Enums"]["site_visit_status"]
+          structural_notes: string | null
+          updated_at: string
+          visit_date: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          assigned_by?: string | null
+          assigned_employee_id?: string | null
+          branch_id: string
+          challenges?: string | null
+          client_contact?: string | null
+          client_email?: string | null
+          client_name: string
+          completed_at?: string | null
+          converted_to_project_id?: string | null
+          created_at?: string
+          data_availability?: string | null
+          employee_notes?: string | null
+          environmental_notes?: string | null
+          id?: string
+          internet_available?: boolean | null
+          lead_source?: string | null
+          mounting_type?: string | null
+          power_availability?: string | null
+          priority?: Database["public"]["Enums"]["site_visit_priority"]
+          project_type?: string | null
+          recommendations?: string | null
+          scope_brief?: string | null
+          screen_size?: string | null
+          screen_type?: string | null
+          signature_url?: string | null
+          signed_by_name?: string | null
+          site_accessibility?: string | null
+          site_address?: string | null
+          site_dimensions?: string | null
+          site_latitude?: number | null
+          site_longitude?: number | null
+          status?: Database["public"]["Enums"]["site_visit_status"]
+          structural_notes?: string | null
+          updated_at?: string
+          visit_date: string
+        }
+        Update: {
+          admin_notes?: string | null
+          assigned_by?: string | null
+          assigned_employee_id?: string | null
+          branch_id?: string
+          challenges?: string | null
+          client_contact?: string | null
+          client_email?: string | null
+          client_name?: string
+          completed_at?: string | null
+          converted_to_project_id?: string | null
+          created_at?: string
+          data_availability?: string | null
+          employee_notes?: string | null
+          environmental_notes?: string | null
+          id?: string
+          internet_available?: boolean | null
+          lead_source?: string | null
+          mounting_type?: string | null
+          power_availability?: string | null
+          priority?: Database["public"]["Enums"]["site_visit_priority"]
+          project_type?: string | null
+          recommendations?: string | null
+          scope_brief?: string | null
+          screen_size?: string | null
+          screen_type?: string | null
+          signature_url?: string | null
+          signed_by_name?: string | null
+          site_accessibility?: string | null
+          site_address?: string | null
+          site_dimensions?: string | null
+          site_latitude?: number | null
+          site_longitude?: number | null
+          status?: Database["public"]["Enums"]["site_visit_status"]
+          structural_notes?: string | null
+          updated_at?: string
+          visit_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_visits_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_visits_assigned_employee_id_fkey"
+            columns: ["assigned_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_visits_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_visits_converted_to_project_id_fkey"
+            columns: ["converted_to_project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       skill_permissions: {
         Row: {
           can_create: boolean
@@ -1745,6 +1933,13 @@ export type Database = {
       override_action: "absent" | "replaced" | "added" | "removed"
       project_status: "on_hold" | "in_progress" | "completed"
       report_schedule: "none" | "daily" | "weekly" | "monthly"
+      site_visit_priority: "low" | "normal" | "high" | "urgent"
+      site_visit_status:
+        | "pending"
+        | "in_progress"
+        | "completed"
+        | "cancelled"
+        | "converted"
       skill_type:
         | "technician"
         | "helper"
@@ -1903,6 +2098,14 @@ export const Constants = {
       override_action: ["absent", "replaced", "added", "removed"],
       project_status: ["on_hold", "in_progress", "completed"],
       report_schedule: ["none", "daily", "weekly", "monthly"],
+      site_visit_priority: ["low", "normal", "high", "urgent"],
+      site_visit_status: [
+        "pending",
+        "in_progress",
+        "completed",
+        "cancelled",
+        "converted",
+      ],
       skill_type: [
         "technician",
         "helper",
