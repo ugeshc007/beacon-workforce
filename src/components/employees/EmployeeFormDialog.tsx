@@ -62,9 +62,12 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
   const { toast } = useToast();
   const { data: branches } = useBranches();
   const { data: customSkills } = useCustomSkills(true);
+  const { data: settings } = useSettings();
   const create = useCreateEmployee();
   const update = useUpdateEmployee();
   const [secondarySkills, setSecondarySkills] = useState<string[]>([]);
+
+  const settingsStdHours = Number(settings?.standard_work_hours ?? 9) || 9;
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -87,14 +90,14 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
     },
   });
 
-  // Auto-recalc OT rate whenever basic_salary changes
+  // Auto-recalc OT rate whenever basic_salary or settings standard hours change
   const basicSalary = form.watch("basic_salary");
   useEffect(() => {
-    const calculated = calcOtRate(Number(basicSalary));
+    const calculated = calcOtRate(Number(basicSalary), settingsStdHours);
     if (calculated > 0) {
       form.setValue("overtime_rate", calculated, { shouldValidate: true });
     }
-  }, [basicSalary]);
+  }, [basicSalary, settingsStdHours]);
 
   useEffect(() => {
     if (employee) {
