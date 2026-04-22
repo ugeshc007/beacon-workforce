@@ -22,6 +22,7 @@ const SETTING_KEYS = [
   "standard_work_hours",
   "overtime_multiplier",
   "friday_off",
+  "weekly_off_day",
   "late_threshold_minutes",
   "break_duration_minutes",
   "travel_time_paid",

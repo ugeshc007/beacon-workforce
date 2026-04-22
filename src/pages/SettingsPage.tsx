@@ -394,7 +394,7 @@ export default function SettingsPage() {
         {/* ── Attendance Rules ────────────── */}
         <TabsContent value="attendance">
           <SectionCard icon={Clock} title="Attendance & Overtime Rules" desc="Define working hours, OT, break, travel, and approval rules."
-            onSave={() => saveSection(["standard_work_hours", "friday_off", "late_threshold_minutes", "late_work_start_threshold_minutes", "break_duration_minutes", "travel_time_paid", "travel_delay_threshold_minutes", "office_punch_in_mandatory", "expense_approval_threshold"])} saving={save.isPending}>
+            onSave={() => saveSection(["standard_work_hours", "weekly_off_day", "friday_off", "late_threshold_minutes", "late_work_start_threshold_minutes", "break_duration_minutes", "travel_time_paid", "travel_delay_threshold_minutes", "office_punch_in_mandatory", "expense_approval_threshold"])} saving={save.isPending}>
             <div className="grid sm:grid-cols-2 gap-4">
               <Field label="Standard Work Hours / Day">
                 <Input type="number" value={form.standard_work_hours ?? "8"} onChange={(e) => set("standard_work_hours", e.target.value)} />
@@ -411,11 +411,21 @@ export default function SettingsPage() {
               <Field label="Break Duration (minutes)">
                 <Input type="number" value={form.break_duration_minutes ?? "60"} onChange={(e) => set("break_duration_minutes", e.target.value)} />
               </Field>
-              <Field label="Friday Off">
-                <div className="flex items-center gap-2 pt-1">
-                  <Switch checked={isOn("friday_off")} onCheckedChange={() => toggle("friday_off")} />
-                  <span className="text-xs text-muted-foreground">{isOn("friday_off") ? "Friday is a day off" : "Friday is a work day"}</span>
-                </div>
+              <Field label="Weekly Off Day" hint="Company's standard non-working day.">
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={form.weekly_off_day ?? "sunday"}
+                  onChange={(e) => set("weekly_off_day", e.target.value)}
+                >
+                  <option value="sunday">Sunday</option>
+                  <option value="monday">Monday</option>
+                  <option value="tuesday">Tuesday</option>
+                  <option value="wednesday">Wednesday</option>
+                  <option value="thursday">Thursday</option>
+                  <option value="friday">Friday</option>
+                  <option value="saturday">Saturday</option>
+                  <option value="none">No weekly off</option>
+                </select>
               </Field>
               <Field label="Office Punch-in Mandatory">
                 <div className="flex items-center gap-2 pt-1">
