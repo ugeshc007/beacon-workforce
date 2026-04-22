@@ -31,14 +31,14 @@ import { useAuth } from "@/hooks/useAuth";
 
 const mainNav = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, module: "dashboard" },
+  { title: "Maintenance", url: "/maintenance", icon: Wrench, module: "maintenance" },
+  { title: "Site Visits", url: "/site-visits", icon: ClipboardList, module: "site_visits" },
   { title: "Projects", url: "/projects", icon: FolderKanban, module: "projects" },
   { title: "Employees", url: "/employees", icon: Users, module: "employees" },
   { title: "Schedule", url: "/schedule", icon: CalendarDays, module: "schedule" },
   { title: "Attendance", url: "/attendance", icon: ClipboardCheck, module: "attendance" },
   { title: "Travel", url: "/travel", icon: Car, module: "attendance" },
   { title: "Timesheets", url: "/timesheets", icon: Clock, module: "timesheets" },
-  { title: "Maintenance", url: "/maintenance", icon: Wrench, module: "maintenance" },
-  { title: "Site Visits", url: "/site-visits", icon: ClipboardList, module: "site_visits" },
 ];
 
 const reportNav = [
