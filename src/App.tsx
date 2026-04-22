@@ -36,6 +36,8 @@ import ScheduleReport from "./pages/reports/ScheduleReport";
 import SettingsPage from "./pages/SettingsPage";
 import Maintenance from "./pages/Maintenance";
 import MaintenanceDetail from "./pages/MaintenanceDetail";
+import SiteVisits from "./pages/SiteVisits";
+import SiteVisitDetail from "./pages/SiteVisitDetail";
 
 // Mobile screens
 import MobileLogin from "./pages/mobile/MobileLogin";
@@ -46,6 +48,8 @@ import MobileNotifications from "./pages/mobile/MobileNotifications";
 import MobileProfile from "./pages/mobile/MobileProfile";
 import MobileTeamStatus from "./pages/mobile/MobileTeamStatus";
 import MobileDailyLog from "./pages/mobile/MobileDailyLog";
+import MobileSiteVisits from "./pages/mobile/MobileSiteVisits";
+import MobileSiteVisitDetail from "./pages/mobile/MobileSiteVisitDetail";
 
 const queryClient = new QueryClient();
 
@@ -64,6 +68,8 @@ const App = () => (
             <Route path="notifications" element={<MobileNotifications />} />
             <Route path="team" element={<MobileTeamStatus />} />
             <Route path="daily-log" element={<MobileDailyLog />} />
+            <Route path="site-visits" element={<MobileSiteVisits />} />
+            <Route path="site-visits/:id" element={<MobileSiteVisitDetail />} />
             <Route path="profile" element={<MobileProfile />} />
           </Route>
 
@@ -93,6 +99,8 @@ const App = () => (
             <Route path="/timesheets" element={<ModuleGuard module="timesheets"><Timesheets /></ModuleGuard>} />
             <Route path="/maintenance" element={<ModuleGuard module="maintenance"><Maintenance /></ModuleGuard>} />
             <Route path="/maintenance/:id" element={<ModuleGuard module="maintenance"><MaintenanceDetail /></ModuleGuard>} />
+            <Route path="/site-visits" element={<ModuleGuard module="site_visits"><SiteVisits /></ModuleGuard>} />
+            <Route path="/site-visits/:id" element={<ModuleGuard module="site_visits"><SiteVisitDetail /></ModuleGuard>} />
             <Route path="/reports" element={<ModuleGuard module="reports"><Reports /></ModuleGuard>} />
             <Route path="/reports/utilization" element={<ModuleGuard module="reports"><Utilization /></ModuleGuard>} />
             <Route path="/reports/costs" element={<ModuleGuard module="reports"><CostReports /></ModuleGuard>} />
