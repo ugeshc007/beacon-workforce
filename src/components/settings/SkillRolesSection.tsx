@@ -51,17 +51,19 @@ export function SkillRolesSection() {
         ) : (
           <div className="space-y-2">
             {skills.map((s) => (
-              <div key={s.id} className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-2">
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium">{s.name}</span>
-                  {!s.is_active && <Badge variant="secondary" className="text-[10px]">Inactive</Badge>}
-                  <Badge variant="outline" className="text-[10px]">
+              <div key={s.id} className="flex items-start justify-between gap-3 rounded-md border border-border bg-muted/30 px-3 py-2">
+                <div className="flex flex-col gap-1.5 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">{s.name}</span>
+                    {!s.is_active && <Badge variant="secondary" className="text-[10px]">Inactive</Badge>}
+                  </div>
+                  <Badge variant="outline" className="text-[10px] w-fit">
                     Holiday: {s.holiday_rate_type === "fixed"
                       ? `AED ${Number(s.holiday_rate_value).toFixed(2)}/h`
                       : `× ${Number(s.holiday_rate_value).toFixed(2)}`}
                   </Badge>
                 </div>
-                <div className="flex gap-1">
+                <div className="flex gap-1 shrink-0">
                   <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditing(s); setOpen(true); }}>
                     <Pencil className="h-3.5 w-3.5" />
                   </Button>
