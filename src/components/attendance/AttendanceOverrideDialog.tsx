@@ -68,6 +68,8 @@ export function AttendanceOverrideDialog({ log, open, onOpenChange }: Props) {
         travel_start_time: form.travel_start_time ? new Date(form.travel_start_time).toISOString() : null,
         site_arrival_time: form.site_arrival_time ? new Date(form.site_arrival_time).toISOString() : null,
         work_start_time: form.work_start_time ? new Date(form.work_start_time).toISOString() : null,
+        break_start_time: form.break_start_time ? new Date(form.break_start_time).toISOString() : null,
+        break_end_time: form.break_end_time ? new Date(form.break_end_time).toISOString() : null,
         work_end_time: form.work_end_time ? new Date(form.work_end_time).toISOString() : null,
         office_punch_out: form.office_punch_out ? new Date(form.office_punch_out).toISOString() : null,
         notes: form.notes || null,
@@ -78,6 +80,10 @@ export function AttendanceOverrideDialog({ log, open, onOpenChange }: Props) {
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     }
+  };
+
+  const clearBreak = () => {
+    setForm((p) => ({ ...p, break_start_time: "", break_end_time: "" }));
   };
 
   if (!log) return null;
