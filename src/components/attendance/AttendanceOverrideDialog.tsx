@@ -28,6 +28,8 @@ export function AttendanceOverrideDialog({ log, open, onOpenChange }: Props) {
     travel_start_time: toLocalInput(log?.travel_start_time ?? null),
     site_arrival_time: toLocalInput(log?.site_arrival_time ?? null),
     work_start_time: toLocalInput(log?.work_start_time ?? null),
+    break_start_time: toLocalInput(log?.break_start_time ?? null),
+    break_end_time: toLocalInput(log?.break_end_time ?? null),
     work_end_time: toLocalInput(log?.work_end_time ?? null),
     office_punch_out: toLocalInput(log?.office_punch_out ?? null),
     notes: log?.notes ?? "",
@@ -42,6 +44,8 @@ export function AttendanceOverrideDialog({ log, open, onOpenChange }: Props) {
         travel_start_time: toLocalInput(log.travel_start_time),
         site_arrival_time: toLocalInput(log.site_arrival_time),
         work_start_time: toLocalInput(log.work_start_time),
+        break_start_time: toLocalInput(log.break_start_time),
+        break_end_time: toLocalInput(log.break_end_time),
         work_end_time: toLocalInput(log.work_end_time),
         office_punch_out: toLocalInput(log.office_punch_out),
         notes: log.notes ?? "",
@@ -64,6 +68,8 @@ export function AttendanceOverrideDialog({ log, open, onOpenChange }: Props) {
         travel_start_time: form.travel_start_time ? new Date(form.travel_start_time).toISOString() : null,
         site_arrival_time: form.site_arrival_time ? new Date(form.site_arrival_time).toISOString() : null,
         work_start_time: form.work_start_time ? new Date(form.work_start_time).toISOString() : null,
+        break_start_time: form.break_start_time ? new Date(form.break_start_time).toISOString() : null,
+        break_end_time: form.break_end_time ? new Date(form.break_end_time).toISOString() : null,
         work_end_time: form.work_end_time ? new Date(form.work_end_time).toISOString() : null,
         office_punch_out: form.office_punch_out ? new Date(form.office_punch_out).toISOString() : null,
         notes: form.notes || null,
@@ -74,6 +80,10 @@ export function AttendanceOverrideDialog({ log, open, onOpenChange }: Props) {
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     }
+  };
+
+  const clearBreak = () => {
+    setForm((p) => ({ ...p, break_start_time: "", break_end_time: "" }));
   };
 
   if (!log) return null;
@@ -93,6 +103,17 @@ export function AttendanceOverrideDialog({ log, open, onOpenChange }: Props) {
             <div><Label className="text-xs">Site Arrival</Label><Input type="datetime-local" value={form.site_arrival_time} onChange={(e) => set("site_arrival_time", e.target.value)} /></div>
             <div><Label className="text-xs">Work Start</Label><Input type="datetime-local" value={form.work_start_time} onChange={(e) => set("work_start_time", e.target.value)} /></div>
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label className="text-xs">Break Start</Label><Input type="datetime-local" value={form.break_start_time} onChange={(e) => set("break_start_time", e.target.value)} /></div>
+            <div><Label className="text-xs">Break End</Label><Input type="datetime-local" value={form.break_end_time} onChange={(e) => set("break_end_time", e.target.value)} /></div>
+          </div>
+          {(form.break_start_time || form.break_end_time) && (
+            <div className="flex justify-end">
+              <Button type="button" variant="ghost" size="sm" onClick={clearBreak} className="h-7 text-xs text-destructive hover:text-destructive">
+                Clear Break (accidental tap)
+              </Button>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div><Label className="text-xs">Work End</Label><Input type="datetime-local" value={form.work_end_time} onChange={(e) => set("work_end_time", e.target.value)} /></div>
             <div><Label className="text-xs">Punch Out</Label><Input type="datetime-local" value={form.office_punch_out} onChange={(e) => set("office_punch_out", e.target.value)} /></div>
