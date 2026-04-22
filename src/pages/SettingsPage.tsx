@@ -608,6 +608,13 @@ export default function SettingsPage() {
           </TabsContent>
         )}
 
+        {/* ── Public Holidays ─────────────── */}
+        {isAdmin && (
+          <TabsContent value="holidays">
+            <PublicHolidaysSection />
+          </TabsContent>
+        )}
+
         {/* ── System ──────────────────────── */}
         <TabsContent value="system">
           <div className="space-y-6">
