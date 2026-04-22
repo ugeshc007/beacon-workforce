@@ -33,6 +33,19 @@ export interface MaintenanceScheduleItem {
   scope: string | null;
 }
 
+export interface SiteVisitScheduleItem {
+  id: string;
+  date: string;
+  client_name: string;
+  site_address: string | null;
+  project_type: string | null;
+  priority: string;
+  status: string;
+  employee_id: string;
+  employee_name: string;
+  employee_skill: string;
+}
+
 export interface ConflictInfo {
   employee_id: string;
   employee_name: string;
