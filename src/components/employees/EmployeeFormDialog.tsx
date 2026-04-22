@@ -27,6 +27,7 @@ const schema = z.object({
   skill_type: z.enum(["team_member", "team_leader", "driver"]),
   custom_skill_id: z.string().optional().or(z.literal("")),
   branch_id: z.string().uuid("Select a branch"),
+  basic_salary: z.coerce.number().min(0),
   hourly_rate: z.coerce.number().min(0),
   overtime_rate: z.coerce.number().min(0),
   standard_hours_per_day: z.coerce.number().min(1).max(24),
@@ -34,6 +35,12 @@ const schema = z.object({
   emergency_contact: z.string().max(100).optional().or(z.literal("")),
   notes: z.string().max(500).optional().or(z.literal("")),
 });
+
+// OT Rate = (basic_salary * 12) / 368 / 9
+const calcOtRate = (basicSalary: number): number => {
+  if (!basicSalary || basicSalary <= 0) return 0;
+  return Math.round(((basicSalary * 12) / 368 / 9) * 100) / 100;
+};
 
 type FormValues = z.infer<typeof schema>;
 
@@ -69,6 +76,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
       skill_type: "team_member",
       custom_skill_id: "",
       branch_id: "",
+      basic_salary: 0,
       hourly_rate: 25,
       overtime_rate: 37.5,
       standard_hours_per_day: 8,
@@ -77,6 +85,15 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
       notes: "",
     },
   });
+
+  // Auto-recalc OT rate whenever basic_salary changes
+  const basicSalary = form.watch("basic_salary");
+  useEffect(() => {
+    const calculated = calcOtRate(Number(basicSalary));
+    if (calculated > 0) {
+      form.setValue("overtime_rate", calculated, { shouldValidate: true });
+    }
+  }, [basicSalary]);
 
   useEffect(() => {
     if (employee) {
@@ -89,6 +106,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
         skill_type: employee.skill_type as "team_member" | "team_leader" | "driver",
         custom_skill_id: (employee as any).custom_skill_id ?? "",
         branch_id: employee.branch_id,
+        basic_salary: Number((employee as any).basic_salary ?? 0),
         hourly_rate: Number(employee.hourly_rate),
         overtime_rate: Number(employee.overtime_rate),
         standard_hours_per_day: Number(employee.standard_hours_per_day),
@@ -256,7 +274,14 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
+              <FormField control={form.control} name="basic_salary" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Basic Salary (AED / month)</FormLabel>
+                  <FormControl><Input type="number" step="0.01" placeholder="e.g. 2500" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
               <FormField control={form.control} name="hourly_rate" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Hourly Rate (AED)</FormLabel>
@@ -264,10 +289,14 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
                   <FormMessage />
                 </FormItem>
               )} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <FormField control={form.control} name="overtime_rate" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>OT Rate (AED)</FormLabel>
-                  <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                  <FormLabel>OT Rate (AED) — auto from Basic Salary</FormLabel>
+                  <FormControl><Input type="number" step="0.01" readOnly className="bg-muted/40" {...field} /></FormControl>
+                  <p className="text-[10px] text-muted-foreground mt-1">Formula: (Basic × 12) ÷ 368 ÷ 9</p>
                   <FormMessage />
                 </FormItem>
               )} />
