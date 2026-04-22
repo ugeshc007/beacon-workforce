@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
 import { useCreateEmployee, useUpdateEmployee, useBranches } from "@/hooks/useEmployees";
 import { useCustomSkills } from "@/hooks/useCustomSkills";
+import { useSettings } from "@/hooks/useSettings";
 import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
