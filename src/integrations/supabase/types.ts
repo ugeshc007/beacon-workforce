@@ -73,8 +73,10 @@ export type Database = {
           created_at: string
           date: string
           employee_id: string
+          holiday_premium_cost: number | null
           id: string
           idempotency_key: string | null
+          is_holiday: boolean
           is_manual_override: boolean | null
           notes: string | null
           office_arrival_accuracy: number | null
@@ -128,8 +130,10 @@ export type Database = {
           created_at?: string
           date: string
           employee_id: string
+          holiday_premium_cost?: number | null
           id?: string
           idempotency_key?: string | null
+          is_holiday?: boolean
           is_manual_override?: boolean | null
           notes?: string | null
           office_arrival_accuracy?: number | null
@@ -183,8 +187,10 @@ export type Database = {
           created_at?: string
           date?: string
           employee_id?: string
+          holiday_premium_cost?: number | null
           id?: string
           idempotency_key?: string | null
+          is_holiday?: boolean
           is_manual_override?: boolean | null
           notes?: string | null
           office_arrival_accuracy?: number | null
@@ -295,6 +301,8 @@ export type Database = {
           base_skill_type: Database["public"]["Enums"]["skill_type"] | null
           created_at: string
           created_by: string | null
+          holiday_rate_type: Database["public"]["Enums"]["holiday_rate_type"]
+          holiday_rate_value: number
           id: string
           is_active: boolean
           name: string
@@ -303,6 +311,8 @@ export type Database = {
           base_skill_type?: Database["public"]["Enums"]["skill_type"] | null
           created_at?: string
           created_by?: string | null
+          holiday_rate_type?: Database["public"]["Enums"]["holiday_rate_type"]
+          holiday_rate_value?: number
           id?: string
           is_active?: boolean
           name: string
@@ -311,6 +321,8 @@ export type Database = {
           base_skill_type?: Database["public"]["Enums"]["skill_type"] | null
           created_at?: string
           created_by?: string | null
+          holiday_rate_type?: Database["public"]["Enums"]["holiday_rate_type"]
+          holiday_rate_value?: number
           id?: string
           is_active?: boolean
           name?: string
@@ -1254,6 +1266,48 @@ export type Database = {
           },
         ]
       }
+      public_holidays: {
+        Row: {
+          branch_id: string | null
+          created_at: string
+          created_by: string | null
+          date: string
+          id: string
+          name: string
+        }
+        Insert: {
+          branch_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          date: string
+          id?: string
+          name: string
+        }
+        Update: {
+          branch_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "public_holidays_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "public_holidays_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       report_presets: {
         Row: {
           created_at: string
@@ -1679,6 +1733,7 @@ export type Database = {
         | "equipment"
         | "misc"
       expense_status: "pending" | "approved" | "rejected"
+      holiday_rate_type: "multiplier" | "fixed"
       maintenance_priority: "emergency" | "high" | "normal" | "low"
       maintenance_status:
         | "open"
@@ -1835,6 +1890,7 @@ export const Constants = {
         "misc",
       ],
       expense_status: ["pending", "approved", "rejected"],
+      holiday_rate_type: ["multiplier", "fixed"],
       maintenance_priority: ["emergency", "high", "normal", "low"],
       maintenance_status: [
         "open",
