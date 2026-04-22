@@ -31,7 +31,6 @@ const schema = z.object({
   basic_salary: z.coerce.number().min(0),
   hourly_rate: z.coerce.number().min(0),
   overtime_rate: z.coerce.number().min(0),
-  standard_hours_per_day: z.coerce.number().min(1).max(24),
   join_date: z.string().optional().or(z.literal("")),
   emergency_contact: z.string().max(100).optional().or(z.literal("")),
   notes: z.string().max(500).optional().or(z.literal("")),
@@ -83,7 +82,6 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
       basic_salary: 0,
       hourly_rate: 25,
       overtime_rate: 37.5,
-      standard_hours_per_day: 8,
       join_date: "",
       emergency_contact: "",
       notes: "",
@@ -113,7 +111,6 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
         basic_salary: Number((employee as any).basic_salary ?? 0),
         hourly_rate: Number(employee.hourly_rate),
         overtime_rate: Number(employee.overtime_rate),
-        standard_hours_per_day: Number(employee.standard_hours_per_day),
         join_date: employee.join_date ?? "",
         emergency_contact: employee.emergency_contact ?? "",
         notes: employee.notes ?? "",
@@ -130,6 +127,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
       const { custom_skill_id, ...rest } = values;
       const payload = {
         ...rest,
+        standard_hours_per_day: settingsStdHours,
         phone: values.phone || null,
         email: values.email || null,
         designation: values.designation || null,
@@ -295,23 +293,14 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
               )} />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField control={form.control} name="overtime_rate" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>OT Rate (AED) — auto from Basic Salary</FormLabel>
-                  <FormControl><Input type="number" step="0.01" readOnly className="bg-muted/40" {...field} /></FormControl>
-                  <p className="text-[10px] text-muted-foreground mt-1">Formula: (Basic × 12) ÷ 368 ÷ {settingsStdHours} (std work hours from Settings)</p>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="standard_hours_per_day" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Std Hours/Day</FormLabel>
-                  <FormControl><Input type="number" step="0.5" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-            </div>
+            <FormField control={form.control} name="overtime_rate" render={({ field }) => (
+              <FormItem>
+                <FormLabel>OT Rate (AED) — auto from Basic Salary</FormLabel>
+                <FormControl><Input type="number" step="0.01" readOnly className="bg-muted/40" {...field} /></FormControl>
+                <p className="text-[10px] text-muted-foreground mt-1">Formula: (Basic × 12) ÷ 368 ÷ {settingsStdHours} (std work hours from Settings)</p>
+                <FormMessage />
+              </FormItem>
+            )} />
 
             <div className="grid grid-cols-2 gap-4">
               <FormField control={form.control} name="join_date" render={({ field }) => (
