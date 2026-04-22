@@ -274,7 +274,14 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
+              <FormField control={form.control} name="basic_salary" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Basic Salary (AED / month)</FormLabel>
+                  <FormControl><Input type="number" step="0.01" placeholder="e.g. 2500" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
               <FormField control={form.control} name="hourly_rate" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Hourly Rate (AED)</FormLabel>
@@ -282,10 +289,14 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
                   <FormMessage />
                 </FormItem>
               )} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <FormField control={form.control} name="overtime_rate" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>OT Rate (AED)</FormLabel>
-                  <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                  <FormLabel>OT Rate (AED) — auto from Basic Salary</FormLabel>
+                  <FormControl><Input type="number" step="0.01" readOnly className="bg-muted/40" {...field} /></FormControl>
+                  <p className="text-[10px] text-muted-foreground mt-1">Formula: (Basic × 12) ÷ 368 ÷ 9</p>
                   <FormMessage />
                 </FormItem>
               )} />
