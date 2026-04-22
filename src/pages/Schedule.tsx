@@ -8,7 +8,7 @@ import { useCopyMaintenanceAssignments } from "@/hooks/useMaintenance";
 import { useCanAccess } from "@/hooks/usePermissions";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  useWeekAssignments, useWeekMaintenanceAssignments, useDetectConflicts,
+  useWeekAssignments, useWeekMaintenanceAssignments, useWeekSiteVisits, useDetectConflicts,
   useCopyPreviousWeek, useApplyToDateRange, useRecurringSchedule,
   type MaintenanceScheduleItem,
 } from "@/hooks/useSchedule";
@@ -32,7 +32,7 @@ import {
 import { toast } from "sonner";
 import {
   ChevronLeft, ChevronRight, CalendarDays, AlertTriangle, Users,
-  Copy, CalendarRange, Repeat, MoreVertical, Wrench,
+  Copy, CalendarRange, Repeat, MoreVertical, Wrench, MapPin,
 } from "lucide-react";
 
 function getDayDates(startOffset: number, count = 7) {
@@ -101,6 +101,7 @@ export default function Schedule() {
 
   const { data: assignments, isLoading } = useWeekAssignments(weekStart, weekEnd, effectiveProjectId);
   const { data: maintenanceItems } = useWeekMaintenanceAssignments(weekStart, weekEnd);
+  const { data: siteVisitItems } = useWeekSiteVisits(weekStart, weekEnd);
   const conflicts = useDetectConflicts(assignments ?? []);
   const queryClient = useQueryClient();
 
@@ -114,6 +115,9 @@ export default function Schedule() {
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "maintenance_assignments" }, () => {
         queryClient.invalidateQueries({ queryKey: ["schedule-maintenance-assignments"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "site_visits" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["schedule-site-visits"] });
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -145,6 +149,7 @@ export default function Schedule() {
 
   const dayAssignments = (date: string) => (assignments ?? []).filter((a) => a.date === date);
   const dayMaintenanceItems = (date: string) => (maintenanceItems ?? []).filter((m) => m.date === date);
+  const daySiteVisits = (date: string) => (siteVisitItems ?? []).filter((v) => v.date === date);
   const dayConflicts = (date: string) => conflicts.filter((c) => c.date === date);
 
   const handleCopyWeek = async () => {
@@ -308,6 +313,7 @@ export default function Schedule() {
           {weekDates.map((date, i) => {
             const da = dayAssignments(date);
             const dm = dayMaintenanceItems(date);
+            const dv = daySiteVisits(date);
             const dc = dayConflicts(date);
             const isToday = date === today;
             const isSelected = date === selectedDay;
@@ -318,6 +324,9 @@ export default function Schedule() {
 
             const maintGroups = new Map<string, number>();
             for (const m of dm) maintGroups.set(m.company_name, (maintGroups.get(m.company_name) ?? 0) + 1);
+
+            const visitGroups = new Map<string, number>();
+            for (const v of dv) visitGroups.set(v.client_name, (visitGroups.get(v.client_name) ?? 0) + 1);
 
             return (
               <Card
@@ -339,7 +348,7 @@ export default function Schedule() {
                       </span>
                     </div>
                     <div className="flex-1 flex items-center gap-2 overflow-x-auto">
-                      {da.length === 0 && dm.length === 0 ? (
+                      {da.length === 0 && dm.length === 0 && dv.length === 0 ? (
                         <p className="text-xs text-muted-foreground">No assignments</p>
                       ) : (
                         <>
@@ -355,6 +364,13 @@ export default function Schedule() {
                               <Wrench className="h-3 w-3 text-status-overtime shrink-0" />
                               <span className="text-status-overtime">{name}</span>
                               <Badge variant="outline" className="text-[10px] px-1 py-0 border-status-overtime/30 text-status-overtime">{count}</Badge>
+                            </div>
+                          ))}
+                          {[...visitGroups].map(([name, count]) => (
+                            <div key={`v-${name}`} className="flex items-center gap-1 text-xs shrink-0">
+                              <MapPin className="h-3 w-3 text-status-planned shrink-0" />
+                              <span className="text-status-planned">{name}</span>
+                              <Badge variant="outline" className="text-[10px] px-1 py-0 border-status-planned/30 text-status-planned">{count}</Badge>
                             </div>
                           ))}
                         </>
@@ -378,7 +394,7 @@ export default function Schedule() {
                       </span>
                     </div>
                     <div className="space-y-1 min-h-[60px]">
-                      {da.length === 0 && dm.length === 0 ? (
+                      {da.length === 0 && dm.length === 0 && dv.length === 0 ? (
                         <p className="text-[10px] text-muted-foreground text-center pt-4">No assignments</p>
                       ) : (
                         <>
@@ -394,6 +410,13 @@ export default function Schedule() {
                               <Wrench className="h-2.5 w-2.5 text-status-overtime shrink-0" />
                               <span className="truncate text-status-overtime">{name}</span>
                               <Badge variant="outline" className="text-[9px] px-1 py-0 ml-auto border-status-overtime/30 text-status-overtime">{count}</Badge>
+                            </div>
+                          ))}
+                          {[...visitGroups].map(([name, count]) => (
+                            <div key={`v-${name}`} className="flex items-center gap-1 text-[10px]">
+                              <MapPin className="h-2.5 w-2.5 text-status-planned shrink-0" />
+                              <span className="truncate text-status-planned">{name}</span>
+                              <Badge variant="outline" className="text-[9px] px-1 py-0 ml-auto border-status-planned/30 text-status-planned">{count}</Badge>
                             </div>
                           ))}
                         </>
@@ -432,6 +455,7 @@ export default function Schedule() {
       {selectedDay && selectedProjectId === "all" && !expandedProjectId && (() => {
         const da = dayAssignments(selectedDay);
         const dm = dayMaintenanceItems(selectedDay);
+        const dv = daySiteVisits(selectedDay);
         const projectsWithAssignments = activeProjects
           .filter((p) => da.some((a) => a.project_id === p.id))
           .slice()
@@ -520,6 +544,39 @@ export default function Schedule() {
                           >
                             <Copy className="h-3 w-3" /> Copy to Date
                           </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            {dv.length > 0 && (
+              <Card className="glass-card border-status-planned/20">
+                <CardContent className="p-4">
+                  <h3 className="text-sm font-semibold text-status-planned flex items-center gap-2 mb-3">
+                    <MapPin className="h-4 w-4" /> Site Visits
+                  </h3>
+                  <div className="space-y-2">
+                    {dv.map((v) => (
+                      <div
+                        key={v.id}
+                        className="flex items-center justify-between rounded-lg border border-border/50 p-2.5 hover:border-status-planned/40 transition-colors cursor-pointer"
+                        onClick={() => navigate(`/site-visits/${v.id}`)}
+                      >
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-foreground">{v.client_name}</p>
+                          {v.project_type && <p className="text-xs text-foreground/80">{v.project_type}</p>}
+                          {v.site_address && <p className="text-xs text-muted-foreground">{v.site_address}</p>}
+                          <p className="text-xs text-muted-foreground mt-1">Assigned: {v.employee_name}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-[10px] border-status-planned/30 text-status-planned capitalize">
+                            {v.priority}
+                          </Badge>
+                          <Badge variant="outline" className="text-[10px] capitalize">
+                            {v.status.replace("_", " ")}
+                          </Badge>
                         </div>
                       </div>
                     ))}
