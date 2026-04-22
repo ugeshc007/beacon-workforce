@@ -76,6 +76,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
       skill_type: "team_member",
       custom_skill_id: "",
       branch_id: "",
+      basic_salary: 0,
       hourly_rate: 25,
       overtime_rate: 37.5,
       standard_hours_per_day: 8,
@@ -84,6 +85,15 @@ export function EmployeeFormDialog({ open, onOpenChange, employee }: Props) {
       notes: "",
     },
   });
+
+  // Auto-recalc OT rate whenever basic_salary changes
+  const basicSalary = form.watch("basic_salary");
+  useEffect(() => {
+    const calculated = calcOtRate(Number(basicSalary));
+    if (calculated > 0) {
+      form.setValue("overtime_rate", calculated, { shouldValidate: true });
+    }
+  }, [basicSalary]);
 
   useEffect(() => {
     if (employee) {
