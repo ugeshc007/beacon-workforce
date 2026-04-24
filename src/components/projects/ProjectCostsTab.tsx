@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import {
-  DollarSign, TrendingUp, AlertTriangle, BarChart3, PieChart,
+  DollarSign, TrendingUp, AlertTriangle, BarChart3, PieChart, Users, Activity,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -38,6 +38,9 @@ interface Props {
     weeklyData: { week: string; labor: number; overtime: number; expenses: number }[];
     dailyData: { date: string; labor: number; overtime: number; expenses: number; records: any[] }[];
     daysWithCost: number;
+    byEmployee?: { id: string; name: string; code: string; hours: number; otHours: number; regularCost: number; otCost: number; totalCost: number; days: number }[];
+    activeSessions?: { employee: string; startedAt: string | null; date: string }[];
+    sessionCount?: number;
   } | undefined;
 }
 
@@ -296,6 +299,66 @@ export function ProjectCostsTab({ project, costs }: Props) {
 
       {costs.totalPendingExpenses > 0 && (
         <p className="text-xs text-status-traveling">⚠ AED {costs.totalPendingExpenses.toLocaleString()} in pending expenses awaiting approval</p>
+      )}
+
+      {/* Live active project sessions */}
+      {costs.activeSessions && costs.activeSessions.length > 0 && (
+        <Card className="glass-card border-status-traveling/30">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Activity className="h-4 w-4 text-status-traveling animate-pulse" />
+              Live — Currently Working ({costs.activeSessions.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1.5">
+            {costs.activeSessions.map((s, i) => (
+              <div key={i} className="flex items-center justify-between text-sm">
+                <span className="text-foreground">{s.employee}</span>
+                <span className="text-xs font-mono text-muted-foreground">
+                  {s.startedAt ? `since ${new Date(s.startedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}` : "—"}
+                </span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Per-employee project time & cost breakdown */}
+      {costs.byEmployee && costs.byEmployee.length > 0 && (
+        <Card className="glass-card">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Users className="h-4 w-4" /> Time & Cost by Employee
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[500px]">
+              <thead>
+                <tr className="text-xs text-muted-foreground border-b border-border">
+                  <th className="text-left py-2 font-medium">Employee</th>
+                  <th className="text-right py-2 font-medium">Days</th>
+                  <th className="text-right py-2 font-medium">Hours</th>
+                  <th className="text-right py-2 font-medium">OT Hrs</th>
+                  <th className="text-right py-2 font-medium">Cost</th>
+                </tr>
+              </thead>
+              <tbody>
+                {costs.byEmployee.map((e) => (
+                  <tr key={e.id} className="border-b border-border/30">
+                    <td className="py-2">
+                      <div className="font-medium text-foreground">{e.name}</div>
+                      <div className="text-[10px] text-muted-foreground font-mono">{e.code}</div>
+                    </td>
+                    <td className="py-2 text-right font-mono text-xs">{e.days}</td>
+                    <td className="py-2 text-right font-mono text-xs">{e.hours}h</td>
+                    <td className="py-2 text-right font-mono text-xs text-status-overtime">{e.otHours > 0 ? `${e.otHours}h` : "—"}</td>
+                    <td className="py-2 text-right font-mono text-xs font-medium">AED {e.totalCost.toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
       )}
 
       {/* Drill-down panel */}

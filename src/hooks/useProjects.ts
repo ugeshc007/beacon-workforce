@@ -234,10 +234,14 @@ export function useProjectCosts(projectId: string | null) {
     queryKey: ["project-costs", projectId],
     enabled: !!projectId,
     queryFn: async () => {
-      const [laborRes, expenseRes] = await Promise.all([
+      const [laborRes, sessionRes, expenseRes] = await Promise.all([
         supabase
           .from("attendance_logs")
           .select("date, regular_cost, overtime_cost, total_work_minutes, overtime_minutes, employee_id, employees(name, employee_code)")
+          .eq("project_id", projectId!),
+        supabase
+          .from("project_work_sessions")
+          .select("date, regular_cost, overtime_cost, total_work_minutes, overtime_minutes, employee_id, status, work_start_time, work_end_time, employees(name, employee_code)")
           .eq("project_id", projectId!),
         supabase
           .from("project_expenses")
@@ -245,7 +249,22 @@ export function useProjectCosts(projectId: string | null) {
           .eq("project_id", projectId!),
       ]);
 
-      const laborRows = laborRes.data ?? [];
+      // Merge attendance_logs + project_work_sessions into a single labor row set.
+      // Sessions are the authoritative per-project source going forward; attendance_logs
+      // remain for historical data captured before the per-project workflow existed.
+      const laborRows = [
+        ...(laborRes.data ?? []),
+        ...((sessionRes.data ?? []).map((s) => ({
+          date: s.date,
+          regular_cost: s.regular_cost,
+          overtime_cost: s.overtime_cost,
+          total_work_minutes: s.total_work_minutes,
+          overtime_minutes: s.overtime_minutes,
+          employee_id: s.employee_id,
+          employees: s.employees,
+        }))),
+      ];
+      const sessionRows = sessionRes.data ?? [];
       const expenseRows = expenseRes.data ?? [];
 
       const totalLabor = laborRows.reduce((s, a) => s + Number(a.regular_cost ?? 0), 0);
@@ -308,6 +327,42 @@ export function useProjectCosts(projectId: string | null) {
       const uniqueDates = new Set([...laborRows.map((r) => r.date), ...expenseRows.filter((e) => e.status === "approved").map((e) => e.date)]);
       const daysWithCost = uniqueDates.size;
 
+      // Per-employee breakdown across attendance + sessions
+      const empMap = new Map<string, { name: string; code: string; minutes: number; otMinutes: number; regular: number; ot: number; days: Set<string> }>();
+      for (const r of laborRows) {
+        if (!r.employee_id) continue;
+        const key = r.employee_id;
+        if (!empMap.has(key)) {
+          empMap.set(key, { name: (r as any).employees?.name ?? "Unknown", code: (r as any).employees?.employee_code ?? "—", minutes: 0, otMinutes: 0, regular: 0, ot: 0, days: new Set() });
+        }
+        const e = empMap.get(key)!;
+        e.minutes += Number(r.total_work_minutes ?? 0);
+        e.otMinutes += Number(r.overtime_minutes ?? 0);
+        e.regular += Number(r.regular_cost ?? 0);
+        e.ot += Number(r.overtime_cost ?? 0);
+        e.days.add(r.date);
+      }
+      const byEmployee = Array.from(empMap.entries())
+        .map(([id, v]) => ({
+          id, name: v.name, code: v.code,
+          hours: Math.round((v.minutes / 60) * 10) / 10,
+          otHours: Math.round((v.otMinutes / 60) * 10) / 10,
+          regularCost: Math.round(v.regular),
+          otCost: Math.round(v.ot),
+          totalCost: Math.round(v.regular + v.ot),
+          days: v.days.size,
+        }))
+        .sort((a, b) => b.totalCost - a.totalCost);
+
+      // Active in-progress sessions (work not yet ended) — admin "live" view
+      const activeSessions = sessionRows
+        .filter((s) => s.status === "in_progress" || !s.work_end_time)
+        .map((s) => ({
+          employee: (s as any).employees?.name ?? "Unknown",
+          startedAt: s.work_start_time,
+          date: s.date,
+        }));
+
       return {
         totalLabor,
         totalOT,
@@ -320,6 +375,9 @@ export function useProjectCosts(projectId: string | null) {
         weeklyData,
         dailyData,
         daysWithCost,
+        byEmployee,
+        activeSessions,
+        sessionCount: sessionRows.length,
       };
     },
   });
