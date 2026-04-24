@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
 import { useProjectWorkflow } from "@/hooks/useProjectWorkflow";
 import { useTodayProjects } from "@/hooks/useTodayProjects";
