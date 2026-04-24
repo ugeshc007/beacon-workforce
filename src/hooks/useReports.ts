@@ -252,9 +252,12 @@ export function useCostData(start: string, end: string, filters?: {
         projQuery = projQuery.eq("branch_id", filters.branchId);
       }
 
-      const [logsRes, expensesRes, projectsRes, branchRes] = await Promise.all([
+      const [logsRes, sessionsRes, expensesRes, projectsRes, branchRes] = await Promise.all([
         supabase.from("attendance_logs")
           .select("project_id, date, regular_cost, overtime_cost, travel_start_time, site_arrival_time, return_travel_start_time, office_arrival_time")
+          .gte("date", start).lte("date", end),
+        supabase.from("project_work_sessions")
+          .select("project_id, date, regular_cost, overtime_cost, travel_start_time, site_arrival_time, return_travel_start_time, work_end_time")
           .gte("date", start).lte("date", end),
         supabase.from("project_expenses")
           .select("project_id, date, amount_aed, category, status")
@@ -263,7 +266,21 @@ export function useCostData(start: string, end: string, filters?: {
         supabase.from("branches").select("id, name").order("name"),
       ]);
 
-      const logs = logsRes.data ?? [];
+      // Merge attendance_logs and project_work_sessions: sessions are the
+      // authoritative per-project labor source; logs cover legacy data.
+      const logs = [
+        ...(logsRes.data ?? []),
+        ...((sessionsRes.data ?? []).map((s) => ({
+          project_id: s.project_id,
+          date: s.date,
+          regular_cost: s.regular_cost,
+          overtime_cost: s.overtime_cost,
+          travel_start_time: s.travel_start_time,
+          site_arrival_time: s.site_arrival_time,
+          return_travel_start_time: s.return_travel_start_time,
+          office_arrival_time: s.work_end_time, // session end ≈ return arrival proxy
+        }))),
+      ];
       const expenses = expensesRes.data ?? [];
       let projects = projectsRes.data ?? [];
       const branches = branchRes.data ?? [];
