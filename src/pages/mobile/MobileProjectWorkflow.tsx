@@ -32,6 +32,21 @@ export default function MobileProjectWorkflow() {
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [pendingAction, setPendingAction] = useState<ProjectAction | null>(null);
   const [resumeDismissed, setResumeDismissed] = useState(false);
+  const [pulse, setPulse] = useState(false);
+  const primaryRef = useRef<HTMLDivElement | null>(null);
+  const prevStepRef = useRef(step);
+
+  // When the step changes, scroll the primary button into view and pulse it briefly.
+  useEffect(() => {
+    if (loading) return;
+    if (prevStepRef.current === step) return;
+    prevStepRef.current = step;
+    if (!primaryRef.current) return;
+    primaryRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    setPulse(true);
+    const t = setTimeout(() => setPulse(false), 1800);
+    return () => clearTimeout(t);
+  }, [step, loading]);
 
   const project = todayProjects?.find((p) => p.projectId === projectId);
 
@@ -181,15 +196,17 @@ export default function MobileProjectWorkflow() {
       )}
 
       {primary && (
-        <HoldToConfirm
-          onConfirm={() => handleAction(primary)}
-          disabled={actionLoading}
-          loading={actionLoading}
-          variant="primary"
-        >
-          <CheckCircle2 className="h-6 w-6" />
-          {projectActionLabels[primary]}
-        </HoldToConfirm>
+        <div ref={primaryRef} className={pulse ? "animate-pulse-highlight rounded-2xl" : ""}>
+          <HoldToConfirm
+            onConfirm={() => handleAction(primary)}
+            disabled={actionLoading}
+            loading={actionLoading}
+            variant="primary"
+          >
+            <CheckCircle2 className="h-6 w-6" />
+            {projectActionLabels[primary]}
+          </HoldToConfirm>
+        </div>
       )}
 
       {secondary.length > 0 && (
