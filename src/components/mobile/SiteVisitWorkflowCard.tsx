@@ -23,6 +23,7 @@ const stepIcons: Record<SiteVisitAction, React.ElementType> = {
   start_break: Coffee,
   end_break: ClipboardList,
   end_visit: CheckCircle2,
+  start_return_travel: Truck,
 };
 
 function fmtElapsed(start?: string | null, end?: string | null) {
@@ -54,19 +55,20 @@ export function SiteVisitWorkflowCard({ siteVisitId }: Props) {
     if (step === "at_site") return { label: "At site", value: fmtElapsed(session.site_arrival_time) };
     if (step === "surveying") return { label: "Surveying", value: fmtElapsed(session.work_start_time) };
     if (step === "on_break") return { label: "On break", value: fmtElapsed(session.break_start_time) };
+    if (step === "returning") return { label: "Total", value: session.total_work_minutes ? `${Math.floor(session.total_work_minutes / 60)}h ${session.total_work_minutes % 60}m` : "—" };
     if (step === "completed") return { label: "Total", value: session.total_work_minutes ? `${Math.floor(session.total_work_minutes / 60)}h ${session.total_work_minutes % 60}m` : "—" };
     return null;
   }, [session, step]);
 
   const handleAction = async (action: SiteVisitAction) => {
     let payload: Record<string, unknown> | undefined;
-    if (action === "start_travel" || action === "arrive_site") {
+    if (action === "start_travel" || action === "arrive_site" || action === "start_return_travel") {
       const gps = await getGpsPosition(15000);
       if (!gps.reading) {
         toast({ title: "GPS unavailable", description: "Enable location and try again.", variant: "destructive" });
         return;
       }
-      payload = { lat: gps.reading.lat, lng: gps.reading.lng };
+      payload = { lat: gps.reading.lat, lng: gps.reading.lng, accuracy: gps.reading.accuracy };
     }
     const res = await executeAction(action, payload);
     if (!res.success) {
