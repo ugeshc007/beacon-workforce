@@ -43,6 +43,13 @@ const edgeFunctionMap: Record<string, string> = {
   end_break: "end-break",
   end_work: "end-work",
   punch_out: "punch-out",
+  // Project-scoped workflow actions
+  project_start_travel: "project-start-travel",
+  project_arrive_site: "project-arrive-site",
+  project_start_work: "project-start-work",
+  project_start_break: "project-start-break",
+  project_end_break: "project-end-break",
+  project_end_work: "project-end-work",
 };
 
 /**
