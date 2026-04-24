@@ -209,3 +209,43 @@ export function useMySiteVisits(employeeId: string | null) {
     },
   });
 }
+
+/** Mobile: today's visits for an employee + their workflow sessions, ordered for sequential execution */
+export function useMyTodaySiteVisits(employeeId: string | null) {
+  return useQuery({
+    queryKey: ["my-today-site-visits", employeeId],
+    enabled: !!employeeId,
+    refetchInterval: 30000,
+    queryFn: async () => {
+      const today = new Date();
+      const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+      const { data: visits, error } = await supabase
+        .from("site_visits")
+        .select("*")
+        .eq("assigned_employee_id", employeeId!)
+        .eq("visit_date", localDate)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+
+      const { data: sessions } = await supabase
+        .from("site_visit_work_sessions")
+        .select("id, site_visit_id, travel_start_time, site_arrival_time, work_start_time, break_start_time, break_end_time, work_end_time")
+        .eq("employee_id", employeeId!)
+        .eq("date", localDate);
+
+      const sessionByVisit = new Map<string, NonNullable<typeof sessions>[number]>();
+      (sessions ?? []).forEach((s) => sessionByVisit.set(s.site_visit_id, s));
+
+      // Determine which visit (if any) is currently active
+      const activeSession = (sessions ?? []).find((s) => !s.work_end_time);
+
+      return ((visits ?? []) as SiteVisit[]).map((v) => {
+        const sess = sessionByVisit.get(v.id) ?? null;
+        const isCompleted = !!sess?.work_end_time || v.status === "completed";
+        const isActive = activeSession?.site_visit_id === v.id;
+        const isLocked = !!activeSession && !isActive && !isCompleted;
+        return { visit: v, session: sess, isCompleted, isActive, isLocked };
+      });
+    },
+  });
+}
