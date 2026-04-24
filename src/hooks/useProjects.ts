@@ -234,10 +234,14 @@ export function useProjectCosts(projectId: string | null) {
     queryKey: ["project-costs", projectId],
     enabled: !!projectId,
     queryFn: async () => {
-      const [laborRes, expenseRes] = await Promise.all([
+      const [laborRes, sessionRes, expenseRes] = await Promise.all([
         supabase
           .from("attendance_logs")
           .select("date, regular_cost, overtime_cost, total_work_minutes, overtime_minutes, employee_id, employees(name, employee_code)")
+          .eq("project_id", projectId!),
+        supabase
+          .from("project_work_sessions")
+          .select("date, regular_cost, overtime_cost, total_work_minutes, overtime_minutes, employee_id, status, work_start_time, work_end_time, employees(name, employee_code)")
           .eq("project_id", projectId!),
         supabase
           .from("project_expenses")
@@ -245,7 +249,22 @@ export function useProjectCosts(projectId: string | null) {
           .eq("project_id", projectId!),
       ]);
 
-      const laborRows = laborRes.data ?? [];
+      // Merge attendance_logs + project_work_sessions into a single labor row set.
+      // Sessions are the authoritative per-project source going forward; attendance_logs
+      // remain for historical data captured before the per-project workflow existed.
+      const laborRows = [
+        ...(laborRes.data ?? []),
+        ...((sessionRes.data ?? []).map((s) => ({
+          date: s.date,
+          regular_cost: s.regular_cost,
+          overtime_cost: s.overtime_cost,
+          total_work_minutes: s.total_work_minutes,
+          overtime_minutes: s.overtime_minutes,
+          employee_id: s.employee_id,
+          employees: s.employees,
+        }))),
+      ];
+      const sessionRows = sessionRes.data ?? [];
       const expenseRows = expenseRes.data ?? [];
 
       const totalLabor = laborRows.reduce((s, a) => s + Number(a.regular_cost ?? 0), 0);
