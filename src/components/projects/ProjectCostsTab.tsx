@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import {
-  DollarSign, TrendingUp, AlertTriangle, BarChart3, PieChart,
+  DollarSign, TrendingUp, AlertTriangle, BarChart3, PieChart, Users, Activity,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -38,6 +38,9 @@ interface Props {
     weeklyData: { week: string; labor: number; overtime: number; expenses: number }[];
     dailyData: { date: string; labor: number; overtime: number; expenses: number; records: any[] }[];
     daysWithCost: number;
+    byEmployee?: { id: string; name: string; code: string; hours: number; otHours: number; regularCost: number; otCost: number; totalCost: number; days: number }[];
+    activeSessions?: { employee: string; startedAt: string | null; date: string }[];
+    sessionCount?: number;
   } | undefined;
 }
 
