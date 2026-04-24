@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSiteVisit, useSiteVisitPhotos, useUpdateSiteVisit, useUploadSiteVisitPhoto, useDeleteSiteVisitPhoto, getSiteVisitPhotoUrl } from "@/hooks/useSiteVisits";
 import { useToast } from "@/hooks/use-toast";
+import { SiteVisitWorkflowCard } from "@/components/mobile/SiteVisitWorkflowCard";
 
 const statusColors: Record<string, string> = {
   pending: "bg-amber-500/15 text-amber-400",
@@ -133,6 +134,9 @@ export default function MobileSiteVisitDetail() {
         {visit.client_contact && <p className="flex items-center gap-2 text-muted-foreground"><Phone className="h-3.5 w-3.5 shrink-0" />{visit.client_contact}</p>}
         {visit.scope_brief && <p className="text-foreground pt-1.5 border-t border-border/50">{visit.scope_brief}</p>}
       </Card>
+
+      {/* Step-by-step workflow (Travel → Arrive → Survey → Break → End) */}
+      <SiteVisitWorkflowCard siteVisitId={visit.id} />
 
       <Tabs defaultValue="site" className="w-full">
         <TabsList className="grid grid-cols-4 w-full">

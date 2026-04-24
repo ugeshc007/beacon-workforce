@@ -50,6 +50,13 @@ const edgeFunctionMap: Record<string, string> = {
   project_start_break: "project-start-break",
   project_end_break: "project-end-break",
   project_end_work: "project-end-work",
+  // Site-visit workflow actions
+  sv_start_travel: "sv-start-travel",
+  sv_arrive_site: "sv-arrive-site",
+  sv_start_survey: "sv-start-survey",
+  sv_start_break: "sv-start-break",
+  sv_end_break: "sv-end-break",
+  sv_end_visit: "sv-end-visit",
 };
 
 /**
