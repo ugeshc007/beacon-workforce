@@ -10,7 +10,7 @@ import { initAutoSync } from "@/lib/offline-sync";
 import { HoldToConfirm } from "@/components/mobile/HoldToConfirm";
 import { MapPicker } from "@/components/mobile/MapPicker";
 import { Card } from "@/components/ui/card";
-import { Loader2, MapPin, Clock, Wifi, WifiOff, CheckCircle2, AlertTriangle, Crosshair, ChevronRight, PlayCircle, RotateCcw } from "lucide-react";
+import { Loader2, MapPin, Clock, Wifi, WifiOff, CheckCircle2, AlertTriangle, Crosshair, ChevronRight, PlayCircle, RotateCcw, Coffee, Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -224,80 +224,127 @@ export default function MobileHome() {
         </button>
       )}
 
-      {/* Project list — visible after punch in, before punch out */}
-      {step !== "idle" && step !== "punched_out" && (
+      {/* IN-HOUSE MODE: Punched in, no projects today → simple office workflow */}
+      {step !== "idle" && step !== "punched_out" && !projectsLoading && !todayProjects?.length && (
+        <div className="flex flex-col gap-3">
+          <Card className="p-4 border-brand/40 bg-brand/5">
+            <div className="flex items-start gap-3">
+              <Building2 className="h-5 w-5 text-brand mt-0.5 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-foreground">In-House Work</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  No site project today. Working from office — your hours are tracked the same way.
+                </p>
+                {step === "on_break" && (
+                  <p className="text-xs text-orange-400 mt-2 font-medium flex items-center gap-1">
+                    <Coffee className="h-3 w-3" /> On break
+                  </p>
+                )}
+              </div>
+            </div>
+          </Card>
+
+          {/* Break controls */}
+          {step !== "on_break" && (
+            <HoldToConfirm
+              onConfirm={() => handleOfficeAction("start_break")}
+              disabled={actionLoading}
+              loading={actionLoading}
+              variant="secondary"
+            >
+              <Coffee className="h-5 w-5" />
+              {actionLabels.start_break}
+            </HoldToConfirm>
+          )}
+          {step === "on_break" && (
+            <HoldToConfirm
+              onConfirm={() => handleOfficeAction("end_break")}
+              disabled={actionLoading}
+              loading={actionLoading}
+              variant="primary"
+            >
+              <PlayCircle className="h-5 w-5" />
+              {actionLabels.end_break}
+            </HoldToConfirm>
+          )}
+
+          {/* Punch out — always available in-house */}
+          <HoldToConfirm
+            onConfirm={() => handleOfficeAction("punch_out")}
+            disabled={actionLoading || step === "on_break"}
+            loading={actionLoading}
+            variant="secondary"
+          >
+            <CheckCircle2 className="h-5 w-5" />
+            {actionLabels.punch_out}
+          </HoldToConfirm>
+          {step === "on_break" && (
+            <p className="text-[11px] text-muted-foreground text-center">
+              End your break before punching out.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Project list — visible after punch in, before punch out, when projects exist */}
+      {step !== "idle" && step !== "punched_out" && !!todayProjects?.length && (
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Today's Projects</p>
-            {todayProjects && todayProjects.length > 0 && (
-              <p className="text-xs text-muted-foreground">
-                {todayProjects.filter((p) => p.step === "completed").length}/{todayProjects.length} done
-              </p>
-            )}
+            <p className="text-xs text-muted-foreground">
+              {todayProjects.filter((p) => p.step === "completed").length}/{todayProjects.length} done
+            </p>
           </div>
 
-          {projectsLoading ? (
-            <Card className="p-6 border-border/50 bg-card flex justify-center">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            </Card>
-          ) : !todayProjects?.length ? (
-            <Card className="p-4 border-border/50 bg-card">
-              <div className="flex items-center gap-3">
-                <AlertTriangle className="h-5 w-5 text-amber-400" />
-                <p className="text-sm text-muted-foreground">No projects assigned for today</p>
-              </div>
-            </Card>
-          ) : (
-            todayProjects.map((p) => {
-              const isActive = p.sessionId && p.step !== "completed";
-              const isDone = p.step === "completed";
-              return (
-                <button
-                  key={p.assignmentId}
-                  onClick={() => navigate(`/m/project/${p.projectId}`)}
-                  disabled={isDone}
-                  className={`text-left rounded-xl border p-4 transition-all ${
-                    isDone
-                      ? "border-border/30 bg-card/50 opacity-60"
-                      : isActive
-                        ? "border-brand/50 bg-brand/5"
-                        : "border-border/50 bg-card hover:border-brand/40 hover:bg-card/80"
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    {isDone ? (
-                      <CheckCircle2 className="h-5 w-5 text-green-400 mt-0.5 shrink-0" />
-                    ) : isActive ? (
-                      <PlayCircle className="h-5 w-5 text-brand mt-0.5 shrink-0 animate-pulse" />
-                    ) : (
-                      <MapPin className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-foreground truncate">{p.projectName}</p>
-                      {p.siteAddress && <p className="text-xs text-muted-foreground truncate">{p.siteAddress}</p>}
-                      <div className="flex items-center gap-3 mt-1.5">
-                        <span className={`text-xs font-medium ${projectStepColors[p.step]}`}>
-                          {projectStepLabels[p.step]}
+          {todayProjects.map((p) => {
+            const isActive = p.sessionId && p.step !== "completed";
+            const isDone = p.step === "completed";
+            return (
+              <button
+                key={p.assignmentId}
+                onClick={() => navigate(`/m/project/${p.projectId}`)}
+                disabled={isDone}
+                className={`text-left rounded-xl border p-4 transition-all ${
+                  isDone
+                    ? "border-border/30 bg-card/50 opacity-60"
+                    : isActive
+                      ? "border-brand/50 bg-brand/5"
+                      : "border-border/50 bg-card hover:border-brand/40 hover:bg-card/80"
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  {isDone ? (
+                    <CheckCircle2 className="h-5 w-5 text-green-400 mt-0.5 shrink-0" />
+                  ) : isActive ? (
+                    <PlayCircle className="h-5 w-5 text-brand mt-0.5 shrink-0 animate-pulse" />
+                  ) : (
+                    <MapPin className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-foreground truncate">{p.projectName}</p>
+                    {p.siteAddress && <p className="text-xs text-muted-foreground truncate">{p.siteAddress}</p>}
+                    <div className="flex items-center gap-3 mt-1.5">
+                      <span className={`text-xs font-medium ${projectStepColors[p.step]}`}>
+                        {projectStepLabels[p.step]}
+                      </span>
+                      {p.shiftStart && p.shiftEnd && (
+                        <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {p.shiftStart.slice(0, 5)}–{p.shiftEnd.slice(0, 5)}
                         </span>
-                        {p.shiftStart && p.shiftEnd && (
-                          <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {p.shiftStart.slice(0, 5)}–{p.shiftEnd.slice(0, 5)}
-                          </span>
-                        )}
-                        {isDone && p.totalWorkMinutes != null && (
-                          <span className="text-[10px] text-muted-foreground">
-                            {Math.floor(p.totalWorkMinutes / 60)}h {p.totalWorkMinutes % 60}m
-                          </span>
-                        )}
-                      </div>
+                      )}
+                      {isDone && p.totalWorkMinutes != null && (
+                        <span className="text-[10px] text-muted-foreground">
+                          {Math.floor(p.totalWorkMinutes / 60)}h {p.totalWorkMinutes % 60}m
+                        </span>
+                      )}
                     </div>
-                    {!isDone && <ChevronRight className="h-4 w-4 text-muted-foreground mt-0.5" />}
                   </div>
-                </button>
-              );
-            })
-          )}
+                  {!isDone && <ChevronRight className="h-4 w-4 text-muted-foreground mt-0.5" />}
+                </div>
+              </button>
+            );
+          })}
 
           {singleProject && !singleProject.sessionId && (
             <p className="text-[11px] text-muted-foreground text-center mt-1">
@@ -307,8 +354,15 @@ export default function MobileHome() {
         </div>
       )}
 
-      {/* Punch Out — show when all projects done OR user chooses to end day */}
-      {step !== "idle" && step !== "punched_out" && officeAction === "punch_out" && (
+      {/* Loading state for project list */}
+      {step !== "idle" && step !== "punched_out" && projectsLoading && (
+        <Card className="p-6 border-border/50 bg-card flex justify-center">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </Card>
+      )}
+
+      {/* Punch Out — only when projects exist (in-house mode handles its own punch-out) */}
+      {step !== "idle" && step !== "punched_out" && officeAction === "punch_out" && !!todayProjects?.length && (
         <HoldToConfirm
           onConfirm={() => handleOfficeAction("punch_out")}
           disabled={actionLoading}
