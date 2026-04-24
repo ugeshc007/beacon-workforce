@@ -196,7 +196,7 @@ export default function MobileProjectWorkflow() {
       )}
 
       {primary && (
-        <div ref={primaryRef} className={pulse ? "animate-pulse-highlight rounded-2xl" : ""}>
+        <div ref={primaryRef} className={`rounded-2xl transition-shadow ${pulse ? "animate-pulse-glow ring-2 ring-brand/60" : ""}`}>
           <HoldToConfirm
             onConfirm={() => handleAction(primary)}
             disabled={actionLoading}
