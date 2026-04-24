@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, forwardRef } from "react";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -18,7 +18,7 @@ interface HoldToConfirmProps {
  * - After release/confirm, a loading overlay with spinner appears so the
  *   user knows the request is in flight (prevents double-taps).
  */
-export function HoldToConfirm({
+export const HoldToConfirm = forwardRef<HTMLButtonElement, HoldToConfirmProps>(function HoldToConfirm({
   onConfirm,
   holdDurationMs = 1500,
   disabled = false,
@@ -26,7 +26,7 @@ export function HoldToConfirm({
   className,
   variant = "primary",
   children,
-}: HoldToConfirmProps) {
+}, ref) {
   const [progress, setProgress] = useState(0);
   const [holding, setHolding] = useState(false);
   const timerRef = useRef<number | null>(null);
@@ -88,6 +88,7 @@ export function HoldToConfirm({
 
   return (
     <button
+      ref={ref}
       onMouseDown={startHold}
       onMouseUp={cancelHold}
       onMouseLeave={cancelHold}
@@ -145,4 +146,4 @@ export function HoldToConfirm({
       )}
     </button>
   );
-}
+});

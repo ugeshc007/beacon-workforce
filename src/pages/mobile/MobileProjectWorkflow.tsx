@@ -34,9 +34,10 @@ export default function MobileProjectWorkflow() {
   const [resumeDismissed, setResumeDismissed] = useState(false);
   const [pulse, setPulse] = useState(false);
   const primaryRef = useRef<HTMLDivElement | null>(null);
+  const primaryButtonRef = useRef<HTMLButtonElement | null>(null);
   const prevStepRef = useRef(step);
 
-  // When the step changes, scroll the primary button into view and pulse it briefly.
+  // When the step changes, scroll the primary button into view, pulse it briefly, and focus it.
   useEffect(() => {
     if (loading) return;
     if (prevStepRef.current === step) return;
@@ -44,8 +45,15 @@ export default function MobileProjectWorkflow() {
     if (!primaryRef.current) return;
     primaryRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
     setPulse(true);
+    // Focus the hold-to-confirm button after the scroll settles for quicker interaction
+    const focusT = setTimeout(() => {
+      primaryButtonRef.current?.focus({ preventScroll: true });
+    }, 450);
     const t = setTimeout(() => setPulse(false), 1800);
-    return () => clearTimeout(t);
+    return () => {
+      clearTimeout(t);
+      clearTimeout(focusT);
+    };
   }, [step, loading]);
 
   const project = todayProjects?.find((p) => p.projectId === projectId);
@@ -198,6 +206,7 @@ export default function MobileProjectWorkflow() {
       {primary && (
         <div ref={primaryRef} className={`rounded-2xl transition-shadow ${pulse ? "animate-pulse-glow ring-2 ring-brand/60" : ""}`}>
           <HoldToConfirm
+            ref={primaryButtonRef}
             onConfirm={() => handleAction(primary)}
             disabled={actionLoading}
             loading={actionLoading}
