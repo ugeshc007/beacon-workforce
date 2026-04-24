@@ -79,9 +79,14 @@ export default function MobileProjectWorkflow() {
   };
 
   const submitAction = async (action: ProjectAction, payload: Record<string, unknown>) => {
-    const result = await executeAction(action, payload);
+    const result = (await executeAction(action, payload)) as { success: boolean; error?: string; queued?: boolean };
     if (!result?.success) {
       toast({ title: "Failed", description: result?.error || "Something went wrong.", variant: "destructive" });
+    } else if (result.queued) {
+      toast({
+        title: "Saved offline",
+        description: "Timer is running. We'll sync this step when you're back online.",
+      });
     }
   };
 
