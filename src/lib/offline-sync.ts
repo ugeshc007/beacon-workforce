@@ -57,6 +57,7 @@ const edgeFunctionMap: Record<string, string> = {
   sv_start_break: "sv-start-break",
   sv_end_break: "sv-end-break",
   sv_end_visit: "sv-end-visit",
+  sv_start_return_travel: "sv-start-return-travel",
 };
 
 /**
