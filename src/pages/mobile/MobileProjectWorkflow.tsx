@@ -12,9 +12,10 @@ import {
 import { getGpsPosition, qualityColor, qualityLabel } from "@/lib/gps";
 import { HoldToConfirm } from "@/components/mobile/HoldToConfirm";
 import { MapPicker } from "@/components/mobile/MapPicker";
+import { ProjectStepTimeline } from "@/components/mobile/ProjectStepTimeline";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Loader2, MapPin, Clock, ArrowLeft, CheckCircle2, Crosshair } from "lucide-react";
+import { Loader2, MapPin, Clock, ArrowLeft, CheckCircle2, Crosshair, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const GPS_ACTIONS: ProjectAction[] = ["start_travel", "arrive_site"];
@@ -24,7 +25,7 @@ export default function MobileProjectWorkflow() {
   const navigate = useNavigate();
   const { employee } = useMobileAuth();
   const { data: todayProjects } = useTodayProjects();
-  const { step, availableActions, loading, actionLoading, executeAction } = useProjectWorkflow(projectId ?? null);
+  const { session, step, availableActions, loading, actionLoading, executeAction } = useProjectWorkflow(projectId ?? null);
   const { toast } = useToast();
 
   const [gpsQuality, setGpsQuality] = useState<"high" | "medium" | "low" | "none">("none");
@@ -128,6 +129,25 @@ export default function MobileProjectWorkflow() {
           </div>
         )}
       </Card>
+
+      {/* Step-by-step timeline with live elapsed timer */}
+      <ProjectStepTimeline
+        step={step}
+        travelStart={session?.travel_start_time}
+        siteArrival={session?.site_arrival_time}
+        workStart={session?.work_start_time}
+        breakStart={session?.break_start_time}
+        breakEnd={session?.break_end_time}
+        workEnd={session?.work_end_time}
+      />
+
+      {/* Next action hint */}
+      {primary && step !== "completed" && (
+        <div className="flex items-center gap-2 px-1 text-xs text-muted-foreground">
+          <ArrowRight className="h-3.5 w-3.5 text-brand" />
+          <span>Next step: <span className="text-foreground font-medium">{projectActionLabels[primary]}</span></span>
+        </div>
+      )}
 
       {primary && (
         <HoldToConfirm
