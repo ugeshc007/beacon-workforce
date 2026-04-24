@@ -15,7 +15,7 @@ import { MapPicker } from "@/components/mobile/MapPicker";
 import { ProjectStepTimeline } from "@/components/mobile/ProjectStepTimeline";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Loader2, MapPin, Clock, ArrowLeft, CheckCircle2, Crosshair, ArrowRight } from "lucide-react";
+import { Loader2, MapPin, Clock, ArrowLeft, CheckCircle2, Crosshair, ArrowRight, RotateCcw, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const GPS_ACTIONS: ProjectAction[] = ["start_travel", "arrive_site"];
@@ -31,8 +31,12 @@ export default function MobileProjectWorkflow() {
   const [gpsQuality, setGpsQuality] = useState<"high" | "medium" | "low" | "none">("none");
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [pendingAction, setPendingAction] = useState<ProjectAction | null>(null);
+  const [resumeDismissed, setResumeDismissed] = useState(false);
 
   const project = todayProjects?.find((p) => p.projectId === projectId);
+
+  // Detect if we restored an in-progress session (anything past idle and not finished)
+  const isResumed = !loading && !!session && step !== "idle" && step !== "completed";
 
   useEffect(() => {
     if (step === "completed") {
