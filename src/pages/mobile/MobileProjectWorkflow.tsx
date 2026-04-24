@@ -15,7 +15,7 @@ import { MapPicker } from "@/components/mobile/MapPicker";
 import { ProjectStepTimeline } from "@/components/mobile/ProjectStepTimeline";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Loader2, MapPin, Clock, ArrowLeft, CheckCircle2, Crosshair, ArrowRight } from "lucide-react";
+import { Loader2, MapPin, Clock, ArrowLeft, CheckCircle2, Crosshair, ArrowRight, RotateCcw, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const GPS_ACTIONS: ProjectAction[] = ["start_travel", "arrive_site"];
@@ -31,8 +31,12 @@ export default function MobileProjectWorkflow() {
   const [gpsQuality, setGpsQuality] = useState<"high" | "medium" | "low" | "none">("none");
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [pendingAction, setPendingAction] = useState<ProjectAction | null>(null);
+  const [resumeDismissed, setResumeDismissed] = useState(false);
 
   const project = todayProjects?.find((p) => p.projectId === projectId);
+
+  // Detect if we restored an in-progress session (anything past idle and not finished)
+  const isResumed = !loading && !!session && step !== "idle" && step !== "completed";
 
   useEffect(() => {
     if (step === "completed") {
@@ -111,6 +115,28 @@ export default function MobileProjectWorkflow() {
           </div>
         </div>
       </Card>
+
+      {/* Resume banner — shown when an in-progress session was restored from DB */}
+      {isResumed && !resumeDismissed && availableActions[0] && (
+        <Card className="p-3 border-brand/50 bg-brand/10 flex items-center gap-3">
+          <RotateCcw className="h-5 w-5 text-brand shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-foreground">Resumed in-progress session</p>
+            <p className="text-[11px] text-muted-foreground">
+              You're at <span className="text-foreground font-medium">{projectStepLabels[step]}</span>.
+              Next: {projectActionLabels[availableActions[0]]}.
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 shrink-0"
+            onClick={() => setResumeDismissed(true)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </Card>
+      )}
 
       <Card className="p-4 border-border/50 bg-card flex items-center justify-between">
         <div className="flex items-center gap-3">

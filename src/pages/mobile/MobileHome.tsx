@@ -10,7 +10,7 @@ import { initAutoSync } from "@/lib/offline-sync";
 import { HoldToConfirm } from "@/components/mobile/HoldToConfirm";
 import { MapPicker } from "@/components/mobile/MapPicker";
 import { Card } from "@/components/ui/card";
-import { Loader2, MapPin, Clock, Wifi, WifiOff, CheckCircle2, AlertTriangle, Crosshair, ChevronRight, PlayCircle } from "lucide-react";
+import { Loader2, MapPin, Clock, Wifi, WifiOff, CheckCircle2, AlertTriangle, Crosshair, ChevronRight, PlayCircle, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -142,6 +142,11 @@ export default function MobileHome() {
   // Single-project shortcut: if punched in and only one assignment, jump in
   const singleProject = (todayProjects?.length === 1) ? todayProjects[0] : null;
 
+  // Resume shortcut — find any in-progress session restored from DB
+  const activeProject = (todayProjects ?? []).find(
+    (p) => p.sessionId && p.step !== "completed" && p.step !== "idle"
+  );
+
   return (
     <div className="flex flex-col gap-4 p-4 pb-24 safe-area-inset">
       {/* Greeting */}
@@ -197,6 +202,26 @@ export default function MobileHome() {
           <CheckCircle2 className="h-6 w-6" />
           {actionLabels.punch_in}
         </HoldToConfirm>
+      )}
+
+      {/* Resume in-progress project */}
+      {step !== "idle" && step !== "punched_out" && activeProject && (
+        <button
+          onClick={() => navigate(`/m/project/${activeProject.projectId}`)}
+          className="rounded-xl border border-brand/50 bg-brand/10 p-4 text-left transition-colors hover:bg-brand/15"
+        >
+          <div className="flex items-center gap-3">
+            <RotateCcw className="h-5 w-5 text-brand shrink-0 animate-pulse" />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium text-brand uppercase tracking-wider">Resume Last Step</p>
+              <p className="text-sm font-semibold text-foreground truncate mt-0.5">{activeProject.projectName}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                Currently: <span className={projectStepColors[activeProject.step]}>{projectStepLabels[activeProject.step]}</span>
+              </p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-brand shrink-0" />
+          </div>
+        </button>
       )}
 
       {/* Project list — visible after punch in, before punch out */}
