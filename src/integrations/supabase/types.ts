@@ -1591,6 +1591,10 @@ export type Database = {
           overtime_cost: number | null
           overtime_minutes: number | null
           regular_cost: number | null
+          return_travel_start_accuracy: number | null
+          return_travel_start_lat: number | null
+          return_travel_start_lng: number | null
+          return_travel_start_time: string | null
           site_arrival_distance_m: number | null
           site_arrival_lat: number | null
           site_arrival_lng: number | null
@@ -1619,6 +1623,10 @@ export type Database = {
           overtime_cost?: number | null
           overtime_minutes?: number | null
           regular_cost?: number | null
+          return_travel_start_accuracy?: number | null
+          return_travel_start_lat?: number | null
+          return_travel_start_lng?: number | null
+          return_travel_start_time?: string | null
           site_arrival_distance_m?: number | null
           site_arrival_lat?: number | null
           site_arrival_lng?: number | null
@@ -1647,6 +1655,10 @@ export type Database = {
           overtime_cost?: number | null
           overtime_minutes?: number | null
           regular_cost?: number | null
+          return_travel_start_accuracy?: number | null
+          return_travel_start_lat?: number | null
+          return_travel_start_lng?: number | null
+          return_travel_start_time?: string | null
           site_arrival_distance_m?: number | null
           site_arrival_lat?: number | null
           site_arrival_lng?: number | null
