@@ -18,7 +18,7 @@ interface HoldToConfirmProps {
  * - After release/confirm, a loading overlay with spinner appears so the
  *   user knows the request is in flight (prevents double-taps).
  */
-export function HoldToConfirm({
+export const HoldToConfirm = forwardRef<HTMLButtonElement, HoldToConfirmProps>(function HoldToConfirm({
   onConfirm,
   holdDurationMs = 1500,
   disabled = false,
@@ -26,7 +26,7 @@ export function HoldToConfirm({
   className,
   variant = "primary",
   children,
-}: HoldToConfirmProps) {
+}, ref) {
   const [progress, setProgress] = useState(0);
   const [holding, setHolding] = useState(false);
   const timerRef = useRef<number | null>(null);
