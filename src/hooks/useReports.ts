@@ -595,14 +595,24 @@ export function useProfitabilityData() {
   return useQuery({
     queryKey: ["report-profitability"],
     queryFn: async () => {
-      const [projRes, logsRes, expensesRes] = await Promise.all([
+      const [projRes, logsRes, sessionsRes, expensesRes] = await Promise.all([
         supabase.from("projects").select("id, name, budget, project_value, status, start_date, end_date"),
         supabase.from("attendance_logs").select("project_id, regular_cost, overtime_cost, total_work_minutes"),
+        supabase.from("project_work_sessions").select("project_id, regular_cost, overtime_cost, total_work_minutes"),
         supabase.from("project_expenses").select("project_id, amount_aed, status"),
       ]);
 
       const projects = projRes.data ?? [];
-      const logs = logsRes.data ?? [];
+      // Merge attendance_logs + project_work_sessions for full labor picture
+      const logs = [
+        ...(logsRes.data ?? []),
+        ...((sessionsRes.data ?? []).map((s) => ({
+          project_id: s.project_id,
+          regular_cost: s.regular_cost,
+          overtime_cost: s.overtime_cost,
+          total_work_minutes: s.total_work_minutes,
+        }))),
+      ];
       const expenses = expensesRes.data ?? [];
 
       const costMap = new Map<string, { labor: number; ot: number; expenses: number; hours: number }>();
