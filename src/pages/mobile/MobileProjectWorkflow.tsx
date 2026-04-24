@@ -116,6 +116,28 @@ export default function MobileProjectWorkflow() {
         </div>
       </Card>
 
+      {/* Resume banner — shown when an in-progress session was restored from DB */}
+      {isResumed && !resumeDismissed && availableActions[0] && (
+        <Card className="p-3 border-brand/50 bg-brand/10 flex items-center gap-3">
+          <RotateCcw className="h-5 w-5 text-brand shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-foreground">Resumed in-progress session</p>
+            <p className="text-[11px] text-muted-foreground">
+              You're at <span className="text-foreground font-medium">{projectStepLabels[step]}</span>.
+              Next: {projectActionLabels[availableActions[0]]}.
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 shrink-0"
+            onClick={() => setResumeDismissed(true)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </Card>
+      )}
+
       <Card className="p-4 border-border/50 bg-card flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className={`w-3 h-3 rounded-full ${
