@@ -88,6 +88,7 @@ export const HoldToConfirm = forwardRef<HTMLButtonElement, HoldToConfirmProps>(f
 
   return (
     <button
+      ref={ref}
       onMouseDown={startHold}
       onMouseUp={cancelHold}
       onMouseLeave={cancelHold}
@@ -145,4 +146,4 @@ export const HoldToConfirm = forwardRef<HTMLButtonElement, HoldToConfirmProps>(f
       )}
     </button>
   );
-}
+});
