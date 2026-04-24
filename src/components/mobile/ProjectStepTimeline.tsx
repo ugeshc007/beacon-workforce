@@ -84,16 +84,29 @@ export function ProjectStepTimeline({
           s.key === "on_break" ? breakStart :
           workEnd;
 
+        // End time = start of the next step (or step's natural end timestamp)
+        const endStamp =
+          s.key === "traveling" ? siteArrival :
+          s.key === "at_site" ? workStart :
+          s.key === "working" ? (workEnd ?? breakStart) :
+          s.key === "on_break" ? breakEnd :
+          null; // completed has no "end"
+
+        const durationMin = (() => {
+          if (!stamp || !endStamp) return null;
+          return Math.max(0, Math.round((new Date(endStamp).getTime() - new Date(stamp).getTime()) / 60000));
+        })();
+
         return (
           <div
             key={s.key}
-            className={`flex items-center gap-3 rounded-lg p-3 border transition-colors ${
+            className={`flex items-start gap-3 rounded-lg p-3 border transition-colors ${
               isCurrent ? "border-brand/50 bg-brand/5"
                 : isDone ? "border-border/30 bg-card/50"
                 : "border-border/30 bg-card/30 opacity-60"
             }`}
           >
-            <div className="shrink-0">
+            <div className="shrink-0 mt-0.5">
               {isDone ? (
                 <CheckCircle2 className="h-5 w-5 text-green-400" />
               ) : isCurrent ? (
@@ -109,8 +122,16 @@ export function ProjectStepTimeline({
                 {isDone ? s.doneLabel : s.label}
               </p>
               {stamp && (
-                <p className="text-[10px] text-muted-foreground mt-0.5">
-                  Started {fmtTime(stamp)}
+                <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">
+                  {fmtTime(stamp)}
+                  {endStamp && <> → {fmtTime(endStamp)}</>}
+                  {durationMin != null && (
+                    <span className="ml-2 text-foreground/80">
+                      ({durationMin >= 60
+                        ? `${Math.floor(durationMin / 60)}h ${durationMin % 60}m`
+                        : `${durationMin}m`})
+                    </span>
+                  )}
                 </p>
               )}
             </div>
