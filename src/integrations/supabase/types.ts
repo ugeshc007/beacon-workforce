@@ -1142,6 +1142,124 @@ export type Database = {
           },
         ]
       }
+      project_work_sessions: {
+        Row: {
+          attendance_log_id: string | null
+          break_end_time: string | null
+          break_minutes: number | null
+          break_start_time: string | null
+          created_at: string
+          date: string
+          employee_id: string
+          id: string
+          notes: string | null
+          overtime_cost: number | null
+          overtime_minutes: number | null
+          project_id: string
+          regular_cost: number | null
+          return_travel_start_lat: number | null
+          return_travel_start_lng: number | null
+          return_travel_start_time: string | null
+          site_arrival_distance_m: number | null
+          site_arrival_lat: number | null
+          site_arrival_lng: number | null
+          site_arrival_time: string | null
+          site_arrival_valid: boolean | null
+          status: string
+          total_work_minutes: number | null
+          travel_start_lat: number | null
+          travel_start_lng: number | null
+          travel_start_time: string | null
+          updated_at: string
+          work_end_time: string | null
+          work_start_time: string | null
+        }
+        Insert: {
+          attendance_log_id?: string | null
+          break_end_time?: string | null
+          break_minutes?: number | null
+          break_start_time?: string | null
+          created_at?: string
+          date: string
+          employee_id: string
+          id?: string
+          notes?: string | null
+          overtime_cost?: number | null
+          overtime_minutes?: number | null
+          project_id: string
+          regular_cost?: number | null
+          return_travel_start_lat?: number | null
+          return_travel_start_lng?: number | null
+          return_travel_start_time?: string | null
+          site_arrival_distance_m?: number | null
+          site_arrival_lat?: number | null
+          site_arrival_lng?: number | null
+          site_arrival_time?: string | null
+          site_arrival_valid?: boolean | null
+          status?: string
+          total_work_minutes?: number | null
+          travel_start_lat?: number | null
+          travel_start_lng?: number | null
+          travel_start_time?: string | null
+          updated_at?: string
+          work_end_time?: string | null
+          work_start_time?: string | null
+        }
+        Update: {
+          attendance_log_id?: string | null
+          break_end_time?: string | null
+          break_minutes?: number | null
+          break_start_time?: string | null
+          created_at?: string
+          date?: string
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          overtime_cost?: number | null
+          overtime_minutes?: number | null
+          project_id?: string
+          regular_cost?: number | null
+          return_travel_start_lat?: number | null
+          return_travel_start_lng?: number | null
+          return_travel_start_time?: string | null
+          site_arrival_distance_m?: number | null
+          site_arrival_lat?: number | null
+          site_arrival_lng?: number | null
+          site_arrival_time?: string | null
+          site_arrival_valid?: boolean | null
+          status?: string
+          total_work_minutes?: number | null
+          travel_start_lat?: number | null
+          travel_start_lng?: number | null
+          travel_start_time?: string | null
+          updated_at?: string
+          work_end_time?: string | null
+          work_start_time?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_work_sessions_attendance_log_id_fkey"
+            columns: ["attendance_log_id"]
+            isOneToOne: false
+            referencedRelation: "attendance_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_work_sessions_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_work_sessions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           branch_id: string

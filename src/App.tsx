@@ -51,6 +51,7 @@ import MobileTeamStatus from "./pages/mobile/MobileTeamStatus";
 import MobileDailyLog from "./pages/mobile/MobileDailyLog";
 import MobileSiteVisits from "./pages/mobile/MobileSiteVisits";
 import MobileSiteVisitDetail from "./pages/mobile/MobileSiteVisitDetail";
+import MobileProjectWorkflow from "./pages/mobile/MobileProjectWorkflow";
 
 const queryClient = new QueryClient();
 
@@ -71,6 +72,7 @@ const App = () => (
             <Route path="daily-log" element={<MobileDailyLog />} />
             <Route path="site-visits" element={<MobileSiteVisits />} />
             <Route path="site-visits/:id" element={<MobileSiteVisitDetail />} />
+            <Route path="project/:projectId" element={<MobileProjectWorkflow />} />
             <Route path="profile" element={<MobileProfile />} />
           </Route>
 

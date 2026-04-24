@@ -1,33 +1,27 @@
 import { useMobileWorkflow } from "@/hooks/useMobileWorkflow";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
+import { useTodayProjects } from "@/hooks/useTodayProjects";
 import { useBackgroundTracking } from "@/hooks/useBackgroundTracking";
 import { actionLabels, stepLabels, stepColors, WorkflowAction } from "@/lib/workflow-engine";
+import { projectStepLabels, projectStepColors } from "@/lib/project-workflow-engine";
 import { getGpsPosition, qualityColor, qualityLabel } from "@/lib/gps";
 import { enqueueAction } from "@/lib/offline-queue";
-import { syncPendingActions, initAutoSync } from "@/lib/offline-sync";
+import { initAutoSync } from "@/lib/offline-sync";
 import { HoldToConfirm } from "@/components/mobile/HoldToConfirm";
 import { MapPicker } from "@/components/mobile/MapPicker";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Loader2, MapPin, Clock, Wifi, WifiOff, CheckCircle2, AlertTriangle, Crosshair } from "lucide-react";
+import { Loader2, MapPin, Clock, Wifi, WifiOff, CheckCircle2, AlertTriangle, Crosshair, ChevronRight, PlayCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 
-/** Actions that require GPS */
-const GPS_ACTIONS: WorkflowAction[] = [
-  "punch_in",
-  "start_travel",
-  "arrive_site",
-  "start_return_travel",
-  "arrive_office",
-  "punch_out",
-];
-
-// All workflow actions require hold-to-confirm to prevent accidental taps
+const GPS_ACTIONS: WorkflowAction[] = ["punch_in", "punch_out"];
 
 export default function MobileHome() {
   const { employee } = useMobileAuth();
-  const { step, assignment, attendanceLog, availableActions, loading, actionLoading, executeAction } = useMobileWorkflow();
+  const navigate = useNavigate();
+  const { step, attendanceLog, availableActions, loading, actionLoading, executeAction } = useMobileWorkflow();
+  const { data: todayProjects, isLoading: projectsLoading } = useTodayProjects();
   const { startTracking, stopTracking } = useBackgroundTracking();
   const { toast } = useToast();
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -37,13 +31,11 @@ export default function MobileHome() {
   const [pendingAction, setPendingAction] = useState<WorkflowAction | null>(null);
   const autoSyncCleanup = useRef<(() => void) | null>(null);
 
-  // Clock
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
+    const t = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(t);
   }, []);
 
-  // Online/offline
   useEffect(() => {
     const onOnline = () => setIsOnline(true);
     const onOffline = () => setIsOnline(false);
@@ -55,37 +47,42 @@ export default function MobileHome() {
     };
   }, []);
 
-  // Auto-sync on reconnect
   useEffect(() => {
     autoSyncCleanup.current = initAutoSync();
     return () => autoSyncCleanup.current?.();
   }, []);
 
-  // Background tracking: start when traveling (to site OR back to office), stop otherwise
+  // Keep GPS background tracking running while any project session is in travel
+  const hasActiveTravel = (todayProjects ?? []).some((p) => p.step === "traveling");
   useEffect(() => {
-    if ((step === "traveling" || step === "returning") && employee && attendanceLog) {
+    if (hasActiveTravel && employee && attendanceLog) {
       startTracking(employee.id, attendanceLog.id);
     } else {
       stopTracking();
     }
     return () => { stopTracking(); };
-  }, [step, employee, attendanceLog, startTracking, stopTracking]);
+  }, [hasActiveTravel, employee, attendanceLog, startTracking, stopTracking]);
 
-  const handleAction = async (action: WorkflowAction) => {
+  // Auto-jump into the workflow if there's already an active project session
+  useEffect(() => {
+    if (!todayProjects) return;
+    const active = todayProjects.find((p) => p.sessionId && p.step !== "completed");
+    if (active) {
+      // Don't auto-redirect if user just landed; only redirect on initial mount when active exists
+      // (user can navigate back manually)
+    }
+  }, [todayProjects]);
+
+  const handleOfficeAction = async (action: WorkflowAction) => {
     let payload: Record<string, unknown> = {};
-
-    // GPS actions
     if (GPS_ACTIONS.includes(action)) {
       const gps = await getGpsPosition();
       setGpsQuality(gps.quality);
-
       if (gps.needsMapFallback && !gps.reading) {
-        // No GPS at all — show map picker
         setPendingAction(action);
         setShowMapPicker(true);
         return;
       }
-
       if (gps.reading) {
         payload = {
           lat: gps.reading.lat,
@@ -93,29 +90,20 @@ export default function MobileHome() {
           accuracy: gps.reading.accuracy,
           is_spoofed: gps.reading.isMock,
         };
-
-      if (gps.needsMapFallback) {
-        // Low accuracy — proceed silently, button status is enough feedback
-      }
       }
     }
-
     await submitAction(action, payload);
   };
 
   const handleMapConfirm = async (lat: number, lng: number) => {
     setShowMapPicker(false);
     if (!pendingAction) return;
-
-    const payload = { lat, lng, accuracy: 999, is_spoofed: false, manual_location: true };
-    await submitAction(pendingAction, payload);
+    await submitAction(pendingAction, { lat, lng, accuracy: 999, is_spoofed: false, manual_location: true });
     setPendingAction(null);
   };
 
   const submitAction = async (action: WorkflowAction, payload: Record<string, unknown>) => {
     if (!employee) return;
-
-    // If offline, queue it
     if (!navigator.onLine) {
       await enqueueAction({
         action_type: action,
@@ -125,7 +113,6 @@ export default function MobileHome() {
       toast({ title: "Queued Offline", description: `${actionLabels[action]} will sync when back online.` });
       return;
     }
-
     const result = await executeAction(action, payload);
     if (!result?.success) {
       toast({ title: "Failed", description: result?.error || "Something went wrong.", variant: "destructive" });
@@ -140,12 +127,20 @@ export default function MobileHome() {
     );
   }
 
-  const primaryAction = availableActions[0];
-  const secondaryActions = availableActions.slice(1);
+  // Office only allows punch_in (when idle) and punch_out (when at_office or after all projects done).
+  // We hide intermediate site-flow buttons since per-project flow now handles travel/work.
+  const officeAction = availableActions.find((a) => a === "punch_in" || a === "punch_out");
+
+  // Determine if we should suggest punch out: all assigned projects completed
+  const allProjectsDone = (todayProjects?.length ?? 0) > 0
+    && todayProjects!.every((p) => p.step === "completed");
 
   const timeStr = currentTime.toLocaleTimeString("en-AE", {
     hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Dubai",
   });
+
+  // Single-project shortcut: if punched in and only one assignment, jump in
+  const singleProject = (todayProjects?.length === 1) ? todayProjects[0] : null;
 
   return (
     <div className="flex flex-col gap-4 p-4 pb-24 safe-area-inset">
@@ -166,11 +161,15 @@ export default function MobileHome() {
         </div>
       </div>
 
-      {/* Status + GPS quality */}
+      {/* Office status */}
       <Card className="p-4 border-border/50 bg-card">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`w-3 h-3 rounded-full ${step === "working" ? "bg-green-400 animate-pulse" : step === "traveling" ? "bg-amber-400 animate-pulse" : "bg-muted-foreground"}`} />
+            <div className={`w-3 h-3 rounded-full ${
+              step === "punched_in" || step === "at_office" ? "bg-blue-400"
+                : step === "punched_out" ? "bg-muted-foreground"
+                : "bg-muted-foreground"
+            }`} />
             <div>
               <p className={`font-semibold ${stepColors[step]}`}>{stepLabels[step]}</p>
               <p className="text-xs text-muted-foreground">
@@ -187,82 +186,123 @@ export default function MobileHome() {
         </div>
       </Card>
 
-      {/* Today's Assignment */}
-      {assignment ? (
-        <Card className="p-4 border-border/50 bg-card">
-          <div className="flex items-start gap-3">
-            <MapPin className="h-5 w-5 text-brand mt-0.5 shrink-0" />
-            <div className="min-w-0">
-              <p className="font-semibold text-foreground truncate">{assignment.projectName}</p>
-              {assignment.siteAddress && <p className="text-sm text-muted-foreground truncate">{assignment.siteAddress}</p>}
-              {assignment.shiftStart && assignment.shiftEnd && (
-                <div className="flex items-center gap-1.5 mt-1.5">
-                  <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">{assignment.shiftStart?.slice(0, 5)} – {assignment.shiftEnd?.slice(0, 5)}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </Card>
-      ) : (
-        <Card className="p-4 border-border/50 bg-card">
-          <div className="flex items-center gap-3">
-            <AlertTriangle className="h-5 w-5 text-amber-400" />
-            <p className="text-sm text-muted-foreground">No assignment for today</p>
-          </div>
-        </Card>
-      )}
-
-      {/* Workflow Progress */}
-      <Card className="p-4 border-border/50 bg-card">
-        <p className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wider">Today's Progress</p>
-        <div className="flex items-center gap-1">
-          {(["idle", "punched_in", "traveling", "at_site", "working", "work_done", "returning", "at_office", "punched_out"] as const).map((s, i) => {
-            const steps = ["idle", "punched_in", "traveling", "at_site", "working", "work_done", "returning", "at_office", "punched_out"];
-            const currentIdx = steps.indexOf(step);
-            const isComplete = i <= currentIdx;
-            const isCurrent = s === step;
-            return (
-              <div key={s} className="flex-1 flex flex-col items-center gap-1">
-                <div className={`h-2 w-full rounded-full ${isComplete ? "bg-brand" : "bg-muted"} ${isCurrent ? "ring-2 ring-brand/30" : ""}`} />
-              </div>
-            );
-          })}
-        </div>
-        <div className="flex justify-between mt-1">
-          <span className="text-[10px] text-muted-foreground">Start</span>
-          <span className="text-[10px] text-muted-foreground">Done</span>
-        </div>
-      </Card>
-
-      {/* Main Action Button — hold-to-confirm */}
-      {primaryAction && (
+      {/* Punch In (idle) */}
+      {step === "idle" && officeAction === "punch_in" && (
         <HoldToConfirm
-          onConfirm={() => handleAction(primaryAction)}
+          onConfirm={() => handleOfficeAction("punch_in")}
           disabled={actionLoading}
           loading={actionLoading}
           variant="primary"
         >
           <CheckCircle2 className="h-6 w-6" />
-          {actionLabels[primaryAction]}
+          {actionLabels.punch_in}
         </HoldToConfirm>
       )}
 
-      {/* Secondary Actions — also hold-to-confirm */}
-      {secondaryActions.length > 0 && (
-        <div className="flex flex-col gap-2">
-          {secondaryActions.map((action) => (
-            <HoldToConfirm
-              key={action}
-              onConfirm={() => handleAction(action)}
-              disabled={actionLoading}
-              loading={actionLoading}
-              variant="secondary"
-            >
-              {actionLabels[action]}
-            </HoldToConfirm>
-          ))}
+      {/* Project list — visible after punch in, before punch out */}
+      {step !== "idle" && step !== "punched_out" && (
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Today's Projects</p>
+            {todayProjects && todayProjects.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                {todayProjects.filter((p) => p.step === "completed").length}/{todayProjects.length} done
+              </p>
+            )}
+          </div>
+
+          {projectsLoading ? (
+            <Card className="p-6 border-border/50 bg-card flex justify-center">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </Card>
+          ) : !todayProjects?.length ? (
+            <Card className="p-4 border-border/50 bg-card">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="h-5 w-5 text-amber-400" />
+                <p className="text-sm text-muted-foreground">No projects assigned for today</p>
+              </div>
+            </Card>
+          ) : (
+            todayProjects.map((p) => {
+              const isActive = p.sessionId && p.step !== "completed";
+              const isDone = p.step === "completed";
+              return (
+                <button
+                  key={p.assignmentId}
+                  onClick={() => navigate(`/m/project/${p.projectId}`)}
+                  disabled={isDone}
+                  className={`text-left rounded-xl border p-4 transition-all ${
+                    isDone
+                      ? "border-border/30 bg-card/50 opacity-60"
+                      : isActive
+                        ? "border-brand/50 bg-brand/5"
+                        : "border-border/50 bg-card hover:border-brand/40 hover:bg-card/80"
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    {isDone ? (
+                      <CheckCircle2 className="h-5 w-5 text-green-400 mt-0.5 shrink-0" />
+                    ) : isActive ? (
+                      <PlayCircle className="h-5 w-5 text-brand mt-0.5 shrink-0 animate-pulse" />
+                    ) : (
+                      <MapPin className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-foreground truncate">{p.projectName}</p>
+                      {p.siteAddress && <p className="text-xs text-muted-foreground truncate">{p.siteAddress}</p>}
+                      <div className="flex items-center gap-3 mt-1.5">
+                        <span className={`text-xs font-medium ${projectStepColors[p.step]}`}>
+                          {projectStepLabels[p.step]}
+                        </span>
+                        {p.shiftStart && p.shiftEnd && (
+                          <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {p.shiftStart.slice(0, 5)}–{p.shiftEnd.slice(0, 5)}
+                          </span>
+                        )}
+                        {isDone && p.totalWorkMinutes != null && (
+                          <span className="text-[10px] text-muted-foreground">
+                            {Math.floor(p.totalWorkMinutes / 60)}h {p.totalWorkMinutes % 60}m
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {!isDone && <ChevronRight className="h-4 w-4 text-muted-foreground mt-0.5" />}
+                  </div>
+                </button>
+              );
+            })
+          )}
+
+          {singleProject && !singleProject.sessionId && (
+            <p className="text-[11px] text-muted-foreground text-center mt-1">
+              Tap your project above to start travel.
+            </p>
+          )}
         </div>
+      )}
+
+      {/* Punch Out — show when all projects done OR user chooses to end day */}
+      {step !== "idle" && step !== "punched_out" && officeAction === "punch_out" && (
+        <HoldToConfirm
+          onConfirm={() => handleOfficeAction("punch_out")}
+          disabled={actionLoading}
+          loading={actionLoading}
+          variant={allProjectsDone ? "primary" : "secondary"}
+        >
+          <CheckCircle2 className="h-6 w-6" />
+          {actionLabels.punch_out}
+        </HoldToConfirm>
+      )}
+
+      {/* Show punch-out hint if all projects done but office step isn't at_office yet */}
+      {step !== "idle" && step !== "punched_out" && officeAction !== "punch_out" && allProjectsDone && (
+        <Card className="p-4 border-amber-500/30 bg-amber-500/5">
+          <p className="text-sm text-foreground font-medium">All projects done!</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Return to office, then tap Punch Out from the attendance flow to close your day.
+          </p>
+        </Card>
       )}
 
       {step === "punched_out" && (
@@ -273,13 +313,12 @@ export default function MobileHome() {
         </Card>
       )}
 
-      {/* Map fallback picker */}
       <MapPicker
         open={showMapPicker}
         onClose={() => { setShowMapPicker(false); setPendingAction(null); }}
         onConfirm={handleMapConfirm}
-        initialLat={assignment?.siteLat || 25.2048}
-        initialLng={assignment?.siteLng || 55.2708}
+        initialLat={25.2048}
+        initialLng={55.2708}
       />
     </div>
   );
