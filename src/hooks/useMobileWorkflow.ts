@@ -134,7 +134,11 @@ export function useMobileWorkflow() {
 
     // Optimistically advance the step immediately for instant UI feedback
     const previousStep = step;
-    const next = getNextStep(step, action);
+    let next = getNextStep(step, action);
+    // For in-house break end, return to punched_in (no work_start_time set)
+    if (action === "end_break" && !attendanceLog?.work_start_time) {
+      next = "punched_in";
+    }
     if (next) setStep(next);
 
     try {
