@@ -233,7 +233,7 @@ export default function MobileHome() {
               <div className="min-w-0 flex-1">
                 <p className="font-semibold text-foreground">In-House Work</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  No site project today. Working from office — your hours are tracked the same way.
+                  No site project today. Working from office.
                 </p>
                 {step === "on_break" && (
                   <p className="text-xs text-orange-400 mt-2 font-medium flex items-center gap-1">
