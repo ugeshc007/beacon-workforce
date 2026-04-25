@@ -54,6 +54,6 @@ Deno.serve(async (req) => {
 
     return jsonResponse({ success: true });
   } catch (e) {
-    return errorResponse(e.message, 500);
+    return errorResponse(e, 500);
   }
 });

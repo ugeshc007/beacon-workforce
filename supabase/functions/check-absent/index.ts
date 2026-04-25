@@ -103,6 +103,6 @@ Deno.serve(async (req) => {
       branches_notified: Object.keys(branchAbsent).length,
     });
   } catch (err) {
-    return errorResponse(err.message, 500);
+    return errorResponse(err, 500);
   }
 });

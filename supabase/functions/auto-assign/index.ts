@@ -254,6 +254,6 @@ Deno.serve(async (req) => {
 
     return jsonResponse({ assigned, unfilled, reason: reasons.length ? reasons.join(". ") : undefined });
   } catch (err) {
-    return errorResponse(err.message, 500);
+    return errorResponse(err, 500);
   }
 });

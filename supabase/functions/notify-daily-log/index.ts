@@ -56,6 +56,6 @@ Deno.serve(async (req) => {
 
     return jsonResponse({ ok: true, notified: notifications.length });
   } catch (e) {
-    return errorResponse(e.message, 500);
+    return errorResponse(e, 500);
   }
 });

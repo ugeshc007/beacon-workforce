@@ -62,6 +62,6 @@ Deno.serve(async (req) => {
 
     return jsonResponse({ branches_notified: notified, date: today });
   } catch (err) {
-    return errorResponse(err.message, 500);
+    return errorResponse(err, 500);
   }
 });

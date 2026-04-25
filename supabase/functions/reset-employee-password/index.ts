@@ -53,6 +53,6 @@ Deno.serve(async (req) => {
 
     return jsonResponse({ success: true, message: `Password reset for ${emp.name}` });
   } catch (e) {
-    return errorResponse(e.message, 500);
+    return errorResponse(e, 500);
   }
 });

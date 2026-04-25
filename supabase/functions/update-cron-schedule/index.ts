@@ -54,6 +54,6 @@ Deno.serve(async (req) => {
     });
   } catch (err) {
     console.error("Error:", err);
-    return errorResponse(err.message, 500);
+    return errorResponse(err, 500);
   }
 });

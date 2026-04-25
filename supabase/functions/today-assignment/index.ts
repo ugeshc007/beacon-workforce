@@ -70,6 +70,6 @@ Deno.serve(async (req) => {
       overrides: overrides ?? [],
     });
   } catch (err) {
-    return errorResponse(err.message, 500);
+    return errorResponse(err, 500);
   }
 });
