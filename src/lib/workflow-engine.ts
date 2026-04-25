@@ -25,7 +25,7 @@ export type WorkflowAction =
 
 const transitions: Record<WorkflowStep, WorkflowAction[]> = {
   idle: ["punch_in"],
-  punched_in: ["start_travel"],
+  punched_in: ["start_travel", "start_break", "punch_out"],
   traveling: ["arrive_site"],
   at_site: ["start_work"],
   working: ["start_break", "end_work"],
