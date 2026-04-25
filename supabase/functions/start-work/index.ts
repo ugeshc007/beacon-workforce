@@ -82,6 +82,6 @@ Deno.serve(async (req) => {
 
     return jsonResponse({ success: true, attendance_id: log.id, timestamp: now, is_late });
   } catch (err) {
-    return errorResponse(err.message, 500);
+    return errorResponse(err, 500);
   }
 });

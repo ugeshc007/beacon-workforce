@@ -63,6 +63,6 @@ Deno.serve(async (req) => {
 
     return jsonResponse({ success: true, auth_id: newUser.user!.id });
   } catch (e) {
-    return errorResponse(e.message, 500);
+    return errorResponse(e, 500);
   }
 });

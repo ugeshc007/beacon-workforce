@@ -72,6 +72,6 @@ Deno.serve(async (req) => {
         : `Outside ${target_type} radius by ${Math.round(distance - radius)}m`,
     });
   } catch (err) {
-    return errorResponse(err.message, 500);
+    return errorResponse(err, 500);
   }
 });
