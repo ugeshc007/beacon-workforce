@@ -25,8 +25,14 @@ export function jsonResponse(data: unknown, status = 200) {
   });
 }
 
-export function errorResponse(message: string, status = 400) {
-  return jsonResponse({ error: message }, status);
+export function errorResponse(message: unknown, status = 400) {
+  const msg =
+    message instanceof Error
+      ? message.message
+      : typeof message === "string"
+      ? message
+      : (message as { message?: string })?.message ?? "Unknown error";
+  return jsonResponse({ error: msg }, status);
 }
 
 export function corsResponse() {
