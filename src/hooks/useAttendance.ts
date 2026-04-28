@@ -2,40 +2,43 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 
+import { getDisplayWorkedMinutes, getDisplayOvertimeMinutes } from "@/lib/timesheet-display";
+
 export type AttendanceLog = Tables<"attendance_logs"> & {
-  employees?: { name: string; employee_code: string; skill_type: string; hourly_rate?: number } | null;
+  employees?: {
+    name: string;
+    employee_code: string;
+    skill_type: string;
+    hourly_rate?: number;
+    overtime_rate?: number;
+    standard_hours_per_day?: number;
+  } | null;
   projects?: { name: string } | null;
   live_cost?: number;
 };
 
-/** Estimate live labor cost for an in-progress shift (work started but not ended). */
-export function computeLiveCost(log: {
-  work_start_time?: string | null;
-  work_end_time?: string | null;
-  break_start_time?: string | null;
-  break_end_time?: string | null;
-  break_minutes?: number | null;
-  regular_cost?: number | null;
-  overtime_cost?: number | null;
-  employees?: { hourly_rate?: number } | null;
-}): number {
+/**
+ * Compute labor cost from any work stage (office/project/maintenance/site visit).
+ * Uses stored regular+overtime cost when present, otherwise derives from
+ * worked minutes × hourly_rate, with overtime portion at overtime_rate.
+ */
+export function computeLiveCost(log: any): number {
   const finalCost = Number(log.regular_cost ?? 0) + Number(log.overtime_cost ?? 0);
   if (finalCost > 0) return finalCost;
-  if (!log.work_start_time || log.work_end_time) return 0;
+
   const rate = Number(log.employees?.hourly_rate ?? 0);
   if (!rate) return 0;
-  const start = new Date(log.work_start_time).getTime();
-  const end = Date.now();
-  let elapsedMin = Math.max(0, (end - start) / 60000);
-  // subtract break time (completed or in-progress)
-  if (log.break_start_time && log.break_end_time) {
-    elapsedMin -= Math.max(0, (new Date(log.break_end_time).getTime() - new Date(log.break_start_time).getTime()) / 60000);
-  } else if (log.break_start_time && !log.break_end_time) {
-    elapsedMin -= Math.max(0, (end - new Date(log.break_start_time).getTime()) / 60000);
-  } else if (log.break_minutes) {
-    elapsedMin -= log.break_minutes;
-  }
-  return Math.max(0, (elapsedMin / 60) * rate);
+
+  const stdHours = Number(log.employees?.standard_hours_per_day ?? 8);
+  const otRate = Number(log.employees?.overtime_rate ?? 0) || rate * 1.5;
+
+  const workedMin = getDisplayWorkedMinutes(log);
+  if (workedMin <= 0) return 0;
+
+  const otMin = getDisplayOvertimeMinutes(log, stdHours);
+  const regMin = Math.max(0, workedMin - otMin);
+
+  return (regMin / 60) * rate + (otMin / 60) * otRate;
 }
 
 export function useAttendanceLogs(filters: {
