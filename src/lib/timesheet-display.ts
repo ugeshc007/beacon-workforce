@@ -96,19 +96,40 @@ export function getDisplayWorkedMinutes(log: TimesheetDisplayLog, now: Date = ne
 
   let minutes = diffMinutes(start, endTime);
 
-  // Deduct breaks if recorded
-  const breakMin = log.break_minutes ?? 0;
-  if (breakMin > 0) {
-    minutes = Math.max(0, minutes - breakMin);
-  } else if (log.break_start_time && log.break_end_time) {
+  // Determine break to deduct: use recorded break if any, otherwise default 60 min
+  // (org standard: 1 hour unpaid break per shift)
+  const DEFAULT_BREAK_MIN = 60;
+  let breakMin = log.break_minutes ?? 0;
+  if (!breakMin && log.break_start_time && log.break_end_time) {
     const bs = new Date(log.break_start_time);
     const be = new Date(log.break_end_time);
     if (!isNaN(bs.getTime()) && !isNaN(be.getTime()) && be > bs) {
-      minutes = Math.max(0, minutes - diffMinutes(bs, be));
+      breakMin = diffMinutes(bs, be);
     }
   }
+  const deduct = Math.max(breakMin, DEFAULT_BREAK_MIN);
+  // Only deduct if shift is long enough to warrant a break
+  if (minutes > deduct) minutes -= deduct;
 
   return minutes;
+}
+
+/**
+ * Computes overtime minutes = worked (after break) - standard hours.
+ * standardHoursPerDay defaults to 8.
+ */
+export function getDisplayOvertimeMinutes(
+  log: TimesheetDisplayLog,
+  standardHoursPerDay: number = 8,
+  now: Date = new Date(),
+): number {
+  // Prefer stored overtime when present
+  const stored = (log as any).overtime_minutes;
+  if (stored != null && stored > 0) return stored;
+
+  const worked = getDisplayWorkedMinutes(log, now);
+  const stdMin = Math.round((standardHoursPerDay || 8) * 60);
+  return Math.max(0, worked - stdMin);
 }
 
 export function formatWorkedMinutes(minutes: number): string {
@@ -120,3 +141,4 @@ export function formatWorkedMinutes(minutes: number): string {
   if (hours === 0) return `${mins}m`;
   return `${hours}h ${mins}m`;
 }
+
