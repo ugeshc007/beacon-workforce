@@ -230,7 +230,7 @@ export default function Attendance() {
                         <td className="py-2.5 pb-6">
                           <AttendanceTimeline log={log} />
                         </td>
-                        <td className="py-2.5 text-right font-mono text-xs text-muted-foreground">{totalH}h</td>
+                        <td className="py-2.5 text-right font-mono text-xs text-muted-foreground">{totalDisplay}</td>
                         <td className="py-2.5 text-right font-mono text-xs">
                           {Number(otH) > 0 ? (
                             <span className="text-status-overtime">{otH}h</span>
