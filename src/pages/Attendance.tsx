@@ -4,7 +4,7 @@ import { useAttendanceLogs, useAttendanceSummary, computeLiveCost, type Attendan
 import { useCanAccess } from "@/hooks/usePermissions";
 import { useProjects } from "@/hooks/useProjects";
 import { AttendanceTimeline } from "@/components/attendance/AttendanceTimeline";
-import { getDisplayWorkedMinutes, formatWorkedMinutes } from "@/lib/timesheet-display";
+import { getDisplayWorkedMinutes, getDisplayOvertimeMinutes, formatWorkedMinutes } from "@/lib/timesheet-display";
 import { AttendanceOverrideDialog } from "@/components/attendance/AttendanceOverrideDialog";
 import { AttendanceDetailDrawer } from "@/components/attendance/AttendanceDetailDrawer";
 import { StatCard } from "@/components/ui/stat-card";
