@@ -48,7 +48,7 @@ export function useAttendanceLogs(filters: {
     queryFn: async () => {
       let query = supabase
         .from("attendance_logs")
-        .select("*, employees(name, employee_code, skill_type, hourly_rate), projects(name)")
+        .select("*, employees(name, employee_code, skill_type, hourly_rate, standard_hours_per_day), projects(name)")
         .eq("date", filters.date)
         .order("office_punch_in", { ascending: true, nullsFirst: false });
 

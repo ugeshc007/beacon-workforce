@@ -4,7 +4,7 @@ import { useAttendanceLogs, useAttendanceSummary, computeLiveCost, type Attendan
 import { useCanAccess } from "@/hooks/usePermissions";
 import { useProjects } from "@/hooks/useProjects";
 import { AttendanceTimeline } from "@/components/attendance/AttendanceTimeline";
-import { getDisplayWorkedMinutes, formatWorkedMinutes } from "@/lib/timesheet-display";
+import { getDisplayWorkedMinutes, getDisplayOvertimeMinutes, formatWorkedMinutes } from "@/lib/timesheet-display";
 import { AttendanceOverrideDialog } from "@/components/attendance/AttendanceOverrideDialog";
 import { AttendanceDetailDrawer } from "@/components/attendance/AttendanceDetailDrawer";
 import { StatCard } from "@/components/ui/stat-card";
@@ -179,9 +179,11 @@ export default function Attendance() {
                 </thead>
                 <tbody>
                   {filteredLogs.map((log) => {
-                    const otH = ((log.overtime_minutes ?? 0) / 60).toFixed(1);
+                    const stdHours = Number((log.employees as any)?.standard_hours_per_day ?? 8);
                     const workedMin = getDisplayWorkedMinutes(log as any);
+                    const otMin = getDisplayOvertimeMinutes(log as any, stdHours);
                     const totalDisplay = workedMin > 0 ? formatWorkedMinutes(workedMin) : "—";
+                    const otDisplay = otMin > 0 ? formatWorkedMinutes(otMin) : "0m";
                     const cost = computeLiveCost(log);
                     const isLiveCost = cost > 0 && !log.work_end_time;
                     const status = deriveStatus(log);
@@ -232,10 +234,10 @@ export default function Attendance() {
                         </td>
                         <td className="py-2.5 text-right font-mono text-xs text-muted-foreground">{totalDisplay}</td>
                         <td className="py-2.5 text-right font-mono text-xs">
-                          {Number(otH) > 0 ? (
-                            <span className="text-status-overtime">{otH}h</span>
+                          {otMin > 0 ? (
+                            <span className="text-status-overtime">{otDisplay}</span>
                           ) : (
-                            <span className="text-muted-foreground">0h</span>
+                            <span className="text-muted-foreground">0m</span>
                           )}
                         </td>
                         <td className="py-2.5">
