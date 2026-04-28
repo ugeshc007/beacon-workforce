@@ -4,6 +4,7 @@ import { useAttendanceLogs, useAttendanceSummary, computeLiveCost, type Attendan
 import { useCanAccess } from "@/hooks/usePermissions";
 import { useProjects } from "@/hooks/useProjects";
 import { AttendanceTimeline } from "@/components/attendance/AttendanceTimeline";
+import { getDisplayWorkedMinutes, formatWorkedMinutes } from "@/lib/timesheet-display";
 import { AttendanceOverrideDialog } from "@/components/attendance/AttendanceOverrideDialog";
 import { AttendanceDetailDrawer } from "@/components/attendance/AttendanceDetailDrawer";
 import { StatCard } from "@/components/ui/stat-card";
@@ -179,7 +180,8 @@ export default function Attendance() {
                 <tbody>
                   {filteredLogs.map((log) => {
                     const otH = ((log.overtime_minutes ?? 0) / 60).toFixed(1);
-                    const totalH = log.total_work_minutes != null ? (log.total_work_minutes / 60).toFixed(1) : "—";
+                    const workedMin = getDisplayWorkedMinutes(log as any);
+                    const totalDisplay = workedMin > 0 ? formatWorkedMinutes(workedMin) : "—";
                     const cost = computeLiveCost(log);
                     const isLiveCost = cost > 0 && !log.work_end_time;
                     const status = deriveStatus(log);
@@ -228,7 +230,7 @@ export default function Attendance() {
                         <td className="py-2.5 pb-6">
                           <AttendanceTimeline log={log} />
                         </td>
-                        <td className="py-2.5 text-right font-mono text-xs text-muted-foreground">{totalH}h</td>
+                        <td className="py-2.5 text-right font-mono text-xs text-muted-foreground">{totalDisplay}</td>
                         <td className="py-2.5 text-right font-mono text-xs">
                           {Number(otH) > 0 ? (
                             <span className="text-status-overtime">{otH}h</span>
