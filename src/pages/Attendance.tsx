@@ -234,10 +234,10 @@ export default function Attendance() {
                         </td>
                         <td className="py-2.5 text-right font-mono text-xs text-muted-foreground">{totalDisplay}</td>
                         <td className="py-2.5 text-right font-mono text-xs">
-                          {Number(otH) > 0 ? (
-                            <span className="text-status-overtime">{otH}h</span>
+                          {otMin > 0 ? (
+                            <span className="text-status-overtime">{otDisplay}</span>
                           ) : (
-                            <span className="text-muted-foreground">0h</span>
+                            <span className="text-muted-foreground">0m</span>
                           )}
                         </td>
                         <td className="py-2.5">
