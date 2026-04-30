@@ -201,7 +201,13 @@ export default function Attendance() {
                           </div>
                           <span className="text-[10px] text-muted-foreground">{log.employees?.employee_code}</span>
                         </td>
-                        <td className="py-2.5 text-muted-foreground text-xs">{log.projects?.name ?? "—"}</td>
+                        <td className="py-2.5 text-xs">
+                          {log.projects?.name ? (
+                            <span className="text-muted-foreground">{log.projects.name}</span>
+                          ) : (
+                            <Badge variant="outline" className="text-[9px] bg-primary/10 text-primary border-primary/30">In-House</Badge>
+                          )}
+                        </td>
                         <td className="py-2.5" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center gap-1">
                             {log.office_punch_in_valid === true ? (
