@@ -782,22 +782,18 @@ function DayDetailDialog({
   );
 }
 
-function DaySummaryDialog({
+function DaySummaryView({
   date,
-  onClose,
   travelPaid,
 }: {
   date: string;
-  onClose: () => void;
   travelPaid: boolean;
 }) {
-  const open = !!date;
-
   const { data, isLoading } = useQuery({
     queryKey: ["timesheet-day-summary", date],
-    enabled: open,
+    enabled: !!date,
     queryFn: async () => {
-      const [logsRes, empsRes, projRes, settingsRes] = await Promise.all([
+      const [logsRes, empsRes, settingsRes] = await Promise.all([
         supabase
           .from("attendance_logs")
           .select("*, projects(name)")
@@ -806,7 +802,6 @@ function DaySummaryDialog({
           .from("employees")
           .select("id, name, employee_code, skill_type, hourly_rate, overtime_rate")
           .eq("is_active", true),
-        supabase.from("projects").select("id, name"),
         supabase
           .from("settings")
           .select("key, value")
@@ -874,106 +869,94 @@ function DaySummaryDialog({
     },
   });
 
-  const dateLabel = date
-    ? new Date(date + "T00:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })
-    : "";
+  if (isLoading) {
+    return <div className="space-y-2 py-4">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>;
+  }
+  if (!data || !data.rows.length) {
+    return (
+      <div className="text-center py-12 text-muted-foreground">
+        <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+        <p className="text-sm">No attendance records for this day</p>
+      </div>
+    );
+  }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-5xl max-h-[85vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle>Daily Cost Summary — {dateLabel}</DialogTitle>
-          <DialogDescription>
-            All employees who worked on this day with hours and pay breakdown.
-          </DialogDescription>
-        </DialogHeader>
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="rounded-lg border p-2.5">
+          <p className="text-[10px] text-muted-foreground uppercase">Employees</p>
+          <p className="text-lg font-bold">{data.rows.length}</p>
+        </div>
+        <div className="rounded-lg border p-2.5">
+          <p className="text-[10px] text-muted-foreground uppercase">Total Hours</p>
+          <p className="text-lg font-bold">{formatWorkedMinutes(data.totals.workedMin)}</p>
+        </div>
+        <div className="rounded-lg border p-2.5">
+          <p className="text-[10px] text-muted-foreground uppercase">Overtime</p>
+          <p className="text-lg font-bold text-status-overtime">{formatWorkedMinutes(data.totals.otMin)}</p>
+        </div>
+        <div className="rounded-lg border p-2.5 bg-accent/20">
+          <p className="text-[10px] text-muted-foreground uppercase">Total Cost</p>
+          <p className="text-lg font-bold">AED {Math.round(data.totals.totalPay).toLocaleString()}</p>
+        </div>
+      </div>
 
-        {isLoading ? (
-          <div className="space-y-2 py-4">
-            {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
-          </div>
-        ) : !data || !data.rows.length ? (
-          <p className="text-sm text-muted-foreground py-12 text-center">No attendance records for this day.</p>
-        ) : (
-          <>
-            {/* Summary stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 py-2">
-              <div className="rounded-lg border p-2.5">
-                <p className="text-[10px] text-muted-foreground uppercase">Employees</p>
-                <p className="text-lg font-bold">{data.rows.length}</p>
-              </div>
-              <div className="rounded-lg border p-2.5">
-                <p className="text-[10px] text-muted-foreground uppercase">Total Hours</p>
-                <p className="text-lg font-bold">{formatWorkedMinutes(data.totals.workedMin)}</p>
-              </div>
-              <div className="rounded-lg border p-2.5">
-                <p className="text-[10px] text-muted-foreground uppercase">Overtime</p>
-                <p className="text-lg font-bold text-status-overtime">{formatWorkedMinutes(data.totals.otMin)}</p>
-              </div>
-              <div className="rounded-lg border p-2.5 bg-accent/20">
-                <p className="text-[10px] text-muted-foreground uppercase">Total Cost</p>
-                <p className="text-lg font-bold">AED {Math.round(data.totals.totalPay).toLocaleString()}</p>
-              </div>
-            </div>
-
-            <ScrollArea className="flex-1 -mx-6 px-6">
-              <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-card">
-                  <tr className="text-xs text-muted-foreground border-b border-border">
-                    <th className="text-left py-2 px-2 font-medium">Employee</th>
-                    <th className="text-left py-2 px-2 font-medium">Project</th>
-                    <th className="text-center py-2 px-2 font-medium">In</th>
-                    <th className="text-center py-2 px-2 font-medium">Out</th>
-                    <th className="text-right py-2 px-2 font-medium">Worked</th>
-                    <th className="text-right py-2 px-2 font-medium text-status-overtime">OT</th>
-                    <th className="text-right py-2 px-2 font-medium">Break</th>
-                    {travelPaid && <th className="text-right py-2 px-2 font-medium">Travel</th>}
-                    <th className="text-right py-2 px-2 font-medium">Reg Pay</th>
-                    <th className="text-right py-2 px-2 font-medium text-status-overtime">OT Pay</th>
-                    <th className="text-right py-2 px-2 font-medium">Total</th>
+      <Card className="glass-card">
+        <CardContent className="p-0">
+          <ScrollArea className="w-full">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-xs text-muted-foreground border-b border-border">
+                  <th className="text-left py-2 px-3 font-medium">Employee</th>
+                  <th className="text-left py-2 px-2 font-medium">Project</th>
+                  <th className="text-center py-2 px-2 font-medium">In</th>
+                  <th className="text-center py-2 px-2 font-medium">Out</th>
+                  <th className="text-right py-2 px-2 font-medium">Worked</th>
+                  <th className="text-right py-2 px-2 font-medium text-status-overtime">OT</th>
+                  <th className="text-right py-2 px-2 font-medium">Break</th>
+                  {travelPaid && <th className="text-right py-2 px-2 font-medium">Travel</th>}
+                  <th className="text-right py-2 px-2 font-medium">Reg Pay</th>
+                  <th className="text-right py-2 px-2 font-medium text-status-overtime">OT Pay</th>
+                  <th className="text-right py-2 px-2 font-medium">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.rows.map((r) => (
+                  <tr key={r.employee_id} className="border-b border-border/30 hover:bg-accent/20">
+                    <td className="py-2 px-3">
+                      <div className="font-medium text-foreground">{r.employee_name}</div>
+                      <div className="text-[10px] text-muted-foreground">{r.employee_code} · {r.skill_type}</div>
+                    </td>
+                    <td className="py-2 px-2 text-xs text-muted-foreground">{r.project_name}</td>
+                    <td className="py-2 px-2 text-center font-mono text-xs">{fmtTime(r.punchIn)}</td>
+                    <td className="py-2 px-2 text-center font-mono text-xs">{fmtTime(r.punchOut)}</td>
+                    <td className="py-2 px-2 text-right font-mono text-xs">{formatWorkedMinutes(r.workedMin)}</td>
+                    <td className="py-2 px-2 text-right font-mono text-xs text-status-overtime">{r.otMin > 0 ? formatWorkedMinutes(r.otMin) : "—"}</td>
+                    <td className="py-2 px-2 text-right font-mono text-xs text-muted-foreground">{r.breakMin > 0 ? `${r.breakMin}m` : "—"}</td>
+                    {travelPaid && <td className="py-2 px-2 text-right font-mono text-xs text-muted-foreground">{r.travelMin > 0 ? `${r.travelMin}m` : "—"}</td>}
+                    <td className="py-2 px-2 text-right font-mono text-xs">AED {Math.round(r.regPay).toLocaleString()}</td>
+                    <td className="py-2 px-2 text-right font-mono text-xs text-status-overtime">{r.otPay > 0 ? `AED ${Math.round(r.otPay).toLocaleString()}` : "—"}</td>
+                    <td className="py-2 px-2 text-right font-mono text-xs font-bold">AED {Math.round(r.totalPay).toLocaleString()}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {data.rows.map((r) => (
-                    <tr key={r.employee_id} className="border-b border-border/30 hover:bg-accent/20">
-                      <td className="py-2 px-2">
-                        <div className="font-medium text-foreground">{r.employee_name}</div>
-                        <div className="text-[10px] text-muted-foreground">{r.employee_code} · {r.skill_type}</div>
-                      </td>
-                      <td className="py-2 px-2 text-xs text-muted-foreground">{r.project_name}</td>
-                      <td className="py-2 px-2 text-center font-mono text-xs">{fmtTime(r.punchIn)}</td>
-                      <td className="py-2 px-2 text-center font-mono text-xs">{fmtTime(r.punchOut)}</td>
-                      <td className="py-2 px-2 text-right font-mono text-xs">{formatWorkedMinutes(r.workedMin)}</td>
-                      <td className="py-2 px-2 text-right font-mono text-xs text-status-overtime">{r.otMin > 0 ? formatWorkedMinutes(r.otMin) : "—"}</td>
-                      <td className="py-2 px-2 text-right font-mono text-xs text-muted-foreground">{r.breakMin > 0 ? `${r.breakMin}m` : "—"}</td>
-                      {travelPaid && <td className="py-2 px-2 text-right font-mono text-xs text-muted-foreground">{r.travelMin > 0 ? `${r.travelMin}m` : "—"}</td>}
-                      <td className="py-2 px-2 text-right font-mono text-xs">AED {Math.round(r.regPay).toLocaleString()}</td>
-                      <td className="py-2 px-2 text-right font-mono text-xs text-status-overtime">{r.otPay > 0 ? `AED ${Math.round(r.otPay).toLocaleString()}` : "—"}</td>
-                      <td className="py-2 px-2 text-right font-mono text-xs font-bold">AED {Math.round(r.totalPay).toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="border-t-2 border-border bg-muted/20">
-                    <td colSpan={4} className="py-2 px-2 font-semibold">Totals ({data.rows.length})</td>
-                    <td className="py-2 px-2 text-right font-mono text-xs font-bold">{formatWorkedMinutes(data.totals.workedMin)}</td>
-                    <td className="py-2 px-2 text-right font-mono text-xs font-bold text-status-overtime">{formatWorkedMinutes(data.totals.otMin)}</td>
-                    <td className="py-2 px-2 text-right font-mono text-xs font-bold">{data.totals.breakMin}m</td>
-                    {travelPaid && <td className="py-2 px-2 text-right font-mono text-xs font-bold">{data.totals.travelMin}m</td>}
-                    <td className="py-2 px-2 text-right font-mono text-xs font-bold">AED {Math.round(data.totals.regPay).toLocaleString()}</td>
-                    <td className="py-2 px-2 text-right font-mono text-xs font-bold text-status-overtime">AED {Math.round(data.totals.otPay).toLocaleString()}</td>
-                    <td className="py-2 px-2 text-right font-mono text-xs font-bold">AED {Math.round(data.totals.totalPay).toLocaleString()}</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </ScrollArea>
-          </>
-        )}
-
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Close</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-border bg-muted/20">
+                  <td colSpan={4} className="py-2 px-3 font-semibold">Totals ({data.rows.length})</td>
+                  <td className="py-2 px-2 text-right font-mono text-xs font-bold">{formatWorkedMinutes(data.totals.workedMin)}</td>
+                  <td className="py-2 px-2 text-right font-mono text-xs font-bold text-status-overtime">{formatWorkedMinutes(data.totals.otMin)}</td>
+                  <td className="py-2 px-2 text-right font-mono text-xs font-bold">{data.totals.breakMin}m</td>
+                  {travelPaid && <td className="py-2 px-2 text-right font-mono text-xs font-bold">{data.totals.travelMin}m</td>}
+                  <td className="py-2 px-2 text-right font-mono text-xs font-bold">AED {Math.round(data.totals.regPay).toLocaleString()}</td>
+                  <td className="py-2 px-2 text-right font-mono text-xs font-bold text-status-overtime">AED {Math.round(data.totals.otPay).toLocaleString()}</td>
+                  <td className="py-2 px-2 text-right font-mono text-xs font-bold">AED {Math.round(data.totals.totalPay).toLocaleString()}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </ScrollArea>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
