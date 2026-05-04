@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { computeLiveCost } from "@/hooks/useAttendance";
+import { getDisplayOvertimeMinutes } from "@/lib/timesheet-display";
 
 function todayUAE(): string {
   const now = new Date();
@@ -53,23 +54,28 @@ export function useDashboardStats() {
     queryFn: async () => {
       const today = todayUAE();
 
-      const [projectsRes, assignmentsRes, attendanceRes] = await Promise.all([
+      const [projectsRes, assignmentsRes, attendanceRes, activeEmpRes] = await Promise.all([
         supabase
           .from("projects")
-          .select("id", { count: "exact" })
+          .select("id", { count: "exact", head: true })
           .in("status", ["in_progress"]),
         supabase
           .from("project_assignments")
-          .select("employee_id", { count: "exact" })
+          .select("employee_id", { count: "exact", head: true })
           .eq("date", today),
         supabase
           .from("attendance_logs")
-          .select("employee_id, office_punch_in, travel_start_time, site_arrival_time, work_start_time, work_end_time, break_start_time, break_end_time, break_minutes, overtime_minutes, regular_cost, overtime_cost, employees(hourly_rate)")
+          .select("employee_id, office_punch_in, travel_start_time, site_arrival_time, work_start_time, work_end_time, break_start_time, break_end_time, break_minutes, overtime_minutes, regular_cost, overtime_cost, employees(hourly_rate, overtime_rate, standard_hours_per_day)")
           .eq("date", today),
+        supabase
+          .from("employees")
+          .select("id", { count: "exact", head: true })
+          .eq("is_active", true),
       ]);
 
       const logs = (attendanceRes.data ?? []) as any[];
       const assignedCount = assignmentsRes.count ?? 0;
+      const activeEmployees = activeEmpRes.count ?? 0;
 
       let present = 0;
       let traveling = 0;
@@ -80,15 +86,24 @@ export function useDashboardStats() {
       const punchedIds = new Set<string>();
 
       for (const log of logs) {
-        punchedIds.add(log.employee_id);
+        if (log.office_punch_in) {
+          punchedIds.add(log.employee_id);
+          present++;
+        }
         if (log.work_start_time && !log.work_end_time) working++;
         if (log.travel_start_time && !log.site_arrival_time) traveling++;
-        if (log.office_punch_in) present++;
-        totalOtMin += log.overtime_minutes ?? 0;
+        // Live OT minutes: prefer stored value, otherwise compute from punch times
+        const stdHours = Number(log.employees?.standard_hours_per_day ?? 8);
+        const liveOt = log.overtime_minutes && log.overtime_minutes > 0
+          ? log.overtime_minutes
+          : getDisplayOvertimeMinutes(log, stdHours);
+        totalOtMin += liveOt;
         totalCost += computeLiveCost(log);
       }
 
-      const absent = Math.max(0, assignedCount - punchedIds.size);
+      // Absent = expected staff for today (assignments if set, otherwise active employees) − punched
+      const expected = assignedCount > 0 ? assignedCount : activeEmployees;
+      const absent = Math.max(0, expected - punchedIds.size);
 
       const stats: DashboardStats = {
         activeProjects: projectsRes.count ?? 0,
