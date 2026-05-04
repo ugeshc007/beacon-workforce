@@ -26,6 +26,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { computeProjectHealth } from "@/lib/project-health";
 import type { Tables } from "@/integrations/supabase/types";
 
 const statusMap: Record<string, "planned" | "present" | "traveling" | "absent" | "overtime"> = {
@@ -241,15 +242,22 @@ export default function Projects() {
                   ) : (
                     <div className="text-[10px] text-muted-foreground">No budget set</div>
                   )}
-                  <div className="flex items-center justify-between pt-1">
-                    <div className="flex items-center gap-2">
-                      <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
-                        <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${p.health_score ?? 100}%` }} />
+                  {(() => {
+                    const health = computeProjectHealth(p);
+                    const healthColor = health >= 80 ? "bg-status-present" : health >= 50 ? "bg-status-traveling" : "bg-destructive";
+                    const healthText = health >= 80 ? "text-status-present" : health >= 50 ? "text-status-traveling" : "text-destructive";
+                    return (
+                      <div className="flex items-center justify-between pt-1">
+                        <div className="flex items-center gap-2" title="Based on budget usage and schedule">
+                          <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
+                            <div className={cn("h-full rounded-full transition-all", healthColor)} style={{ width: `${health}%` }} />
+                          </div>
+                          <span className={cn("text-[10px] font-mono", healthText)}>{health}%</span>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground">{p.branches?.name}</span>
                       </div>
-                      <span className="text-[10px] text-muted-foreground font-mono">{p.health_score ?? 100}%</span>
-                    </div>
-                    <span className="text-[10px] text-muted-foreground">{p.branches?.name}</span>
-                  </div>
+                    );
+                  })()}
                 </CardContent>
               </Card>
             );
@@ -292,7 +300,7 @@ export default function Projects() {
                           </div>
                         ) : <span className="text-muted-foreground text-xs">—</span>}
                       </td>
-                      <td className="py-2.5 font-mono text-xs">{p.health_score ?? 100}%</td>
+                      <td className={cn("py-2.5 font-mono text-xs", (() => { const h = computeProjectHealth(p); return h >= 80 ? "text-status-present" : h >= 50 ? "text-status-traveling" : "text-destructive"; })())}>{computeProjectHealth(p)}%</td>
                       <td className="py-2.5" onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
