@@ -257,6 +257,16 @@ export default function Timesheets() {
           <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => shiftMonth(1)}>
             <ChevronRight className="h-4 w-4" />
           </Button>
+          <div className="flex items-center gap-1 border-l border-border pl-2 ml-1">
+            <span className="text-[10px] text-muted-foreground uppercase">Day</span>
+            <Input
+              type="date"
+              value={daySummaryDate}
+              max={new Date().toISOString().slice(0, 10)}
+              onChange={(e) => setDaySummaryDate(e.target.value)}
+              className="w-[150px] h-8 text-xs"
+            />
+          </div>
           <Button variant="outline" size="sm" className="gap-1" onClick={handleExportExcel}>
             <FileSpreadsheet className="h-3.5 w-3.5" /> Excel
           </Button>
