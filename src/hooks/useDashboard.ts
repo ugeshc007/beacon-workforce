@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { computeLiveCost } from "@/hooks/useAttendance";
 import { getDisplayOvertimeMinutes } from "@/lib/timesheet-display";
+import { computeProjectHealth } from "@/lib/project-health";
 
 function todayUAE(): string {
   const now = new Date();
@@ -14,6 +15,7 @@ function todayUAE(): string {
 
 export interface DashboardStats {
   activeProjects: number;
+  activeProjectsHealth: number;
   todayAssigned: number;
   present: number;
   absent: number;
@@ -57,7 +59,7 @@ export function useDashboardStats() {
       const [projectsRes, assignmentsRes, attendanceRes, activeEmpRes] = await Promise.all([
         supabase
           .from("projects")
-          .select("id", { count: "exact", head: true })
+          .select("id, status, start_date, end_date, budget")
           .in("status", ["in_progress"]),
         supabase
           .from("project_assignments")
@@ -105,8 +107,15 @@ export function useDashboardStats() {
       const expected = assignedCount > 0 ? assignedCount : activeEmployees;
       const absent = Math.max(0, expected - punchedIds.size);
 
+      const activeProjectsList = (projectsRes.data ?? []) as any[];
+      const healthScores = activeProjectsList.map((p) => computeProjectHealth(p));
+      const avgHealth = healthScores.length
+        ? Math.round(healthScores.reduce((s, h) => s + h, 0) / healthScores.length)
+        : 0;
+
       const stats: DashboardStats = {
-        activeProjects: projectsRes.count ?? 0,
+        activeProjects: activeProjectsList.length,
+        activeProjectsHealth: avgHealth,
         todayAssigned: assignedCount,
         present,
         absent,

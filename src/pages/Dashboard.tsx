@@ -33,7 +33,7 @@ export default function Dashboard() {
 
   const statCards = stats
     ? [
-        { title: "Active Projects", value: stats.activeProjects, icon: FolderKanban, variant: "brand" as const },
+        { title: "Active Projects", value: stats.activeProjects, icon: FolderKanban, variant: "brand" as const, subtitle: stats.activeProjects > 0 ? `Avg health ${stats.activeProjectsHealth}%` : undefined },
         { title: "Today's Assigned", value: stats.todayAssigned, icon: Users, variant: "default" as const, subtitle: `Across ${stats.activeProjects} projects` },
         { title: "Present", value: stats.present, icon: UserCheck, variant: "success" as const, trend: stats.todayAssigned > 0 ? { value: `${Math.round((stats.present / stats.todayAssigned) * 100)}%`, positive: true } : undefined },
         { title: "Absent", value: stats.absent, icon: UserX, variant: "destructive" as const },
