@@ -756,3 +756,199 @@ function DayDetailDialog({
     </Dialog>
   );
 }
+
+function DaySummaryDialog({
+  date,
+  onClose,
+  travelPaid,
+}: {
+  date: string;
+  onClose: () => void;
+  travelPaid: boolean;
+}) {
+  const open = !!date;
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["timesheet-day-summary", date],
+    enabled: open,
+    queryFn: async () => {
+      const [logsRes, empsRes, projRes, settingsRes] = await Promise.all([
+        supabase
+          .from("attendance_logs")
+          .select("*, projects(name)")
+          .eq("date", date),
+        supabase
+          .from("employees")
+          .select("id, name, employee_code, skill_type, hourly_rate, overtime_rate")
+          .eq("is_active", true),
+        supabase.from("projects").select("id, name"),
+        supabase
+          .from("settings")
+          .select("key, value")
+          .in("key", ["standard_work_hours", "overtime_multiplier"]),
+      ]);
+      if (logsRes.error) throw logsRes.error;
+
+      const settingsMap = new Map((settingsRes.data ?? []).map((s: any) => [s.key, s.value]));
+      const stdHours = parseFloat(settingsMap.get("standard_work_hours") ?? "8") || 8;
+      const otMult = parseFloat(settingsMap.get("overtime_multiplier") ?? "1.5") || 1.5;
+      const empMap = new Map((empsRes.data ?? []).map((e: any) => [e.id, e]));
+
+      const rows = (logsRes.data ?? []).map((log: any) => {
+        const emp = empMap.get(log.employee_id) as any;
+        const workedMin = getDisplayWorkedMinutes(log);
+        const otMin = getDisplayOvertimeMinutes(log, stdHours);
+        const regMin = Math.max(0, workedMin - otMin);
+        const rate = Number(emp?.hourly_rate ?? 0);
+        const otRate = Number(emp?.overtime_rate ?? 0) > 0 ? Number(emp?.overtime_rate) : rate * otMult;
+        const regPay = (regMin / 60) * rate;
+        const otPay = (otMin / 60) * otRate;
+        let breakMin = log.break_minutes ?? 0;
+        if (!breakMin && log.break_start_time && log.break_end_time) {
+          const bs = new Date(log.break_start_time).getTime();
+          const be = new Date(log.break_end_time).getTime();
+          if (be > bs) breakMin = Math.round((be - bs) / 60000);
+        }
+        let travelMin = 0;
+        if (log.travel_start_time && log.site_arrival_time) {
+          travelMin = Math.max(0, Math.round((new Date(log.site_arrival_time).getTime() - new Date(log.travel_start_time).getTime()) / 60000));
+        }
+        return {
+          employee_id: log.employee_id,
+          employee_name: emp?.name ?? "Unknown",
+          employee_code: emp?.employee_code ?? "—",
+          skill_type: emp?.skill_type ?? "—",
+          project_name: log.projects?.name ?? "In-House",
+          punchIn: log.office_punch_in,
+          punchOut: log.office_punch_out,
+          workedMin,
+          otMin,
+          breakMin,
+          travelMin,
+          regPay,
+          otPay,
+          totalPay: regPay + otPay,
+        };
+      }).sort((a, b) => a.employee_name.localeCompare(b.employee_name));
+
+      const totals = rows.reduce(
+        (acc, r) => {
+          acc.workedMin += r.workedMin;
+          acc.otMin += r.otMin;
+          acc.breakMin += r.breakMin;
+          acc.travelMin += r.travelMin;
+          acc.regPay += r.regPay;
+          acc.otPay += r.otPay;
+          acc.totalPay += r.totalPay;
+          return acc;
+        },
+        { workedMin: 0, otMin: 0, breakMin: 0, travelMin: 0, regPay: 0, otPay: 0, totalPay: 0 }
+      );
+
+      return { rows, totals };
+    },
+  });
+
+  const dateLabel = date
+    ? new Date(date + "T00:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })
+    : "";
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-5xl max-h-[85vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle>Daily Cost Summary — {dateLabel}</DialogTitle>
+          <DialogDescription>
+            All employees who worked on this day with hours and pay breakdown.
+          </DialogDescription>
+        </DialogHeader>
+
+        {isLoading ? (
+          <div className="space-y-2 py-4">
+            {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+          </div>
+        ) : !data || !data.rows.length ? (
+          <p className="text-sm text-muted-foreground py-12 text-center">No attendance records for this day.</p>
+        ) : (
+          <>
+            {/* Summary stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 py-2">
+              <div className="rounded-lg border p-2.5">
+                <p className="text-[10px] text-muted-foreground uppercase">Employees</p>
+                <p className="text-lg font-bold">{data.rows.length}</p>
+              </div>
+              <div className="rounded-lg border p-2.5">
+                <p className="text-[10px] text-muted-foreground uppercase">Total Hours</p>
+                <p className="text-lg font-bold">{formatWorkedMinutes(data.totals.workedMin)}</p>
+              </div>
+              <div className="rounded-lg border p-2.5">
+                <p className="text-[10px] text-muted-foreground uppercase">Overtime</p>
+                <p className="text-lg font-bold text-status-overtime">{formatWorkedMinutes(data.totals.otMin)}</p>
+              </div>
+              <div className="rounded-lg border p-2.5 bg-accent/20">
+                <p className="text-[10px] text-muted-foreground uppercase">Total Cost</p>
+                <p className="text-lg font-bold">AED {Math.round(data.totals.totalPay).toLocaleString()}</p>
+              </div>
+            </div>
+
+            <ScrollArea className="flex-1 -mx-6 px-6">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-card">
+                  <tr className="text-xs text-muted-foreground border-b border-border">
+                    <th className="text-left py-2 px-2 font-medium">Employee</th>
+                    <th className="text-left py-2 px-2 font-medium">Project</th>
+                    <th className="text-center py-2 px-2 font-medium">In</th>
+                    <th className="text-center py-2 px-2 font-medium">Out</th>
+                    <th className="text-right py-2 px-2 font-medium">Worked</th>
+                    <th className="text-right py-2 px-2 font-medium text-status-overtime">OT</th>
+                    <th className="text-right py-2 px-2 font-medium">Break</th>
+                    {travelPaid && <th className="text-right py-2 px-2 font-medium">Travel</th>}
+                    <th className="text-right py-2 px-2 font-medium">Reg Pay</th>
+                    <th className="text-right py-2 px-2 font-medium text-status-overtime">OT Pay</th>
+                    <th className="text-right py-2 px-2 font-medium">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.rows.map((r) => (
+                    <tr key={r.employee_id} className="border-b border-border/30 hover:bg-accent/20">
+                      <td className="py-2 px-2">
+                        <div className="font-medium text-foreground">{r.employee_name}</div>
+                        <div className="text-[10px] text-muted-foreground">{r.employee_code} · {r.skill_type}</div>
+                      </td>
+                      <td className="py-2 px-2 text-xs text-muted-foreground">{r.project_name}</td>
+                      <td className="py-2 px-2 text-center font-mono text-xs">{fmtTime(r.punchIn)}</td>
+                      <td className="py-2 px-2 text-center font-mono text-xs">{fmtTime(r.punchOut)}</td>
+                      <td className="py-2 px-2 text-right font-mono text-xs">{formatWorkedMinutes(r.workedMin)}</td>
+                      <td className="py-2 px-2 text-right font-mono text-xs text-status-overtime">{r.otMin > 0 ? formatWorkedMinutes(r.otMin) : "—"}</td>
+                      <td className="py-2 px-2 text-right font-mono text-xs text-muted-foreground">{r.breakMin > 0 ? `${r.breakMin}m` : "—"}</td>
+                      {travelPaid && <td className="py-2 px-2 text-right font-mono text-xs text-muted-foreground">{r.travelMin > 0 ? `${r.travelMin}m` : "—"}</td>}
+                      <td className="py-2 px-2 text-right font-mono text-xs">AED {Math.round(r.regPay).toLocaleString()}</td>
+                      <td className="py-2 px-2 text-right font-mono text-xs text-status-overtime">{r.otPay > 0 ? `AED ${Math.round(r.otPay).toLocaleString()}` : "—"}</td>
+                      <td className="py-2 px-2 text-right font-mono text-xs font-bold">AED {Math.round(r.totalPay).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-border bg-muted/20">
+                    <td colSpan={4} className="py-2 px-2 font-semibold">Totals ({data.rows.length})</td>
+                    <td className="py-2 px-2 text-right font-mono text-xs font-bold">{formatWorkedMinutes(data.totals.workedMin)}</td>
+                    <td className="py-2 px-2 text-right font-mono text-xs font-bold text-status-overtime">{formatWorkedMinutes(data.totals.otMin)}</td>
+                    <td className="py-2 px-2 text-right font-mono text-xs font-bold">{data.totals.breakMin}m</td>
+                    {travelPaid && <td className="py-2 px-2 text-right font-mono text-xs font-bold">{data.totals.travelMin}m</td>}
+                    <td className="py-2 px-2 text-right font-mono text-xs font-bold">AED {Math.round(data.totals.regPay).toLocaleString()}</td>
+                    <td className="py-2 px-2 text-right font-mono text-xs font-bold text-status-overtime">AED {Math.round(data.totals.otPay).toLocaleString()}</td>
+                    <td className="py-2 px-2 text-right font-mono text-xs font-bold">AED {Math.round(data.totals.totalPay).toLocaleString()}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </ScrollArea>
+          </>
+        )}
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Close</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
