@@ -891,24 +891,6 @@ function DaySummaryView({
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="rounded-lg border p-2.5">
-          <p className="text-[10px] text-muted-foreground uppercase">Employees</p>
-          <p className="text-lg font-bold">{data.rows.length}</p>
-        </div>
-        <div className="rounded-lg border p-2.5">
-          <p className="text-[10px] text-muted-foreground uppercase">Total Hours</p>
-          <p className="text-lg font-bold">{formatWorkedMinutes(data.totals.workedMin)}</p>
-        </div>
-        <div className="rounded-lg border p-2.5">
-          <p className="text-[10px] text-muted-foreground uppercase">Overtime</p>
-          <p className="text-lg font-bold text-status-overtime">{formatWorkedMinutes(data.totals.otMin)}</p>
-        </div>
-        <div className="rounded-lg border p-2.5 bg-accent/20">
-          <p className="text-[10px] text-muted-foreground uppercase">Total Cost</p>
-          <p className="text-lg font-bold">AED {Math.round(data.totals.totalPay).toLocaleString()}</p>
-        </div>
-      </div>
 
       <Card className="glass-card">
         <CardContent className="p-0">
