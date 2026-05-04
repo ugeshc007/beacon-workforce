@@ -61,7 +61,7 @@ export function useDashboardStats() {
     queryFn: async () => {
       const today = todayUAE();
 
-      const [projectsRes, assignmentsRes, attendanceRes, activeEmpRes] = await Promise.all([
+      const [projectsRes, assignmentsRes, attendanceRes, activeEmpRes, settingsRes] = await Promise.all([
         supabase
           .from("projects")
           .select("id, status, start_date, end_date, budget")
@@ -78,11 +78,18 @@ export function useDashboardStats() {
           .from("employees")
           .select("id", { count: "exact", head: true })
           .eq("is_active", true),
+        supabase
+          .from("settings")
+          .select("key, value")
+          .in("key", ["standard_work_hours", "overtime_multiplier"]),
       ]);
 
       const logs = (attendanceRes.data ?? []) as any[];
       const assignedCount = assignmentsRes.count ?? 0;
       const activeEmployees = activeEmpRes.count ?? 0;
+      const settingsMap = new Map((settingsRes.data ?? []).map((s: any) => [s.key, s.value]));
+      const stdHours = parseFloat((settingsMap.get("standard_work_hours") as string) ?? "8") || 8;
+      const otMult = parseFloat((settingsMap.get("overtime_multiplier") as string) ?? "1.5") || 1.5;
 
       let present = 0;
       let traveling = 0;
@@ -99,13 +106,9 @@ export function useDashboardStats() {
         }
         if (log.work_start_time && !log.work_end_time) working++;
         if (log.travel_start_time && !log.site_arrival_time) traveling++;
-        // Live OT minutes: prefer stored value, otherwise compute from punch times
-        const stdHours = Number(log.employees?.standard_hours_per_day ?? 8);
-        const liveOt = log.overtime_minutes && log.overtime_minutes > 0
-          ? log.overtime_minutes
-          : getDisplayOvertimeMinutes(log, stdHours);
-        totalOtMin += liveOt;
-        totalCost += computeLiveCost(log);
+        // Live OT — use the same stdHours as Timesheets so totals agree
+        totalOtMin += getDisplayOvertimeMinutes(log, stdHours);
+        totalCost += computeLiveCost(log, { stdHours, otMult });
       }
 
       // Absent = expected staff for today (assignments if set, otherwise active employees) − punched

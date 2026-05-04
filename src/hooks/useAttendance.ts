@@ -19,26 +19,34 @@ export type AttendanceLog = Tables<"attendance_logs"> & {
 
 /**
  * Compute labor cost from any work stage (office/project/maintenance/site visit).
- * Uses stored regular+overtime cost when present, otherwise derives from
- * worked minutes × hourly_rate, with overtime portion at overtime_rate.
+ * Always derives live from worked minutes when punch-in exists, so it stays
+ * consistent with the Timesheets/Daily view. Falls back to stored cost only
+ * when no times are present.
+ *
+ * Pass org settings (standard_work_hours, overtime_multiplier) so all surfaces
+ * agree on the same numbers.
  */
-export function computeLiveCost(log: any): number {
-  const finalCost = Number(log.regular_cost ?? 0) + Number(log.overtime_cost ?? 0);
-  if (finalCost > 0) return finalCost;
-
+export function computeLiveCost(
+  log: any,
+  opts?: { stdHours?: number; otMult?: number },
+): number {
   const rate = Number(log.employees?.hourly_rate ?? 0);
-  if (!rate) return 0;
-
-  const stdHours = Number(log.employees?.standard_hours_per_day ?? 8);
-  const otRate = Number(log.employees?.overtime_rate ?? 0) || rate * 1.5;
+  const empStdHours = Number(log.employees?.standard_hours_per_day ?? 0);
+  const stdHours = opts?.stdHours ?? (empStdHours > 0 ? empStdHours : 8);
+  const otMult = opts?.otMult ?? 1.5;
+  const otRate = Number(log.employees?.overtime_rate ?? 0) > 0
+    ? Number(log.employees?.overtime_rate)
+    : rate * otMult;
 
   const workedMin = getDisplayWorkedMinutes(log);
-  if (workedMin <= 0) return 0;
+  if (workedMin > 0 && rate > 0) {
+    const otMin = getDisplayOvertimeMinutes(log, stdHours);
+    const regMin = Math.max(0, workedMin - otMin);
+    return (regMin / 60) * rate + (otMin / 60) * otRate;
+  }
 
-  const otMin = getDisplayOvertimeMinutes(log, stdHours);
-  const regMin = Math.max(0, workedMin - otMin);
-
-  return (regMin / 60) * rate + (otMin / 60) * otRate;
+  // No times yet — fall back to anything stored
+  return Number(log.regular_cost ?? 0) + Number(log.overtime_cost ?? 0);
 }
 
 export function useAttendanceLogs(filters: {
@@ -86,7 +94,7 @@ export function useAttendanceSummary(date: string) {
       const [logsRes, empsRes, settingsRes] = await Promise.all([
         supabase
           .from("attendance_logs")
-          .select("employee_id, work_start_time, work_end_time, break_start_time, break_end_time, break_minutes, office_punch_in, travel_start_time, site_arrival_time, office_punch_out, overtime_minutes, regular_cost, overtime_cost, employees(hourly_rate)")
+          .select("employee_id, work_start_time, work_end_time, break_start_time, break_end_time, break_minutes, office_punch_in, travel_start_time, site_arrival_time, office_punch_out, overtime_minutes, regular_cost, overtime_cost, employees(hourly_rate, overtime_rate, standard_hours_per_day)")
           .eq("date", date),
         supabase
           .from("employees")
@@ -95,7 +103,7 @@ export function useAttendanceSummary(date: string) {
         supabase
           .from("settings")
           .select("key, value")
-          .in("key", ["shift_start_time", "late_grace_minutes"]),
+          .in("key", ["shift_start_time", "late_grace_minutes", "standard_work_hours", "overtime_multiplier"]),
       ]);
       if (logsRes.error) throw logsRes.error;
 
@@ -104,6 +112,8 @@ export function useAttendanceSummary(date: string) {
       const settingsMap = new Map((settingsRes.data ?? []).map((s: any) => [s.key, s.value]));
       const shiftStart = (settingsMap.get("shift_start_time") as string) || "08:00";
       const graceMin = parseInt((settingsMap.get("late_grace_minutes") as string) || "10", 10);
+      const stdHours = parseFloat((settingsMap.get("standard_work_hours") as string) ?? "8") || 8;
+      const otMult = parseFloat((settingsMap.get("overtime_multiplier") as string) ?? "1.5") || 1.5;
 
       // Late cutoff in UAE local time
       const [sh, sm] = shiftStart.split(":").map(Number);
@@ -123,8 +133,8 @@ export function useAttendanceSummary(date: string) {
       const late = logs.filter((l) => isLate(l.office_punch_in)).length;
       const punchedEmpIds = new Set(logs.filter((l) => l.office_punch_in).map((l) => l.employee_id));
       const absent = Math.max(0, activeCount - punchedEmpIds.size);
-      const totalOtMin = logs.reduce((s, l) => s + (l.overtime_minutes ?? 0), 0);
-      const totalCost = logs.reduce((s, l) => s + computeLiveCost(l), 0);
+      const totalOtMin = logs.reduce((s, l) => s + getDisplayOvertimeMinutes(l, stdHours), 0);
+      const totalCost = logs.reduce((s, l) => s + computeLiveCost(l, { stdHours, otMult }), 0);
 
       return { total: logs.length, punchedIn, travelling, onSite, working, onBreak, completed, late, absent, totalOtMin, totalCost };
     },
