@@ -352,13 +352,19 @@ export default function Timesheets() {
       </div>
 
       {/* Tabs: Employee view vs Project view */}
-      <Tabs defaultValue="employee" className="space-y-4">
+      <Tabs defaultValue="daily" className="space-y-4">
         {showAdvancedFilters && (
           <TabsList>
+            <TabsTrigger value="daily" className="gap-1.5"><CalendarIcon className="h-3.5 w-3.5" /> Daily</TabsTrigger>
             <TabsTrigger value="employee" className="gap-1.5"><Users className="h-3.5 w-3.5" /> By Employee</TabsTrigger>
             <TabsTrigger value="project" className="gap-1.5"><Building2 className="h-3.5 w-3.5" /> By Project</TabsTrigger>
           </TabsList>
         )}
+
+        {/* ── Daily View ── */}
+        <TabsContent value="daily">
+          <DaySummaryView date={daySummaryDate} travelPaid={travelPaid} />
+        </TabsContent>
 
         {/* ── Employee View ── */}
         <TabsContent value="employee">
