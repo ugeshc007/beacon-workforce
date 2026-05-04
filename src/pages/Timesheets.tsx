@@ -40,6 +40,12 @@ function todayUAE(): string {
   return uae.toISOString().slice(0, 7);
 }
 
+function todayUAEDate(): string {
+  const now = new Date();
+  const uae = new Date(now.getTime() + 4 * 60 * 60 * 1000);
+  return uae.toISOString().slice(0, 10);
+}
+
 const statusBadge: Record<string, { text: string; className: string }> = {
   pending: { text: "Pending", className: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
   approved: { text: "Approved", className: "bg-status-present/20 text-status-present border-status-present/30" },
