@@ -26,7 +26,7 @@ import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import { formatWorkedMinutes } from "@/lib/timesheet-display";
+import { formatWorkedMinutes, getDisplayWorkedMinutes, getDisplayOvertimeMinutes } from "@/lib/timesheet-display";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
