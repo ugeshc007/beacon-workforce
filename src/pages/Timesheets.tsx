@@ -27,6 +27,8 @@ import * as XLSX from "xlsx";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { formatWorkedMinutes } from "@/lib/timesheet-display";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 function todayUAE(): string {
   const now = new Date();
