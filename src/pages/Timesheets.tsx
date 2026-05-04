@@ -375,12 +375,17 @@ export default function Timesheets() {
                               return (
                                 <td key={d.date} className="text-center py-2 px-0.5">
                                   {status === "present" ? (
-                                    <div className="flex flex-col items-center">
+                                    <button
+                                      type="button"
+                                      onClick={() => setDayDetail({ row, date: d.date })}
+                                      className="flex flex-col items-center w-full rounded hover:bg-accent/40 px-0.5 py-0.5 transition-colors cursor-pointer"
+                                      title="View day detail"
+                                    >
                                       <span className={`text-[10px] font-mono ${ot > 0 ? "text-status-overtime font-semibold" : "text-foreground"}`}>
                                         {formatWorkedMinutes(mins || 0)}
                                       </span>
                                       {ot > 0 && <span className="text-[8px] text-status-overtime">+{ot}h</span>}
-                                    </div>
+                                    </button>
                                   ) : status === "leave" ? (
                                     <span className="text-[10px] font-bold text-status-planned">L</span>
                                   ) : status === "absent" ? (
