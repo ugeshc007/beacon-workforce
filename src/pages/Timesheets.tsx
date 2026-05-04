@@ -100,6 +100,7 @@ export default function Timesheets() {
   const totalRegCost = filtered.reduce((s, r) => s + r.regularCost, 0);
   const totalOtCost = filtered.reduce((s, r) => s + r.otCost, 0);
   const totalOtHours = filtered.reduce((s, r) => s + r.totalOt, 0);
+  const totalWorkedHours = filtered.reduce((s, r) => s + (r.totalHours || 0), 0);
   const totalPay = filtered.reduce((s, r) => s + r.totalPay, 0);
 
   // Day headers
@@ -302,11 +303,12 @@ export default function Timesheets() {
       </div>
 
       {/* Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard title="Regular Pay" value={`AED ${totalRegCost.toLocaleString()}`} icon={DollarSign} variant="default" />
-        <StatCard title="Overtime Pay" value={`AED ${totalOtCost.toLocaleString()}`} icon={AlertTriangle} variant="destructive" />
-        <StatCard title="Total Payroll" value={`AED ${totalPay.toLocaleString()}`} icon={DollarSign} variant="default" />
-        <StatCard title="OT Hours" value={`${totalOtHours.toFixed(1)}h`} icon={Timer} variant="warning" />
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        <StatCard title="Regular Pay" value={`AED ${totalRegCost.toLocaleString()}`} icon={DollarSign} variant="default" compact />
+        <StatCard title="Overtime Pay" value={`AED ${totalOtCost.toLocaleString()}`} icon={AlertTriangle} variant="destructive" compact />
+        <StatCard title="Total Payroll" value={`AED ${totalPay.toLocaleString()}`} icon={DollarSign} variant="default" compact />
+        <StatCard title="Worked Hours" value={`${totalWorkedHours.toFixed(1)}h`} icon={Timer} variant="default" compact />
+        <StatCard title="OT Hours" value={`${totalOtHours.toFixed(1)}h`} icon={Timer} variant="warning" compact />
       </div>
 
       {/* Filters */}
