@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Users, UserCheck, Wrench, Clock, DollarSign, Search, Coffee, CheckCircle2,
+  Users, UserCheck, Wrench, Clock, DollarSign, Search, Coffee, CheckCircle2, Plane, AlarmClock, UserX,
   ChevronLeft, ChevronRight, MapPin, MapPinOff, ShieldAlert, Pencil, Eye,
 } from "lucide-react";
 import {
@@ -114,12 +114,15 @@ export default function Attendance() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <StatCard title="Punched In" value={summary?.punchedIn ?? 0} icon={Users} variant="default" />
-        <StatCard title="On Site" value={summary?.onSite ?? 0} icon={UserCheck} variant="success" />
-        <StatCard title="Working" value={summary?.working ?? 0} icon={Wrench} variant="brand" />
-        <StatCard title="On Break" value={summary?.onBreak ?? 0} icon={Coffee} variant="warning" />
-        <StatCard title="Completed" value={summary?.completed ?? 0} icon={CheckCircle2} variant="success" />
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+        <StatCard title="Punched In" value={summary?.punchedIn ?? 0} icon={Users} variant="default" compact />
+        <StatCard title="Travelling" value={summary?.travelling ?? 0} icon={Plane} variant="warning" compact />
+        <StatCard title="On Site" value={summary?.onSite ?? 0} icon={UserCheck} variant="success" compact />
+        <StatCard title="Working" value={summary?.working ?? 0} icon={Wrench} variant="brand" compact />
+        <StatCard title="On Break" value={summary?.onBreak ?? 0} icon={Coffee} variant="warning" compact />
+        <StatCard title="Completed" value={summary?.completed ?? 0} icon={CheckCircle2} variant="success" compact />
+        <StatCard title="Late" value={summary?.late ?? 0} icon={AlarmClock} variant="destructive" compact />
+        <StatCard title="Absent" value={summary?.absent ?? 0} icon={UserX} variant="destructive" compact />
       </div>
 
       {/* Filters */}
