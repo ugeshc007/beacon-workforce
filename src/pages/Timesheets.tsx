@@ -26,7 +26,7 @@ import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import { formatWorkedMinutes } from "@/lib/timesheet-display";
+import { formatWorkedMinutes, getDisplayWorkedMinutes, getDisplayOvertimeMinutes } from "@/lib/timesheet-display";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
@@ -603,20 +603,59 @@ function DayDetailDialog({
     queryKey: ["timesheet-day-detail", empId, date],
     enabled: open && !!empId && !!date,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("attendance_logs")
-        .select("*, projects(name)")
-        .eq("employee_id", empId!)
-        .eq("date", date!)
-        .maybeSingle();
-      if (error) throw error;
-      return data as any;
+      const [logRes, empRes, settingsRes] = await Promise.all([
+        supabase
+          .from("attendance_logs")
+          .select("*, projects(name)")
+          .eq("employee_id", empId!)
+          .eq("date", date!)
+          .maybeSingle(),
+        supabase
+          .from("employees")
+          .select("hourly_rate, overtime_rate")
+          .eq("id", empId!)
+          .maybeSingle(),
+        supabase
+          .from("settings")
+          .select("key, value")
+          .in("key", ["standard_work_hours", "overtime_multiplier"]),
+      ]);
+      if (logRes.error) throw logRes.error;
+      const settingsMap = new Map((settingsRes.data ?? []).map((s: any) => [s.key, s.value]));
+      const stdHours = parseFloat(settingsMap.get("standard_work_hours") ?? "8") || 8;
+      const otMult = parseFloat(settingsMap.get("overtime_multiplier") ?? "1.5") || 1.5;
+      return {
+        log: logRes.data as any,
+        rate: Number((empRes.data as any)?.hourly_rate ?? 0),
+        otRate: Number((empRes.data as any)?.overtime_rate ?? 0),
+        stdHours,
+        otMult,
+      };
     },
   });
 
   const dateLabel = date
     ? new Date(date + "T00:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })
     : "";
+
+  // Compute display values
+  const computed = (() => {
+    if (!log?.log) return null;
+    const l = log.log;
+    const workedMin = getDisplayWorkedMinutes(l);
+    const otMin = getDisplayOvertimeMinutes(l, log.stdHours);
+    const regMin = Math.max(0, workedMin - otMin);
+    const regPay = (regMin / 60) * log.rate;
+    const effectiveOtRate = log.otRate > 0 ? log.otRate : log.rate * log.otMult;
+    const otPay = (otMin / 60) * effectiveOtRate;
+    let breakMin = l.break_minutes ?? 0;
+    if (!breakMin && l.break_start_time && l.break_end_time) {
+      const bs = new Date(l.break_start_time).getTime();
+      const be = new Date(l.break_end_time).getTime();
+      if (be > bs) breakMin = Math.round((be - bs) / 60000);
+    }
+    return { l, workedMin, otMin, regPay, otPay, breakMin };
+  })();
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
@@ -633,46 +672,48 @@ function DayDetailDialog({
             <Skeleton className="h-16 w-full" />
             <Skeleton className="h-16 w-full" />
           </div>
-        ) : !log ? (
+        ) : !computed ? (
           <p className="text-sm text-muted-foreground py-6 text-center">No record found for this day.</p>
         ) : (
           <div className="space-y-3 text-sm">
             <div className="grid grid-cols-2 gap-2">
               <div className="rounded-lg border p-2.5">
                 <p className="text-[10px] text-muted-foreground uppercase">Project</p>
-                <p className="font-medium">{log.projects?.name ?? "In-House"}</p>
+                <p className="font-medium">{computed.l.projects?.name ?? "In-House"}</p>
               </div>
               <div className="rounded-lg border p-2.5">
                 <p className="text-[10px] text-muted-foreground uppercase">Total Worked</p>
-                <p className="font-bold">{formatWorkedMinutes(log.total_work_minutes ?? 0)}</p>
+                <p className="font-bold">{formatWorkedMinutes(computed.workedMin)}</p>
               </div>
             </div>
 
             <div className="rounded-lg border p-3 space-y-1.5">
               <p className="text-[10px] text-muted-foreground uppercase mb-1">Timeline</p>
-              <div className="flex justify-between text-xs"><span className="text-muted-foreground">Office Punch In</span><span className="font-mono">{fmtTime(log.office_punch_in)}</span></div>
-              {log.travel_start_time && <div className="flex justify-between text-xs"><span className="text-muted-foreground">Travel Start</span><span className="font-mono">{fmtTime(log.travel_start_time)}</span></div>}
-              {log.site_arrival_time && <div className="flex justify-between text-xs"><span className="text-muted-foreground">Site Arrival</span><span className="font-mono">{fmtTime(log.site_arrival_time)}</span></div>}
-              {log.work_start_time && <div className="flex justify-between text-xs"><span className="text-muted-foreground">Work Start</span><span className="font-mono">{fmtTime(log.work_start_time)}</span></div>}
-              {log.work_end_time && <div className="flex justify-between text-xs"><span className="text-muted-foreground">Work End</span><span className="font-mono">{fmtTime(log.work_end_time)}</span></div>}
-              <div className="flex justify-between text-xs"><span className="text-muted-foreground">Office Punch Out</span><span className="font-mono">{fmtTime(log.office_punch_out)}</span></div>
+              <div className="flex justify-between text-xs"><span className="text-muted-foreground">Office Punch In</span><span className="font-mono">{fmtTime(computed.l.office_punch_in)}</span></div>
+              {computed.l.travel_start_time && <div className="flex justify-between text-xs"><span className="text-muted-foreground">Travel Start</span><span className="font-mono">{fmtTime(computed.l.travel_start_time)}</span></div>}
+              {computed.l.site_arrival_time && <div className="flex justify-between text-xs"><span className="text-muted-foreground">Site Arrival</span><span className="font-mono">{fmtTime(computed.l.site_arrival_time)}</span></div>}
+              {computed.l.work_start_time && <div className="flex justify-between text-xs"><span className="text-muted-foreground">Work Start</span><span className="font-mono">{fmtTime(computed.l.work_start_time)}</span></div>}
+              {computed.l.break_start_time && <div className="flex justify-between text-xs"><span className="text-muted-foreground">Break Start</span><span className="font-mono">{fmtTime(computed.l.break_start_time)}</span></div>}
+              {computed.l.break_end_time && <div className="flex justify-between text-xs"><span className="text-muted-foreground">Break End</span><span className="font-mono">{fmtTime(computed.l.break_end_time)}</span></div>}
+              {computed.l.work_end_time && <div className="flex justify-between text-xs"><span className="text-muted-foreground">Work End</span><span className="font-mono">{fmtTime(computed.l.work_end_time)}</span></div>}
+              <div className="flex justify-between text-xs"><span className="text-muted-foreground">Office Punch Out</span><span className="font-mono">{fmtTime(computed.l.office_punch_out)}</span></div>
             </div>
 
             <div className="grid grid-cols-3 gap-2">
               <div className="rounded-lg border p-2.5">
                 <p className="text-[10px] text-muted-foreground uppercase">Break</p>
-                <p className="font-mono text-xs">{log.break_minutes ?? 0}m</p>
+                <p className="font-mono text-xs">{computed.breakMin > 0 ? `${computed.breakMin}m` : "—"}</p>
               </div>
               <div className="rounded-lg border p-2.5">
                 <p className="text-[10px] text-muted-foreground uppercase">Overtime</p>
-                <p className="font-mono text-xs text-status-overtime">{formatWorkedMinutes(log.overtime_minutes ?? 0)}</p>
+                <p className="font-mono text-xs text-status-overtime">{formatWorkedMinutes(computed.otMin)}</p>
               </div>
               {travelPaid && (
                 <div className="rounded-lg border p-2.5">
                   <p className="text-[10px] text-muted-foreground uppercase">Travel</p>
                   <p className="font-mono text-xs">
-                    {log.travel_start_time && log.site_arrival_time
-                      ? `${Math.max(0, Math.round((new Date(log.site_arrival_time).getTime() - new Date(log.travel_start_time).getTime()) / 60000))}m`
+                    {computed.l.travel_start_time && computed.l.site_arrival_time
+                      ? `${Math.max(0, Math.round((new Date(computed.l.site_arrival_time).getTime() - new Date(computed.l.travel_start_time).getTime()) / 60000))}m`
                       : "—"}
                   </p>
                 </div>
@@ -682,15 +723,15 @@ function DayDetailDialog({
             <div className="grid grid-cols-3 gap-2">
               <div className="rounded-lg border p-2.5">
                 <p className="text-[10px] text-muted-foreground uppercase">Reg Pay</p>
-                <p className="font-mono text-xs">AED {Number(log.regular_cost ?? 0).toLocaleString()}</p>
+                <p className="font-mono text-xs">AED {Math.round(computed.regPay).toLocaleString()}</p>
               </div>
               <div className="rounded-lg border p-2.5">
                 <p className="text-[10px] text-muted-foreground uppercase">OT Pay</p>
-                <p className="font-mono text-xs text-status-overtime">AED {Number(log.overtime_cost ?? 0).toLocaleString()}</p>
+                <p className="font-mono text-xs text-status-overtime">AED {Math.round(computed.otPay).toLocaleString()}</p>
               </div>
               <div className="rounded-lg border p-2.5 bg-accent/20">
                 <p className="text-[10px] text-muted-foreground uppercase">Total</p>
-                <p className="font-mono text-xs font-bold">AED {(Number(log.regular_cost ?? 0) + Number(log.overtime_cost ?? 0)).toLocaleString()}</p>
+                <p className="font-mono text-xs font-bold">AED {Math.round(computed.regPay + computed.otPay).toLocaleString()}</p>
               </div>
             </div>
           </div>
