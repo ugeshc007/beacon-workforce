@@ -52,6 +52,7 @@ export default function Timesheets() {
   const [approveAction, setApproveAction] = useState<"approved" | "rejected">("approved");
   const [approveNotes, setApproveNotes] = useState("");
   const [dayDetail, setDayDetail] = useState<{ row: TimesheetRow; date: string } | null>(null);
+  const [daySummaryDate, setDaySummaryDate] = useState<string>("");
 
   const { data, isLoading } = useTimesheetData(month, { projectId: projectFilter, employeeId: employeeFilter });
   const { data: settings } = useSettings();
