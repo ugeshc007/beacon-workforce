@@ -94,12 +94,13 @@ export function useAttendanceSummary(date: string) {
       const punchedIn = logs.filter((l) => l.office_punch_in).length;
       const onSite = logs.filter((l) => l.site_arrival_time).length;
       const working = logs.filter((l) => l.work_start_time && !l.work_end_time).length;
+      const onBreak = logs.filter((l) => l.break_start_time && !l.break_end_time).length;
       const completed = logs.filter((l) => l.office_punch_out).length;
       const totalOtMin = logs.reduce((s, l) => s + (l.overtime_minutes ?? 0), 0);
       const totalCost = logs.reduce((s, l) => s + computeLiveCost(l), 0);
 
 
-      return { total: logs.length, punchedIn, onSite, working, completed, totalOtMin, totalCost };
+      return { total: logs.length, punchedIn, onSite, working, onBreak, completed, totalOtMin, totalCost };
     },
     refetchInterval: 30000,
   });
