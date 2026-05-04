@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { computeLiveCost } from "@/hooks/useAttendance";
 import { getDisplayOvertimeMinutes } from "@/lib/timesheet-display";
+import { computeProjectHealth } from "@/lib/project-health";
 
 function todayUAE(): string {
   const now = new Date();
@@ -14,6 +15,7 @@ function todayUAE(): string {
 
 export interface DashboardStats {
   activeProjects: number;
+  activeProjectsHealth: number;
   todayAssigned: number;
   present: number;
   absent: number;
@@ -57,7 +59,7 @@ export function useDashboardStats() {
       const [projectsRes, assignmentsRes, attendanceRes, activeEmpRes] = await Promise.all([
         supabase
           .from("projects")
-          .select("id", { count: "exact", head: true })
+          .select("id, status, start_date, end_date, budget")
           .in("status", ["in_progress"]),
         supabase
           .from("project_assignments")
