@@ -83,24 +83,50 @@ export function useAttendanceSummary(date: string) {
   return useQuery({
     queryKey: ["attendance-summary", date],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("attendance_logs")
-        .select("work_start_time, work_end_time, break_start_time, break_end_time, break_minutes, office_punch_in, travel_start_time, site_arrival_time, office_punch_out, overtime_minutes, regular_cost, overtime_cost, employees(hourly_rate)")
-        .eq("date", date);
+      const [logsRes, empsRes, settingsRes] = await Promise.all([
+        supabase
+          .from("attendance_logs")
+          .select("employee_id, work_start_time, work_end_time, break_start_time, break_end_time, break_minutes, office_punch_in, travel_start_time, site_arrival_time, office_punch_out, overtime_minutes, regular_cost, overtime_cost, employees(hourly_rate)")
+          .eq("date", date),
+        supabase
+          .from("employees")
+          .select("id")
+          .eq("is_active", true),
+        supabase
+          .from("settings")
+          .select("key, value")
+          .in("key", ["shift_start_time", "late_grace_minutes"]),
+      ]);
+      if (logsRes.error) throw logsRes.error;
 
-      if (error) throw error;
-      const logs = (data ?? []) as any[];
+      const logs = (logsRes.data ?? []) as any[];
+      const activeCount = (empsRes.data ?? []).length;
+      const settingsMap = new Map((settingsRes.data ?? []).map((s: any) => [s.key, s.value]));
+      const shiftStart = (settingsMap.get("shift_start_time") as string) || "08:00";
+      const graceMin = parseInt((settingsMap.get("late_grace_minutes") as string) || "10", 10);
+
+      // Late cutoff in UAE local time
+      const [sh, sm] = shiftStart.split(":").map(Number);
+      const cutoffMinutes = (sh || 0) * 60 + (sm || 0) + (isNaN(graceMin) ? 10 : graceMin);
+      const isLate = (ts: string | null) => {
+        if (!ts) return false;
+        const d = new Date(new Date(ts).getTime() + 4 * 60 * 60 * 1000); // shift to UAE
+        return d.getUTCHours() * 60 + d.getUTCMinutes() > cutoffMinutes;
+      };
 
       const punchedIn = logs.filter((l) => l.office_punch_in).length;
+      const travelling = logs.filter((l) => l.travel_start_time && !l.site_arrival_time).length;
       const onSite = logs.filter((l) => l.site_arrival_time).length;
       const working = logs.filter((l) => l.work_start_time && !l.work_end_time).length;
       const onBreak = logs.filter((l) => l.break_start_time && !l.break_end_time).length;
       const completed = logs.filter((l) => l.office_punch_out).length;
+      const late = logs.filter((l) => isLate(l.office_punch_in)).length;
+      const punchedEmpIds = new Set(logs.filter((l) => l.office_punch_in).map((l) => l.employee_id));
+      const absent = Math.max(0, activeCount - punchedEmpIds.size);
       const totalOtMin = logs.reduce((s, l) => s + (l.overtime_minutes ?? 0), 0);
       const totalCost = logs.reduce((s, l) => s + computeLiveCost(l), 0);
 
-
-      return { total: logs.length, punchedIn, onSite, working, onBreak, completed, totalOtMin, totalCost };
+      return { total: logs.length, punchedIn, travelling, onSite, working, onBreak, completed, late, absent, totalOtMin, totalCost };
     },
     refetchInterval: 30000,
   });
