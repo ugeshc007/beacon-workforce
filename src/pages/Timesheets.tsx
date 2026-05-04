@@ -790,14 +790,8 @@ function DayDetailDialog({
   );
 }
 
-function DaySummaryView({
-  date,
-  travelPaid,
-}: {
-  date: string;
-  travelPaid: boolean;
-}) {
-  const { data, isLoading } = useQuery({
+function useDaySummary(date: string) {
+  return useQuery({
     queryKey: ["timesheet-day-summary", date],
     enabled: !!date,
     queryFn: async () => {
@@ -876,6 +870,16 @@ function DaySummaryView({
       return { rows, totals };
     },
   });
+}
+
+function DaySummaryView({
+  date,
+  travelPaid,
+}: {
+  date: string;
+  travelPaid: boolean;
+}) {
+  const { data, isLoading } = useDaySummary(date);
 
   if (isLoading) {
     return <div className="space-y-2 py-4">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>;
