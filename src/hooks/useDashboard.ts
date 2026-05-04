@@ -107,8 +107,15 @@ export function useDashboardStats() {
       const expected = assignedCount > 0 ? assignedCount : activeEmployees;
       const absent = Math.max(0, expected - punchedIds.size);
 
+      const activeProjectsList = (projectsRes.data ?? []) as any[];
+      const healthScores = activeProjectsList.map((p) => computeProjectHealth(p));
+      const avgHealth = healthScores.length
+        ? Math.round(healthScores.reduce((s, h) => s + h, 0) / healthScores.length)
+        : 0;
+
       const stats: DashboardStats = {
-        activeProjects: projectsRes.count ?? 0,
+        activeProjects: activeProjectsList.length,
+        activeProjectsHealth: avgHealth,
         todayAssigned: assignedCount,
         present,
         absent,
