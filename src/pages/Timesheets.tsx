@@ -65,6 +65,7 @@ export default function Timesheets() {
   const [daySummaryDate, setDaySummaryDate] = useState<string>(todayUAEDate());
 
   const { data, isLoading } = useTimesheetData(month, { projectId: projectFilter, employeeId: employeeFilter });
+  const { data: daySummary } = useDaySummary(daySummaryDate);
   const { data: settings } = useSettings();
   const approve = useApproveTimesheet();
   const travelPaid = settings?.travel_time_paid === "true";
@@ -302,13 +303,13 @@ export default function Timesheets() {
         </div>
       </div>
 
-      {/* Summary */}
+      {/* Selected day summary */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-        <StatCard title="Regular Pay" value={`AED ${totalRegCost.toLocaleString()}`} icon={DollarSign} variant="default" compact />
-        <StatCard title="Overtime Pay" value={`AED ${totalOtCost.toLocaleString()}`} icon={AlertTriangle} variant="destructive" compact />
-        <StatCard title="Total Payroll" value={`AED ${totalPay.toLocaleString()}`} icon={DollarSign} variant="default" compact />
-        <StatCard title="Worked Hours" value={`${totalWorkedHours.toFixed(1)}h`} icon={Timer} variant="default" compact />
-        <StatCard title="OT Hours" value={`${totalOtHours.toFixed(1)}h`} icon={Timer} variant="warning" compact />
+        <StatCard title="Staff Present" value={daySummary?.rows.length ?? 0} icon={Users} variant="brand" compact />
+        <StatCard title="Worked Hours" value={formatWorkedMinutes(daySummary?.totals.workedMin ?? 0)} icon={Timer} variant="default" compact />
+        <StatCard title="Regular Pay" value={`AED ${Math.round(daySummary?.totals.regPay ?? 0).toLocaleString()}`} icon={DollarSign} variant="default" compact />
+        <StatCard title="OT Hours" value={formatWorkedMinutes(daySummary?.totals.otMin ?? 0)} icon={Timer} variant="warning" compact />
+        <StatCard title="OT Pay" value={`AED ${Math.round(daySummary?.totals.otPay ?? 0).toLocaleString()}`} icon={AlertTriangle} variant="destructive" compact />
       </div>
 
       {/* Filters */}
@@ -790,14 +791,8 @@ function DayDetailDialog({
   );
 }
 
-function DaySummaryView({
-  date,
-  travelPaid,
-}: {
-  date: string;
-  travelPaid: boolean;
-}) {
-  const { data, isLoading } = useQuery({
+function useDaySummary(date: string) {
+  return useQuery({
     queryKey: ["timesheet-day-summary", date],
     enabled: !!date,
     queryFn: async () => {
@@ -876,6 +871,16 @@ function DaySummaryView({
       return { rows, totals };
     },
   });
+}
+
+function DaySummaryView({
+  date,
+  travelPaid,
+}: {
+  date: string;
+  travelPaid: boolean;
+}) {
+  const { data, isLoading } = useDaySummary(date);
 
   if (isLoading) {
     return <div className="space-y-2 py-4">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>;
