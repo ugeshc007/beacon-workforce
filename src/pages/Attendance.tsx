@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Users, UserCheck, Wrench, Clock, DollarSign, Search,
+  Users, UserCheck, Wrench, Clock, DollarSign, Search, Coffee, CheckCircle2,
   ChevronLeft, ChevronRight, MapPin, MapPinOff, ShieldAlert, Pencil, Eye,
 } from "lucide-react";
 import {
@@ -118,8 +118,8 @@ export default function Attendance() {
         <StatCard title="Punched In" value={summary?.punchedIn ?? 0} icon={Users} variant="default" />
         <StatCard title="On Site" value={summary?.onSite ?? 0} icon={UserCheck} variant="success" />
         <StatCard title="Working" value={summary?.working ?? 0} icon={Wrench} variant="brand" />
-        <StatCard title="OT Hours" value={`${Math.round(((summary?.totalOtMin ?? 0) / 60) * 10) / 10}h`} icon={Clock} variant="warning" />
-        <StatCard title="Labor Cost" value={`AED ${Math.round(summary?.totalCost ?? 0).toLocaleString()}`} icon={DollarSign} variant="default" />
+        <StatCard title="On Break" value={summary?.onBreak ?? 0} icon={Coffee} variant="warning" />
+        <StatCard title="Completed" value={summary?.completed ?? 0} icon={CheckCircle2} variant="success" />
       </div>
 
       {/* Filters */}
