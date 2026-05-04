@@ -72,7 +72,7 @@ export function useDashboardStats() {
           .eq("date", today),
         supabase
           .from("attendance_logs")
-          .select("employee_id, office_punch_in, travel_start_time, site_arrival_time, work_start_time, work_end_time, break_start_time, break_end_time, break_minutes, overtime_minutes, regular_cost, overtime_cost, employees(hourly_rate, overtime_rate, standard_hours_per_day)")
+          .select("date, employee_id, office_punch_in, office_punch_out, office_arrival_time, travel_start_time, site_arrival_time, return_travel_start_time, work_start_time, work_end_time, break_start_time, break_end_time, break_minutes, total_work_minutes, overtime_minutes, regular_cost, overtime_cost, employees(hourly_rate, overtime_rate, standard_hours_per_day)")
           .eq("date", today),
         supabase
           .from("employees")
