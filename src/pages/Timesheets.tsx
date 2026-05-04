@@ -269,13 +269,28 @@ export default function Timesheets() {
           </Button>
           <div className="flex items-center gap-1 border-l border-border pl-2 ml-1">
             <span className="text-[10px] text-muted-foreground uppercase">Day</span>
-            <Input
-              type="date"
-              value={daySummaryDate}
-              max={new Date().toISOString().slice(0, 10)}
-              onChange={(e) => setDaySummaryDate(e.target.value)}
-              className="w-[150px] h-8 text-xs"
-            />
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn("h-8 w-[150px] justify-start gap-2 text-xs font-normal", !daySummaryDate && "text-muted-foreground")}
+                >
+                  <CalendarIcon className="h-3.5 w-3.5" />
+                  {daySummaryDate ? format(new Date(daySummaryDate + "T00:00:00"), "dd-MM-yyyy") : "Pick date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <Calendar
+                  mode="single"
+                  selected={daySummaryDate ? new Date(daySummaryDate + "T00:00:00") : undefined}
+                  onSelect={(d) => { if (d) setDaySummaryDate(format(d, "yyyy-MM-dd")); }}
+                  disabled={(d) => d > new Date()}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
           <Button variant="outline" size="sm" className="gap-1" onClick={handleExportExcel}>
             <FileSpreadsheet className="h-3.5 w-3.5" /> Excel
