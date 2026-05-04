@@ -8,9 +8,14 @@ import { getDisplayOvertimeMinutes } from "@/lib/timesheet-display";
 import { computeProjectHealth } from "@/lib/project-health";
 
 function todayUAE(): string {
-  const now = new Date();
-  const uae = new Date(now.getTime() + 4 * 60 * 60 * 1000);
-  return toLocalDateStr(uae);
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Dubai",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")}`;
 }
 
 export interface DashboardStats {
