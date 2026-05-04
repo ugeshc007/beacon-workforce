@@ -550,6 +550,7 @@ export default function Timesheets() {
 
       {/* Day Detail Dialog */}
       <DayDetailDialog detail={dayDetail} onClose={() => setDayDetail(null)} travelPaid={travelPaid} />
+      <DaySummaryDialog date={daySummaryDate} onClose={() => setDaySummaryDate("")} travelPaid={travelPaid} />
 
       {/* Approve/Reject Dialog */}
       <Dialog open={!!approveRow} onOpenChange={(o) => { if (!o) { setApproveRow(null); setApproveNotes(""); } }}>
