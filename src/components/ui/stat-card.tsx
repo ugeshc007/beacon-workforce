@@ -9,6 +9,7 @@ interface StatCardProps {
   trend?: { value: string; positive: boolean };
   variant?: "default" | "brand" | "success" | "warning" | "destructive";
   className?: string;
+  compact?: boolean;
 }
 
 const variantStyles = {
@@ -19,17 +20,17 @@ const variantStyles = {
   destructive: "text-destructive bg-destructive/10",
 };
 
-export function StatCard({ title, value, subtitle, icon: Icon, trend, variant = "default", className }: StatCardProps) {
+export function StatCard({ title, value, subtitle, icon: Icon, trend, variant = "default", className, compact = false }: StatCardProps) {
   return (
-    <div className={cn("glass-card p-5 space-y-3 animate-fade-in", className)}>
+    <div className={cn("glass-card animate-fade-in", compact ? "p-3 space-y-1.5" : "p-5 space-y-3", className)}>
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</span>
-        <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center", variantStyles[variant])}>
-          <Icon className="h-4 w-4" />
+        <span className={cn("font-medium text-muted-foreground uppercase tracking-wider", compact ? "text-[10px]" : "text-xs")}>{title}</span>
+        <div className={cn("rounded-lg flex items-center justify-center", compact ? "h-6 w-6" : "h-8 w-8", variantStyles[variant])}>
+          <Icon className={compact ? "h-3 w-3" : "h-4 w-4"} />
         </div>
       </div>
       <div>
-        <p className="text-2xl font-bold text-foreground tracking-tight">{value}</p>
+        <p className={cn("font-bold text-foreground tracking-tight", compact ? "text-lg" : "text-2xl")}>{value}</p>
         {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
       </div>
       {trend && (
