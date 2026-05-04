@@ -19,26 +19,34 @@ export type AttendanceLog = Tables<"attendance_logs"> & {
 
 /**
  * Compute labor cost from any work stage (office/project/maintenance/site visit).
- * Uses stored regular+overtime cost when present, otherwise derives from
- * worked minutes × hourly_rate, with overtime portion at overtime_rate.
+ * Always derives live from worked minutes when punch-in exists, so it stays
+ * consistent with the Timesheets/Daily view. Falls back to stored cost only
+ * when no times are present.
+ *
+ * Pass org settings (standard_work_hours, overtime_multiplier) so all surfaces
+ * agree on the same numbers.
  */
-export function computeLiveCost(log: any): number {
-  const finalCost = Number(log.regular_cost ?? 0) + Number(log.overtime_cost ?? 0);
-  if (finalCost > 0) return finalCost;
-
+export function computeLiveCost(
+  log: any,
+  opts?: { stdHours?: number; otMult?: number },
+): number {
   const rate = Number(log.employees?.hourly_rate ?? 0);
-  if (!rate) return 0;
-
-  const stdHours = Number(log.employees?.standard_hours_per_day ?? 8);
-  const otRate = Number(log.employees?.overtime_rate ?? 0) || rate * 1.5;
+  const empStdHours = Number(log.employees?.standard_hours_per_day ?? 0);
+  const stdHours = opts?.stdHours ?? (empStdHours > 0 ? empStdHours : 8);
+  const otMult = opts?.otMult ?? 1.5;
+  const otRate = Number(log.employees?.overtime_rate ?? 0) > 0
+    ? Number(log.employees?.overtime_rate)
+    : rate * otMult;
 
   const workedMin = getDisplayWorkedMinutes(log);
-  if (workedMin <= 0) return 0;
+  if (workedMin > 0 && rate > 0) {
+    const otMin = getDisplayOvertimeMinutes(log, stdHours);
+    const regMin = Math.max(0, workedMin - otMin);
+    return (regMin / 60) * rate + (otMin / 60) * otRate;
+  }
 
-  const otMin = getDisplayOvertimeMinutes(log, stdHours);
-  const regMin = Math.max(0, workedMin - otMin);
-
-  return (regMin / 60) * rate + (otMin / 60) * otRate;
+  // No times yet — fall back to anything stored
+  return Number(log.regular_cost ?? 0) + Number(log.overtime_cost ?? 0);
 }
 
 export function useAttendanceLogs(filters: {
