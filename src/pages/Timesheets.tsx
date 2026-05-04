@@ -15,13 +15,17 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useSettings } from "@/hooks/useSettings";
 import { downloadCsv } from "@/lib/csv-export";
 import {
   Clock, Search, ChevronLeft, ChevronRight, Download,
   CheckCircle2, XCircle, AlertTriangle, DollarSign, Users, Timer,
-  FileSpreadsheet, FileText, Building2,
+  FileSpreadsheet, FileText, Building2, CalendarIcon,
 } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { jsPDF } from "jspdf";
