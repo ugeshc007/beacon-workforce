@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { computeLiveCost } from "@/hooks/useAttendance";
-import { getDisplayOvertimeMinutes } from "@/lib/timesheet-display";
+import { getDisplayOvertimeMinutes, groupAndAggregateLogs } from "@/lib/timesheet-display";
 import { computeProjectHealth } from "@/lib/project-health";
 
 function todayUAE(): string {
