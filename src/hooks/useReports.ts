@@ -905,3 +905,229 @@ export function useAbsenteeReport(start: string, end: string, filters?: { branch
     },
   });
 }
+
+// ─── Project Labor Breakdown (in-house / site / travel per project + per employee) ──
+export interface ProjectLaborEmployee {
+  id: string;
+  name: string;
+  code: string;
+  skill: string;
+  hourlyRate: number;
+  inHouseMin: number;
+  siteMin: number;
+  travelToSiteMin: number;
+  travelReturnMin: number;
+  travelTotalMin: number;
+  workedMin: number;        // in-house + site + travel
+  otMin: number;
+  regularCost: number;
+  otCost: number;
+  totalCost: number;
+  days: number;
+}
+
+export interface ProjectLaborRow {
+  id: string;
+  name: string;
+  status: string;
+  branchId: string;
+  budget: number;
+  projectValue: number;
+  inHouseMin: number;
+  siteMin: number;
+  travelToSiteMin: number;
+  travelReturnMin: number;
+  travelTotalMin: number;
+  workedMin: number;
+  otMin: number;
+  regularCost: number;
+  otCost: number;
+  expenses: number;
+  totalCost: number;
+  employees: ProjectLaborEmployee[];
+}
+
+const _diffMin = (a?: string | null, b?: string | null) => {
+  if (!a || !b) return 0;
+  const ms = new Date(b).getTime() - new Date(a).getTime();
+  return ms > 0 ? Math.round(ms / 60000) : 0;
+};
+
+export function useProjectLaborBreakdown(start: string, end: string, filters?: {
+  status?: string;
+  branchId?: string;
+}) {
+  return useQuery({
+    queryKey: ["project-labor-breakdown", start, end, filters],
+    queryFn: async () => {
+      let projQuery = supabase
+        .from("projects")
+        .select("id, name, status, branch_id, budget, project_value");
+      if (filters?.status && filters.status !== "all") {
+        projQuery = projQuery.eq("status", filters.status as any);
+      } else {
+        projQuery = projQuery.in("status", ["on_hold", "in_progress", "completed"]);
+      }
+      if (filters?.branchId && filters.branchId !== "all") {
+        projQuery = projQuery.eq("branch_id", filters.branchId);
+      }
+
+      const [projRes, logsRes, sessRes, expRes, empRes, branchRes] = await Promise.all([
+        projQuery,
+        supabase.from("attendance_logs")
+          .select("employee_id, project_id, date, regular_cost, overtime_cost, overtime_minutes, office_punch_in, office_punch_out, travel_start_time, site_arrival_time, work_start_time, work_end_time, return_travel_start_time, office_arrival_time")
+          .gte("date", start).lte("date", end)
+          .not("project_id", "is", null),
+        supabase.from("project_work_sessions")
+          .select("employee_id, project_id, date, regular_cost, overtime_cost, overtime_minutes, travel_start_time, site_arrival_time, work_start_time, work_end_time, return_travel_start_time")
+          .gte("date", start).lte("date", end),
+        supabase.from("project_expenses")
+          .select("project_id, amount_aed, status")
+          .gte("date", start).lte("date", end)
+          .eq("status", "approved"),
+        supabase.from("employees").select("id, name, employee_code, skill_type, hourly_rate"),
+        supabase.from("branches").select("id, name").order("name"),
+      ]);
+
+      const projects = projRes.data ?? [];
+      const logs = logsRes.data ?? [];
+      const sessions = sessRes.data ?? [];
+      const expenses = expRes.data ?? [];
+      const employees = empRes.data ?? [];
+      const branches = branchRes.data ?? [];
+
+      const empMap = new Map(employees.map((e) => [e.id, e]));
+      const projectIds = new Set(projects.map((p) => p.id));
+
+      // Per project → per employee aggregation
+      type EmpAgg = {
+        inHouseMin: number; siteMin: number; travelToSiteMin: number; travelReturnMin: number;
+        otMin: number; regularCost: number; otCost: number; days: Set<string>;
+      };
+      const projAgg = new Map<string, {
+        emp: Map<string, EmpAgg>;
+        expenses: number;
+      }>();
+      for (const p of projects) projAgg.set(p.id, { emp: new Map(), expenses: 0 });
+
+      const ensure = (projectId: string, employeeId: string): EmpAgg => {
+        const proj = projAgg.get(projectId)!;
+        let agg = proj.emp.get(employeeId);
+        if (!agg) {
+          agg = { inHouseMin: 0, siteMin: 0, travelToSiteMin: 0, travelReturnMin: 0, otMin: 0, regularCost: 0, otCost: 0, days: new Set() };
+          proj.emp.set(employeeId, agg);
+        }
+        return agg;
+      };
+
+      // attendance_logs: full lifecycle (office → travel → site → return → office)
+      for (const l of logs) {
+        if (!l.project_id || !projectIds.has(l.project_id)) continue;
+        const a = ensure(l.project_id, l.employee_id);
+        a.days.add(l.date);
+        a.regularCost += Number(l.regular_cost ?? 0);
+        a.otCost += Number(l.overtime_cost ?? 0);
+        a.otMin += l.overtime_minutes ?? 0;
+
+        // In-house: office_punch_in → travel_start (or work_start if no travel, or office_punch_out)
+        const inHouseEnd = l.travel_start_time ?? l.work_start_time ?? l.office_punch_out;
+        a.inHouseMin += _diffMin(l.office_punch_in, inHouseEnd);
+
+        // Travel to site
+        a.travelToSiteMin += _diffMin(l.travel_start_time, l.site_arrival_time);
+
+        // Site: site_arrival (or work_start) → return_travel_start (or work_end)
+        const siteStart = l.site_arrival_time ?? l.work_start_time;
+        const siteEnd = l.return_travel_start_time ?? l.work_end_time;
+        a.siteMin += _diffMin(siteStart, siteEnd);
+
+        // Travel back
+        a.travelReturnMin += _diffMin(l.return_travel_start_time, l.office_arrival_time ?? l.office_punch_out);
+      }
+
+      // project_work_sessions: project-only sessions (no office leg)
+      for (const s of sessions) {
+        if (!s.project_id || !projectIds.has(s.project_id)) continue;
+        const a = ensure(s.project_id, s.employee_id);
+        a.days.add(s.date);
+        a.regularCost += Number(s.regular_cost ?? 0);
+        a.otCost += Number(s.overtime_cost ?? 0);
+        a.otMin += s.overtime_minutes ?? 0;
+        a.travelToSiteMin += _diffMin(s.travel_start_time, s.site_arrival_time);
+        const siteStart = s.site_arrival_time ?? s.work_start_time;
+        const siteEnd = s.return_travel_start_time ?? s.work_end_time;
+        a.siteMin += _diffMin(siteStart, siteEnd);
+        // Sessions don't track return → office, but we count return start → work_end as travel-back proxy (none here)
+      }
+
+      for (const e of expenses) {
+        if (projAgg.has(e.project_id)) {
+          projAgg.get(e.project_id)!.expenses += Number(e.amount_aed ?? 0);
+        }
+      }
+
+      const rows: ProjectLaborRow[] = projects.map((p) => {
+        const agg = projAgg.get(p.id)!;
+        const empRows: ProjectLaborEmployee[] = [...agg.emp.entries()].map(([empId, a]) => {
+          const e = empMap.get(empId);
+          const travelTotalMin = a.travelToSiteMin + a.travelReturnMin;
+          const workedMin = a.inHouseMin + a.siteMin + travelTotalMin;
+          return {
+            id: empId,
+            name: e?.name ?? "Unknown",
+            code: e?.employee_code ?? "—",
+            skill: e?.skill_type ?? "—",
+            hourlyRate: Number(e?.hourly_rate ?? 0),
+            inHouseMin: a.inHouseMin,
+            siteMin: a.siteMin,
+            travelToSiteMin: a.travelToSiteMin,
+            travelReturnMin: a.travelReturnMin,
+            travelTotalMin,
+            workedMin,
+            otMin: a.otMin,
+            regularCost: Math.round(a.regularCost),
+            otCost: Math.round(a.otCost),
+            totalCost: Math.round(a.regularCost + a.otCost),
+            days: a.days.size,
+          };
+        }).sort((x, y) => y.totalCost - x.totalCost);
+
+        const sum = (k: keyof ProjectLaborEmployee) => empRows.reduce((s, r) => s + (r[k] as number), 0);
+
+        return {
+          id: p.id,
+          name: p.name,
+          status: p.status,
+          branchId: p.branch_id,
+          budget: Number(p.budget ?? 0),
+          projectValue: Number(p.project_value ?? 0),
+          inHouseMin: sum("inHouseMin"),
+          siteMin: sum("siteMin"),
+          travelToSiteMin: sum("travelToSiteMin"),
+          travelReturnMin: sum("travelReturnMin"),
+          travelTotalMin: sum("travelTotalMin"),
+          workedMin: sum("workedMin"),
+          otMin: sum("otMin"),
+          regularCost: sum("regularCost"),
+          otCost: sum("otCost"),
+          expenses: Math.round(agg.expenses),
+          totalCost: sum("regularCost") + sum("otCost") + Math.round(agg.expenses),
+          employees: empRows,
+        };
+      }).filter((r) => r.workedMin > 0 || r.totalCost > 0).sort((a, b) => b.totalCost - a.totalCost);
+
+      const totals = {
+        inHouseMin: rows.reduce((s, r) => s + r.inHouseMin, 0),
+        siteMin: rows.reduce((s, r) => s + r.siteMin, 0),
+        travelMin: rows.reduce((s, r) => s + r.travelTotalMin, 0),
+        otMin: rows.reduce((s, r) => s + r.otMin, 0),
+        regularCost: rows.reduce((s, r) => s + r.regularCost, 0),
+        otCost: rows.reduce((s, r) => s + r.otCost, 0),
+        expenses: rows.reduce((s, r) => s + r.expenses, 0),
+        totalCost: rows.reduce((s, r) => s + r.totalCost, 0),
+      };
+
+      return { rows, totals, branches: branches.map((b) => ({ id: b.id, name: b.name })) };
+    },
+  });
+}
