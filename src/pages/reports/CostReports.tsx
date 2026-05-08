@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useCostData, type CostProjectRow } from "@/hooks/useReports";
+import { useProjectLaborBreakdown, type ProjectLaborRow } from "@/hooks/useReports";
 import { ReportDateFilter, useReportDateRange } from "@/components/reports/ReportDateFilter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,48 +8,51 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StatCard } from "@/components/ui/stat-card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
-  DollarSign, TrendingDown, TrendingUp,
-  Download, Percent, Building2,
+  DollarSign, Building2, MapPin, Plane, Clock, ChevronDown, ChevronRight, Download, Users,
 } from "lucide-react";
 import { downloadCsv } from "@/lib/csv-export";
 import { exportReportPdf } from "@/lib/pdf-export";
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend, LineChart, Line, CartesianGrid, ReferenceLine,
-} from "recharts";
+import { cn } from "@/lib/utils";
 
-const PIE_COLORS = [
-  "hsl(var(--brand))",
-  "hsl(var(--status-overtime))",
-  "hsl(var(--status-traveling))",
-  "hsl(var(--status-present))",
-  "hsl(var(--status-absent))",
-  "hsl(var(--muted-foreground))",
-];
+const fmtH = (m: number) => (m / 60).toFixed(1) + "h";
+const fmtAED = (n: number) => "AED " + Math.round(n).toLocaleString();
 
 export default function CostReports() {
   const [dateRange, setDateRange] = useReportDateRange("This Month");
   const [statusFilter, setStatusFilter] = useState("all");
   const [branchFilter, setBranchFilter] = useState("all");
-  const [drillProject, setDrillProject] = useState<CostProjectRow | null>(null);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
-  const { data, isLoading } = useCostData(dateRange.start, dateRange.end, {
-    status: statusFilter,
-    branchId: branchFilter,
+  const { data, isLoading } = useProjectLaborBreakdown(dateRange.start, dateRange.end, {
+    status: statusFilter, branchId: branchFilter,
   });
 
-  const handleBarClick = (barData: any) => {
-    if (!data || !barData?.activePayload?.[0]) return;
-    const payload = barData.activePayload[0].payload;
-    const row = data.byProject.find((p) => p.name === payload.name || p.name === payload.fullName);
-    if (row) setDrillProject(row);
-  };
+  const toggle = (id: string) => setExpanded((e) => ({ ...e, [id]: !e[id] }));
 
-  const profitableProjects = useMemo(() => {
-    if (!data) return [];
-    return data.byProject.filter((p) => p.projectValue > 0);
+  const csvRows = useMemo(() => {
+    if (!data) return [] as (string | number)[][];
+    const rows: (string | number)[][] = [];
+    for (const p of data.rows) {
+      rows.push([
+        p.name, p.status, "— TOTAL —",
+        fmtH(p.inHouseMin), fmtH(p.siteMin),
+        fmtH(p.travelToSiteMin), fmtH(p.travelReturnMin), fmtH(p.travelTotalMin),
+        fmtH(p.workedMin), fmtH(p.otMin),
+        p.regularCost, p.otCost, p.expenses, p.totalCost,
+      ]);
+      for (const e of p.employees) {
+        rows.push([
+          p.name, p.status, `${e.name} (${e.code})`,
+          fmtH(e.inHouseMin), fmtH(e.siteMin),
+          fmtH(e.travelToSiteMin), fmtH(e.travelReturnMin), fmtH(e.travelTotalMin),
+          fmtH(e.workedMin), fmtH(e.otMin),
+          e.regularCost, e.otCost, "", e.totalCost,
+        ]);
+      }
+    }
+    return rows;
   }, [data]);
 
   return (
@@ -57,34 +60,47 @@ export default function CostReports() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Project Costs</h1>
-          <p className="text-sm text-muted-foreground">{dateRange.label}</p>
+          <h1 className="text-xl font-bold text-foreground">Project Labor & Cost Breakdown</h1>
+          <p className="text-sm text-muted-foreground">{dateRange.label} · in-house, on-site, travel time per employee</p>
         </div>
         <div className="flex items-center gap-1 flex-wrap">
           <ReportDateFilter value={dateRange} onChange={setDateRange} />
           {data && (<>
             <Button variant="outline" size="sm" className="text-xs ml-2" onClick={() => {
-              downloadCsv(`project-costs-${dateRange.start}-${dateRange.end}.csv`,
-                ["Project", "Status", "Budget", "Labor", "OT", "Expenses", "Total", "Variance", "% Used", "Forecasted Final", "Value", "Margin %", "Travel→Site (h)", "Return→Office (h)", "Total Travel (h)"],
-                data.byProject.map((p) => [p.name, p.status, p.budget, p.laborCost, p.otCost, p.expenses, p.totalCost, p.variance, p.pctUsed, p.forecastedFinal, p.projectValue, p.margin, (p.travelToSiteMinutes / 60).toFixed(1), (p.travelReturnMinutes / 60).toFixed(1), (p.travelTotalMinutes / 60).toFixed(1)])
+              downloadCsv(`project-labor-${dateRange.start}-${dateRange.end}.csv`,
+                ["Project", "Status", "Employee", "In-House", "Site", "Travel→Site", "Return→Office", "Travel Total", "Worked", "OT", "Regular Cost (AED)", "OT Cost (AED)", "Expenses (AED)", "Total Cost (AED)"],
+                csvRows
               );
             }}><Download className="h-3.5 w-3.5 mr-1" />CSV</Button>
             <Button variant="outline" size="sm" className="text-xs" onClick={() => {
               exportReportPdf({
-                title: "Project Costs Report",
+                title: "Project Labor & Cost Breakdown",
                 subtitle: dateRange.label,
-                filename: `project-costs-${dateRange.start}-${dateRange.end}.pdf`,
+                filename: `project-labor-${dateRange.start}-${dateRange.end}.pdf`,
                 summaryCards: [
-                  { label: "Total Cost", value: `AED ${data.totalCost.toLocaleString()}` },
-                  { label: "Total Budget", value: `AED ${data.totalBudget.toLocaleString()}` },
-                  { label: "Labor Cost", value: `AED ${data.totalLabor.toLocaleString()}` },
-                  { label: "OT Cost", value: `AED ${data.totalOt.toLocaleString()}` },
+                  { label: "In-House", value: fmtH(data.totals.inHouseMin) },
+                  { label: "On-Site", value: fmtH(data.totals.siteMin) },
+                  { label: "Travel", value: fmtH(data.totals.travelMin) },
+                  { label: "Total Cost", value: fmtAED(data.totals.totalCost) },
                 ],
-                tables: [{
-                  title: "Budget vs Actual (incl. Travel Time)",
-                  headers: ["Project", "Status", "Budget", "Labor", "OT", "Expenses", "Total", "Variance", "% Used", "Travel (h)"],
-                  rows: data.byProject.map((p) => [p.name, p.status, `AED ${p.budget.toLocaleString()}`, `AED ${p.laborCost.toLocaleString()}`, `AED ${p.otCost.toLocaleString()}`, `AED ${p.expenses.toLocaleString()}`, `AED ${p.totalCost.toLocaleString()}`, `AED ${p.variance.toLocaleString()}`, `${p.pctUsed}%`, (p.travelTotalMinutes / 60).toFixed(1)]),
-                }],
+                tables: data.rows.map((p) => ({
+                  title: `${p.name} — ${fmtAED(p.totalCost)}`,
+                  headers: ["Employee", "In-House", "Site", "Travel", "Worked", "OT", "Cost (AED)"],
+                  rows: [
+                    ...p.employees.map((e) => [
+                      `${e.name} (${e.code})`,
+                      fmtH(e.inHouseMin), fmtH(e.siteMin), fmtH(e.travelTotalMin),
+                      fmtH(e.workedMin), fmtH(e.otMin),
+                      e.totalCost.toLocaleString(),
+                    ]),
+                    [
+                      "TOTAL",
+                      fmtH(p.inHouseMin), fmtH(p.siteMin), fmtH(p.travelTotalMin),
+                      fmtH(p.workedMin), fmtH(p.otMin),
+                      (p.regularCost + p.otCost).toLocaleString(),
+                    ],
+                  ],
+                })),
               });
             }}><Download className="h-3.5 w-3.5 mr-1" />PDF</Button>
           </>)}
@@ -97,8 +113,7 @@ export default function CostReports() {
           <SelectTrigger className="w-[150px]"><SelectValue placeholder="All Statuses" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="planned">Planned</SelectItem>
-            <SelectItem value="assigned">Assigned</SelectItem>
+            <SelectItem value="on_hold">On Hold</SelectItem>
             <SelectItem value="in_progress">In Progress</SelectItem>
             <SelectItem value="completed">Completed</SelectItem>
           </SelectContent>
@@ -118,327 +133,180 @@ export default function CostReports() {
         <div className="space-y-4">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}</div>
       ) : !data ? null : (
         <>
-          {/* Stat Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatCard title="Total Cost" value={`AED ${data.totalCost.toLocaleString()}`} icon={DollarSign} variant="brand" />
-            <StatCard title="Total Budget" value={`AED ${data.totalBudget.toLocaleString()}`} icon={TrendingDown} variant="default" />
-            <StatCard title="Labor Cost" value={`AED ${data.totalLabor.toLocaleString()}`} icon={DollarSign} variant="success" />
-            <StatCard title="OT Cost" value={`AED ${data.totalOt.toLocaleString()}`} icon={TrendingUp} variant="destructive" />
+          {/* Summary stats */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <StatCard title="In-House Hours" value={fmtH(data.totals.inHouseMin)} icon={Building2} variant="default" />
+            <StatCard title="On-Site Hours" value={fmtH(data.totals.siteMin)} icon={MapPin} variant="success" />
+            <StatCard title="Travel Hours" value={fmtH(data.totals.travelMin)} icon={Plane} variant="default" />
+            <StatCard title="Overtime Hours" value={fmtH(data.totals.otMin)} icon={Clock} variant="destructive" />
+            <StatCard title="Total Labor Cost" value={fmtAED(data.totals.regularCost + data.totals.otCost)} icon={DollarSign} variant="brand" />
           </div>
 
-          {/* Row 1: Horizontal bar (project vs cost) + Pie (categories) */}
-          <div className="grid lg:grid-cols-3 gap-6">
-            <Card className="glass-card lg:col-span-2">
-              <CardHeader className="pb-2"><CardTitle className="text-sm">Cost by Project (click to drill down)</CardTitle></CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={Math.max(200, data.byProject.length * 32)}>
-                  <BarChart layout="vertical" data={data.byProject.map((p) => ({
-                    ...p,
-                    fullName: p.name,
-                    name: p.name.length > 16 ? p.name.slice(0, 14) + "…" : p.name,
-                  }))} onClick={handleBarClick} className="cursor-pointer">
-                    <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                    <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={120} />
-                    <Tooltip formatter={(v: number) => `AED ${v.toLocaleString()}`} />
-                    <Bar dataKey="laborCost" stackId="a" fill="hsl(var(--brand))" name="Labor" />
-                    <Bar dataKey="otCost" stackId="a" fill="hsl(var(--status-overtime))" name="Overtime" />
-                    <Bar dataKey="expenses" stackId="a" fill="hsl(var(--status-traveling))" name="Expenses" radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card className="glass-card">
-              <CardHeader className="pb-2"><CardTitle className="text-sm">Cost by Category</CardTitle></CardHeader>
-              <CardContent className="flex items-center justify-center">
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie data={data.byCategory} dataKey="amount" nameKey="category" innerRadius={50} outerRadius={85} cx="50%" cy="50%" paddingAngle={3}>
-                      {data.byCategory.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-                    </Pie>
-                    <Tooltip formatter={(v: number) => `AED ${v.toLocaleString()}`} />
-                    <Legend verticalAlign="bottom" iconType="circle" />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Row 2: Cost trend line + Stacked daily */}
-          <div className="grid lg:grid-cols-2 gap-6">
-            <Card className="glass-card">
-              <CardHeader className="pb-2"><CardTitle className="text-sm">Daily Cost Trend</CardTitle></CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={200}>
-                  <LineChart data={data.costTrend}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="label" tick={{ fontSize: 10 }} />
-                    <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                    <Tooltip formatter={(v: number) => `AED ${v.toLocaleString()}`} />
-                    <Line type="monotone" dataKey="total" stroke="hsl(var(--brand))" strokeWidth={2} dot={false} name="Total" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card className="glass-card">
-              <CardHeader className="pb-2"><CardTitle className="text-sm">Daily Stacked (Labor + OT + Expenses)</CardTitle></CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={data.costTrend}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="label" tick={{ fontSize: 10 }} />
-                    <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                    <Tooltip formatter={(v: number) => `AED ${v.toLocaleString()}`} />
-                    <Bar dataKey="labor" stackId="a" fill="hsl(var(--brand))" name="Labor" />
-                    <Bar dataKey="ot" stackId="a" fill="hsl(var(--status-overtime))" name="OT" />
-                    <Bar dataKey="expenses" stackId="a" fill="hsl(var(--status-traveling))" name="Expenses" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Budget vs Actual Table */}
-          <Card className="glass-card">
-            <CardHeader className="pb-2"><CardTitle className="text-sm">Budget vs Actual</CardTitle></CardHeader>
-            <CardContent className="p-0">
-              <ScrollArea className="w-full">
-                <div className="min-w-[900px] p-4 pt-0">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-xs text-muted-foreground border-b border-border">
-                        <th className="text-left py-2 font-medium">Project</th>
-                        <th className="text-left py-2 font-medium">Status</th>
-                        <th className="text-right py-2 font-medium">Budget</th>
-                        <th className="text-right py-2 font-medium">Actual</th>
-                        <th className="text-right py-2 font-medium">Variance</th>
-                        <th className="text-right py-2 font-medium">% Used</th>
-                        <th className="text-right py-2 font-medium">Forecasted Final</th>
-                        <th className="text-right py-2 font-medium" title="Total travel time to site + back to office for this project">Travel (h)</th>
-                        <th className="py-2 font-medium w-[100px]"></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.byProject.map((p) => (
-                        <tr key={p.id} className="border-b border-border/30 cursor-pointer hover:bg-accent/20" onClick={() => setDrillProject(p)}>
-                          <td className="py-2 font-medium text-foreground">{p.name}</td>
-                          <td className="py-2"><Badge variant="outline" className="text-[10px] capitalize">{p.status.replace("_", " ")}</Badge></td>
-                          <td className="py-2 text-right font-mono text-xs">{p.budget > 0 ? `AED ${p.budget.toLocaleString()}` : "—"}</td>
-                          <td className="py-2 text-right font-mono text-xs font-medium">{p.totalCost > 0 ? `AED ${p.totalCost.toLocaleString()}` : "—"}</td>
-                          <td className={`py-2 text-right font-mono text-xs font-medium ${p.variance >= 0 ? "text-status-present" : "text-status-absent"}`}>
-                            {p.budget > 0 ? `${p.variance >= 0 ? "+" : ""}AED ${p.variance.toLocaleString()}` : "—"}
-                          </td>
-                          <td className="py-2 text-right">
-                            {p.budget > 0 ? (
-                              <div className="flex items-center justify-end gap-2">
-                                <div className="w-14 h-2 rounded-full bg-muted overflow-hidden">
-                                  <div
-                                    className={`h-full rounded-full ${p.pctUsed > 100 ? "bg-status-absent" : p.pctUsed > 80 ? "bg-status-overtime" : "bg-brand"}`}
-                                    style={{ width: `${Math.min(p.pctUsed, 100)}%` }}
-                                  />
-                                </div>
-                                <span className="font-mono text-xs">{p.pctUsed}%</span>
-                              </div>
-                            ) : "—"}
-                          </td>
-                          <td className={`py-2 text-right font-mono text-xs font-medium ${p.forecastedFinal > p.budget && p.budget > 0 ? "text-status-absent" : "text-foreground"}`}>
-                            {p.budget > 0 ? `AED ${p.forecastedFinal.toLocaleString()}` : "—"}
-                          </td>
-                          <td className="py-2 text-right font-mono text-xs text-status-traveling">
-                            {p.travelTotalMinutes > 0 ? `${(p.travelTotalMinutes / 60).toFixed(1)}h` : "—"}
-                          </td>
-                          <td className="py-2">
-                            <Button variant="ghost" size="sm" className="text-[10px] h-6" onClick={(e) => { e.stopPropagation(); setDrillProject(p); }}>
-                              Details
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      <tr className="border-t-2 border-border bg-muted/20 font-semibold">
-                        <td className="py-2" colSpan={2}>Totals ({data.byProject.length})</td>
-                        <td className="py-2 text-right font-mono text-xs">AED {data.totalBudget.toLocaleString()}</td>
-                        <td className="py-2 text-right font-mono text-xs">AED {data.totalCost.toLocaleString()}</td>
-                        <td className={`py-2 text-right font-mono text-xs ${data.totalBudget - data.totalCost >= 0 ? "text-status-present" : "text-status-absent"}`}>
-                          {data.totalBudget > 0 ? `${data.totalBudget - data.totalCost >= 0 ? "+" : ""}AED ${(data.totalBudget - data.totalCost).toLocaleString()}` : "—"}
-                        </td>
-                        <td className="py-2 text-right font-mono text-xs">
-                          {data.totalBudget > 0 ? `${Math.round((data.totalCost / data.totalBudget) * 100)}%` : "—"}
-                        </td>
-                        <td className="py-2 text-right font-mono text-xs text-status-traveling">
-                          {(() => {
-                            const total = data.byProject.reduce((s, p) => s + p.travelTotalMinutes, 0);
-                            return total > 0 ? `${(total / 60).toFixed(1)}h` : "—";
-                          })()}
-                        </td>
-                        <td colSpan={2} />
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-
-          {/* Profitability Table */}
-          {profitableProjects.length > 0 && (
-            <Card className="glass-card">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Percent className="h-4 w-4 text-brand" /> Profitability Analysis
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-xs text-muted-foreground border-b border-border">
-                      <th className="text-left py-2 font-medium">Project</th>
-                      <th className="text-right py-2 font-medium">Value</th>
-                      <th className="text-right py-2 font-medium">Total Cost</th>
-                      <th className="text-right py-2 font-medium">Gross Profit</th>
-                      <th className="text-right py-2 font-medium">Margin</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {profitableProjects.sort((a, b) => b.margin - a.margin).map((p) => (
-                      <tr key={p.id} className="border-b border-border/30 cursor-pointer hover:bg-accent/20" onClick={() => setDrillProject(p)}>
-                        <td className="py-2 font-medium text-foreground">{p.name}</td>
-                        <td className="py-2 text-right font-mono text-xs">AED {p.projectValue.toLocaleString()}</td>
-                        <td className="py-2 text-right font-mono text-xs">AED {p.totalCost.toLocaleString()}</td>
-                        <td className={`py-2 text-right font-mono text-xs font-medium ${p.grossProfit >= 0 ? "text-status-present" : "text-status-absent"}`}>
-                          {p.grossProfit >= 0 ? "+" : ""}AED {p.grossProfit.toLocaleString()}
-                        </td>
-                        <td className={`py-2 text-right font-mono text-xs font-bold ${p.margin >= 0 ? "text-status-present" : "text-status-absent"}`}>
-                          {p.margin}%
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Drill-down Dialog */}
-          <Dialog open={!!drillProject} onOpenChange={(o) => { if (!o) setDrillProject(null); }}>
-            <DialogContent className="max-w-lg">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <Building2 className="h-4 w-4 text-brand" /> {drillProject?.name}
-                </DialogTitle>
-                <DialogDescription>
-                  {dateRange.label} · {drillProject?.status?.replace("_", " ")}
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="rounded-lg border p-3">
-                  <p className="text-[10px] text-muted-foreground uppercase">Labor</p>
-                  <p className="text-lg font-bold">AED {drillProject?.laborCost.toLocaleString()}</p>
-                </div>
-                <div className="rounded-lg border p-3">
-                  <p className="text-[10px] text-muted-foreground uppercase">Overtime</p>
-                  <p className="text-lg font-bold text-status-overtime">AED {drillProject?.otCost.toLocaleString()}</p>
-                </div>
-                <div className="rounded-lg border p-3">
-                  <p className="text-[10px] text-muted-foreground uppercase">Expenses</p>
-                  <p className="text-lg font-bold">AED {drillProject?.expenses.toLocaleString()}</p>
-                </div>
-                <div className="rounded-lg border p-3">
-                  <p className="text-[10px] text-muted-foreground uppercase">Total</p>
-                  <p className="text-lg font-bold">AED {drillProject?.totalCost.toLocaleString()}</p>
-                </div>
-                {drillProject && drillProject.budget > 0 && (
-                  <>
-                    <div className="rounded-lg border p-3">
-                      <p className="text-[10px] text-muted-foreground uppercase">Budget Used</p>
-                      <p className={`text-lg font-bold ${drillProject.pctUsed > 100 ? "text-status-absent" : "text-foreground"}`}>{drillProject.pctUsed}%</p>
-                    </div>
-                    <div className="rounded-lg border p-3">
-                      <p className="text-[10px] text-muted-foreground uppercase">Forecast</p>
-                      <p className={`text-lg font-bold ${drillProject.forecastedFinal > drillProject.budget ? "text-status-absent" : "text-status-present"}`}>
-                        AED {drillProject.forecastedFinal.toLocaleString()}
-                      </p>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Travel time breakdown */}
-              {drillProject && drillProject.travelTotalMinutes > 0 && (
-                <div className="rounded-lg border border-status-traveling/30 bg-status-traveling/5 p-3">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">Travel Time (this period)</p>
-                  <div className="grid grid-cols-3 gap-3 text-center">
-                    <div>
-                      <p className="text-[10px] text-muted-foreground">→ Site</p>
-                      <p className="text-sm font-bold font-mono">{(drillProject.travelToSiteMinutes / 60).toFixed(1)}h</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-muted-foreground">← Office</p>
-                      <p className="text-sm font-bold font-mono">{(drillProject.travelReturnMinutes / 60).toFixed(1)}h</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-muted-foreground">Total</p>
-                      <p className="text-sm font-bold font-mono text-status-traveling">{(drillProject.travelTotalMinutes / 60).toFixed(1)}h</p>
-                    </div>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground text-center mt-2">
-                    Across {drillProject.travelEntriesCount} attendance day{drillProject.travelEntriesCount === 1 ? "" : "s"}
-                    {drillProject.travelEntriesCount > 0 && ` · avg ${Math.round(drillProject.travelTotalMinutes / drillProject.travelEntriesCount)} min/day`}
-                  </p>
-                </div>
-              )}
-
-              {/* Daily costs chart */}
-              {drillProject && drillProject.dailyCosts.length > 0 && (
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-2">Daily Cost Breakdown</p>
-                  <ResponsiveContainer width="100%" height={160}>
-                    <BarChart data={drillProject.dailyCosts}>
-                      <XAxis dataKey="date" tick={{ fontSize: 8 }} tickFormatter={(d) => d.split("-")[2]} />
-                      <YAxis tick={{ fontSize: 9 }} />
-                      <Tooltip formatter={(v: number) => `AED ${v.toLocaleString()}`} labelFormatter={(l) => l} />
-                      <Bar dataKey="labor" stackId="a" fill="hsl(var(--brand))" name="Labor" />
-                      <Bar dataKey="ot" stackId="a" fill="hsl(var(--status-overtime))" name="OT" />
-                      <Bar dataKey="expenses" stackId="a" fill="hsl(var(--status-traveling))" name="Expenses" radius={[2, 2, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
-
-              {/* Daily records table */}
-              {drillProject && drillProject.dailyCosts.length > 0 && (
-                <ScrollArea className="max-h-[200px]">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-xs text-muted-foreground border-b border-border">
-                        <th className="text-left py-1.5 font-medium">Date</th>
-                        <th className="text-right py-1.5 font-medium">Labor</th>
-                        <th className="text-right py-1.5 font-medium">OT</th>
-                        <th className="text-right py-1.5 font-medium">Expenses</th>
-                        <th className="text-right py-1.5 font-medium">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {drillProject.dailyCosts.map((dc) => (
-                        <tr key={dc.date} className="border-b border-border/30">
-                          <td className="py-1.5 font-mono text-xs">{dc.date.split("-").reverse().join("/")}</td>
-                          <td className="py-1.5 text-right font-mono text-xs">{dc.labor > 0 ? dc.labor.toLocaleString() : "—"}</td>
-                          <td className="py-1.5 text-right font-mono text-xs text-status-overtime">{dc.ot > 0 ? dc.ot.toLocaleString() : "—"}</td>
-                          <td className="py-1.5 text-right font-mono text-xs">{dc.expenses > 0 ? dc.expenses.toLocaleString() : "—"}</td>
-                          <td className="py-1.5 text-right font-mono text-xs font-medium">{(dc.labor + dc.ot + dc.expenses).toLocaleString()}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </ScrollArea>
-              )}
-            </DialogContent>
-          </Dialog>
+          {/* Project list */}
+          {data.rows.length === 0 ? (
+            <Card className="glass-card"><CardContent className="p-8 text-center text-sm text-muted-foreground">No labor activity in this period.</CardContent></Card>
+          ) : data.rows.map((p) => (
+            <ProjectCard
+              key={p.id}
+              project={p}
+              isOpen={!!expanded[p.id]}
+              onToggle={() => toggle(p.id)}
+            />
+          ))}
         </>
       )}
+    </div>
+  );
+}
+
+function ProjectCard({ project: p, isOpen, onToggle }: { project: ProjectLaborRow; isOpen: boolean; onToggle: () => void }) {
+  return (
+    <Card className="glass-card overflow-hidden">
+      <Collapsible open={isOpen} onOpenChange={onToggle}>
+        <CollapsibleTrigger asChild>
+          <CardHeader className="cursor-pointer hover:bg-accent/20 transition-colors py-3">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2 min-w-0">
+                {isOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
+                <CardTitle className="text-base truncate">{p.name}</CardTitle>
+                <Badge variant="outline" className="text-[10px] capitalize">{p.status.replace("_", " ")}</Badge>
+                <Badge variant="secondary" className="text-[10px]"><Users className="h-3 w-3 mr-1" />{p.employees.length}</Badge>
+              </div>
+              <div className="flex items-center gap-4 text-xs">
+                <Stat label="In-House" value={fmtH(p.inHouseMin)} icon={<Building2 className="h-3 w-3" />} />
+                <Stat label="Site" value={fmtH(p.siteMin)} icon={<MapPin className="h-3 w-3" />} accent="text-status-present" />
+                <Stat label="Travel" value={fmtH(p.travelTotalMin)} icon={<Plane className="h-3 w-3" />} accent="text-status-traveling" />
+                <Stat label="OT" value={fmtH(p.otMin)} accent="text-status-overtime" />
+                <Stat label="Cost" value={fmtAED(p.regularCost + p.otCost)} accent="text-brand font-bold" />
+              </div>
+            </div>
+          </CardHeader>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <CardContent className="pt-0">
+            {/* Time-split visual bar */}
+            <TimeSplitBar inHouse={p.inHouseMin} site={p.siteMin} travel={p.travelTotalMin} />
+
+            <ScrollArea className="w-full mt-4">
+              <table className="w-full text-sm min-w-[900px]">
+                <thead>
+                  <tr className="text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border">
+                    <th className="text-left py-2 font-medium">Employee</th>
+                    <th className="text-right py-2 font-medium">Days</th>
+                    <th className="text-right py-2 font-medium" title="Office punch-in → travel start"><Building2 className="h-3 w-3 inline" /> In-House</th>
+                    <th className="text-right py-2 font-medium" title="Site arrival → return travel"><MapPin className="h-3 w-3 inline" /> Site</th>
+                    <th className="text-right py-2 font-medium" title="Office → site travel">→ Site</th>
+                    <th className="text-right py-2 font-medium" title="Site → office return">← Office</th>
+                    <th className="text-right py-2 font-medium">Travel Total</th>
+                    <th className="text-right py-2 font-medium">Worked</th>
+                    <th className="text-right py-2 font-medium">OT</th>
+                    <th className="text-right py-2 font-medium">Rate</th>
+                    <th className="text-right py-2 font-medium">Regular</th>
+                    <th className="text-right py-2 font-medium">OT Cost</th>
+                    <th className="text-right py-2 font-medium">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {p.employees.length === 0 ? (
+                    <tr><td colSpan={13} className="py-6 text-center text-muted-foreground text-xs">No employee labor data</td></tr>
+                  ) : p.employees.map((e) => (
+                    <tr key={e.id} className="border-b border-border/30 hover:bg-accent/10">
+                      <td className="py-2">
+                        <div className="font-medium text-foreground">{e.name}</div>
+                        <div className="text-[10px] text-muted-foreground font-mono capitalize">{e.code} · {e.skill.replace("_", " ")}</div>
+                      </td>
+                      <td className="py-2 text-right font-mono text-xs">{e.days}</td>
+                      <td className="py-2 text-right font-mono text-xs">{e.inHouseMin > 0 ? fmtH(e.inHouseMin) : "—"}</td>
+                      <td className="py-2 text-right font-mono text-xs text-status-present">{e.siteMin > 0 ? fmtH(e.siteMin) : "—"}</td>
+                      <td className="py-2 text-right font-mono text-xs text-status-traveling">{e.travelToSiteMin > 0 ? fmtH(e.travelToSiteMin) : "—"}</td>
+                      <td className="py-2 text-right font-mono text-xs text-status-traveling">{e.travelReturnMin > 0 ? fmtH(e.travelReturnMin) : "—"}</td>
+                      <td className="py-2 text-right font-mono text-xs text-status-traveling font-medium">{e.travelTotalMin > 0 ? fmtH(e.travelTotalMin) : "—"}</td>
+                      <td className="py-2 text-right font-mono text-xs font-medium">{fmtH(e.workedMin)}</td>
+                      <td className="py-2 text-right font-mono text-xs text-status-overtime">{e.otMin > 0 ? fmtH(e.otMin) : "—"}</td>
+                      <td className="py-2 text-right font-mono text-[10px] text-muted-foreground">AED {e.hourlyRate}/h</td>
+                      <td className="py-2 text-right font-mono text-xs">{fmtAED(e.regularCost)}</td>
+                      <td className="py-2 text-right font-mono text-xs text-status-overtime">{e.otCost > 0 ? fmtAED(e.otCost) : "—"}</td>
+                      <td className="py-2 text-right font-mono text-xs font-bold text-brand">{fmtAED(e.totalCost)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-border bg-muted/20 font-semibold">
+                    <td className="py-2" colSpan={2}>Project Totals</td>
+                    <td className="py-2 text-right font-mono text-xs">{fmtH(p.inHouseMin)}</td>
+                    <td className="py-2 text-right font-mono text-xs text-status-present">{fmtH(p.siteMin)}</td>
+                    <td className="py-2 text-right font-mono text-xs text-status-traveling">{fmtH(p.travelToSiteMin)}</td>
+                    <td className="py-2 text-right font-mono text-xs text-status-traveling">{fmtH(p.travelReturnMin)}</td>
+                    <td className="py-2 text-right font-mono text-xs text-status-traveling">{fmtH(p.travelTotalMin)}</td>
+                    <td className="py-2 text-right font-mono text-xs">{fmtH(p.workedMin)}</td>
+                    <td className="py-2 text-right font-mono text-xs text-status-overtime">{fmtH(p.otMin)}</td>
+                    <td />
+                    <td className="py-2 text-right font-mono text-xs">{fmtAED(p.regularCost)}</td>
+                    <td className="py-2 text-right font-mono text-xs text-status-overtime">{fmtAED(p.otCost)}</td>
+                    <td className="py-2 text-right font-mono text-xs font-bold text-brand">{fmtAED(p.regularCost + p.otCost)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </ScrollArea>
+
+            {/* Cost summary footer */}
+            <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+              <SummaryBox label="Labor Cost" value={fmtAED(p.regularCost + p.otCost)} />
+              <SummaryBox label="Expenses" value={fmtAED(p.expenses)} />
+              <SummaryBox label="Total Cost" value={fmtAED(p.totalCost)} accent="text-brand" />
+              {p.budget > 0 && (
+                <SummaryBox
+                  label="Budget"
+                  value={fmtAED(p.budget)}
+                  sub={`${Math.round((p.totalCost / p.budget) * 100)}% used`}
+                  accent={p.totalCost > p.budget ? "text-status-absent" : "text-status-present"}
+                />
+              )}
+            </div>
+          </CardContent>
+        </CollapsibleContent>
+      </Collapsible>
+    </Card>
+  );
+}
+
+function Stat({ label, value, accent, icon }: { label: string; value: string; accent?: string; icon?: React.ReactNode }) {
+  return (
+    <div className="hidden md:flex flex-col items-end leading-tight">
+      <span className="text-[9px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">{icon}{label}</span>
+      <span className={cn("font-mono text-xs", accent ?? "text-foreground")}>{value}</span>
+    </div>
+  );
+}
+
+function SummaryBox({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: string }) {
+  return (
+    <div className="rounded-lg border border-border p-3">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className={cn("text-base font-bold font-mono", accent ?? "text-foreground")}>{value}</p>
+      {sub && <p className="text-[10px] text-muted-foreground mt-0.5">{sub}</p>}
+    </div>
+  );
+}
+
+function TimeSplitBar({ inHouse, site, travel }: { inHouse: number; site: number; travel: number }) {
+  const total = inHouse + site + travel;
+  if (total === 0) return null;
+  const ih = (inHouse / total) * 100;
+  const st = (site / total) * 100;
+  const tv = (travel / total) * 100;
+  return (
+    <div className="space-y-1.5 mt-2">
+      <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted">
+        <div className="bg-foreground/70" style={{ width: `${ih}%` }} title={`In-House ${fmtH(inHouse)}`} />
+        <div className="bg-status-present" style={{ width: `${st}%` }} title={`Site ${fmtH(site)}`} />
+        <div className="bg-status-traveling" style={{ width: `${tv}%` }} title={`Travel ${fmtH(travel)}`} />
+      </div>
+      <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[10px] text-muted-foreground">
+        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-foreground/70" /> In-House {ih.toFixed(0)}%</span>
+        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-status-present" /> Site {st.toFixed(0)}%</span>
+        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-status-traveling" /> Travel {tv.toFixed(0)}%</span>
+      </div>
     </div>
   );
 }
