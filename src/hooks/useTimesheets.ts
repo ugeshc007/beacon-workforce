@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { getDisplayWorkedMinutes } from "@/lib/timesheet-display";
+import { getDisplayWorkedMinutes, aggregateDayLogs } from "@/lib/timesheet-display";
 
 export type DayStatus = "present" | "absent" | "leave" | "future" | "none";
 
