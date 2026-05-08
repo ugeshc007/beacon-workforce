@@ -63,7 +63,7 @@ export function useTimesheetData(month: string, filters?: { branchId?: string; p
 
       let empQuery = supabase
         .from("employees")
-        .select("id, name, employee_code, skill_type, branch_id")
+        .select("id, name, employee_code, skill_type, branch_id, hourly_rate, overtime_rate, standard_hours_per_day")
         .eq("is_active", true)
         .order("name");
 
