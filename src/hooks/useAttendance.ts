@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 
-import { getDisplayWorkedMinutes, getDisplayOvertimeMinutes } from "@/lib/timesheet-display";
+import { getDisplayWorkedMinutes, getDisplayOvertimeMinutes, groupAndAggregateLogs } from "@/lib/timesheet-display";
 
 export type AttendanceLog = Tables<"attendance_logs"> & {
   employees?: {
