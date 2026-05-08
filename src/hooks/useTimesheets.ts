@@ -84,7 +84,7 @@ export function useTimesheetData(month: string, filters?: { branchId?: string; p
         logsQuery = logsQuery.eq("project_id", filters.projectId);
       }
 
-      const [empRes, logsRes, approvalsRes, projectsRes, leaveRes] = await Promise.all([
+      const [empRes, logsRes, approvalsRes, projectsRes, leaveRes, settingsRes] = await Promise.all([
         empQuery,
         logsQuery,
         supabase
@@ -100,6 +100,10 @@ export function useTimesheetData(month: string, filters?: { branchId?: string; p
           .select("employee_id, start_date, end_date")
           .lte("start_date", endDate)
           .gte("end_date", startDate),
+        supabase
+          .from("settings")
+          .select("key, value")
+          .in("key", ["standard_work_hours", "overtime_multiplier"]),
       ]);
 
       const employees = empRes.data ?? [];
@@ -107,6 +111,9 @@ export function useTimesheetData(month: string, filters?: { branchId?: string; p
       const approvals = (approvalsRes.data ?? []) as any[];
       const projects = projectsRes.data ?? [];
       const leaves = leaveRes.data ?? [];
+      const settingsMap = new Map((settingsRes.data ?? []).map((s: any) => [s.key, s.value]));
+      const orgStdHours = parseFloat((settingsMap.get("standard_work_hours") as string) ?? "8") || 8;
+      const orgOtMult = parseFloat((settingsMap.get("overtime_multiplier") as string) ?? "1.5") || 1.5;
 
       // Build leave lookup: employee_id -> Set of date strings on leave
       const leaveMap = new Map<string, Set<string>>();
