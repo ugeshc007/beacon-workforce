@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
-const GPS_ACTIONS: WorkflowAction[] = ["punch_in", "punch_out"];
+const GPS_ACTIONS: WorkflowAction[] = ["punch_in", "punch_out", "start_return_travel", "arrive_office"];
 
 export default function MobileHome() {
   const { employee } = useMobileAuth();
