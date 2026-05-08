@@ -133,11 +133,10 @@ export function useAttendanceSummary(date: string) {
       const onSite = setOf((l) => !!l.site_arrival_time);
       const working = setOf((l) => l.work_start_time && !l.work_end_time);
       const onBreak = setOf((l) => l.break_start_time && !l.break_end_time);
-      // Completed = employees who have NO open shift left
+      // Completed = employees who punched in AND have no open shift remaining
       const openIds = new Set(logs.filter((l) => l.office_punch_in && !l.office_punch_out).map((l) => l.employee_id));
-      const completed = setOf((l) => !!l.office_punch_out) - openIds.size > 0
-        ? new Set(logs.filter((l) => l.office_punch_out).map((l) => l.employee_id).filter((id) => !openIds.has(id))).size
-        : 0;
+      const punchedSet = new Set(logs.filter((l) => l.office_punch_in).map((l) => l.employee_id));
+      const completed = [...punchedSet].filter((id) => !openIds.has(id)).length;
       const late = setOf((l) => isLate(l.office_punch_in));
       const punchedEmpIds = new Set(logs.filter((l) => l.office_punch_in).map((l) => l.employee_id));
       const absent = Math.max(0, activeCount - punchedEmpIds.size);
