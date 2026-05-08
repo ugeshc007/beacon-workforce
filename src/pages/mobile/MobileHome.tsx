@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
-const GPS_ACTIONS: WorkflowAction[] = ["punch_in", "punch_out"];
+const GPS_ACTIONS: WorkflowAction[] = ["punch_in", "punch_out", "start_return_travel", "arrive_office"];
 
 export default function MobileHome() {
   const { employee } = useMobileAuth();
@@ -361,27 +361,68 @@ export default function MobileHome() {
         </Card>
       )}
 
-      {/* Punch Out — only when projects exist (in-house mode handles its own punch-out) */}
-      {step !== "idle" && step !== "punched_out" && officeAction === "punch_out" && !!todayProjects?.length && (
+      {/* Post-projects: return-to-office flow */}
+      {step !== "idle" && step !== "punched_out" && allProjectsDone && step !== "at_office" && (
+        <div className="flex flex-col gap-3">
+          <Card className="p-4 border-green-500/30 bg-green-500/5">
+            <p className="text-sm text-foreground font-medium">All projects done!</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {step === "returning"
+                ? "Tap below when you reach the office."
+                : "Start your return travel to the office."}
+            </p>
+          </Card>
+
+          {step !== "returning" && (
+            <HoldToConfirm
+              onConfirm={() => handleOfficeAction("start_return_travel")}
+              disabled={actionLoading}
+              loading={actionLoading}
+              variant="primary"
+            >
+              <MapPin className="h-5 w-5" />
+              {actionLabels.start_return_travel}
+            </HoldToConfirm>
+          )}
+
+          {step === "returning" && (
+            <HoldToConfirm
+              onConfirm={() => handleOfficeAction("arrive_office")}
+              disabled={actionLoading}
+              loading={actionLoading}
+              variant="primary"
+            >
+              <Building2 className="h-5 w-5" />
+              {actionLabels.arrive_office}
+            </HoldToConfirm>
+          )}
+        </div>
+      )}
+
+      {/* Punch Out — when projects exist and we're at office (after return-travel flow) */}
+      {step === "at_office" && (
         <HoldToConfirm
           onConfirm={() => handleOfficeAction("punch_out")}
           disabled={actionLoading}
           loading={actionLoading}
-          variant={allProjectsDone ? "primary" : "secondary"}
+          variant="primary"
         >
           <CheckCircle2 className="h-6 w-6" />
           {actionLabels.punch_out}
         </HoldToConfirm>
       )}
 
-      {/* Show punch-out hint if all projects done but office step isn't at_office yet */}
-      {step !== "idle" && step !== "punched_out" && officeAction !== "punch_out" && allProjectsDone && (
-        <Card className="p-4 border-amber-500/30 bg-amber-500/5">
-          <p className="text-sm text-foreground font-medium">All projects done!</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Return to office, then tap Punch Out from the attendance flow to close your day.
-          </p>
-        </Card>
+      {/* Fallback: punch out available outside the project flow (e.g., no projects path) */}
+      {step !== "idle" && step !== "punched_out" && step !== "at_office" && officeAction === "punch_out" && !!todayProjects?.length && !allProjectsDone && (
+        <HoldToConfirm
+          onConfirm={() => handleOfficeAction("punch_out")}
+          disabled={actionLoading}
+          loading={actionLoading}
+          variant="secondary"
+        >
+          <CheckCircle2 className="h-6 w-6" />
+          {actionLabels.punch_out}
+        </HoldToConfirm>
       )}
 
       {step === "punched_out" && (
