@@ -142,3 +142,45 @@ export function formatWorkedMinutes(minutes: number): string {
   return `${hours}h ${mins}m`;
 }
 
+/**
+ * Aggregates multiple attendance logs for the SAME (employee, date) into
+ * a single combined daily total. OT is computed against the combined worked
+ * minutes vs standard hours/day (not per-shift).
+ */
+export function aggregateDayLogs(
+  logs: TimesheetDisplayLog[],
+  standardHoursPerDay: number = 8,
+  now: Date = new Date(),
+): { workedMin: number; otMin: number; regularMin: number } {
+  let workedMin = 0;
+  for (const log of logs) {
+    workedMin += getDisplayWorkedMinutes(log, now);
+  }
+  const stdMin = Math.round((standardHoursPerDay || 8) * 60);
+  const otMin = Math.max(0, workedMin - stdMin);
+  const regularMin = workedMin - otMin;
+  return { workedMin, otMin, regularMin };
+}
+
+/**
+ * Group logs by `${employee_id}|${date}` and return aggregated daily totals.
+ */
+export function groupAndAggregateLogs<T extends TimesheetDisplayLog & { employee_id?: string }>(
+  logs: T[],
+  standardHoursPerDay: number = 8,
+  now: Date = new Date(),
+): Map<string, { logs: T[]; workedMin: number; otMin: number; regularMin: number }> {
+  const groups = new Map<string, T[]>();
+  for (const log of logs) {
+    const key = `${(log as any).employee_id ?? ""}|${log.date ?? ""}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(log);
+  }
+  const result = new Map<string, { logs: T[]; workedMin: number; otMin: number; regularMin: number }>();
+  for (const [key, group] of groups) {
+    const agg = aggregateDayLogs(group, standardHoursPerDay, now);
+    result.set(key, { logs: group, ...agg });
+  }
+  return result;
+}
+

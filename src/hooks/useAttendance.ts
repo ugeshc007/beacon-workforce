@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 
-import { getDisplayWorkedMinutes, getDisplayOvertimeMinutes } from "@/lib/timesheet-display";
+import { getDisplayWorkedMinutes, getDisplayOvertimeMinutes, groupAndAggregateLogs } from "@/lib/timesheet-display";
 
 export type AttendanceLog = Tables<"attendance_logs"> & {
   employees?: {
@@ -124,19 +124,38 @@ export function useAttendanceSummary(date: string) {
         return d.getUTCHours() * 60 + d.getUTCMinutes() > cutoffMinutes;
       };
 
-      const punchedIn = logs.filter((l) => l.office_punch_in).length;
-      const travelling = logs.filter((l) => l.travel_start_time && !l.site_arrival_time).length;
-      const onSite = logs.filter((l) => l.site_arrival_time).length;
-      const working = logs.filter((l) => l.work_start_time && !l.work_end_time).length;
-      const onBreak = logs.filter((l) => l.break_start_time && !l.break_end_time).length;
-      const completed = logs.filter((l) => l.office_punch_out).length;
-      const late = logs.filter((l) => isLate(l.office_punch_in)).length;
+      // Status counts: dedupe by employee_id (an employee with 2 shifts counts once)
+      const setOf = (pred: (l: any) => boolean) =>
+        new Set(logs.filter(pred).map((l) => l.employee_id)).size;
+
+      const punchedIn = setOf((l) => !!l.office_punch_in);
+      const travelling = setOf((l) => l.travel_start_time && !l.site_arrival_time);
+      const onSite = setOf((l) => !!l.site_arrival_time);
+      const working = setOf((l) => l.work_start_time && !l.work_end_time);
+      const onBreak = setOf((l) => l.break_start_time && !l.break_end_time);
+      // Completed = employees who punched in AND have no open shift remaining
+      const openIds = new Set(logs.filter((l) => l.office_punch_in && !l.office_punch_out).map((l) => l.employee_id));
+      const punchedSet = new Set(logs.filter((l) => l.office_punch_in).map((l) => l.employee_id));
+      const completed = [...punchedSet].filter((id) => !openIds.has(id)).length;
+      const late = setOf((l) => isLate(l.office_punch_in));
       const punchedEmpIds = new Set(logs.filter((l) => l.office_punch_in).map((l) => l.employee_id));
       const absent = Math.max(0, activeCount - punchedEmpIds.size);
-      const totalOtMin = logs.reduce((s, l) => s + getDisplayOvertimeMinutes(l, stdHours), 0);
-      const totalCost = logs.reduce((s, l) => s + computeLiveCost(l, { stdHours, otMult }), 0);
 
-      return { total: logs.length, punchedIn, travelling, onSite, working, onBreak, completed, late, absent, totalOtMin, totalCost };
+      // Combined daily totals: group shifts by (employee, date)
+      const grouped = groupAndAggregateLogs(logs as any[], stdHours);
+      let totalOtMin = 0;
+      let totalCost = 0;
+      for (const [, agg] of grouped) {
+        totalOtMin += agg.otMin;
+        const emp = (agg.logs[0] as any).employees;
+        const rate = Number(emp?.hourly_rate ?? 0);
+        const otRate = Number(emp?.overtime_rate ?? 0) > 0
+          ? Number(emp?.overtime_rate)
+          : rate * otMult;
+        totalCost += (agg.regularMin / 60) * rate + (agg.otMin / 60) * otRate;
+      }
+
+      return { total: punchedEmpIds.size, punchedIn, travelling, onSite, working, onBreak, completed, late, absent, totalOtMin, totalCost };
     },
     refetchInterval: 30000,
   });

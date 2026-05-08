@@ -50,16 +50,17 @@ Deno.serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
-    // Check if already punched in today
-    const { data: existing } = await supabase
+    // Allow multiple shifts per day. Only block if there's an OPEN log
+    // (employee already punched in but hasn't punched out yet).
+    const { data: openLogs } = await supabase
       .from("attendance_logs")
-      .select("id")
+      .select("id, office_punch_out")
       .eq("employee_id", employee_id)
       .eq("date", today)
-      .maybeSingle();
+      .is("office_punch_out", null);
 
-    if (existing) {
-      return errorResponse("Already punched in today");
+    if (openLogs && openLogs.length > 0) {
+      return errorResponse("You are already punched in. Please punch out before starting a new shift.");
     }
 
     const now = nowTimestamp();

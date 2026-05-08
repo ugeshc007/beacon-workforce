@@ -3,8 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { computeLiveCost } from "@/hooks/useAttendance";
-import { getDisplayOvertimeMinutes } from "@/lib/timesheet-display";
+import { groupAndAggregateLogs } from "@/lib/timesheet-display";
 import { computeProjectHealth } from "@/lib/project-health";
 
 function todayUAE(): string {
@@ -91,7 +90,6 @@ export function useDashboardStats() {
       const stdHours = parseFloat((settingsMap.get("standard_work_hours") as string) ?? "8") || 8;
       const otMult = parseFloat((settingsMap.get("overtime_multiplier") as string) ?? "1.5") || 1.5;
 
-      let present = 0;
       let traveling = 0;
       let working = 0;
       let totalOtMin = 0;
@@ -100,15 +98,23 @@ export function useDashboardStats() {
       const punchedIds = new Set<string>();
 
       for (const log of logs) {
-        if (log.office_punch_in) {
-          punchedIds.add(log.employee_id);
-          present++;
-        }
+        if (log.office_punch_in) punchedIds.add(log.employee_id);
         if (log.work_start_time && !log.work_end_time) working++;
         if (log.travel_start_time && !log.site_arrival_time) traveling++;
-        // Live OT — use the same stdHours as Timesheets so totals agree
-        totalOtMin += getDisplayOvertimeMinutes(log, stdHours);
-        totalCost += computeLiveCost(log, { stdHours, otMult });
+      }
+      const present = punchedIds.size;
+
+      // Combined daily total for OT + cost: group all shifts of the same employee/day
+      const grouped = groupAndAggregateLogs(logs, stdHours);
+      for (const [, agg] of grouped) {
+        totalOtMin += agg.otMin;
+        // Use the first log's employee rate (same employee across the group)
+        const emp = (agg.logs[0] as any).employees;
+        const rate = Number(emp?.hourly_rate ?? 0);
+        const otRate = Number(emp?.overtime_rate ?? 0) > 0
+          ? Number(emp?.overtime_rate)
+          : rate * otMult;
+        totalCost += (agg.regularMin / 60) * rate + (agg.otMin / 60) * otRate;
       }
 
       // Absent = expected staff for today (assignments if set, otherwise active employees) − punched

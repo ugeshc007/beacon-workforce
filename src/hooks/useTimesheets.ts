@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { getDisplayWorkedMinutes } from "@/lib/timesheet-display";
+import { aggregateDayLogs } from "@/lib/timesheet-display";
 
 export type DayStatus = "present" | "absent" | "leave" | "future" | "none";
 
@@ -63,7 +63,7 @@ export function useTimesheetData(month: string, filters?: { branchId?: string; p
 
       let empQuery = supabase
         .from("employees")
-        .select("id, name, employee_code, skill_type, branch_id")
+        .select("id, name, employee_code, skill_type, branch_id, hourly_rate, overtime_rate, standard_hours_per_day")
         .eq("is_active", true)
         .order("name");
 
@@ -84,7 +84,7 @@ export function useTimesheetData(month: string, filters?: { branchId?: string; p
         logsQuery = logsQuery.eq("project_id", filters.projectId);
       }
 
-      const [empRes, logsRes, approvalsRes, projectsRes, leaveRes] = await Promise.all([
+      const [empRes, logsRes, approvalsRes, projectsRes, leaveRes, settingsRes] = await Promise.all([
         empQuery,
         logsQuery,
         supabase
@@ -100,6 +100,10 @@ export function useTimesheetData(month: string, filters?: { branchId?: string; p
           .select("employee_id, start_date, end_date")
           .lte("start_date", endDate)
           .gte("end_date", startDate),
+        supabase
+          .from("settings")
+          .select("key, value")
+          .in("key", ["standard_work_hours", "overtime_multiplier"]),
       ]);
 
       const employees = empRes.data ?? [];
@@ -107,6 +111,9 @@ export function useTimesheetData(month: string, filters?: { branchId?: string; p
       const approvals = (approvalsRes.data ?? []) as any[];
       const projects = projectsRes.data ?? [];
       const leaves = leaveRes.data ?? [];
+      const settingsMap = new Map((settingsRes.data ?? []).map((s: any) => [s.key, s.value]));
+      const orgStdHours = parseFloat((settingsMap.get("standard_work_hours") as string) ?? "8") || 8;
+      const orgOtMult = parseFloat((settingsMap.get("overtime_multiplier") as string) ?? "1.5") || 1.5;
 
       // Build leave lookup: employee_id -> Set of date strings on leave
       const leaveMap = new Map<string, Set<string>>();
@@ -160,42 +167,50 @@ export function useTimesheetData(month: string, filters?: { branchId?: string; p
         let daysAbsent = 0;
         let daysLeave = 0;
 
-        const logDateSet = new Set(empLogs.map((l) => l.date));
-        const lvSet = empLeaveSet(emp.id);
+        const empStdHours = Number((emp as any).standard_hours_per_day ?? 0) > 0
+          ? Number((emp as any).standard_hours_per_day)
+          : orgStdHours;
+        const rate = Number((emp as any).hourly_rate ?? 0);
+        const otRate = Number((emp as any).overtime_rate ?? 0) > 0
+          ? Number((emp as any).overtime_rate)
+          : rate * orgOtMult;
 
+        // Group this employee's logs by date (one employee can have multiple shifts/day)
+        const byDate = new Map<string, typeof empLogs>();
         for (const log of empLogs) {
-          // Compute work minutes: use stored value, or fall back to work_start/end timestamps
-          let mins = log.total_work_minutes ?? 0;
-          if (mins === 0 && log.work_start_time && log.work_end_time) {
-            const diff = new Date(log.work_end_time).getTime() - new Date(log.work_start_time).getTime();
-            mins = Math.max(0, Math.round(diff / 60000));
-          }
-          const displayMins = getDisplayWorkedMinutes(log);
-          const h = Math.round((mins / 60) * 10) / 10;
-          const ot = Math.round(((log.overtime_minutes ?? 0) / 60) * 10) / 10;
-          dailyHours[log.date] = h;
-          dailyOt[log.date] = ot;
-          dailyWorkMinutes[log.date] = displayMins;
-          dailyStatus[log.date] = "present";
-          totalHours += h;
-          totalOt += ot;
+          if (!byDate.has(log.date)) byDate.set(log.date, []);
+          byDate.get(log.date)!.push(log);
           totalBreakMinutes += log.break_minutes ?? 0;
           totalTravelMinutes += calcTravelMin(log);
-          regularCost += Number(log.regular_cost ?? 0);
-          otCost += Number(log.overtime_cost ?? 0);
+        }
+
+        const lvSet = empLeaveSet(emp.id);
+
+        // For each date: combine shifts → one daily total + combined OT
+        for (const [date, dayLogs] of byDate) {
+          const agg = aggregateDayLogs(dayLogs as any[], empStdHours);
+          const h = Math.round((agg.workedMin / 60) * 10) / 10;
+          const ot = Math.round((agg.otMin / 60) * 10) / 10;
+          dailyHours[date] = h;
+          dailyOt[date] = ot;
+          dailyWorkMinutes[date] = agg.workedMin;
+          dailyStatus[date] = "present";
+          totalHours += h;
+          totalOt += ot;
+          regularCost += (agg.regularMin / 60) * rate;
+          otCost += (agg.otMin / 60) * otRate;
         }
 
         // Fill non-worked days
         for (let d = 1; d <= daysInMonth; d++) {
           const ds = `${month}-${String(d).padStart(2, "0")}`;
-          if (logDateSet.has(ds)) continue;
+          if (byDate.has(ds)) continue;
           if (ds > todayStr) {
             dailyStatus[ds] = "future";
           } else if (lvSet.has(ds)) {
             dailyStatus[ds] = "leave";
             daysLeave++;
           } else {
-            // Check if it's a weekday (not Friday in UAE context — skip weekend logic, just mark absent for past workdays)
             dailyStatus[ds] = "absent";
             daysAbsent++;
           }
@@ -219,7 +234,7 @@ export function useTimesheetData(month: string, filters?: { branchId?: string; p
           regularCost: Math.round(regularCost),
           otCost: Math.round(otCost),
           totalPay: Math.round(regularCost + otCost),
-          daysWorked: empLogs.length,
+          daysWorked: byDate.size,
           daysAbsent,
           daysLeave,
           approvalStatus: approval?.status ?? null,
