@@ -209,7 +209,7 @@ export default function MobileHome() {
       )}
 
       {/* Resume in-progress project */}
-      {step !== "idle" && step !== "punched_out" && activeProject && (
+      {step !== "idle" && step !== "punched_out" && !isDriverDay && activeProject && (
         <button
           onClick={() => navigate(`/m/project/${activeProject.projectId}`)}
           className="rounded-xl border border-brand/50 bg-brand/10 p-4 text-left transition-colors hover:bg-brand/15"
