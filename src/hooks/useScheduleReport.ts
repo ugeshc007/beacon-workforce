@@ -24,6 +24,7 @@ export interface ScheduleReportData {
     date: string;
     project: string;
     location: string;
+    workLocation: "in_house" | "site" | null;
     teamSize: number;
     teamNames: string[];
     teamMembers: { name: string; skill: string }[];
