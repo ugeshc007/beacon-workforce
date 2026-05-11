@@ -417,6 +417,38 @@ export function DayAssignmentPanel({
           <div>
             <CardTitle className="text-sm font-semibold">{dayLabel}</CardTitle>
             <p className="text-xs text-muted-foreground mt-0.5">{projectName}</p>
+            {!readOnly ? (
+              <div className="flex items-center gap-1 mt-2">
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground mr-1">Work:</span>
+                <Button
+                  size="sm"
+                  variant={workLocation === "in_house" ? "default" : "outline"}
+                  className="h-6 px-2 gap-1 text-[11px]"
+                  onClick={() => handleSetLocation("in_house")}
+                  disabled={setWorkLocation.isPending}
+                >
+                  <Building2 className="h-3 w-3" /> In-House
+                </Button>
+                <Button
+                  size="sm"
+                  variant={workLocation === "site" ? "default" : "outline"}
+                  className="h-6 px-2 gap-1 text-[11px]"
+                  onClick={() => handleSetLocation("site")}
+                  disabled={setWorkLocation.isPending}
+                >
+                  <MapPin className="h-3 w-3" /> Site
+                </Button>
+                {!workLocation && assignments.length > 0 && (
+                  <Badge variant="outline" className="h-5 px-1.5 text-[10px] border-amber-500/40 text-amber-400 ml-1">
+                    <AlertTriangle className="h-2.5 w-2.5 mr-0.5" /> Tag required
+                  </Badge>
+                )}
+              </div>
+            ) : workLocation ? (
+              <Badge variant="outline" className="h-5 px-1.5 text-[10px] mt-2">
+                {workLocation === "in_house" ? <><Building2 className="h-2.5 w-2.5 mr-1" /> In-House</> : <><MapPin className="h-2.5 w-2.5 mr-1" /> Site</>}
+              </Badge>
+            ) : null}
           </div>
           <div className="flex items-center gap-1.5">
             {assignments.length > 0 && (
