@@ -1035,20 +1035,25 @@ export function useProjectLaborBreakdown(start: string, end: string, filters?: {
         a.otCost += Number(l.overtime_cost ?? 0);
         a.otMin += l.overtime_minutes ?? 0;
 
-        // In-house: office_punch_in → travel_start (or work_start if no travel, or office_punch_out)
         const inHouseEnd = l.travel_start_time ?? l.work_start_time ?? l.office_punch_out;
-        a.inHouseMin += _diffMin(l.office_punch_in, inHouseEnd);
-
-        // Travel to site
-        a.travelToSiteMin += _diffMin(l.travel_start_time, l.site_arrival_time);
-
-        // Site: site_arrival (or work_start) → return_travel_start (or work_end)
+        const ih = _diffMin(l.office_punch_in, inHouseEnd);
+        const tts = _diffMin(l.travel_start_time, l.site_arrival_time);
         const siteStart = l.site_arrival_time ?? l.work_start_time;
         const siteEnd = l.return_travel_start_time ?? l.work_end_time;
-        a.siteMin += _diffMin(siteStart, siteEnd);
+        const sm = _diffMin(siteStart, siteEnd);
+        const tr = _diffMin(l.return_travel_start_time, l.office_arrival_time ?? l.office_punch_out);
 
-        // Travel back
-        a.travelReturnMin += _diffMin(l.return_travel_start_time, l.office_arrival_time ?? l.office_punch_out);
+        const tag = tagMap.get(`${l.project_id}|${l.date}`);
+        if (tag === "in_house") {
+          a.inHouseMin += ih + tts + sm + tr;
+        } else if (tag === "site") {
+          a.siteMin += ih + tts + sm + tr;
+        } else {
+          a.inHouseMin += ih;
+          a.travelToSiteMin += tts;
+          a.siteMin += sm;
+          a.travelReturnMin += tr;
+        }
       }
 
       // project_work_sessions: project-only sessions (no office leg)
@@ -1059,11 +1064,19 @@ export function useProjectLaborBreakdown(start: string, end: string, filters?: {
         a.regularCost += Number(s.regular_cost ?? 0);
         a.otCost += Number(s.overtime_cost ?? 0);
         a.otMin += s.overtime_minutes ?? 0;
-        a.travelToSiteMin += _diffMin(s.travel_start_time, s.site_arrival_time);
+        const tts = _diffMin(s.travel_start_time, s.site_arrival_time);
         const siteStart = s.site_arrival_time ?? s.work_start_time;
         const siteEnd = s.return_travel_start_time ?? s.work_end_time;
-        a.siteMin += _diffMin(siteStart, siteEnd);
-        // Sessions don't track return → office, but we count return start → work_end as travel-back proxy (none here)
+        const sm = _diffMin(siteStart, siteEnd);
+        const tag = tagMap.get(`${s.project_id}|${s.date}`);
+        if (tag === "in_house") {
+          a.inHouseMin += tts + sm;
+        } else if (tag === "site") {
+          a.siteMin += tts + sm;
+        } else {
+          a.travelToSiteMin += tts;
+          a.siteMin += sm;
+        }
       }
 
       for (const e of expenses) {
