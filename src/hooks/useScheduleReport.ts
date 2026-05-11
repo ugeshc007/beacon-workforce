@@ -27,7 +27,7 @@ export interface ScheduleReportData {
     workLocation: "in_house" | "site" | null;
     teamSize: number;
     teamNames: string[];
-    teamMembers: { name: string; skill: string }[];
+    teamMembers: { name: string; skill: string; workLocation: "in_house" | "site" | null }[];
     tasks: string[];
     tasksLogged: number;
     shiftStart: string | null;
@@ -65,7 +65,7 @@ export function useScheduleReport(start: string, end: string) {
     queryFn: async () => {
       const { data } = await supabase
         .from("project_assignments")
-        .select("id, date, project_id, employee_id, shift_start, shift_end, employees(name, employee_code, skill_type), projects(name, site_address, required_technicians, required_helpers, required_supervisors, required_drivers, required_team_members)")
+        .select("id, date, project_id, employee_id, shift_start, shift_end, work_location, employees(name, employee_code, skill_type), projects(name, site_address, required_technicians, required_helpers, required_supervisors, required_drivers, required_team_members)")
         .gte("date", start)
         .lte("date", end)
         .order("date");
@@ -128,7 +128,7 @@ export function useScheduleReport(start: string, end: string) {
       : 0;
 
     // Daily overview — merge assignments and daily logs
-    const dailyMap = new Map<string, { project: string; projectId: string; location: string; teamSize: number; teamNames: string[]; teamMembers: { name: string; skill: string }[]; tasks: string[]; tasksLogged: number; shiftStart: string | null; shiftEnd: string | null }>();
+    const dailyMap = new Map<string, { project: string; projectId: string; location: string; teamSize: number; teamNames: string[]; teamMembers: { name: string; skill: string; workLocation: "in_house" | "site" | null }[]; tasks: string[]; tasksLogged: number; shiftStart: string | null; shiftEnd: string | null }>();
     
     // First pass: build from assignments
     assignments.forEach((a) => {
@@ -139,7 +139,7 @@ export function useScheduleReport(start: string, end: string) {
       if (existing) {
         existing.teamSize += 1;
         if (!existing.teamNames.includes(empName)) existing.teamNames.push(empName);
-        existing.teamMembers.push({ name: empName, skill: empSkill });
+        existing.teamMembers.push({ name: empName, skill: empSkill, workLocation: a.work_location ?? null });
         if (a.shift_start && (!existing.shiftStart || a.shift_start < existing.shiftStart)) existing.shiftStart = a.shift_start;
         if (a.shift_end && (!existing.shiftEnd || a.shift_end > existing.shiftEnd)) existing.shiftEnd = a.shift_end;
       } else {
@@ -151,7 +151,7 @@ export function useScheduleReport(start: string, end: string) {
           location: a.projects?.site_address ?? "—",
           teamSize: 1,
           teamNames: [empName],
-          teamMembers: [{ name: empName, skill: empSkill }],
+          teamMembers: [{ name: empName, skill: empSkill, workLocation: a.work_location ?? null }],
           tasks: taskDescs,
           tasksLogged: dayLogs.length,
           shiftStart: a.shift_start ?? null,

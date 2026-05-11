@@ -16,6 +16,7 @@ export interface ScheduleAssignment {
   employee_name: string;
   employee_skill: string;
   project_name: string;
+  work_location: "in_house" | "site" | null;
 }
 
 export interface MaintenanceScheduleItem {
@@ -59,7 +60,7 @@ export function useWeekAssignments(weekStart: string, weekEnd: string, projectId
     queryFn: async () => {
       let query = supabase
         .from("project_assignments")
-        .select("id, project_id, employee_id, date, shift_start, shift_end, assignment_mode, is_locked, assigned_role, employees(name, skill_type), projects(name)")
+        .select("id, project_id, employee_id, date, shift_start, shift_end, assignment_mode, is_locked, assigned_role, work_location, employees(name, skill_type), projects(name)")
         .gte("date", weekStart)
         .lte("date", weekEnd)
         .order("date");
@@ -84,6 +85,7 @@ export function useWeekAssignments(weekStart: string, weekEnd: string, projectId
         employee_name: a.employees?.name ?? "Unknown",
         employee_skill: a.employees?.skill_type ?? "helper",
         project_name: a.projects?.name ?? "Unknown",
+        work_location: a.work_location ?? null,
       })) as ScheduleAssignment[];
     },
   });
@@ -221,21 +223,37 @@ export function useAddAssignment() {
         .select()
         .single();
       if (error) throw error;
-      // Notify employee via mobile notification
-      try {
-        await supabase.functions.invoke("notify-assignment", {
-          body: {
-            employee_id: payload.employee_id,
-            project_id: payload.project_id,
-            date: payload.date,
-            shift_start: payload.shift_start,
-            shift_end: payload.shift_end,
-          },
-        });
-      } catch {}
+      // Fire-and-forget notification — do not block the UI
+      void supabase.functions.invoke("notify-assignment", {
+        body: {
+          employee_id: payload.employee_id,
+          project_id: payload.project_id,
+          date: payload.date,
+          shift_start: payload.shift_start,
+          shift_end: payload.shift_end,
+        },
+      }).catch(() => {});
       return data;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["schedule-assignments"] }),
+  });
+}
+
+export function useSetAssignmentWorkLocation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, work_location }: { id: string; work_location: "in_house" | "site" | null }) => {
+      const { error } = await supabase
+        .from("project_assignments")
+        .update({ work_location })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["schedule-assignments"] });
+      qc.invalidateQueries({ queryKey: ["schedule-report-assignments"] });
+      qc.invalidateQueries({ queryKey: ["project-labor-breakdown"] });
+    },
   });
 }
 

@@ -11,6 +11,7 @@ import {
   useToggleLock,
   useUpdateAssignment,
   useReassignEmployee,
+  useSetAssignmentWorkLocation,
   type ScheduleAssignment,
 } from "@/hooks/useSchedule";
 import { useProjects } from "@/hooks/useProjects";
@@ -73,17 +74,15 @@ export function DayAssignmentPanel({
   const toggleLock = useToggleLock();
   const updateAssignment = useUpdateAssignment();
   const reassignEmployee = useReassignEmployee();
+  const setAssignmentLocation = useSetAssignmentWorkLocation();
   const { data: allProjects } = useProjects({ status: "all" });
   const activeProjects = (allProjects ?? []).filter((p) => ["on_hold", "in_progress"].includes(p.status) && p.id !== projectId);
   const { data: dailyLogs } = useDailyLogs(projectId);
   const currentProject = (allProjects ?? []).find(p => p.id === projectId);
-  const { data: workLocation } = useDayWorkLocation(projectId, date);
-  const setWorkLocation = useSetDayWorkLocation();
 
-  const handleSetLocation = async (loc: WorkLocation) => {
+  const handleSetAssignmentLocation = async (id: string, loc: WorkLocation) => {
     try {
-      await setWorkLocation.mutateAsync({ projectId, date, location: loc });
-      toast({ title: `Tagged as ${loc === "in_house" ? "In-House" : "Site"}` });
+      await setAssignmentLocation.mutateAsync({ id, work_location: loc });
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     }
@@ -417,38 +416,6 @@ export function DayAssignmentPanel({
           <div>
             <CardTitle className="text-sm font-semibold">{dayLabel}</CardTitle>
             <p className="text-xs text-muted-foreground mt-0.5">{projectName}</p>
-            {!readOnly ? (
-              <div className="flex items-center gap-1 mt-2">
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground mr-1">Work:</span>
-                <Button
-                  size="sm"
-                  variant={workLocation === "in_house" ? "default" : "outline"}
-                  className="h-6 px-2 gap-1 text-[11px]"
-                  onClick={() => handleSetLocation("in_house")}
-                  disabled={setWorkLocation.isPending}
-                >
-                  <Building2 className="h-3 w-3" /> In-House
-                </Button>
-                <Button
-                  size="sm"
-                  variant={workLocation === "site" ? "default" : "outline"}
-                  className="h-6 px-2 gap-1 text-[11px]"
-                  onClick={() => handleSetLocation("site")}
-                  disabled={setWorkLocation.isPending}
-                >
-                  <MapPin className="h-3 w-3" /> Site
-                </Button>
-                {!workLocation && assignments.length > 0 && (
-                  <Badge variant="outline" className="h-5 px-1.5 text-[10px] border-amber-500/40 text-amber-400 ml-1">
-                    <AlertTriangle className="h-2.5 w-2.5 mr-0.5" /> Tag required
-                  </Badge>
-                )}
-              </div>
-            ) : workLocation ? (
-              <Badge variant="outline" className="h-5 px-1.5 text-[10px] mt-2">
-                {workLocation === "in_house" ? <><Building2 className="h-2.5 w-2.5 mr-1" /> In-House</> : <><MapPin className="h-2.5 w-2.5 mr-1" /> Site</>}
-              </Badge>
-            ) : null}
           </div>
           <div className="flex items-center gap-1.5">
             {assignments.length > 0 && (
@@ -553,6 +520,37 @@ export function DayAssignmentPanel({
                 <Badge variant="outline" className={`text-[10px] ${skillColors[a.assigned_role] ?? ""}`}>
                   {a.assigned_role}
                 </Badge>
+                {!readOnly ? (
+                  <div className="flex items-center gap-0.5">
+                    <Button
+                      size="sm"
+                      variant={a.work_location === "in_house" ? "default" : "outline"}
+                      className="h-6 px-1.5 gap-1 text-[10px]"
+                      title="Tag as In-House"
+                      onClick={() => handleSetAssignmentLocation(a.id, "in_house")}
+                      disabled={setAssignmentLocation.isPending}
+                    >
+                      <Building2 className="h-3 w-3" /> In-House
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={a.work_location === "site" ? "default" : "outline"}
+                      className="h-6 px-1.5 gap-1 text-[10px]"
+                      title="Tag as Site"
+                      onClick={() => handleSetAssignmentLocation(a.id, "site")}
+                      disabled={setAssignmentLocation.isPending}
+                    >
+                      <MapPin className="h-3 w-3" /> Site
+                    </Button>
+                    {!a.work_location && (
+                      <AlertTriangle className="h-3 w-3 text-amber-400" aria-label="Tag required" />
+                    )}
+                  </div>
+                ) : a.work_location ? (
+                  <Badge variant="outline" className="h-5 px-1.5 text-[10px]">
+                    {a.work_location === "in_house" ? <><Building2 className="h-2.5 w-2.5 mr-1" /> In-House</> : <><MapPin className="h-2.5 w-2.5 mr-1" /> Site</>}
+                  </Badge>
+                ) : null}
                 {a.assignment_mode !== "manual" && (
                   <Badge variant="secondary" className="text-[10px]">{a.assignment_mode}</Badge>
                 )}

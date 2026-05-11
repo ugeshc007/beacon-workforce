@@ -19,7 +19,7 @@ export default function ScheduleReport() {
     if (!data) return;
     if (tab === "daily") {
       downloadCsv("schedule-daily.csv", ["Date", "Time", "Project", "Work", "Tasks", "Staff (Skill - Name)", "Location"],
-        data.dailyOverview.map((r) => [r.date, r.shiftStart && r.shiftEnd ? `${r.shiftStart.slice(0,5)}–${r.shiftEnd.slice(0,5)}` : "—", r.project, r.workLocation === "in_house" ? "In-House" : r.workLocation === "site" ? "Site" : "—", r.tasks.join("; ") || "—", r.teamMembers.map(m => `${m.skill} - ${m.name}`).join("\n"), r.location]));
+        data.dailyOverview.map((r) => [r.date, r.shiftStart && r.shiftEnd ? `${r.shiftStart.slice(0,5)}–${r.shiftEnd.slice(0,5)}` : "—", r.project, r.workLocation === "in_house" ? "In-House" : r.workLocation === "site" ? "Site" : "—", r.tasks.join("; ") || "—", r.teamMembers.map(m => `${m.skill} - ${m.name}${m.workLocation ? " [" + (m.workLocation === "in_house" ? "In-House" : "Site") + "]" : ""}`).join("\n"), r.location]));
     } else if (tab === "employee") {
       const available = data.employeeSummary.filter((r) => r.status !== "scheduled");
       downloadCsv("schedule-available-employees.csv", ["Employee", "Code", "Skill"],
@@ -49,7 +49,7 @@ export default function ScheduleReport() {
         {
           title: "Daily Schedule Overview",
           headers: ["Date", "Time", "Project", "Work", "Tasks", "Staff (Skill - Name)", "Location"],
-          rows: data.dailyOverview.map((r) => [r.date, r.shiftStart && r.shiftEnd ? `${r.shiftStart.slice(0,5)}–${r.shiftEnd.slice(0,5)}` : "—", r.project, r.workLocation === "in_house" ? "In-House" : r.workLocation === "site" ? "Site" : "—", r.tasks.join("; ") || "—", r.teamMembers.map(m => `${m.skill} - ${m.name}`).join("\n"), r.location]),
+          rows: data.dailyOverview.map((r) => [r.date, r.shiftStart && r.shiftEnd ? `${r.shiftStart.slice(0,5)}–${r.shiftEnd.slice(0,5)}` : "—", r.project, r.workLocation === "in_house" ? "In-House" : r.workLocation === "site" ? "Site" : "—", r.tasks.join("; ") || "—", r.teamMembers.map(m => `${m.skill} - ${m.name}${m.workLocation ? " [" + (m.workLocation === "in_house" ? "In-House" : "Site") + "]" : ""}`).join("\n"), r.location]),
         },
         {
           title: "Available Employees (Not Scheduled)",
@@ -162,6 +162,11 @@ export default function ScheduleReport() {
                                 <div key={j} className="flex items-center gap-1.5 whitespace-nowrap">
                                   <Badge variant="outline" className="text-[9px] font-medium px-1 py-0 capitalize shrink-0">{m.skill}</Badge>
                                   <span className="text-xs text-foreground">{m.name}</span>
+                                  {m.workLocation && (
+                                    <Badge variant="outline" className="text-[9px] px-1 py-0 shrink-0">
+                                      {m.workLocation === "in_house" ? "In-House" : "Site"}
+                                    </Badge>
+                                  )}
                                 </div>
                               ))}
                               {r.teamMembers.length === 0 && <span className="text-xs text-muted-foreground">—</span>}

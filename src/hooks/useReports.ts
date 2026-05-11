@@ -972,7 +972,7 @@ export function useProjectLaborBreakdown(start: string, end: string, filters?: {
         projQuery = projQuery.eq("branch_id", filters.branchId);
       }
 
-      const [projRes, logsRes, sessRes, expRes, empRes, branchRes, tagsRes, legsRes] = await Promise.all([
+      const [projRes, logsRes, sessRes, expRes, empRes, branchRes, tagsRes, legsRes, asgRes] = await Promise.all([
         projQuery,
         supabase.from("attendance_logs")
           .select("employee_id, project_id, date, regular_cost, overtime_cost, overtime_minutes, office_punch_in, office_punch_out, travel_start_time, site_arrival_time, work_start_time, work_end_time, return_travel_start_time, office_arrival_time")
@@ -994,6 +994,10 @@ export function useProjectLaborBreakdown(start: string, end: string, filters?: {
           .select("driver_id, project_id, date, total_travel_minutes, total_onsite_minutes, status")
           .gte("date", start).lte("date", end)
           .eq("status", "completed"),
+        supabase.from("project_assignments")
+          .select("project_id, employee_id, date, work_location")
+          .gte("date", start).lte("date", end)
+          .not("work_location", "is", null),
       ]);
 
       const projects = projRes.data ?? [];
@@ -1006,6 +1010,12 @@ export function useProjectLaborBreakdown(start: string, end: string, filters?: {
       const driverLegs = legsRes.data ?? [];
       const tagMap = new Map<string, "in_house" | "site">();
       tags.forEach((t: any) => tagMap.set(`${t.project_id}|${t.date}`, t.location));
+      const empTagMap = new Map<string, "in_house" | "site">();
+      (asgRes.data ?? []).forEach((a: any) => {
+        if (a.work_location) empTagMap.set(`${a.project_id}|${a.date}|${a.employee_id}`, a.work_location);
+      });
+      const resolveTag = (projectId: string, date: string, employeeId: string) =>
+        empTagMap.get(`${projectId}|${date}|${employeeId}`) ?? tagMap.get(`${projectId}|${date}`);
 
       const empMap = new Map(employees.map((e) => [e.id, e]));
       const projectIds = new Set(projects.map((p) => p.id));
@@ -1048,7 +1058,7 @@ export function useProjectLaborBreakdown(start: string, end: string, filters?: {
         const sm = _diffMin(siteStart, siteEnd);
         const tr = _diffMin(l.return_travel_start_time, l.office_arrival_time ?? l.office_punch_out);
 
-        const tag = tagMap.get(`${l.project_id}|${l.date}`);
+        const tag = resolveTag(l.project_id, l.date, l.employee_id);
         if (tag === "in_house") {
           a.inHouseMin += ih + tts + sm + tr;
         } else if (tag === "site") {
@@ -1073,7 +1083,7 @@ export function useProjectLaborBreakdown(start: string, end: string, filters?: {
         const siteStart = s.site_arrival_time ?? s.work_start_time;
         const siteEnd = s.return_travel_start_time ?? s.work_end_time;
         const sm = _diffMin(siteStart, siteEnd);
-        const tag = tagMap.get(`${s.project_id}|${s.date}`);
+        const tag = resolveTag(s.project_id, s.date, s.employee_id);
         if (tag === "in_house") {
           a.inHouseMin += tts + sm;
         } else if (tag === "site") {
