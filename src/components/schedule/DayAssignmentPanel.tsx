@@ -77,6 +77,17 @@ export function DayAssignmentPanel({
   const activeProjects = (allProjects ?? []).filter((p) => ["on_hold", "in_progress"].includes(p.status) && p.id !== projectId);
   const { data: dailyLogs } = useDailyLogs(projectId);
   const currentProject = (allProjects ?? []).find(p => p.id === projectId);
+  const { data: workLocation } = useDayWorkLocation(projectId, date);
+  const setWorkLocation = useSetDayWorkLocation();
+
+  const handleSetLocation = async (loc: WorkLocation) => {
+    try {
+      await setWorkLocation.mutateAsync({ projectId, date, location: loc });
+      toast({ title: `Tagged as ${loc === "in_house" ? "In-House" : "Site"}` });
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+  };
 
   const [addingSkill, setAddingSkill] = useState<string | null>(null);
   const [shiftStart, setShiftStart] = useState("08:00");
