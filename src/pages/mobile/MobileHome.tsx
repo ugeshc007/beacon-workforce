@@ -9,6 +9,7 @@ import { enqueueAction } from "@/lib/offline-queue";
 import { initAutoSync } from "@/lib/offline-sync";
 import { HoldToConfirm } from "@/components/mobile/HoldToConfirm";
 import { MapPicker } from "@/components/mobile/MapPicker";
+import { DriverWorkflowCard } from "@/components/mobile/DriverWorkflowCard";
 import { Card } from "@/components/ui/card";
 import { Loader2, MapPin, Clock, Wifi, WifiOff, CheckCircle2, AlertTriangle, Crosshair, ChevronRight, PlayCircle, RotateCcw, Coffee, Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
