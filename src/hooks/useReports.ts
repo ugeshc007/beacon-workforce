@@ -1058,7 +1058,7 @@ export function useProjectLaborBreakdown(start: string, end: string, filters?: {
         const sm = _diffMin(siteStart, siteEnd);
         const tr = _diffMin(l.return_travel_start_time, l.office_arrival_time ?? l.office_punch_out);
 
-        const tag = tagMap.get(`${l.project_id}|${l.date}`);
+        const tag = resolveTag(l.project_id, l.date, l.employee_id);
         if (tag === "in_house") {
           a.inHouseMin += ih + tts + sm + tr;
         } else if (tag === "site") {
