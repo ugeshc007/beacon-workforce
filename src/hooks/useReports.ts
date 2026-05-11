@@ -972,7 +972,7 @@ export function useProjectLaborBreakdown(start: string, end: string, filters?: {
         projQuery = projQuery.eq("branch_id", filters.branchId);
       }
 
-      const [projRes, logsRes, sessRes, expRes, empRes, branchRes] = await Promise.all([
+      const [projRes, logsRes, sessRes, expRes, empRes, branchRes, tagsRes] = await Promise.all([
         projQuery,
         supabase.from("attendance_logs")
           .select("employee_id, project_id, date, regular_cost, overtime_cost, overtime_minutes, office_punch_in, office_punch_out, travel_start_time, site_arrival_time, work_start_time, work_end_time, return_travel_start_time, office_arrival_time")
@@ -987,6 +987,9 @@ export function useProjectLaborBreakdown(start: string, end: string, filters?: {
           .eq("status", "approved"),
         supabase.from("employees").select("id, name, employee_code, skill_type, hourly_rate"),
         supabase.from("branches").select("id, name").order("name"),
+        supabase.from("project_day_work_locations")
+          .select("project_id, date, location")
+          .gte("date", start).lte("date", end),
       ]);
 
       const projects = projRes.data ?? [];
@@ -995,6 +998,9 @@ export function useProjectLaborBreakdown(start: string, end: string, filters?: {
       const expenses = expRes.data ?? [];
       const employees = empRes.data ?? [];
       const branches = branchRes.data ?? [];
+      const tags = tagsRes.data ?? [];
+      const tagMap = new Map<string, "in_house" | "site">();
+      tags.forEach((t: any) => tagMap.set(`${t.project_id}|${t.date}`, t.location));
 
       const empMap = new Map(employees.map((e) => [e.id, e]));
       const projectIds = new Set(projects.map((p) => p.id));
