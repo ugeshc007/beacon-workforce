@@ -27,7 +27,7 @@ export interface ScheduleReportData {
     workLocation: "in_house" | "site" | null;
     teamSize: number;
     teamNames: string[];
-    teamMembers: { name: string; skill: string }[];
+    teamMembers: { name: string; skill: string; workLocation: "in_house" | "site" | null }[];
     tasks: string[];
     tasksLogged: number;
     shiftStart: string | null;
