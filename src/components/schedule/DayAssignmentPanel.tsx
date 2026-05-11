@@ -11,6 +11,7 @@ import {
   useToggleLock,
   useUpdateAssignment,
   useReassignEmployee,
+  useSetAssignmentWorkLocation,
   type ScheduleAssignment,
 } from "@/hooks/useSchedule";
 import { useProjects } from "@/hooks/useProjects";
