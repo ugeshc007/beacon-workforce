@@ -187,10 +187,15 @@ export function useScheduleReport(start: string, end: string) {
       }
     });
 
+    const workLocs = workLocQ.data ?? [];
+    const workLocMap = new Map<string, "in_house" | "site">();
+    workLocs.forEach((w: any) => workLocMap.set(`${w.date}|${w.project_id}`, w.location));
+
     const dailyOverview = Array.from(dailyMap.entries()).map(([key, val]) => ({
       date: key.split("|")[0],
       project: val.project,
       location: val.location,
+      workLocation: workLocMap.get(key) ?? null,
       teamSize: val.teamSize,
       teamNames: val.teamNames,
       teamMembers: val.teamMembers,
