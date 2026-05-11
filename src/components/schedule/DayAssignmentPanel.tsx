@@ -15,6 +15,8 @@ import {
 } from "@/hooks/useSchedule";
 import { useProjects } from "@/hooks/useProjects";
 import { useDailyLogs, useCreateDailyLog, type DailyLogStatus } from "@/hooks/useDailyLogs";
+import { useDayWorkLocation, useSetDayWorkLocation, type WorkLocation } from "@/hooks/useDayWorkLocation";
+import { Building2, MapPin } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { DateInput } from "@/components/ui/date-input";
