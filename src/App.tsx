@@ -116,6 +116,7 @@ const App = () => (
             <Route path="/reports/absentee" element={<ModuleGuard module="reports"><AbsenteeReport /></ModuleGuard>} />
             <Route path="/reports/schedule" element={<ModuleGuard module="reports"><ScheduleReport /></ModuleGuard>} />
             <Route path="/reports/site-visits" element={<ModuleGuard module="reports"><SiteVisitsReport /></ModuleGuard>} />
+            <Route path="/help" element={<HelpCenter />} />
             <Route path="/settings" element={<ModuleGuard module="settings"><SettingsPage /></ModuleGuard>} />
           </Route>
           <Route path="*" element={<NotFound />} />
