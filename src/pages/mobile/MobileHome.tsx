@@ -290,8 +290,18 @@ export default function MobileHome() {
         </div>
       )}
 
-      {/* Project list — visible after punch in, before punch out, when projects exist */}
-      {step !== "idle" && step !== "punched_out" && !!todayProjects?.length && (
+      {/* DRIVER MODE — multi-leg trip workflow */}
+      {step !== "idle" && step !== "punched_out" && isDriverDay && (
+        <DriverWorkflowCard
+          todayProjects={todayProjects ?? []}
+          step={step}
+          disabled={step === "punched_out"}
+          onReturnToOffice={() => handleOfficeAction("start_return_travel")}
+        />
+      )}
+
+      {/* Project list — visible after punch in, before punch out, when projects exist (technician flow) */}
+      {step !== "idle" && step !== "punched_out" && !isDriverDay && !!todayProjects?.length && (
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Today's Projects</p>
