@@ -74,17 +74,15 @@ export function DayAssignmentPanel({
   const toggleLock = useToggleLock();
   const updateAssignment = useUpdateAssignment();
   const reassignEmployee = useReassignEmployee();
+  const setAssignmentLocation = useSetAssignmentWorkLocation();
   const { data: allProjects } = useProjects({ status: "all" });
   const activeProjects = (allProjects ?? []).filter((p) => ["on_hold", "in_progress"].includes(p.status) && p.id !== projectId);
   const { data: dailyLogs } = useDailyLogs(projectId);
   const currentProject = (allProjects ?? []).find(p => p.id === projectId);
-  const { data: workLocation } = useDayWorkLocation(projectId, date);
-  const setWorkLocation = useSetDayWorkLocation();
 
-  const handleSetLocation = async (loc: WorkLocation) => {
+  const handleSetAssignmentLocation = async (id: string, loc: WorkLocation) => {
     try {
-      await setWorkLocation.mutateAsync({ projectId, date, location: loc });
-      toast({ title: `Tagged as ${loc === "in_house" ? "In-House" : "Site"}` });
+      await setAssignmentLocation.mutateAsync({ id, work_location: loc });
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     }
