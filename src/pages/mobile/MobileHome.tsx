@@ -375,7 +375,7 @@ export default function MobileHome() {
       )}
 
       {/* Post-projects: return-to-office flow */}
-      {step !== "idle" && step !== "punched_out" && allProjectsDone && step !== "at_office" && (
+      {step !== "idle" && step !== "punched_out" && (allProjectsDone || (isDriverDay && step === "returning")) && step !== "at_office" && (
         <div className="flex flex-col gap-3">
           <Card className="p-4 border-green-500/30 bg-green-500/5">
             <p className="text-sm text-foreground font-medium">All projects done!</p>
