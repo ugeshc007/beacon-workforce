@@ -65,7 +65,7 @@ export function useScheduleReport(start: string, end: string) {
     queryFn: async () => {
       const { data } = await supabase
         .from("project_assignments")
-        .select("id, date, project_id, employee_id, shift_start, shift_end, employees(name, employee_code, skill_type), projects(name, site_address, required_technicians, required_helpers, required_supervisors, required_drivers, required_team_members)")
+        .select("id, date, project_id, employee_id, shift_start, shift_end, work_location, employees(name, employee_code, skill_type), projects(name, site_address, required_technicians, required_helpers, required_supervisors, required_drivers, required_team_members)")
         .gte("date", start)
         .lte("date", end)
         .order("date");
