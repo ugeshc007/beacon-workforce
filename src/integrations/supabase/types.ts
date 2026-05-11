@@ -1007,6 +1007,36 @@ export type Database = {
           },
         ]
       }
+      project_day_work_locations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          date: string
+          id: string
+          location: Database["public"]["Enums"]["work_location_type"]
+          project_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          date: string
+          id?: string
+          location: Database["public"]["Enums"]["work_location_type"]
+          project_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          id?: string
+          location?: Database["public"]["Enums"]["work_location_type"]
+          project_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       project_expenses: {
         Row: {
           added_by: string | null
@@ -2186,6 +2216,7 @@ export type Database = {
         | "team_member"
         | "driver"
       user_role: "admin" | "manager" | "team_leader"
+      work_location_type: "in_house" | "site"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2353,6 +2384,7 @@ export const Constants = {
         "driver",
       ],
       user_role: ["admin", "manager", "team_leader"],
+      work_location_type: ["in_house", "site"],
     },
   },
 } as const

@@ -24,6 +24,7 @@ export interface ScheduleReportData {
     date: string;
     project: string;
     location: string;
+    workLocation: "in_house" | "site" | null;
     teamSize: number;
     teamNames: string[];
     teamMembers: { name: string; skill: string }[];
@@ -91,6 +92,17 @@ export function useScheduleReport(start: string, end: string) {
         .from("employees")
         .select("id, name, employee_code, skill_type")
         .eq("is_active", true);
+      return data ?? [];
+    },
+  });
+
+  const workLocQ = useQuery({
+    queryKey: ["schedule-report-work-locations", start, end],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("project_day_work_locations")
+        .select("project_id, date, location")
+        .gte("date", start).lte("date", end);
       return data ?? [];
     },
   });
@@ -175,10 +187,15 @@ export function useScheduleReport(start: string, end: string) {
       }
     });
 
+    const workLocs = workLocQ.data ?? [];
+    const workLocMap = new Map<string, "in_house" | "site">();
+    workLocs.forEach((w: any) => workLocMap.set(`${w.date}|${w.project_id}`, w.location));
+
     const dailyOverview = Array.from(dailyMap.entries()).map(([key, val]) => ({
       date: key.split("|")[0],
       project: val.project,
       location: val.location,
+      workLocation: workLocMap.get(key) ?? null,
       teamSize: val.teamSize,
       teamNames: val.teamNames,
       teamMembers: val.teamMembers,
@@ -284,9 +301,9 @@ export function useScheduleReport(start: string, end: string) {
       projectCoverage,
       unscheduledDays: unscheduledDays.sort((a, b) => a.date.localeCompare(b.date)),
     };
-  }, [assignmentsQ.data, logsQ.data, employeesQ.data, start, end]);
+  }, [assignmentsQ.data, logsQ.data, employeesQ.data, workLocQ.data, start, end]);
 
-  return { data, isLoading: assignmentsQ.isLoading || logsQ.isLoading || employeesQ.isLoading };
+  return { data, isLoading: assignmentsQ.isLoading || logsQ.isLoading || employeesQ.isLoading || workLocQ.isLoading };
 }
 
 function calcShiftMinutes(start?: string | null, end?: string | null): number {

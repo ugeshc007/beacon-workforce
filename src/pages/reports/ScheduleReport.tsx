@@ -18,8 +18,8 @@ export default function ScheduleReport() {
   const handleCsv = (tab: string) => {
     if (!data) return;
     if (tab === "daily") {
-      downloadCsv("schedule-daily.csv", ["Date", "Time", "Project", "Tasks", "Staff (Skill - Name)", "Location"],
-        data.dailyOverview.map((r) => [r.date, r.shiftStart && r.shiftEnd ? `${r.shiftStart.slice(0,5)}–${r.shiftEnd.slice(0,5)}` : "—", r.project, r.tasks.join("; ") || "—", r.teamMembers.map(m => `${m.skill} - ${m.name}`).join("\n"), r.location]));
+      downloadCsv("schedule-daily.csv", ["Date", "Time", "Project", "Work", "Tasks", "Staff (Skill - Name)", "Location"],
+        data.dailyOverview.map((r) => [r.date, r.shiftStart && r.shiftEnd ? `${r.shiftStart.slice(0,5)}–${r.shiftEnd.slice(0,5)}` : "—", r.project, r.workLocation === "in_house" ? "In-House" : r.workLocation === "site" ? "Site" : "—", r.tasks.join("; ") || "—", r.teamMembers.map(m => `${m.skill} - ${m.name}`).join("\n"), r.location]));
     } else if (tab === "employee") {
       const available = data.employeeSummary.filter((r) => r.status !== "scheduled");
       downloadCsv("schedule-available-employees.csv", ["Employee", "Code", "Skill"],
@@ -48,8 +48,8 @@ export default function ScheduleReport() {
       tables: [
         {
           title: "Daily Schedule Overview",
-          headers: ["Date", "Time", "Project", "Tasks", "Staff (Skill - Name)", "Location"],
-          rows: data.dailyOverview.map((r) => [r.date, r.shiftStart && r.shiftEnd ? `${r.shiftStart.slice(0,5)}–${r.shiftEnd.slice(0,5)}` : "—", r.project, r.tasks.join("; ") || "—", r.teamMembers.map(m => `${m.skill} - ${m.name}`).join("\n"), r.location]),
+          headers: ["Date", "Time", "Project", "Work", "Tasks", "Staff (Skill - Name)", "Location"],
+          rows: data.dailyOverview.map((r) => [r.date, r.shiftStart && r.shiftEnd ? `${r.shiftStart.slice(0,5)}–${r.shiftEnd.slice(0,5)}` : "—", r.project, r.workLocation === "in_house" ? "In-House" : r.workLocation === "site" ? "Site" : "—", r.tasks.join("; ") || "—", r.teamMembers.map(m => `${m.skill} - ${m.name}`).join("\n"), r.location]),
         },
         {
           title: "Available Employees (Not Scheduled)",
@@ -122,6 +122,7 @@ export default function ScheduleReport() {
                         <th className="text-left p-3">Date</th>
                         <th className="text-left p-3">Time</th>
                         <th className="text-left p-3">Project</th>
+                        <th className="text-left p-3">Work</th>
                         <th className="text-left p-3">Tasks</th>
                         <th className="text-left p-3">Staff</th>
                         <th className="text-left p-3">Location</th>
@@ -137,6 +138,13 @@ export default function ScheduleReport() {
                               : <span className="text-muted-foreground">—</span>}
                           </td>
                           <td className="p-3 font-medium text-foreground">{r.project}</td>
+                          <td className="p-3">
+                            {r.workLocation ? (
+                              <Badge variant="outline" className="text-[10px]">
+                                {r.workLocation === "in_house" ? "In-House" : "Site"}
+                              </Badge>
+                            ) : <span className="text-xs text-muted-foreground">—</span>}
+                          </td>
                           <td className="p-3">
                             {r.tasks.length > 0 ? (
                               <div className="space-y-0.5">
@@ -163,7 +171,7 @@ export default function ScheduleReport() {
                         </tr>
                       ))}
                       {data.dailyOverview.length === 0 && (
-                        <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">No assignments found</td></tr>
+                        <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">No assignments found</td></tr>
                       )}
                     </tbody>
                   </table>
