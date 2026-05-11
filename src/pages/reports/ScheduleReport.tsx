@@ -171,7 +171,7 @@ export default function ScheduleReport() {
                         </tr>
                       ))}
                       {data.dailyOverview.length === 0 && (
-                        <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">No assignments found</td></tr>
+                        <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">No assignments found</td></tr>
                       )}
                     </tbody>
                   </table>
