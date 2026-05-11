@@ -148,6 +148,9 @@ export default function MobileHome() {
     (p) => p.sessionId && p.step !== "completed" && p.step !== "idle"
   );
 
+  // Driver mode — when ALL today assignments are driver role, swap in the driver workflow
+  const isDriverDay = !!todayProjects?.length && todayProjects.every((p) => p.assignedRole === "driver");
+
   return (
     <div className="flex flex-col gap-4 p-4 pb-24 safe-area-inset">
       {/* Greeting */}
