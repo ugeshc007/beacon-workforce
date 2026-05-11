@@ -151,7 +151,7 @@ export function useScheduleReport(start: string, end: string) {
           location: a.projects?.site_address ?? "—",
           teamSize: 1,
           teamNames: [empName],
-          teamMembers: [{ name: empName, skill: empSkill }],
+          teamMembers: [{ name: empName, skill: empSkill, workLocation: a.work_location ?? null }],
           tasks: taskDescs,
           tasksLogged: dayLogs.length,
           shiftStart: a.shift_start ?? null,
