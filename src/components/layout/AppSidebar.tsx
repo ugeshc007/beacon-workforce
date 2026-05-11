@@ -136,9 +136,22 @@ export function AppSidebar() {
         )}
       </SidebarContent>
 
-      {showSettings && (
-        <SidebarFooter className="p-2">
-          <SidebarMenu>
+      <SidebarFooter className="p-2">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={isActive("/help")}>
+              <NavLink
+                to="/help"
+                end
+                className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                activeClassName="bg-sidebar-accent text-brand font-medium"
+              >
+                <HelpCircle className="h-4 w-4 shrink-0" />
+                {!collapsed && <span>Help Center</span>}
+              </NavLink>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          {showSettings && (
             <SidebarMenuItem>
               <SidebarMenuButton asChild isActive={isActive("/settings")}>
                 <NavLink
@@ -152,9 +165,9 @@ export function AppSidebar() {
                 </NavLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarFooter>
-      )}
+          )}
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   );
 }
