@@ -295,7 +295,6 @@ export default function MobileHome() {
         <DriverWorkflowCard
           todayProjects={todayProjects ?? []}
           step={step}
-          disabled={step === "punched_out"}
           onReturnToOffice={() => handleOfficeAction("start_return_travel")}
         />
       )}
