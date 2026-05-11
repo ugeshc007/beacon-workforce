@@ -35,6 +35,7 @@ import AbsenteeReport from "./pages/reports/AbsenteeReport";
 import ScheduleReport from "./pages/reports/ScheduleReport";
 import SiteVisitsReport from "./pages/reports/SiteVisitsReport";
 import SettingsPage from "./pages/SettingsPage";
+import HelpCenter from "./pages/HelpCenter";
 import Maintenance from "./pages/Maintenance";
 import MaintenanceDetail from "./pages/MaintenanceDetail";
 import SiteVisits from "./pages/SiteVisits";
