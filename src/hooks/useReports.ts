@@ -1010,6 +1010,12 @@ export function useProjectLaborBreakdown(start: string, end: string, filters?: {
       const driverLegs = legsRes.data ?? [];
       const tagMap = new Map<string, "in_house" | "site">();
       tags.forEach((t: any) => tagMap.set(`${t.project_id}|${t.date}`, t.location));
+      const empTagMap = new Map<string, "in_house" | "site">();
+      (asgRes.data ?? []).forEach((a: any) => {
+        if (a.work_location) empTagMap.set(`${a.project_id}|${a.date}|${a.employee_id}`, a.work_location);
+      });
+      const resolveTag = (projectId: string, date: string, employeeId: string) =>
+        empTagMap.get(`${projectId}|${date}|${employeeId}`) ?? tagMap.get(`${projectId}|${date}`);
 
       const empMap = new Map(employees.map((e) => [e.id, e]));
       const projectIds = new Set(projects.map((p) => p.id));
