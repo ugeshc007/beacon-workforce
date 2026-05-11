@@ -162,6 +162,11 @@ export default function ScheduleReport() {
                                 <div key={j} className="flex items-center gap-1.5 whitespace-nowrap">
                                   <Badge variant="outline" className="text-[9px] font-medium px-1 py-0 capitalize shrink-0">{m.skill}</Badge>
                                   <span className="text-xs text-foreground">{m.name}</span>
+                                  {m.workLocation && (
+                                    <Badge variant="outline" className="text-[9px] px-1 py-0 shrink-0">
+                                      {m.workLocation === "in_house" ? "In-House" : "Site"}
+                                    </Badge>
+                                  )}
                                 </div>
                               ))}
                               {r.teamMembers.length === 0 && <span className="text-xs text-muted-foreground">—</span>}
