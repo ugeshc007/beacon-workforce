@@ -16,6 +16,7 @@ export interface ScheduleAssignment {
   employee_name: string;
   employee_skill: string;
   project_name: string;
+  work_location: "in_house" | "site" | null;
 }
 
 export interface MaintenanceScheduleItem {
