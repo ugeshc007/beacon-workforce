@@ -139,7 +139,7 @@ export function useScheduleReport(start: string, end: string) {
       if (existing) {
         existing.teamSize += 1;
         if (!existing.teamNames.includes(empName)) existing.teamNames.push(empName);
-        existing.teamMembers.push({ name: empName, skill: empSkill });
+        existing.teamMembers.push({ name: empName, skill: empSkill, workLocation: a.work_location ?? null });
         if (a.shift_start && (!existing.shiftStart || a.shift_start < existing.shiftStart)) existing.shiftStart = a.shift_start;
         if (a.shift_end && (!existing.shiftEnd || a.shift_end > existing.shiftEnd)) existing.shiftEnd = a.shift_end;
       } else {
