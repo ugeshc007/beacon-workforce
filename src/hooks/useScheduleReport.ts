@@ -128,7 +128,7 @@ export function useScheduleReport(start: string, end: string) {
       : 0;
 
     // Daily overview — merge assignments and daily logs
-    const dailyMap = new Map<string, { project: string; projectId: string; location: string; teamSize: number; teamNames: string[]; teamMembers: { name: string; skill: string }[]; tasks: string[]; tasksLogged: number; shiftStart: string | null; shiftEnd: string | null }>();
+    const dailyMap = new Map<string, { project: string; projectId: string; location: string; teamSize: number; teamNames: string[]; teamMembers: { name: string; skill: string; workLocation: "in_house" | "site" | null }[]; tasks: string[]; tasksLogged: number; shiftStart: string | null; shiftEnd: string | null }>();
     
     // First pass: build from assignments
     assignments.forEach((a) => {
