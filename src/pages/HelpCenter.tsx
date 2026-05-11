@@ -19,53 +19,70 @@ import {
   Smartphone,
   Shield,
   HelpCircle,
+  Bell,
+  FileText,
+  Map,
+  KeyRound,
+  Download,
+  Plane,
 } from "lucide-react";
 
+type Topic = { q: string; a: React.ReactNode };
 type Section = {
   id: string;
   title: string;
   icon: React.ElementType;
   summary: string;
-  topics: { q: string; a: React.ReactNode; tags?: string[] }[];
+  topics: Topic[];
 };
+
+const Path = ({ children }: { children: React.ReactNode }) => (
+  <span className="px-1.5 py-0.5 rounded bg-muted text-foreground text-xs font-medium">{children}</span>
+);
 
 const SECTIONS: Section[] = [
   {
     id: "getting-started",
     title: "Getting Started",
     icon: HelpCircle,
-    summary: "Login, navigation basics and roles.",
+    summary: "First steps, login, navigation, theme and roles.",
     topics: [
       {
-        q: "How do I log in?",
+        q: "How do I log in to the web portal?",
         a: (
           <p>
-            Open the portal URL and enter your email and password on the <b>Login</b> page. Forgot password? Use the
-            <b> Forgot Password</b> link to receive a reset email.
+            Open your portal URL → enter email + password on the <b>Login</b> page. If you forgot it, use{" "}
+            <Path>Forgot Password</Path> to receive a reset email, then open the link and set a new password
+            on the <b>Reset Password</b> screen.
           </p>
         ),
       },
       {
-        q: "What are the user roles?",
+        q: "What user roles exist?",
         a: (
           <ul className="list-disc pl-5 space-y-1">
-            <li><b>Admin</b> — full access to all modules and Settings.</li>
-            <li><b>Manager</b> — projects, schedule, attendance, reports (per permissions).</li>
-            <li><b>Employee</b> — limited web access (Dashboard, Projects, Schedule, Timesheets) and full Mobile app.</li>
+            <li><b>Admin</b> — full access including Settings & Permissions.</li>
+            <li><b>Manager</b> — modules per their permission grants.</li>
+            <li><b>Employee</b> — limited web access (Dashboard, Projects, Schedule, Timesheets) + full Mobile app.</li>
+            <li><b>Team Leader</b> — same as employee + the <b>Team</b> tab on the mobile app.</li>
           </ul>
         ),
       },
       {
-        q: "How do I change my password?",
-        a: (
-          <p>
-            Click your avatar in the top-right header → <b>Change Password</b>.
-          </p>
-        ),
+        q: "Switch light / dark mode",
+        a: <p>Top-right header → sun/moon icon. The dark theme is default.</p>,
       },
       {
-        q: "Light / Dark mode",
-        a: <p>Use the sun/moon icon in the top-right header to toggle the theme.</p>,
+        q: "Change password",
+        a: <p>Top-right header → user avatar → <Path>Change Password</Path>.</p>,
+      },
+      {
+        q: "Sign out",
+        a: <p>Top-right header → user avatar → <Path>Sign Out</Path>.</p>,
+      },
+      {
+        q: "Collapse the sidebar",
+        a: <p>Top-left of the header → menu / sidebar trigger icon.</p>,
       },
     ],
   },
@@ -73,20 +90,26 @@ const SECTIONS: Section[] = [
     id: "dashboard",
     title: "Dashboard",
     icon: LayoutDashboard,
-    summary: "Live overview of today's operations.",
+    summary: "Today's KPIs, alerts, travel map and morning briefing.",
     topics: [
       {
-        q: "What does the Dashboard show?",
+        q: "What's on the Dashboard?",
         a: (
-          <p>
-            KPIs for today: present/absent counts, ongoing projects, travel map of teams in transit, alerts
-            (missed punches, overtime), and the morning briefing.
-          </p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Headcount KPIs (present, absent, on leave, traveling).</li>
+            <li>Active project count and ongoing tasks.</li>
+            <li>Live travel map of teams currently moving.</li>
+            <li>Alert tiles: missed punch-in, missed punch-out, overtime, document expiries.</li>
+          </ul>
         ),
       },
       {
-        q: "Where is the Morning Briefing?",
-        a: <p>Top-right header → bell/megaphone icon. It auto-generates a daily summary you can share.</p>,
+        q: "Open the Morning Briefing",
+        a: <p>Top-right header → megaphone/briefing icon. Generates today's auto-summary.</p>,
+      },
+      {
+        q: "View notifications",
+        a: <p>Top-right header → bell icon opens the Notification Panel with unread alerts.</p>,
       },
     ],
   },
@@ -94,175 +117,53 @@ const SECTIONS: Section[] = [
     id: "projects",
     title: "Projects",
     icon: FolderKanban,
-    summary: "Create projects, assign teams, track costs.",
+    summary: "Create, plan, cost and report on projects.",
     topics: [
       {
-        q: "How do I create a project?",
+        q: "Create a project",
         a: (
           <p>
-            Go to <b>Projects → + New Project</b>. Fill name, client, location (pick on map), start/end dates,
-            estimated cost, and skills required. Save.
+            <Path>Projects</Path> → <Path>+ New Project</Path>. Fill name, client, location (drop pin on map),
+            start/end dates, estimated cost, required skills.
           </p>
         ),
       },
       {
-        q: "How do I import projects from CSV?",
-        a: <p>Projects page → <b>Import CSV</b> button. Download the sample template, fill rows, upload.</p>,
+        q: "Bulk import projects via CSV",
+        a: <p><Path>Projects</Path> → <Path>Import CSV</Path>. Download the sample, fill rows, upload.</p>,
       },
       {
-        q: "Where do I see project costs?",
+        q: "Project tabs (inside a project)",
+        a: (
+          <ul className="list-disc pl-5 space-y-1">
+            <li><b>Overview</b> — details, dates, client.</li>
+            <li><b>Team</b> — assigned members across the project lifespan.</li>
+            <li><b>Costs</b> — labor + expenses + invoices, profit margin.</li>
+            <li><b>Expenses</b> — per-day expense entries.</li>
+            <li><b>Daily Log</b> — supervisor notes & photos from mobile.</li>
+          </ul>
+        ),
+      },
+      {
+        q: "Add an expense / bulk expenses",
+        a: <p>Project → <Path>Expenses</Path> tab → <Path>Add</Path> or <Path>Bulk Expense</Path>.</p>,
+      },
+      {
+        q: "Add a purchase invoice",
+        a: <p>Project → <Path>Costs</Path> tab → <Path>Purchase Invoice</Path> → upload PDF + amount.</p>,
+      },
+      {
+        q: "Gantt chart of all projects",
+        a: <p><Path>Projects</Path> → <Path>Gantt</Path> button (top right).</p>,
+      },
+      {
+        q: "Project health indicator",
         a: (
           <p>
-            Open a project → <b>Costs</b> tab. Shows labor, expenses, purchase invoices and profit margin.
-            Use <b>Bulk Expense</b> or <b>Purchase Invoice</b> buttons to add costs.
+            Each project card shows a colored dot — green (on track), amber (at risk), red (over budget /
+            behind schedule). Computed from dates, budget burn and team availability.
           </p>
         ),
-      },
-      {
-        q: "Daily log per project",
-        a: <p>Project detail → <b>Daily Log</b> tab. Shows site supervisor entries and photos from the mobile app.</p>,
-      },
-      {
-        q: "Gantt view",
-        a: <p>Projects → <b>Gantt</b> button (top right) shows all projects on a timeline.</p>,
-      },
-    ],
-  },
-  {
-    id: "employees",
-    title: "Employees",
-    icon: Users,
-    summary: "Manage workforce, skills, leave and logins.",
-    topics: [
-      {
-        q: "How do I add an employee?",
-        a: (
-          <p>
-            <b>Employees → + New Employee</b>. Enter name, role, skills, hourly rate, document expiries (visa,
-            passport, license).
-          </p>
-        ),
-      },
-      {
-        q: "How do I create a mobile login for an employee?",
-        a: (
-          <p>
-            Open the employee row → <b>Create Login</b>. The system generates credentials for the BeBright
-            mobile app.
-          </p>
-        ),
-      },
-      {
-        q: "Marking leave",
-        a: <p>Employee row → <b>Mark Leave</b> → choose date range and leave type (annual, sick, unpaid).</p>,
-      },
-      {
-        q: "Bulk import",
-        a: <p>Employees page → <b>Import CSV</b>. Use the provided template.</p>,
-      },
-    ],
-  },
-  {
-    id: "schedule",
-    title: "Schedule",
-    icon: CalendarDays,
-    summary: "Plan who works on which project each day.",
-    topics: [
-      {
-        q: "How do I assign someone to a project?",
-        a: (
-          <p>
-            Open <b>Schedule</b>, pick the date, click the project row → the day panel opens on the right.
-            Pick employees from the list to add them.
-          </p>
-        ),
-      },
-      {
-        q: "In-House vs Site",
-        a: (
-          <p>
-            Each assigned employee has <Badge variant="secondary">In-House</Badge> /{" "}
-            <Badge variant="secondary">Site</Badge> toggles next to their name. Tag each person individually
-            so cost reports split correctly.
-          </p>
-        ),
-      },
-      {
-        q: "Auto-assign",
-        a: <p>Schedule page → <b>Auto-assign</b> uses skill match and availability to suggest a team.</p>,
-      },
-    ],
-  },
-  {
-    id: "attendance",
-    title: "Attendance & Travel",
-    icon: ClipboardCheck,
-    summary: "Punches, GPS, overrides.",
-    topics: [
-      {
-        q: "Where do I see today's punches?",
-        a: <p><b>Attendance</b> page lists every employee with punch-in / punch-out, hours, and status badge.</p>,
-      },
-      {
-        q: "Daily Team view",
-        a: <p><b>Attendance → Daily Team</b> shows a team-by-team matrix for the chosen date.</p>,
-      },
-      {
-        q: "Manual override (e.g. employee forgot to punch out)",
-        a: (
-          <p>
-            Click the employee row → <b>Override</b>. Set the correct in/out times. The system recalculates
-            hours and costs automatically.
-          </p>
-        ),
-      },
-      {
-        q: "Travel page",
-        a: <p><b>Travel</b> shows live GPS pings of teams traveling to/from sites (data from the mobile app).</p>,
-      },
-    ],
-  },
-  {
-    id: "driver-workflow",
-    title: "Driver Workflow",
-    icon: Car,
-    summary: "Multi-leg driver flow on the mobile app.",
-    topics: [
-      {
-        q: "How does a driver use the app?",
-        a: (
-          <ol className="list-decimal pl-5 space-y-1">
-            <li>Punch In at office.</li>
-            <li>Select pre-assigned project → <b>Start Travel</b>.</li>
-            <li>Arrive site → <b>Drop Off</b> / <b>Pickup</b> / <b>Wait</b> (waiting is paid).</li>
-            <li>End leg → start travel to next pre-assigned project.</li>
-            <li>Return to office → <b>Punch Out</b>.</li>
-          </ol>
-        ),
-      },
-      {
-        q: "How is driver cost split across projects?",
-        a: <p>Time on each leg is allocated to that project. Reports automatically show the split per project.</p>,
-      },
-      {
-        q: "Driver who also works as technician",
-        a: <p>Assign them as a technician in the schedule — they then follow the standard technician flow.</p>,
-      },
-    ],
-  },
-  {
-    id: "timesheets",
-    title: "Timesheets",
-    icon: Clock,
-    summary: "Approve hours and overtime.",
-    topics: [
-      {
-        q: "How do I approve a timesheet?",
-        a: <p>Open <b>Timesheets</b>, filter by week, click an entry → <b>Approve</b> or <b>Reject</b>.</p>,
-      },
-      {
-        q: "Overtime rules",
-        a: <p>Anything beyond the standard daily hours configured in <b>Settings</b> is flagged purple as overtime.</p>,
       },
     ],
   },
@@ -270,15 +171,19 @@ const SECTIONS: Section[] = [
     id: "maintenance",
     title: "Maintenance",
     icon: Wrench,
-    summary: "Track warranty jobs and assignments.",
+    summary: "Warranty / SLA jobs after installation.",
     topics: [
       {
         q: "Create a maintenance job",
-        a: <p><b>Maintenance → + New</b>. Link to original project, set warranty/SLA, assign a team.</p>,
+        a: <p><Path>Maintenance</Path> → <Path>+ New</Path>. Link to original project, set warranty period, SLA, priority, assign team.</p>,
       },
       {
-        q: "Warranty alerts",
-        a: <p>The system pushes alerts before warranty expiry. View them on the Dashboard and Notifications panel.</p>,
+        q: "Assign a team to a maintenance job",
+        a: <p>Open the job → <Path>Assign</Path> → pick employees and date.</p>,
+      },
+      {
+        q: "Warranty expiry alerts",
+        a: <p>Auto-pushed via the daily <b>check-warranty</b> job. Visible on Dashboard alert tiles and in Notifications.</p>,
       },
     ],
   },
@@ -286,15 +191,227 @@ const SECTIONS: Section[] = [
     id: "site-visits",
     title: "Site Visits",
     icon: ClipboardList,
-    summary: "Pre-sales / survey visits.",
+    summary: "Pre-sales / survey visits with photo reports.",
     topics: [
       {
         q: "Schedule a site visit",
-        a: <p><b>Site Visits → + New Visit</b>. Set client, address, date and assigned surveyor.</p>,
+        a: <p><Path>Site Visits</Path> → <Path>+ New Visit</Path>. Set client, address (pin on map), date, surveyor.</p>,
       },
       {
-        q: "Survey report",
-        a: <p>Open the visit → <b>Report</b> section shows photos, notes and findings captured on the mobile app.</p>,
+        q: "View the survey report",
+        a: <p>Open the visit → <b>Report</b> section shows photos, notes, measurements captured by the mobile surveyor.</p>,
+      },
+      {
+        q: "Site visit workflow on mobile",
+        a: (
+          <ol className="list-decimal pl-5 space-y-1">
+            <li>Start Travel → Arrive Site.</li>
+            <li>Start Survey → take photos & notes.</li>
+            <li>Take breaks if needed.</li>
+            <li>End Visit → Start Return Travel → Arrive Office.</li>
+          </ol>
+        ),
+      },
+    ],
+  },
+  {
+    id: "employees",
+    title: "Employees",
+    icon: Users,
+    summary: "Workforce master data, skills, leave, mobile logins.",
+    topics: [
+      {
+        q: "Add an employee",
+        a: <p><Path>Employees</Path> → <Path>+ New Employee</Path>. Name, role, skills, hourly rate, document expiries.</p>,
+      },
+      {
+        q: "Bulk import employees",
+        a: <p><Path>Employees</Path> → <Path>Import CSV</Path>. Use the sample template.</p>,
+      },
+      {
+        q: "Create a mobile app login",
+        a: <p>Employee row → <Path>Create Login</Path>. System generates email + password and emails it.</p>,
+      },
+      {
+        q: "Reset an employee's password",
+        a: <p>Employee row → three-dot menu → <Path>Reset Password</Path>.</p>,
+      },
+      {
+        q: "Mark leave",
+        a: <p>Employee row → <Path>Mark Leave</Path>. Choose dates and type (annual, sick, unpaid, public holiday).</p>,
+      },
+      {
+        q: "Document expiry tracking",
+        a: <p>Visa, passport, license, medical expiries appear on the employee detail drawer and as Dashboard alerts before expiry.</p>,
+      },
+      {
+        q: "Custom skills",
+        a: <p>Manage in <Path>Settings → Skill Roles</Path>. Then assign per employee.</p>,
+      },
+    ],
+  },
+  {
+    id: "schedule",
+    title: "Schedule",
+    icon: CalendarDays,
+    summary: "Daily planning of who works on which project.",
+    topics: [
+      {
+        q: "Assign employees to a project for a date",
+        a: (
+          <p>
+            <Path>Schedule</Path> → pick the date → click the project row. The Day Assignment Panel opens
+            on the right → tick employees from the available list to assign them.
+          </p>
+        ),
+      },
+      {
+        q: "In-House vs Site tagging (per employee)",
+        a: (
+          <p>
+            Each assigned employee row has individual{" "}
+            <Badge variant="secondary">In-House</Badge> and <Badge variant="secondary">Site</Badge>{" "}
+            toggles. Tag every person — cost & schedule reports split by this tag.
+          </p>
+        ),
+      },
+      {
+        q: "Auto-assign team",
+        a: <p>Schedule page → <Path>Auto-assign</Path>. Suggests a team based on required skills + availability.</p>,
+      },
+      {
+        q: "Why is an employee unavailable?",
+        a: <p>The list greys out anyone on leave, off-day, or already assigned to another project that day.</p>,
+      },
+      {
+        q: "Notify assigned employees",
+        a: <p>Notifications are sent automatically (push + in-app) when you save the assignment. No action needed.</p>,
+      },
+      {
+        q: "Schedule task summary",
+        a: <p>The top of the Schedule page shows total assigned vs unassigned per day for quick gaps.</p>,
+      },
+    ],
+  },
+  {
+    id: "attendance",
+    title: "Attendance",
+    icon: ClipboardCheck,
+    summary: "Punches, hours, GPS validation, overrides.",
+    topics: [
+      {
+        q: "Today's attendance list",
+        a: <p><Path>Attendance</Path> page lists every employee with punch-in, punch-out, hours, status badge.</p>,
+      },
+      {
+        q: "Status colors",
+        a: (
+          <ul className="list-disc pl-5 space-y-1">
+            <li><Badge className="bg-green-500/20 text-green-500">Present</Badge> — punched in.</li>
+            <li><Badge className="bg-amber-500/20 text-amber-500">Traveling</Badge> — on the road.</li>
+            <li><Badge className="bg-red-500/20 text-red-500">Absent</Badge> — scheduled but no punch-in.</li>
+            <li><Badge className="bg-blue-500/20 text-blue-500">Planned</Badge> — scheduled, day not yet started.</li>
+            <li><Badge className="bg-purple-500/20 text-purple-500">Overtime</Badge> — past standard hours.</li>
+          </ul>
+        ),
+      },
+      {
+        q: "View employee timeline (every event of the day)",
+        a: <p>Click the employee row → drawer opens with full timeline (punch-in, travel, breaks, work, punch-out) and GPS map.</p>,
+      },
+      {
+        q: "Manual override (forgot to punch out, wrong time)",
+        a: (
+          <p>
+            Click employee row → <Path>Override</Path> → set correct in/out times and reason. Costs auto
+            recalculate.
+          </p>
+        ),
+      },
+      {
+        q: "Daily Team view",
+        a: <p><Path>Attendance → Daily Team</Path> — team-by-team grid for the chosen date.</p>,
+      },
+      {
+        q: "Missed punch alerts",
+        a: <p>Edge cron jobs check throughout the day; alerts appear on Dashboard + Notifications + push.</p>,
+      },
+    ],
+  },
+  {
+    id: "travel",
+    title: "Travel",
+    icon: Car,
+    summary: "Live GPS tracking of teams in transit.",
+    topics: [
+      {
+        q: "What does the Travel page show?",
+        a: <p>Live map with markers for every team currently traveling, last GPS ping time, destination project.</p>,
+      },
+      {
+        q: "Where does GPS data come from?",
+        a: <p>Only from the BeBright Android app — the web portal never collects GPS itself.</p>,
+      },
+      {
+        q: "GPS validation for office punch",
+        a: <p>If the punch happens outside the office radius defined in <Path>Settings</Path>, it's flagged for review.</p>,
+      },
+    ],
+  },
+  {
+    id: "driver-workflow",
+    title: "Driver Workflow",
+    icon: Plane,
+    summary: "Multi-leg flow for drivers (drop-off / pickup / wait).",
+    topics: [
+      {
+        q: "Driver daily flow",
+        a: (
+          <ol className="list-decimal pl-5 space-y-1">
+            <li><b>Punch In</b> at office.</li>
+            <li>Select pre-assigned project → <b>Start Travel</b>.</li>
+            <li>Arrive site → choose <b>Drop Off</b>, <b>Pickup</b>, or <b>Wait</b> (waiting is paid).</li>
+            <li>End leg → start travel to next pre-assigned project.</li>
+            <li>Repeat for each scheduled project.</li>
+            <li>Return to office → <b>Punch Out</b>.</li>
+          </ol>
+        ),
+      },
+      {
+        q: "How are driver costs split per project?",
+        a: <p>The time the driver spent on each leg (travel + wait + drop) is allocated to that project. Cost reports show the split automatically.</p>,
+      },
+      {
+        q: "Driver who is also a technician for a job",
+        a: <p>Assign them as a technician in <Path>Schedule</Path> for that day — they then follow the standard technician flow instead.</p>,
+      },
+      {
+        q: "Pre-assigning multiple projects for a driver",
+        a: <p>In <Path>Schedule</Path>, add the driver to every project they need to visit that day. The mobile app shows them in order.</p>,
+      },
+    ],
+  },
+  {
+    id: "timesheets",
+    title: "Timesheets",
+    icon: Clock,
+    summary: "Approve hours and overtime for payroll.",
+    topics: [
+      {
+        q: "Approve a timesheet",
+        a: <p><Path>Timesheets</Path> → filter by week → click row → <Path>Approve</Path> or <Path>Reject</Path>.</p>,
+      },
+      {
+        q: "Bulk approve",
+        a: <p>Use the checkbox column → tick rows → <Path>Approve Selected</Path> at the top.</p>,
+      },
+      {
+        q: "Overtime calculation",
+        a: <p>Hours beyond the daily standard configured in <Path>Settings</Path> are marked purple as OT.</p>,
+      },
+      {
+        q: "Edit a timesheet entry",
+        a: <p>Click the entry → opens detail drawer. If the punches are wrong, fix via <Path>Attendance → Override</Path> (timesheet refreshes).</p>,
       },
     ],
   },
@@ -302,68 +419,119 @@ const SECTIONS: Section[] = [
     id: "reports",
     title: "Reports",
     icon: BarChart3,
-    summary: "Schedule, attendance, costs, profitability and more.",
+    summary: "All operational and financial reports.",
     topics: [
       {
-        q: "Where do I find each report?",
+        q: "List of available reports",
         a: (
           <ul className="list-disc pl-5 space-y-1">
-            <li><b>Schedule Report</b> — daily team breakdown with In-House/Site tags.</li>
-            <li><b>Cost Report</b> — labor + expenses per project.</li>
-            <li><b>Utilization</b> — % of time each employee was billable.</li>
-            <li><b>Overtime</b> — OT hours by employee/period.</li>
-            <li><b>Manpower</b> — headcount per project per day.</li>
-            <li><b>Absentee</b> — who missed work and why.</li>
+            <li><b>Schedule</b> — daily team breakdown with In-House/Site tags.</li>
+            <li><b>Utilization</b> — % billable per employee per period.</li>
+            <li><b>Cost Reports</b> — labor + expenses per project.</li>
+            <li><b>Profitability</b> — revenue vs total cost per project.</li>
             <li><b>Executive</b> — top-level KPIs for management.</li>
-            <li><b>Profitability</b> — revenue vs cost per project.</li>
-            <li><b>Site Visits</b> — survey activity report.</li>
+            <li><b>Attendance</b> — punches per employee/day.</li>
+            <li><b>Overtime</b> — OT hours.</li>
+            <li><b>Manpower</b> — headcount per project per day.</li>
+            <li><b>Absentee</b> — who missed work, with reasons.</li>
+            <li><b>Site Visits</b> — survey activity.</li>
           </ul>
         ),
       },
       {
-        q: "Export to PDF / CSV",
-        a: <p>Every report has <b>Export PDF</b> and <b>Export CSV</b> buttons in its top-right corner.</p>,
+        q: "Date filter",
+        a: <p>Every report has a date range filter at the top — preset (Today, Week, Month) or custom.</p>,
       },
       {
-        q: "Why are some costs AED 0?",
+        q: "Export to PDF / CSV",
+        a: <p>Top-right of every report: <Path>Export PDF</Path> and <Path>Export CSV</Path> buttons.</p>,
+      },
+      {
+        q: "Why are some costs showing AED 0?",
         a: (
           <p>
-            Costs are computed from punch-in to punch-out × hourly rate. If an employee never punched out, or
-            the hourly rate is missing, the value will be 0. Fix via <b>Attendance → Override</b> and ensure
-            the employee profile has a rate.
+            Cost = (punch-out − punch-in) × hourly rate. Returns 0 if the employee never punched out, or
+            their hourly rate is missing. Fix via <Path>Attendance → Override</Path> and ensure the
+            employee profile has an <b>Hourly Rate</b>.
           </p>
         ),
+      },
+      {
+        q: "Cost split by In-House vs Site",
+        a: <p>Cost Report uses each assignment's individual location tag (set in Schedule). Make sure every employee row is tagged.</p>,
+      },
+    ],
+  },
+  {
+    id: "notifications",
+    title: "Notifications",
+    icon: Bell,
+    summary: "In-app alerts and push notifications.",
+    topics: [
+      {
+        q: "Where do notifications appear?",
+        a: <p>Bell icon in the top-right header. Unread count shows as a red dot.</p>,
+      },
+      {
+        q: "What triggers a notification?",
+        a: (
+          <ul className="list-disc pl-5 space-y-1">
+            <li>New schedule assignment (sent to mobile).</li>
+            <li>Missed punch-in / punch-out.</li>
+            <li>Overtime threshold reached.</li>
+            <li>Document expiry approaching.</li>
+            <li>Daily log submitted.</li>
+            <li>Warranty / SLA expiring.</li>
+          </ul>
+        ),
+      },
+      {
+        q: "Push notifications to phone",
+        a: <p>Sent via the mobile app — employee must be logged in on Android.</p>,
       },
     ],
   },
   {
     id: "mobile-app",
-    title: "Mobile App",
+    title: "Mobile App (Android)",
     icon: Smartphone,
-    summary: "What field staff see on Android.",
+    summary: "Field staff workflow.",
     topics: [
       {
-        q: "Logging in to the mobile app",
-        a: <p>Use the credentials generated by your admin via <b>Employees → Create Login</b>.</p>,
+        q: "Where do field staff get the app?",
+        a: <p>Install the BeBright Planner Android APK provided by your admin. Login with credentials issued via <Path>Employees → Create Login</Path>.</p>,
       },
       {
-        q: "Daily flow (technician)",
+        q: "Standard technician flow",
         a: (
           <ol className="list-decimal pl-5 space-y-1">
-            <li>Punch In at office.</li>
-            <li>Travel → Arrive Site → Start Work.</li>
-            <li>Take breaks as needed.</li>
-            <li>End Work → Return Travel → Arrive Office → Punch Out.</li>
+            <li><b>Punch In</b> at office.</li>
+            <li>Select project → <b>Start Travel</b>.</li>
+            <li>Arrive site → <b>Start Work</b>.</li>
+            <li>Take breaks → Resume.</li>
+            <li><b>End Work</b> → <b>Start Return Travel</b> → <b>Arrive Office</b> → <b>Punch Out</b>.</li>
           </ol>
         ),
       },
       {
-        q: "Daily Log & Photos",
-        a: <p>From the project screen tap <b>Daily Log</b> to add notes and photos for the supervisor.</p>,
+        q: "Submit daily log + photos",
+        a: <p>Project screen → <Path>Daily Log</Path> → add notes & photos. Visible in the web portal under the project's Daily Log tab.</p>,
       },
       {
-        q: "Team Leader view",
-        a: <p>Team leaders see an extra <b>Team</b> tab to view and assist their crew's status.</p>,
+        q: "Team Leader features",
+        a: <p>Team Leaders see an extra <b>Team</b> tab to monitor and assist their crew's punches.</p>,
+      },
+      {
+        q: "Offline mode",
+        a: <p>Punches and daily logs queue locally and sync once back online.</p>,
+      },
+      {
+        q: "Biometric login",
+        a: <p>After first password login, enable fingerprint/face from the mobile profile screen.</p>,
+      },
+      {
+        q: "Notifications on phone",
+        a: <p>Tap the bell on the bottom nav. Push alerts also appear in the OS notification tray.</p>,
       },
     ],
   },
@@ -371,39 +539,135 @@ const SECTIONS: Section[] = [
     id: "settings",
     title: "Settings",
     icon: Settings,
-    summary: "Company config, holidays, skills, permissions.",
+    summary: "Company config, roles, holidays, locations, permissions.",
     topics: [
       {
-        q: "Where do I add public holidays?",
-        a: <p><b>Settings → Public Holidays</b>. Add date, name, and whether it's a paid holiday.</p>,
+        q: "Public holidays",
+        a: <p><Path>Settings → Public Holidays</Path>. Add date, name, and whether it's paid. Affects timesheet & overtime calc.</p>,
       },
       {
-        q: "Custom skill roles",
-        a: <p><b>Settings → Skill Roles</b>. Add roles like LED Tech, Driver, Rigger.</p>,
-      },
-      {
-        q: "Module permissions",
-        a: <p>Settings → Permissions. Toggle view/edit per module per role.</p>,
+        q: "Skill roles",
+        a: <p><Path>Settings → Skill Roles</Path>. Add roles like LED Tech, Driver, Rigger.</p>,
       },
       {
         q: "Office location for GPS validation",
-        a: <p>Settings → Office Location → drop a pin on the map. Punches outside the radius are flagged.</p>,
+        a: <p><Path>Settings → Office Location</Path>. Drop a pin and set radius (meters). Punches outside the radius are flagged.</p>,
+      },
+      {
+        q: "Module permissions per role",
+        a: <p><Path>Settings → Permissions</Path>. Toggle view / edit per module per role.</p>,
+      },
+      {
+        q: "Working hours & overtime threshold",
+        a: <p><Path>Settings → Company</Path>. Set standard daily hours; anything beyond becomes OT.</p>,
+      },
+      {
+        q: "Currency & date format",
+        a: <p>Defaults: AED, 24-hour time, DD/MM/YYYY. Change in <Path>Settings → Company</Path>.</p>,
+      },
+    ],
+  },
+  {
+    id: "exports",
+    title: "Exports & Imports",
+    icon: Download,
+    summary: "CSV / PDF in and out of the system.",
+    topics: [
+      {
+        q: "Export reports",
+        a: <p>Every report → <Path>Export PDF</Path> / <Path>Export CSV</Path> top-right.</p>,
+      },
+      {
+        q: "Import employees / projects",
+        a: <p>Each list page has an <Path>Import CSV</Path> button with a downloadable template.</p>,
+      },
+      {
+        q: "Backup",
+        a: <p>All data is stored on Lovable Cloud and backed up automatically. Exports are available on demand from each report.</p>,
       },
     ],
   },
   {
     id: "security",
-    title: "Security & Data",
+    title: "Security & Privacy",
     icon: Shield,
-    summary: "How your data is protected.",
+    summary: "Access control and data handling.",
     topics: [
       {
         q: "Who can see what?",
-        a: <p>Row-level security ensures employees only see their own data; managers see their teams; admins see everything.</p>,
+        a: <p>Row-level security: employees see only their own data; managers see their teams; admins see everything.</p>,
       },
       {
-        q: "GPS data",
-        a: <p>The web portal only displays GPS captured by the mobile app — the portal itself does not collect location.</p>,
+        q: "Authentication",
+        a: <p>Email + password with hashed storage. Mobile supports biometric unlock after first login.</p>,
+      },
+      {
+        q: "GPS privacy",
+        a: <p>The web portal never collects GPS — it only displays data captured by the mobile app for active work events.</p>,
+      },
+      {
+        q: "Audit trail",
+        a: <p>Manual overrides record who edited a punch and when. Visible on the employee timeline drawer.</p>,
+      },
+    ],
+  },
+  {
+    id: "troubleshooting",
+    title: "Troubleshooting",
+    icon: KeyRound,
+    summary: "Common issues and fixes.",
+    topics: [
+      {
+        q: "Employee can't log in to mobile",
+        a: <p>Reset their password via <Path>Employees → … → Reset Password</Path>. Make sure they have a login created.</p>,
+      },
+      {
+        q: "Hours showing dashes (—)",
+        a: <p>Means there's no punch-out for that day. Use <Path>Attendance → Override</Path> to set the missing time.</p>,
+      },
+      {
+        q: "Costs are AED 0",
+        a: <p>Either the employee never punched out, or their hourly rate is empty. Fix the rate in their profile and override the punch.</p>,
+      },
+      {
+        q: "Schedule assignment was slow",
+        a: <p>Notifications are now sent in the background, so the UI shouldn't wait. If it still feels slow, refresh the page and try again.</p>,
+      },
+      {
+        q: "Push notifications not arriving",
+        a: <p>Check the employee is logged in on the mobile app, and that Android battery optimization isn't killing the app in the background.</p>,
+      },
+      {
+        q: "GPS pin is wrong on map",
+        a: <p>Ask the employee to enable high-accuracy GPS on their phone. Indoor punches can be off by 50–100m.</p>,
+      },
+    ],
+  },
+  {
+    id: "glossary",
+    title: "Glossary",
+    icon: FileText,
+    summary: "Key terms used in the app.",
+    topics: [
+      {
+        q: "Assignment",
+        a: <p>A single (employee, project, date) record placing someone on a project for one day.</p>,
+      },
+      {
+        q: "Leg",
+        a: <p>One travel segment for a driver — e.g. office → site A is one leg, site A → site B is the next leg.</p>,
+      },
+      {
+        q: "In-House vs Site",
+        a: <p>Where the work was performed: at the workshop (In-House) or at the client/installation site (Site). Drives cost split.</p>,
+      },
+      {
+        q: "Overtime (OT)",
+        a: <p>Hours beyond the configured standard daily hours. Counted toward payroll separately.</p>,
+      },
+      {
+        q: "Daily Log",
+        a: <p>Free-text + photo entry submitted from the mobile app per project per day.</p>,
       },
     ],
   },
@@ -434,14 +698,15 @@ export default function HelpCenter() {
           Help Center
         </h1>
         <p className="text-sm text-muted-foreground">
-          Complete guide to BeBright Planner — find any feature, learn how it works and where to click.
+          Complete guide to BeBright Planner. Search any feature or browse by module to learn how it works
+          and exactly where to click.
         </p>
       </div>
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Search help (e.g. 'punch out', 'cost report', 'create employee')"
+          placeholder="Search help (e.g. 'punch out', 'cost report', 'driver', 'create login')"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="pl-9 h-11"
@@ -476,6 +741,9 @@ export default function HelpCenter() {
               <CardTitle className="flex items-center gap-2 text-base">
                 <s.icon className="h-5 w-5 text-brand" />
                 {s.title}
+                <Badge variant="outline" className="ml-2 text-xs font-normal">
+                  {s.topics.length} topic{s.topics.length === 1 ? "" : "s"}
+                </Badge>
               </CardTitle>
               <p className="text-xs text-muted-foreground">{s.summary}</p>
             </CardHeader>
@@ -484,7 +752,7 @@ export default function HelpCenter() {
                 {s.topics.map((t, i) => (
                   <AccordionItem key={i} value={`${s.id}-${i}`}>
                     <AccordionTrigger className="text-left text-sm">{t.q}</AccordionTrigger>
-                    <AccordionContent className="text-sm text-muted-foreground space-y-2">
+                    <AccordionContent className="text-sm text-muted-foreground space-y-2 leading-relaxed">
                       {t.a}
                     </AccordionContent>
                   </AccordionItem>
@@ -496,7 +764,7 @@ export default function HelpCenter() {
       </div>
 
       <div className="text-center text-xs text-muted-foreground pt-4 border-t border-border">
-        Need more help? Contact your system administrator.
+        Can't find what you need? Contact your system administrator.
       </div>
     </div>
   );
