@@ -520,6 +520,37 @@ export function DayAssignmentPanel({
                 <Badge variant="outline" className={`text-[10px] ${skillColors[a.assigned_role] ?? ""}`}>
                   {a.assigned_role}
                 </Badge>
+                {!readOnly ? (
+                  <div className="flex items-center gap-0.5">
+                    <Button
+                      size="sm"
+                      variant={a.work_location === "in_house" ? "default" : "outline"}
+                      className="h-6 px-1.5 gap-1 text-[10px]"
+                      title="Tag as In-House"
+                      onClick={() => handleSetAssignmentLocation(a.id, "in_house")}
+                      disabled={setAssignmentLocation.isPending}
+                    >
+                      <Building2 className="h-3 w-3" /> In-House
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={a.work_location === "site" ? "default" : "outline"}
+                      className="h-6 px-1.5 gap-1 text-[10px]"
+                      title="Tag as Site"
+                      onClick={() => handleSetAssignmentLocation(a.id, "site")}
+                      disabled={setAssignmentLocation.isPending}
+                    >
+                      <MapPin className="h-3 w-3" /> Site
+                    </Button>
+                    {!a.work_location && (
+                      <AlertTriangle className="h-3 w-3 text-amber-400" aria-label="Tag required" />
+                    )}
+                  </div>
+                ) : a.work_location ? (
+                  <Badge variant="outline" className="h-5 px-1.5 text-[10px]">
+                    {a.work_location === "in_house" ? <><Building2 className="h-2.5 w-2.5 mr-1" /> In-House</> : <><MapPin className="h-2.5 w-2.5 mr-1" /> Site</>}
+                  </Badge>
+                ) : null}
                 {a.assignment_mode !== "manual" && (
                   <Badge variant="secondary" className="text-[10px]">{a.assignment_mode}</Badge>
                 )}
