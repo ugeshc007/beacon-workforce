@@ -440,6 +440,81 @@ export type Database = {
           },
         ]
       }
+      driver_trip_legs: {
+        Row: {
+          attendance_log_id: string | null
+          created_at: string
+          date: string
+          driver_id: string
+          id: string
+          leg_end_lat: number | null
+          leg_end_lng: number | null
+          leg_end_time: string | null
+          leg_number: number
+          leg_type: Database["public"]["Enums"]["driver_leg_type"] | null
+          notes: string | null
+          project_id: string
+          site_arrival_lat: number | null
+          site_arrival_lng: number | null
+          site_arrival_time: string | null
+          status: Database["public"]["Enums"]["driver_leg_status"]
+          total_onsite_minutes: number | null
+          total_travel_minutes: number | null
+          travel_start_lat: number | null
+          travel_start_lng: number | null
+          travel_start_time: string | null
+          updated_at: string
+        }
+        Insert: {
+          attendance_log_id?: string | null
+          created_at?: string
+          date: string
+          driver_id: string
+          id?: string
+          leg_end_lat?: number | null
+          leg_end_lng?: number | null
+          leg_end_time?: string | null
+          leg_number?: number
+          leg_type?: Database["public"]["Enums"]["driver_leg_type"] | null
+          notes?: string | null
+          project_id: string
+          site_arrival_lat?: number | null
+          site_arrival_lng?: number | null
+          site_arrival_time?: string | null
+          status?: Database["public"]["Enums"]["driver_leg_status"]
+          total_onsite_minutes?: number | null
+          total_travel_minutes?: number | null
+          travel_start_lat?: number | null
+          travel_start_lng?: number | null
+          travel_start_time?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attendance_log_id?: string | null
+          created_at?: string
+          date?: string
+          driver_id?: string
+          id?: string
+          leg_end_lat?: number | null
+          leg_end_lng?: number | null
+          leg_end_time?: string | null
+          leg_number?: number
+          leg_type?: Database["public"]["Enums"]["driver_leg_type"] | null
+          notes?: string | null
+          project_id?: string
+          site_arrival_lat?: number | null
+          site_arrival_lng?: number | null
+          site_arrival_time?: string | null
+          status?: Database["public"]["Enums"]["driver_leg_status"]
+          total_onsite_minutes?: number | null
+          total_travel_minutes?: number | null
+          travel_start_lat?: number | null
+          travel_start_lng?: number | null
+          travel_start_time?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       employee_leave: {
         Row: {
           approved_by: string | null
@@ -2181,6 +2256,8 @@ export type Database = {
     }
     Enums: {
       assignment_mode: "manual" | "auto" | "hybrid"
+      driver_leg_status: "traveling" | "on_site" | "completed"
+      driver_leg_type: "drop_off" | "pick_up" | "wait"
       expense_category:
         | "labor"
         | "overtime"
@@ -2345,6 +2422,8 @@ export const Constants = {
   public: {
     Enums: {
       assignment_mode: ["manual", "auto", "hybrid"],
+      driver_leg_status: ["traveling", "on_site", "completed"],
+      driver_leg_type: ["drop_off", "pick_up", "wait"],
       expense_category: [
         "labor",
         "overtime",
