@@ -122,6 +122,7 @@ export default function ScheduleReport() {
                         <th className="text-left p-3">Date</th>
                         <th className="text-left p-3">Time</th>
                         <th className="text-left p-3">Project</th>
+                        <th className="text-left p-3">Work</th>
                         <th className="text-left p-3">Tasks</th>
                         <th className="text-left p-3">Staff</th>
                         <th className="text-left p-3">Location</th>
@@ -137,6 +138,13 @@ export default function ScheduleReport() {
                               : <span className="text-muted-foreground">—</span>}
                           </td>
                           <td className="p-3 font-medium text-foreground">{r.project}</td>
+                          <td className="p-3">
+                            {r.workLocation ? (
+                              <Badge variant="outline" className="text-[10px]">
+                                {r.workLocation === "in_house" ? "In-House" : "Site"}
+                              </Badge>
+                            ) : <span className="text-xs text-muted-foreground">—</span>}
+                          </td>
                           <td className="p-3">
                             {r.tasks.length > 0 ? (
                               <div className="space-y-0.5">
