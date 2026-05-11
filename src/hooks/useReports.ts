@@ -972,7 +972,7 @@ export function useProjectLaborBreakdown(start: string, end: string, filters?: {
         projQuery = projQuery.eq("branch_id", filters.branchId);
       }
 
-      const [projRes, logsRes, sessRes, expRes, empRes, branchRes, tagsRes, legsRes] = await Promise.all([
+      const [projRes, logsRes, sessRes, expRes, empRes, branchRes, tagsRes, legsRes, asgRes] = await Promise.all([
         projQuery,
         supabase.from("attendance_logs")
           .select("employee_id, project_id, date, regular_cost, overtime_cost, overtime_minutes, office_punch_in, office_punch_out, travel_start_time, site_arrival_time, work_start_time, work_end_time, return_travel_start_time, office_arrival_time")
@@ -994,6 +994,10 @@ export function useProjectLaborBreakdown(start: string, end: string, filters?: {
           .select("driver_id, project_id, date, total_travel_minutes, total_onsite_minutes, status")
           .gte("date", start).lte("date", end)
           .eq("status", "completed"),
+        supabase.from("project_assignments")
+          .select("project_id, employee_id, date, work_location")
+          .gte("date", start).lte("date", end)
+          .not("work_location", "is", null),
       ]);
 
       const projects = projRes.data ?? [];
