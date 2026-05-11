@@ -96,6 +96,17 @@ export function useScheduleReport(start: string, end: string) {
     },
   });
 
+  const workLocQ = useQuery({
+    queryKey: ["schedule-report-work-locations", start, end],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("project_day_work_locations")
+        .select("project_id, date, location")
+        .gte("date", start).lte("date", end);
+      return data ?? [];
+    },
+  });
+
   const data = useMemo<ScheduleReportData | null>(() => {
     if (!assignmentsQ.data) return null;
     const assignments = assignmentsQ.data as any[];
