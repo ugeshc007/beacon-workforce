@@ -17,6 +17,7 @@ export interface TodayProject {
   sessionId: string | null;
   step: ProjectStep;
   totalWorkMinutes: number | null;
+  assignedRole: string;
 }
 
 /** Returns ALL today's project assignments + their session state */
