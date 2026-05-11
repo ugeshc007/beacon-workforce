@@ -34,7 +34,7 @@ export function useTodayProjects() {
 
       const { data: assignments } = await supabase
         .from("project_assignments")
-        .select("id, project_id, shift_start, shift_end, projects(name, site_address, site_latitude, site_longitude, site_gps_radius)")
+        .select("id, project_id, shift_start, shift_end, assigned_role, projects(name, site_address, site_latitude, site_longitude, site_gps_radius)")
         .eq("employee_id", employee.id)
         .eq("date", today);
 
@@ -66,6 +66,7 @@ export function useTodayProjects() {
           sessionId: session?.id ?? null,
           step: deriveProjectStep(session ?? null),
           totalWorkMinutes: session?.total_work_minutes ?? null,
+          assignedRole: a.assigned_role ?? "team_member",
         };
       });
     },
