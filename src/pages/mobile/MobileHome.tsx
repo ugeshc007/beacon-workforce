@@ -9,6 +9,7 @@ import { enqueueAction } from "@/lib/offline-queue";
 import { initAutoSync } from "@/lib/offline-sync";
 import { HoldToConfirm } from "@/components/mobile/HoldToConfirm";
 import { MapPicker } from "@/components/mobile/MapPicker";
+import { DriverWorkflowCard } from "@/components/mobile/DriverWorkflowCard";
 import { Card } from "@/components/ui/card";
 import { Loader2, MapPin, Clock, Wifi, WifiOff, CheckCircle2, AlertTriangle, Crosshair, ChevronRight, PlayCircle, RotateCcw, Coffee, Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -147,6 +148,9 @@ export default function MobileHome() {
     (p) => p.sessionId && p.step !== "completed" && p.step !== "idle"
   );
 
+  // Driver mode — when ALL today assignments are driver role, swap in the driver workflow
+  const isDriverDay = !!todayProjects?.length && todayProjects.every((p) => p.assignedRole === "driver");
+
   return (
     <div className="flex flex-col gap-4 p-4 pb-24 safe-area-inset">
       {/* Greeting */}
@@ -205,7 +209,7 @@ export default function MobileHome() {
       )}
 
       {/* Resume in-progress project */}
-      {step !== "idle" && step !== "punched_out" && activeProject && (
+      {step !== "idle" && step !== "punched_out" && !isDriverDay && activeProject && (
         <button
           onClick={() => navigate(`/m/project/${activeProject.projectId}`)}
           className="rounded-xl border border-brand/50 bg-brand/10 p-4 text-left transition-colors hover:bg-brand/15"
@@ -286,8 +290,17 @@ export default function MobileHome() {
         </div>
       )}
 
-      {/* Project list — visible after punch in, before punch out, when projects exist */}
-      {step !== "idle" && step !== "punched_out" && !!todayProjects?.length && (
+      {/* DRIVER MODE — multi-leg trip workflow */}
+      {step !== "idle" && step !== "punched_out" && isDriverDay && (
+        <DriverWorkflowCard
+          todayProjects={todayProjects ?? []}
+          step={step}
+          onReturnToOffice={() => handleOfficeAction("start_return_travel")}
+        />
+      )}
+
+      {/* Project list — visible after punch in, before punch out, when projects exist (technician flow) */}
+      {step !== "idle" && step !== "punched_out" && !isDriverDay && !!todayProjects?.length && (
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Today's Projects</p>
@@ -362,7 +375,7 @@ export default function MobileHome() {
       )}
 
       {/* Post-projects: return-to-office flow */}
-      {step !== "idle" && step !== "punched_out" && allProjectsDone && step !== "at_office" && (
+      {step !== "idle" && step !== "punched_out" && (allProjectsDone || (isDriverDay && step === "returning")) && step !== "at_office" && (
         <div className="flex flex-col gap-3">
           <Card className="p-4 border-green-500/30 bg-green-500/5">
             <p className="text-sm text-foreground font-medium">All projects done!</p>
