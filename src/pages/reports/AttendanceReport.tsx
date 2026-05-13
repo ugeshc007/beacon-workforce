@@ -14,6 +14,12 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 
 const STATUS_COLORS = ["hsl(var(--status-present))", "hsl(var(--status-traveling))", "hsl(var(--status-absent))", "hsl(var(--brand))"];
 
+const fmtT = (ts: string | null | undefined) => {
+  if (!ts) return "—";
+  return new Date(ts).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false });
+};
+const TIMELINE_HEADERS = ["Employee", "Date", "Project", "Punch In", "Travel Start", "Site Arrival", "Work Start", "Break Start", "Break End", "Work End", "Return Travel", "Office Arrival", "Punch Out", "Total Hrs", "OT Hrs"];
+
 export default function AttendanceReport() {
   const [dateRange, setDateRange] = useReportDateRange("This Month");
   const [branchFilter, setBranchFilter] = useState("all");
