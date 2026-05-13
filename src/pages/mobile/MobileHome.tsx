@@ -510,6 +510,61 @@ export default function MobileHome() {
         initialLat={25.2048}
         initialLng={55.2708}
       />
+
+      <Sheet open={showProjectPicker} onOpenChange={setShowProjectPicker}>
+        <SheetContent side="bottom" className="max-h-[80vh] overflow-y-auto rounded-t-2xl">
+          <SheetHeader className="text-left">
+            <SheetTitle>Pick a project</SheetTitle>
+            <SheetDescription>
+              Choose any active project to add it to your day. You'll be able to start travel right after.
+            </SheetDescription>
+          </SheetHeader>
+
+          <div className="flex flex-col gap-2 mt-4">
+            {availableLoading && (
+              <div className="flex justify-center py-6">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            )}
+
+            {!availableLoading && !availableProjects?.length && (
+              <Card className="p-4 border-border/50 bg-muted/20 text-center">
+                <p className="text-sm text-muted-foreground">No other active projects available.</p>
+              </Card>
+            )}
+
+            {availableProjects?.map((p) => {
+              const busy = assigningProjectId === p.id;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => handlePickProject(p.id)}
+                  disabled={!!assigningProjectId}
+                  className="text-left rounded-xl border border-border/50 bg-card p-4 transition-colors hover:border-brand/40 hover:bg-card/80 disabled:opacity-50"
+                >
+                  <div className="flex items-start gap-3">
+                    <MapPin className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-foreground truncate">{p.name}</p>
+                      {p.siteAddress && (
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">{p.siteAddress}</p>
+                      )}
+                      <span className="inline-block mt-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+                        {p.status.replace("_", " ")}
+                      </span>
+                    </div>
+                    {busy ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-brand mt-0.5" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
