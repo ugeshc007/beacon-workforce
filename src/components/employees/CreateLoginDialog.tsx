@@ -9,7 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, KeyRound, Eye, EyeOff } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { invokeEdge } from "@/lib/invoke-edge";
 import { useToast } from "@/hooks/use-toast";
 
 const schema = z.object({
