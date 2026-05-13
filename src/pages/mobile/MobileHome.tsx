@@ -386,16 +386,6 @@ export default function MobileHome() {
             </p>
           </Card>
 
-          {step !== "returning" && (
-            <Button
-              variant="outline"
-              className="w-full h-12 border-brand/40 text-brand hover:bg-brand/10"
-              onClick={() => setShowProjectPicker(true)}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Pick another project
-            </Button>
-          )}
 
           {step !== "returning" && (
             <HoldToConfirm
@@ -425,24 +415,16 @@ export default function MobileHome() {
 
       {/* Punch Out — when projects exist and we're at office (after return-travel flow) */}
       {step === "at_office" && (
-        <div className="flex flex-col gap-3">
-          <Button
-            variant="outline"
-            className="w-full h-12 border-brand/40 text-brand hover:bg-brand/10"
-            onClick={() => setShowProjectPicker(true)}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Pick another project
-          </Button>
-          <HoldToConfirm
-            onConfirm={() => handleOfficeAction("punch_out")}
-            disabled={actionLoading}
-            loading={actionLoading}
-            variant="primary"
-          >
-            <CheckCircle2 className="h-6 w-6" />
-            {actionLabels.punch_out}
-          </HoldToConfirm>
+        <HoldToConfirm
+          onConfirm={() => handleOfficeAction("punch_out")}
+          disabled={actionLoading}
+          loading={actionLoading}
+          variant="primary"
+        >
+          <CheckCircle2 className="h-6 w-6" />
+          {actionLabels.punch_out}
+        </HoldToConfirm>
+      )}
         </div>
       )}
 
