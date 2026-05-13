@@ -400,17 +400,28 @@ export default function MobileHome() {
         </Card>
       )}
 
-      {/* Post-projects: return-to-office flow */}
+      {/* Post-projects: pick another OR return-to-office flow */}
       {step !== "idle" && step !== "punched_out" && (allProjectsDone || (isDriverDay && step === "returning")) && step !== "at_office" && (
         <div className="flex flex-col gap-3">
           <Card className="p-4 border-green-500/30 bg-green-500/5">
-            <p className="text-sm text-foreground font-medium">All projects done!</p>
+            <p className="text-sm text-foreground font-medium">All assigned projects done!</p>
             <p className="text-xs text-muted-foreground mt-1">
               {step === "returning"
-                ? "Tap below when you reach the office."
-                : "Start your return travel to the office."}
+                ? "Tap below when you reach the office — or pick up another project."
+                : "Pick up another project to keep working, or head back to the office."}
             </p>
           </Card>
+
+          {step !== "returning" && (
+            <Button
+              variant="outline"
+              className="w-full h-12 border-brand/40 text-brand hover:bg-brand/10"
+              onClick={() => setShowProjectPicker(true)}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Pick another project
+            </Button>
+          )}
 
           {step !== "returning" && (
             <HoldToConfirm
@@ -440,15 +451,25 @@ export default function MobileHome() {
 
       {/* Punch Out — when projects exist and we're at office (after return-travel flow) */}
       {step === "at_office" && (
-        <HoldToConfirm
-          onConfirm={() => handleOfficeAction("punch_out")}
-          disabled={actionLoading}
-          loading={actionLoading}
-          variant="primary"
-        >
-          <CheckCircle2 className="h-6 w-6" />
-          {actionLabels.punch_out}
-        </HoldToConfirm>
+        <div className="flex flex-col gap-3">
+          <Button
+            variant="outline"
+            className="w-full h-12 border-brand/40 text-brand hover:bg-brand/10"
+            onClick={() => setShowProjectPicker(true)}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Pick another project
+          </Button>
+          <HoldToConfirm
+            onConfirm={() => handleOfficeAction("punch_out")}
+            disabled={actionLoading}
+            loading={actionLoading}
+            variant="primary"
+          >
+            <CheckCircle2 className="h-6 w-6" />
+            {actionLabels.punch_out}
+          </HoldToConfirm>
+        </div>
       )}
 
       {/* Fallback: punch out available outside the project flow (e.g., no projects path) */}
