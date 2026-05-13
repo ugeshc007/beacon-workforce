@@ -164,11 +164,7 @@ export function useMobileWorkflow() {
 
       setActionLoading(false); // Release loading immediately after optimistic update
 
-      const { data, error } = await supabase.functions.invoke(fnName, {
-        body: JSON.stringify(body),
-      });
-
-      if (error) throw error;
+      const data = await invokeEdge(fnName, body);
 
       // Background refresh — don't block UI
       fetchData();
