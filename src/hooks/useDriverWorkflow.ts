@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
 import { toLocalDateStr } from "@/lib/utils";
+import { invokeEdge } from "@/lib/invoke-edge";
 
 export type DriverLegType = "drop_off" | "pick_up" | "wait";
 export type DriverLegStatus = "traveling" | "on_site" | "completed";
