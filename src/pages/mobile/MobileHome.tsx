@@ -1,24 +1,19 @@
 import { useMobileWorkflow } from "@/hooks/useMobileWorkflow";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
 import { useTodayProjects } from "@/hooks/useTodayProjects";
-import { useAvailableProjects } from "@/hooks/useAvailableProjects";
 import { useBackgroundTracking } from "@/hooks/useBackgroundTracking";
 import { actionLabels, stepLabels, stepColors, WorkflowAction } from "@/lib/workflow-engine";
 import { projectStepLabels, projectStepColors } from "@/lib/project-workflow-engine";
 import { getGpsPosition, qualityColor, qualityLabel } from "@/lib/gps";
 import { enqueueAction } from "@/lib/offline-queue";
 import { initAutoSync } from "@/lib/offline-sync";
-import { invokeEdge } from "@/lib/invoke-edge";
 import { HoldToConfirm } from "@/components/mobile/HoldToConfirm";
 import { MapPicker } from "@/components/mobile/MapPicker";
 import { DriverWorkflowCard } from "@/components/mobile/DriverWorkflowCard";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { Loader2, MapPin, Clock, Wifi, WifiOff, CheckCircle2, AlertTriangle, Crosshair, ChevronRight, PlayCircle, RotateCcw, Coffee, Building2, Plus } from "lucide-react";
+import { Loader2, MapPin, Clock, Wifi, WifiOff, CheckCircle2, AlertTriangle, Crosshair, ChevronRight, PlayCircle, RotateCcw, Coffee, Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useRef } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 
 const GPS_ACTIONS: WorkflowAction[] = ["punch_in", "punch_out", "start_return_travel", "arrive_office"];
@@ -35,29 +30,7 @@ export default function MobileHome() {
   const [gpsQuality, setGpsQuality] = useState<"high" | "medium" | "low" | "none">("none");
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [pendingAction, setPendingAction] = useState<WorkflowAction | null>(null);
-  const [showProjectPicker, setShowProjectPicker] = useState(false);
-  const [assigningProjectId, setAssigningProjectId] = useState<string | null>(null);
-  const queryClient = useQueryClient();
-  const { data: availableProjects, isLoading: availableLoading } = useAvailableProjects();
   const autoSyncCleanup = useRef<(() => void) | null>(null);
-
-  const handlePickProject = async (projectId: string) => {
-    if (!employee) return;
-    setAssigningProjectId(projectId);
-    try {
-      await invokeEdge("self-assign-project", { employee_id: employee.id, project_id: projectId });
-      await queryClient.invalidateQueries({ queryKey: ["today-projects"] });
-      await queryClient.invalidateQueries({ queryKey: ["available-projects"] });
-      setShowProjectPicker(false);
-      toast({ title: "Project added", description: "Tap it to start travel." });
-      navigate(`/m/project/${projectId}`);
-    } catch (err) {
-      toast({ title: "Failed", description: (err as Error).message, variant: "destructive" });
-    } finally {
-      setAssigningProjectId(null);
-    }
-  };
-
   useEffect(() => {
     const t = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(t);
