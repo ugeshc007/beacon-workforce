@@ -25,17 +25,36 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (!log?.office_punch_in) return errorResponse("Must punch in at office first", 400);
 
-    // Block if there is an active session already
-    const { data: active } = await supabase
+    // Auto-close any stale open sessions from previous days
+    await supabase
       .from("project_work_sessions")
-      .select("id, project_id")
+      .update({ work_end_time: now, status: "completed" })
       .eq("employee_id", employee_id)
       .is("work_end_time", null)
+      .lt("date", today);
+
+    // Block if there is an active session today
+    const { data: activeToday } = await supabase
+      .from("project_work_sessions")
+      .select("id, project_id, travel_start_time, site_arrival_time, work_start_time")
+      .eq("employee_id", employee_id)
+      .eq("date", today)
+      .is("work_end_time", null)
       .maybeSingle();
-    if (active) {
+
+    if (activeToday) {
+      // Idempotent: if same project and only travel started (no arrival yet), return existing session
+      if (
+        activeToday.project_id === project_id &&
+        activeToday.travel_start_time &&
+        !activeToday.site_arrival_time &&
+        !activeToday.work_start_time
+      ) {
+        return jsonResponse({ success: true, session_id: activeToday.id, timestamp: activeToday.travel_start_time, resumed: true });
+      }
       return errorResponse(
-        active.project_id === project_id
-          ? "Session already started for this project"
+        activeToday.project_id === project_id
+          ? "Session already in progress for this project"
           : "Finish your current project before starting another",
         409
       );
