@@ -123,8 +123,7 @@ export function useSiteVisitWorkflow(siteVisitId: string | null) {
     }
 
     try {
-      const { data, error } = await supabase.functions.invoke(fnMap[action], { body });
-      if (error) throw error;
+      const data = await invokeEdge(fnMap[action], body);
       fetchSession();
       return { success: true, data };
     } catch (e) {
