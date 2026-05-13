@@ -838,6 +838,13 @@ export default function Schedule() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AvailableEmployeesSheet
+        open={availSheetOpen}
+        onOpenChange={setAvailSheetOpen}
+        date={selectedDay ?? today}
+        canAssign={canCreate}
+      />
     </div>
   );
 }
