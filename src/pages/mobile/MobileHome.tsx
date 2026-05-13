@@ -1,19 +1,24 @@
 import { useMobileWorkflow } from "@/hooks/useMobileWorkflow";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
 import { useTodayProjects } from "@/hooks/useTodayProjects";
+import { useAvailableProjects } from "@/hooks/useAvailableProjects";
 import { useBackgroundTracking } from "@/hooks/useBackgroundTracking";
 import { actionLabels, stepLabels, stepColors, WorkflowAction } from "@/lib/workflow-engine";
 import { projectStepLabels, projectStepColors } from "@/lib/project-workflow-engine";
 import { getGpsPosition, qualityColor, qualityLabel } from "@/lib/gps";
 import { enqueueAction } from "@/lib/offline-queue";
 import { initAutoSync } from "@/lib/offline-sync";
+import { invokeEdge } from "@/lib/invoke-edge";
 import { HoldToConfirm } from "@/components/mobile/HoldToConfirm";
 import { MapPicker } from "@/components/mobile/MapPicker";
 import { DriverWorkflowCard } from "@/components/mobile/DriverWorkflowCard";
 import { Card } from "@/components/ui/card";
-import { Loader2, MapPin, Clock, Wifi, WifiOff, CheckCircle2, AlertTriangle, Crosshair, ChevronRight, PlayCircle, RotateCcw, Coffee, Building2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Loader2, MapPin, Clock, Wifi, WifiOff, CheckCircle2, AlertTriangle, Crosshair, ChevronRight, PlayCircle, RotateCcw, Coffee, Building2, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 
 const GPS_ACTIONS: WorkflowAction[] = ["punch_in", "punch_out", "start_return_travel", "arrive_office"];
