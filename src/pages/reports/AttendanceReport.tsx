@@ -46,9 +46,17 @@ export default function AttendanceReport() {
           )}
           {data && (<>
             <Button variant="outline" size="sm" className="text-xs ml-1" onClick={() => {
-              downloadCsv(`attendance-${dateRange.start}.csv`,
-                ["Employee", "Days Worked", "Avg Hours", "Late Days", "On Time %", "Punch-in Rate"],
-                data.rows.map((r) => [r.name, r.daysWorked, r.avgHours, r.lateDays, r.onTimePct, r.punchInRate])
+              downloadCsv(`attendance-timeline-${dateRange.start}.csv`,
+                TIMELINE_HEADERS,
+                data.details.map((d) => [
+                  d.name, d.date, d.project,
+                  fmtT(d.office_punch_in), fmtT(d.travel_start_time), fmtT(d.site_arrival_time),
+                  fmtT(d.work_start_time), fmtT(d.break_start_time), fmtT(d.break_end_time),
+                  fmtT(d.work_end_time), fmtT(d.return_travel_start_time), fmtT(d.office_arrival_time),
+                  fmtT(d.office_punch_out),
+                  d.total_work_minutes != null ? (d.total_work_minutes / 60).toFixed(1) : "—",
+                  d.overtime_minutes != null ? (d.overtime_minutes / 60).toFixed(1) : "0",
+                ])
               );
             }}><Download className="h-3.5 w-3.5 mr-1" />CSV</Button>
             <Button variant="outline" size="sm" className="text-xs" onClick={() => {
@@ -63,9 +71,17 @@ export default function AttendanceReport() {
                   { label: "Late Arrivals", value: String(data.totalLateDays) },
                 ],
                 tables: [{
-                  title: "Employee Attendance Detail",
-                  headers: ["Employee", "Days Worked", "Avg Hours", "Late Days", "On Time %", "Punch-in Rate"],
-                  rows: data.rows.map((r) => [r.name, r.daysWorked, `${r.avgHours}h`, r.lateDays, `${r.onTimePct}%`, `${r.punchInRate}%`]),
+                  title: "Employee Daily Activity Timeline",
+                  headers: TIMELINE_HEADERS,
+                  rows: data.details.map((d) => [
+                    d.name, d.date, d.project,
+                    fmtT(d.office_punch_in), fmtT(d.travel_start_time), fmtT(d.site_arrival_time),
+                    fmtT(d.work_start_time), fmtT(d.break_start_time), fmtT(d.break_end_time),
+                    fmtT(d.work_end_time), fmtT(d.return_travel_start_time), fmtT(d.office_arrival_time),
+                    fmtT(d.office_punch_out),
+                    d.total_work_minutes != null ? `${(d.total_work_minutes / 60).toFixed(1)}h` : "—",
+                    d.overtime_minutes != null ? `${(d.overtime_minutes / 60).toFixed(1)}h` : "0h",
+                  ]),
                 }],
               });
             }}><Download className="h-3.5 w-3.5 mr-1" />PDF</Button>
