@@ -1,24 +1,19 @@
 import { useMobileWorkflow } from "@/hooks/useMobileWorkflow";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
 import { useTodayProjects } from "@/hooks/useTodayProjects";
-import { useAvailableProjects } from "@/hooks/useAvailableProjects";
 import { useBackgroundTracking } from "@/hooks/useBackgroundTracking";
 import { actionLabels, stepLabels, stepColors, WorkflowAction } from "@/lib/workflow-engine";
 import { projectStepLabels, projectStepColors } from "@/lib/project-workflow-engine";
 import { getGpsPosition, qualityColor, qualityLabel } from "@/lib/gps";
 import { enqueueAction } from "@/lib/offline-queue";
 import { initAutoSync } from "@/lib/offline-sync";
-import { invokeEdge } from "@/lib/invoke-edge";
 import { HoldToConfirm } from "@/components/mobile/HoldToConfirm";
 import { MapPicker } from "@/components/mobile/MapPicker";
 import { DriverWorkflowCard } from "@/components/mobile/DriverWorkflowCard";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { Loader2, MapPin, Clock, Wifi, WifiOff, CheckCircle2, AlertTriangle, Crosshair, ChevronRight, PlayCircle, RotateCcw, Coffee, Building2, Plus } from "lucide-react";
+import { Loader2, MapPin, Clock, Wifi, WifiOff, CheckCircle2, AlertTriangle, Crosshair, ChevronRight, PlayCircle, RotateCcw, Coffee, Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useRef } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 
 const GPS_ACTIONS: WorkflowAction[] = ["punch_in", "punch_out", "start_return_travel", "arrive_office"];
@@ -35,29 +30,7 @@ export default function MobileHome() {
   const [gpsQuality, setGpsQuality] = useState<"high" | "medium" | "low" | "none">("none");
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [pendingAction, setPendingAction] = useState<WorkflowAction | null>(null);
-  const [showProjectPicker, setShowProjectPicker] = useState(false);
-  const [assigningProjectId, setAssigningProjectId] = useState<string | null>(null);
-  const queryClient = useQueryClient();
-  const { data: availableProjects, isLoading: availableLoading } = useAvailableProjects();
   const autoSyncCleanup = useRef<(() => void) | null>(null);
-
-  const handlePickProject = async (projectId: string) => {
-    if (!employee) return;
-    setAssigningProjectId(projectId);
-    try {
-      await invokeEdge("self-assign-project", { employee_id: employee.id, project_id: projectId });
-      await queryClient.invalidateQueries({ queryKey: ["today-projects"] });
-      await queryClient.invalidateQueries({ queryKey: ["available-projects"] });
-      setShowProjectPicker(false);
-      toast({ title: "Project added", description: "Tap it to start travel." });
-      navigate(`/m/project/${projectId}`);
-    } catch (err) {
-      toast({ title: "Failed", description: (err as Error).message, variant: "destructive" });
-    } finally {
-      setAssigningProjectId(null);
-    }
-  };
-
   useEffect(() => {
     const t = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(t);
@@ -274,15 +247,6 @@ export default function MobileHome() {
             </div>
           </Card>
 
-          <Button
-            variant="outline"
-            className="w-full h-12 border-brand/40 text-brand hover:bg-brand/10"
-            onClick={() => setShowProjectPicker(true)}
-            disabled={step === "on_break"}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Pick a project to work on
-          </Button>
 
           {/* Break controls */}
           {step !== "on_break" && (
@@ -422,16 +386,6 @@ export default function MobileHome() {
             </p>
           </Card>
 
-          {step !== "returning" && (
-            <Button
-              variant="outline"
-              className="w-full h-12 border-brand/40 text-brand hover:bg-brand/10"
-              onClick={() => setShowProjectPicker(true)}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Pick another project
-            </Button>
-          )}
 
           {step !== "returning" && (
             <HoldToConfirm
@@ -461,24 +415,16 @@ export default function MobileHome() {
 
       {/* Punch Out — when projects exist and we're at office (after return-travel flow) */}
       {step === "at_office" && (
-        <div className="flex flex-col gap-3">
-          <Button
-            variant="outline"
-            className="w-full h-12 border-brand/40 text-brand hover:bg-brand/10"
-            onClick={() => setShowProjectPicker(true)}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Pick another project
-          </Button>
-          <HoldToConfirm
-            onConfirm={() => handleOfficeAction("punch_out")}
-            disabled={actionLoading}
-            loading={actionLoading}
-            variant="primary"
-          >
-            <CheckCircle2 className="h-6 w-6" />
-            {actionLabels.punch_out}
-          </HoldToConfirm>
+        <HoldToConfirm
+          onConfirm={() => handleOfficeAction("punch_out")}
+          disabled={actionLoading}
+          loading={actionLoading}
+          variant="primary"
+        >
+          <CheckCircle2 className="h-6 w-6" />
+          {actionLabels.punch_out}
+        </HoldToConfirm>
+      )}
         </div>
       )}
 
@@ -495,13 +441,58 @@ export default function MobileHome() {
         </HoldToConfirm>
       )}
 
-      {step === "punched_out" && (
-        <Card className="p-6 border-green-500/30 bg-green-500/5 text-center">
-          <CheckCircle2 className="h-10 w-10 text-green-400 mx-auto mb-2" />
-          <p className="font-semibold text-green-400">Day Complete!</p>
-          <p className="text-xs text-muted-foreground mt-1">Great work today.</p>
-        </Card>
-      )}
+      {step === "punched_out" && (() => {
+        const pending = (todayProjects ?? []).filter((p) => p.step !== "completed" && !p.sessionId);
+        if (pending.length > 0) {
+          return (
+            <div className="flex flex-col gap-3">
+              <Card className="p-4 border-brand/40 bg-brand/5">
+                <p className="font-semibold text-foreground">Next shift coming up</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  You've punched out from your previous shift. Punch in again to start the next one.
+                </p>
+              </Card>
+
+              <div className="flex flex-col gap-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Pending Assignments</p>
+                {pending.map((p) => (
+                  <Card key={p.assignmentId} className="p-3 border-border/50 bg-card">
+                    <div className="flex items-start gap-3">
+                      <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-foreground text-sm truncate">{p.projectName}</p>
+                        {p.shiftStart && p.shiftEnd && (
+                          <span className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                            <Clock className="h-3 w-3" />
+                            {p.shiftStart.slice(0, 5)}–{p.shiftEnd.slice(0, 5)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+
+              <HoldToConfirm
+                onConfirm={() => handleOfficeAction("punch_in")}
+                disabled={actionLoading}
+                loading={actionLoading}
+                variant="primary"
+              >
+                <CheckCircle2 className="h-6 w-6" />
+                Punch In — Next Shift
+              </HoldToConfirm>
+            </div>
+          );
+        }
+        return (
+          <Card className="p-6 border-green-500/30 bg-green-500/5 text-center">
+            <CheckCircle2 className="h-10 w-10 text-green-400 mx-auto mb-2" />
+            <p className="font-semibold text-green-400">Day Complete!</p>
+            <p className="text-xs text-muted-foreground mt-1">Great work today.</p>
+          </Card>
+        );
+      })()}
 
       <MapPicker
         open={showMapPicker}
@@ -510,61 +501,6 @@ export default function MobileHome() {
         initialLat={25.2048}
         initialLng={55.2708}
       />
-
-      <Sheet open={showProjectPicker} onOpenChange={setShowProjectPicker}>
-        <SheetContent side="bottom" className="max-h-[80vh] overflow-y-auto rounded-t-2xl">
-          <SheetHeader className="text-left">
-            <SheetTitle>Pick a project</SheetTitle>
-            <SheetDescription>
-              Choose any active project to add it to your day. You'll be able to start travel right after.
-            </SheetDescription>
-          </SheetHeader>
-
-          <div className="flex flex-col gap-2 mt-4">
-            {availableLoading && (
-              <div className="flex justify-center py-6">
-                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-              </div>
-            )}
-
-            {!availableLoading && !availableProjects?.length && (
-              <Card className="p-4 border-border/50 bg-muted/20 text-center">
-                <p className="text-sm text-muted-foreground">No other active projects available.</p>
-              </Card>
-            )}
-
-            {availableProjects?.map((p) => {
-              const busy = assigningProjectId === p.id;
-              return (
-                <button
-                  key={p.id}
-                  onClick={() => handlePickProject(p.id)}
-                  disabled={!!assigningProjectId}
-                  className="text-left rounded-xl border border-border/50 bg-card p-4 transition-colors hover:border-brand/40 hover:bg-card/80 disabled:opacity-50"
-                >
-                  <div className="flex items-start gap-3">
-                    <MapPin className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-foreground truncate">{p.name}</p>
-                      {p.siteAddress && (
-                        <p className="text-xs text-muted-foreground truncate mt-0.5">{p.siteAddress}</p>
-                      )}
-                      <span className="inline-block mt-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
-                        {p.status.replace("_", " ")}
-                      </span>
-                    </div>
-                    {busy ? (
-                      <Loader2 className="h-4 w-4 animate-spin text-brand mt-0.5" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4 text-muted-foreground mt-0.5" />
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </SheetContent>
-      </Sheet>
     </div>
   );
 }
