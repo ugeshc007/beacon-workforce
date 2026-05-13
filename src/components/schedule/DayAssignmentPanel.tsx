@@ -32,6 +32,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdge } from "@/lib/invoke-edge";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast as sonnerToast } from "sonner";
 
@@ -252,22 +253,18 @@ export function DayAssignmentPanel({
     setAutoLoading(true);
     try {
       const lockedIds = assignments.filter((a) => a.is_locked).map((a) => a.employee_id);
-      const { data, error } = await supabase.functions.invoke("auto-assign", {
-        body: {
-          projectId,
-          date,
-          requiredByRole: {
-            technicians: requiredTech,
-            helpers: requiredHelp,
-            supervisors: requiredSup,
-          },
-          lockedEmployeeIds: lockedIds,
-          shiftStart: autoShiftStart,
-          shiftEnd: autoShiftEnd,
+      const data: any = await invokeEdge("auto-assign", {
+        projectId,
+        date,
+        requiredByRole: {
+          technicians: requiredTech,
+          helpers: requiredHelp,
+          supervisors: requiredSup,
         },
+        lockedEmployeeIds: lockedIds,
+        shiftStart: autoShiftStart,
+        shiftEnd: autoShiftEnd,
       });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
       queryClient.invalidateQueries({ queryKey: ["schedule-assignments"] });
       queryClient.invalidateQueries({ queryKey: ["available-employees"] });
       const count = data.assigned?.length ?? 0;

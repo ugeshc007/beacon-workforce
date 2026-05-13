@@ -9,7 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, RotateCcw, Eye, EyeOff } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { invokeEdge } from "@/lib/invoke-edge";
 import { useToast } from "@/hooks/use-toast";
 
 const schema = z.object({
@@ -42,15 +42,10 @@ export function ResetPasswordDialog({ open, onOpenChange, employee }: Props) {
     if (!employee) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("reset-employee-password", {
-        body: {
-          employee_id: employee.id,
-          new_password: values.new_password,
-        },
+      await invokeEdge("reset-employee-password", {
+        employee_id: employee.id,
+        new_password: values.new_password,
       });
-
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
 
       toast({
         title: "Password Reset",
