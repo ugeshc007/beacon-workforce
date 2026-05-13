@@ -14,6 +14,7 @@ import {
 } from "@/hooks/useSchedule";
 import { DayAssignmentPanel } from "@/components/schedule/DayAssignmentPanel";
 import { ScheduleTaskSummary } from "@/components/schedule/ScheduleTaskSummary";
+import { AvailableEmployeesSheet } from "@/components/schedule/AvailableEmployeesSheet";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,7 +33,7 @@ import {
 import { toast } from "sonner";
 import {
   ChevronLeft, ChevronRight, CalendarDays, AlertTriangle, Users,
-  Copy, CalendarRange, Repeat, MoreVertical, Wrench, MapPin,
+  Copy, CalendarRange, Repeat, MoreVertical, Wrench, MapPin, UserCheck,
 } from "lucide-react";
 
 function getDayDates(startOffset: number, count = 7) {
@@ -63,6 +64,7 @@ export default function Schedule() {
   const [copyMaintTargetDate, setCopyMaintTargetDate] = useState("");
   const [copyProjectDialog, setCopyProjectDialog] = useState<{ projectId: string; projectName: string; sourceDate: string } | null>(null);
   const [copyProjectTargetDate, setCopyProjectTargetDate] = useState("");
+  const [availSheetOpen, setAvailSheetOpen] = useState(false);
 
   // Apply-to-range state
   const [rangeStart, setRangeStart] = useState("");
@@ -209,6 +211,15 @@ export default function Schedule() {
           <p className="text-sm text-muted-foreground">{weekLabel}</p>
         </div>
         <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs gap-1.5 border-brand/40 text-brand hover:bg-brand/10"
+            onClick={() => setAvailSheetOpen(true)}
+          >
+            <UserCheck className="h-3.5 w-3.5" />
+            Available Employees
+          </Button>
           {/* Bulk actions menu */}
           {canEdit && (
             <DropdownMenu>
@@ -827,6 +838,13 @@ export default function Schedule() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AvailableEmployeesSheet
+        open={availSheetOpen}
+        onOpenChange={setAvailSheetOpen}
+        date={selectedDay ?? today}
+        canAssign={canCreate}
+      />
     </div>
   );
 }
