@@ -425,8 +425,6 @@ export default function MobileHome() {
           {actionLabels.punch_out}
         </HoldToConfirm>
       )}
-        </div>
-      )}
 
       {/* Fallback: punch out available outside the project flow (e.g., no projects path) */}
       {step !== "idle" && step !== "punched_out" && step !== "at_office" && officeAction === "punch_out" && !!todayProjects?.length && !allProjectsDone && (
