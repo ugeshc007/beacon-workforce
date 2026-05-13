@@ -672,8 +672,9 @@ export function useAttendanceReport(start: string, end: string, filters?: { bran
       const [empRes, logsRes, branchRes] = await Promise.all([
         empQuery,
         supabase.from("attendance_logs")
-          .select("employee_id, date, total_work_minutes, office_punch_in, work_start_time")
-          .gte("date", start).lte("date", end),
+          .select("employee_id, date, total_work_minutes, overtime_minutes, office_punch_in, office_punch_out, travel_start_time, site_arrival_time, work_start_time, break_start_time, break_end_time, work_end_time, return_travel_start_time, office_arrival_time, projects(name)")
+          .gte("date", start).lte("date", end)
+          .order("date", { ascending: false }),
         supabase.from("branches").select("id, name").order("name"),
       ]);
 
