@@ -274,6 +274,16 @@ export default function MobileHome() {
             </div>
           </Card>
 
+          <Button
+            variant="outline"
+            className="w-full h-12 border-brand/40 text-brand hover:bg-brand/10"
+            onClick={() => setShowProjectPicker(true)}
+            disabled={step === "on_break"}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Pick a project to work on
+          </Button>
+
           {/* Break controls */}
           {step !== "on_break" && (
             <HoldToConfirm
