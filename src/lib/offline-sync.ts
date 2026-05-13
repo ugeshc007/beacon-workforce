@@ -89,14 +89,10 @@ export async function syncPendingActions(): Promise<{ synced: number; failed: nu
 
       while (attempt < MAX_RETRIES && !success) {
         try {
-          const { error } = await supabase.functions.invoke(fnName, {
-            body: JSON.stringify({
-              ...item.payload,
-              idempotency_key: item.idempotency_key,
-            }),
+          await invokeEdge(fnName, {
+            ...item.payload,
+            idempotency_key: item.idempotency_key,
           });
-
-          if (error) throw error;
 
           await markSynced(item.local_id);
           synced++;
