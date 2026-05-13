@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
 import { cacheData, getCachedData } from "@/lib/offline-queue";
+import { invokeEdge } from "@/lib/invoke-edge";
 import {
   WorkflowStep,
   WorkflowAction,
