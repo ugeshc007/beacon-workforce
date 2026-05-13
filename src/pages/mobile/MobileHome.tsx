@@ -35,7 +35,28 @@ export default function MobileHome() {
   const [gpsQuality, setGpsQuality] = useState<"high" | "medium" | "low" | "none">("none");
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [pendingAction, setPendingAction] = useState<WorkflowAction | null>(null);
+  const [showProjectPicker, setShowProjectPicker] = useState(false);
+  const [assigningProjectId, setAssigningProjectId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const { data: availableProjects, isLoading: availableLoading } = useAvailableProjects();
   const autoSyncCleanup = useRef<(() => void) | null>(null);
+
+  const handlePickProject = async (projectId: string) => {
+    if (!employee) return;
+    setAssigningProjectId(projectId);
+    try {
+      await invokeEdge("self-assign-project", { employee_id: employee.id, project_id: projectId });
+      await queryClient.invalidateQueries({ queryKey: ["today-projects"] });
+      await queryClient.invalidateQueries({ queryKey: ["available-projects"] });
+      setShowProjectPicker(false);
+      toast({ title: "Project added", description: "Tap it to start travel." });
+      navigate(`/m/project/${projectId}`);
+    } catch (err) {
+      toast({ title: "Failed", description: (err as Error).message, variant: "destructive" });
+    } finally {
+      setAssigningProjectId(null);
+    }
+  };
 
   useEffect(() => {
     const t = setInterval(() => setCurrentTime(new Date()), 1000);
