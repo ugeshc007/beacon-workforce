@@ -672,8 +672,9 @@ export function useAttendanceReport(start: string, end: string, filters?: { bran
       const [empRes, logsRes, branchRes] = await Promise.all([
         empQuery,
         supabase.from("attendance_logs")
-          .select("employee_id, date, total_work_minutes, office_punch_in, work_start_time")
-          .gte("date", start).lte("date", end),
+          .select("employee_id, date, total_work_minutes, overtime_minutes, office_punch_in, office_punch_out, travel_start_time, site_arrival_time, work_start_time, break_start_time, break_end_time, work_end_time, return_travel_start_time, office_arrival_time, projects(name)")
+          .gte("date", start).lte("date", end)
+          .order("date", { ascending: false }),
         supabase.from("branches").select("id, name").order("name"),
       ]);
 
@@ -719,7 +720,29 @@ export function useAttendanceReport(start: string, end: string, filters?: { bran
         { name: "Frequently Late", value: poorCount },
       ].filter((d) => d.value > 0);
 
-      return { rows, totalEmployees, avgAttendanceRate, avgHoursPerDay, totalLateDays, dailyTrend, punctualityDist, branches };
+      const empMap = new Map(employees.map((e) => [e.id, e.name]));
+      const details = logs
+        .filter((l: any) => empMap.has(l.employee_id))
+        .map((l: any) => ({
+          employee_id: l.employee_id,
+          name: empMap.get(l.employee_id) ?? "—",
+          date: l.date,
+          project: l.projects?.name ?? "—",
+          office_punch_in: l.office_punch_in,
+          travel_start_time: l.travel_start_time,
+          site_arrival_time: l.site_arrival_time,
+          work_start_time: l.work_start_time,
+          break_start_time: l.break_start_time,
+          break_end_time: l.break_end_time,
+          work_end_time: l.work_end_time,
+          return_travel_start_time: l.return_travel_start_time,
+          office_arrival_time: l.office_arrival_time,
+          office_punch_out: l.office_punch_out,
+          total_work_minutes: l.total_work_minutes,
+          overtime_minutes: l.overtime_minutes,
+        }));
+
+      return { rows, totalEmployees, avgAttendanceRate, avgHoursPerDay, totalLateDays, dailyTrend, punctualityDist, branches, details };
     },
   });
 }
