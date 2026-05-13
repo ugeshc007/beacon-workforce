@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
 import { toLocalDateStr } from "@/lib/utils";
+import { invokeEdge } from "@/lib/invoke-edge";
 
 export type DriverLegType = "drop_off" | "pick_up" | "wait";
 export type DriverLegStatus = "traveling" | "on_site" | "completed";
@@ -53,36 +54,21 @@ export function useDriverWorkflow() {
 
   const startTrip = useMutation({
     mutationFn: async (vars: { project_id: string; lat: number; lng: number }) => {
-      const { data, error } = await supabase.functions.invoke("driver-start-trip", {
-        body: { employee_id: employee?.id, ...vars },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      return data;
+      return await invokeEdge("driver-start-trip", { employee_id: employee?.id, ...vars });
     },
     onSuccess: invalidate,
   });
 
   const arriveSite = useMutation({
     mutationFn: async (vars: { leg_id: string; leg_type: DriverLegType; lat: number; lng: number }) => {
-      const { data, error } = await supabase.functions.invoke("driver-arrive-site", {
-        body: { employee_id: employee?.id, ...vars },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      return data;
+      return await invokeEdge("driver-arrive-site", { employee_id: employee?.id, ...vars });
     },
     onSuccess: invalidate,
   });
 
   const endLeg = useMutation({
     mutationFn: async (vars: { leg_id: string; lat: number; lng: number }) => {
-      const { data, error } = await supabase.functions.invoke("driver-end-leg", {
-        body: { employee_id: employee?.id, ...vars },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      return data;
+      return await invokeEdge("driver-end-leg", { employee_id: employee?.id, ...vars });
     },
     onSuccess: invalidate,
   });

@@ -4,6 +4,7 @@ import { useMobileAuth } from "@/hooks/useMobileAuth";
 import { toLocalDateStr } from "@/lib/utils";
 import { enqueueAction } from "@/lib/offline-queue";
 import { syncPendingActions } from "@/lib/offline-sync";
+import { invokeEdge } from "@/lib/invoke-edge";
 import {
   SiteVisitStep,
   SiteVisitAction,
@@ -123,8 +124,7 @@ export function useSiteVisitWorkflow(siteVisitId: string | null) {
     }
 
     try {
-      const { data, error } = await supabase.functions.invoke(fnMap[action], { body });
-      if (error) throw error;
+      const data = await invokeEdge(fnMap[action], body);
       fetchSession();
       return { success: true, data };
     } catch (e) {

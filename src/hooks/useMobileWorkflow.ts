@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
 import { cacheData, getCachedData } from "@/lib/offline-queue";
+import { invokeEdge } from "@/lib/invoke-edge";
 import {
   WorkflowStep,
   WorkflowAction,
@@ -163,11 +164,7 @@ export function useMobileWorkflow() {
 
       setActionLoading(false); // Release loading immediately after optimistic update
 
-      const { data, error } = await supabase.functions.invoke(fnName, {
-        body: JSON.stringify(body),
-      });
-
-      if (error) throw error;
+      const data = await invokeEdge(fnName, body);
 
       // Background refresh — don't block UI
       fetchData();
