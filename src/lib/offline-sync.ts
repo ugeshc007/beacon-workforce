@@ -4,7 +4,7 @@
  * Adds auto-sync on reconnect, retry with exponential backoff, and conflict detection.
  */
 
-import { supabase } from "@/integrations/supabase/client";
+import { invokeEdge } from "@/lib/invoke-edge";
 import {
   QueuedAction,
   getQueue,
