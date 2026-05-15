@@ -56,14 +56,29 @@ export function useAvailableEmployees(date: string | null) {
       const leaveByEmp = new Map<string, string | null>();
       for (const l of leaveRes.data ?? []) leaveByEmp.set(l.employee_id, l.reason);
 
+      // Official working day = 9 hours including 1 hour break (so 540 mins on-shift).
+      // Treat 8h+ of shift coverage as fully Booked.
+      const FULL_DAY_MIN = 540; // 9h
+      const NEAR_FULL_MIN = 480; // 8h threshold
+      const shiftMinutes = (s: string | null, e: string | null) => {
+        if (!s || !e) return FULL_DAY_MIN; // unknown shift treated as full day
+        const [sh, sm] = s.split(":").map(Number);
+        const [eh, em] = e.split(":").map(Number);
+        return Math.max(0, eh * 60 + em - (sh * 60 + sm));
+      };
+
       const result: AvailableEmployee[] = (empRes.data ?? []).map((e: any) => {
         const assignments = assignByEmp.get(e.id) ?? [];
         const onLeave = leaveByEmp.has(e.id);
+        const totalAssigned = assignments.reduce(
+          (sum, a) => sum + shiftMinutes(a.shift_start, a.shift_end),
+          0
+        );
         let status: AvailabilityStatus = "available";
         if (onLeave) status = "on_leave";
         else if (assignments.length === 0) status = "available";
-        else if (assignments.length === 1) status = "partial";
-        else status = "booked";
+        else if (totalAssigned >= NEAR_FULL_MIN) status = "booked";
+        else status = "partial";
         return {
           id: e.id,
           name: e.name,
