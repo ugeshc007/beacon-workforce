@@ -122,6 +122,9 @@ export function AttendanceDetailDrawer({ log, open, onOpenChange }: Props) {
     },
   ];
 
+  const hiddenInHouse = new Set(["Travel Start", "Site Arrival", "Return Travel"]);
+  const steps = isInHouse ? allSteps.filter((s) => !hiddenInHouse.has(s.label)) : allSteps;
+
   const totalHours = log.total_work_minutes != null ? (log.total_work_minutes / 60).toFixed(1) : "—";
   const otHours = log.overtime_minutes != null ? (log.overtime_minutes / 60).toFixed(1) : "0";
   const breakMin = log.break_minutes ?? 0;
