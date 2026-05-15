@@ -77,7 +77,7 @@ export function useUtilizationData(start: string, end: string, filters?: {
         empQuery,
         supabase
           .from("attendance_logs")
-          .select("employee_id, date, total_work_minutes, overtime_minutes")
+          .select("employee_id, date, total_work_minutes, overtime_minutes, break_minutes, office_punch_in, office_punch_out, travel_start_time, site_arrival_time, return_travel_start_time, office_arrival_time")
           .gte("date", start)
           .lte("date", end),
         supabase
@@ -98,15 +98,44 @@ export function useUtilizationData(start: string, end: string, filters?: {
         filteredEmps = employees.filter((e) => filters.employeeIds!.includes(e.id));
       }
 
-      const logMap = new Map<string, { days: Set<string>; totalMin: number; otMin: number; dailyMin: Record<string, number>; dailyOtMin: Record<string, number> }>();
+      const diffMin = (a: string | null, b: string | null) => {
+        if (!a || !b) return 0;
+        const ms = new Date(b).getTime() - new Date(a).getTime();
+        return ms > 0 ? Math.round(ms / 60000) : 0;
+      };
+
+      const logMap = new Map<string, {
+        days: Set<string>;
+        totalMin: number;
+        otMin: number;
+        travelMin: number;
+        idleMin: number;
+        dailyMin: Record<string, number>;
+        dailyOtMin: Record<string, number>;
+      }>();
       for (const l of logs) {
-        if (!logMap.has(l.employee_id)) logMap.set(l.employee_id, { days: new Set(), totalMin: 0, otMin: 0, dailyMin: {}, dailyOtMin: {} });
+        if (!logMap.has(l.employee_id)) logMap.set(l.employee_id, {
+          days: new Set(), totalMin: 0, otMin: 0, travelMin: 0, idleMin: 0, dailyMin: {}, dailyOtMin: {},
+        });
         const entry = logMap.get(l.employee_id)!;
         entry.days.add(l.date);
-        entry.totalMin += l.total_work_minutes ?? 0;
-        entry.otMin += l.overtime_minutes ?? 0;
-        entry.dailyMin[l.date] = (entry.dailyMin[l.date] ?? 0) + (l.total_work_minutes ?? 0);
-        entry.dailyOtMin[l.date] = (entry.dailyOtMin[l.date] ?? 0) + (l.overtime_minutes ?? 0);
+        const work = l.total_work_minutes ?? 0;
+        const ot = l.overtime_minutes ?? 0;
+        const breakMin = l.break_minutes ?? 0;
+        // Travel = outbound (travel_start → site_arrival) + return (return_travel_start → office_arrival)
+        const travel = diffMin(l.travel_start_time, l.site_arrival_time)
+                     + diffMin(l.return_travel_start_time, l.office_arrival_time);
+        // Presence = office_punch_in → office_punch_out
+        const presence = diffMin(l.office_punch_in, l.office_punch_out);
+        // Idle = presence − work − travel − break (only when punched in & out)
+        const idle = presence > 0 ? Math.max(0, presence - work - travel - breakMin) : 0;
+
+        entry.totalMin += work;
+        entry.otMin += ot;
+        entry.travelMin += travel;
+        entry.idleMin += idle;
+        entry.dailyMin[l.date] = (entry.dailyMin[l.date] ?? 0) + work;
+        entry.dailyOtMin[l.date] = (entry.dailyOtMin[l.date] ?? 0) + ot;
       }
 
       const leaveDaysMap = new Map<string, Set<string>>();
@@ -124,12 +153,13 @@ export function useUtilizationData(start: string, end: string, filters?: {
         const daysWorked = entry?.days.size ?? 0;
         const totalHours = Math.round(((entry?.totalMin ?? 0) / 60) * 10) / 10;
         const otHours = Math.round(((entry?.otMin ?? 0) / 60) * 10) / 10;
+        const travelHours = Math.round(((entry?.travelMin ?? 0) / 60) * 10) / 10;
+        const idleHours = Math.round(((entry?.idleMin ?? 0) / 60) * 10) / 10;
         const capacity = workingDays * Number(e.standard_hours_per_day);
-        const idleHours = Math.max(0, Math.round((capacity - totalHours) * 10) / 10);
         const utilization = capacity > 0 ? Math.round((totalHours / capacity) * 100) : 0;
         return {
           id: e.id, name: e.name, skill_type: e.skill_type, branch_id: e.branch_id,
-          daysWorked, totalHours, otHours, idleHours, capacity, utilization,
+          daysWorked, totalHours, otHours, idleHours, travelHours, capacity, utilization,
           dailyMinutes: entry?.dailyMin ?? {},
           dailyOtMinutes: entry?.dailyOtMin ?? {},
         };
