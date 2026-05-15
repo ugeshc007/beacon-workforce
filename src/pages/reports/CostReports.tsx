@@ -199,6 +199,7 @@ function ProjectCard({ project: p, isOpen, onToggle }: { project: ProjectLaborRo
                     <th className="text-right py-2 font-medium" title="Site → office return">← Office</th>
                     <th className="text-right py-2 font-medium">Travel Total</th>
                     <th className="text-right py-2 font-medium">Worked</th>
+                    <th className="text-right py-2 font-medium text-amber-400" title="Idle time = travel time (non-productive on-clock hours)">Idle</th>
                     <th className="text-right py-2 font-medium">OT</th>
                     <th className="text-right py-2 font-medium">Rate</th>
                     <th className="text-right py-2 font-medium">Regular</th>
@@ -208,7 +209,7 @@ function ProjectCard({ project: p, isOpen, onToggle }: { project: ProjectLaborRo
                 </thead>
                 <tbody>
                   {p.employees.length === 0 ? (
-                    <tr><td colSpan={13} className="py-6 text-center text-muted-foreground text-xs">No employee labor data</td></tr>
+                    <tr><td colSpan={14} className="py-6 text-center text-muted-foreground text-xs">No employee labor data</td></tr>
                   ) : p.employees.map((e) => (
                     <tr key={e.id} className="border-b border-border/30 hover:bg-accent/10">
                       <td className="py-2">
@@ -222,6 +223,7 @@ function ProjectCard({ project: p, isOpen, onToggle }: { project: ProjectLaborRo
                       <td className="py-2 text-right font-mono text-xs text-status-traveling">{e.travelReturnMin > 0 ? fmtH(e.travelReturnMin) : "—"}</td>
                       <td className="py-2 text-right font-mono text-xs text-status-traveling font-medium">{e.travelTotalMin > 0 ? fmtH(e.travelTotalMin) : "—"}</td>
                       <td className="py-2 text-right font-mono text-xs font-medium">{fmtH(e.workedMin)}</td>
+                      <td className="py-2 text-right font-mono text-xs text-amber-400" title="Travel time treated as idle">{e.travelTotalMin > 0 ? fmtH(e.travelTotalMin) : "—"}</td>
                       <td className="py-2 text-right font-mono text-xs text-status-overtime">{e.otMin > 0 ? fmtH(e.otMin) : "—"}</td>
                       <td className="py-2 text-right font-mono text-[10px] text-muted-foreground">AED {e.hourlyRate}/h</td>
                       <td className="py-2 text-right font-mono text-xs">{fmtAED(e.regularCost)}</td>
@@ -239,6 +241,7 @@ function ProjectCard({ project: p, isOpen, onToggle }: { project: ProjectLaborRo
                     <td className="py-2 text-right font-mono text-xs text-status-traveling">{fmtH(p.travelReturnMin)}</td>
                     <td className="py-2 text-right font-mono text-xs text-status-traveling">{fmtH(p.travelTotalMin)}</td>
                     <td className="py-2 text-right font-mono text-xs">{fmtH(p.workedMin)}</td>
+                    <td className="py-2 text-right font-mono text-xs text-amber-400">{fmtH(p.travelTotalMin)}</td>
                     <td className="py-2 text-right font-mono text-xs text-status-overtime">{fmtH(p.otMin)}</td>
                     <td />
                     <td className="py-2 text-right font-mono text-xs">{fmtAED(p.regularCost)}</td>
