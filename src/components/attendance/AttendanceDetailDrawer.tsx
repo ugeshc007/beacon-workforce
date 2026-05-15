@@ -109,6 +109,11 @@ export function AttendanceDetailDrawer({ log, open, onOpenChange }: Props) {
     {
       label: "Office Punch-out",
       time: effectivePunchOut,
+      lat: log.office_punch_out_lat != null ? Number(log.office_punch_out_lat) : null,
+      lng: log.office_punch_out_lng != null ? Number(log.office_punch_out_lng) : null,
+      distance: log.office_punch_out_distance_m != null ? Number(log.office_punch_out_distance_m) : null,
+      valid: log.office_punch_out_valid,
+      accuracy: log.office_punch_out_accuracy != null ? Number(log.office_punch_out_accuracy) : null,
       color: "text-muted-foreground",
       icon: <Clock className="h-4 w-4" />,
     },
