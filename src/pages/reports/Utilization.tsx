@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import {
   ChevronLeft, ChevronRight, Users, Clock, BarChart3, TrendingUp,
-  Download, Timer, BatteryLow, AlertTriangle, CalendarX,
+  Download, Timer, BatteryLow, AlertTriangle, CalendarX, Car,
 } from "lucide-react";
 import { downloadCsv } from "@/lib/csv-export";
 import { exportReportPdf } from "@/lib/pdf-export";
@@ -88,8 +88,8 @@ export default function Utilization() {
           {data && (<>
             <Button variant="outline" size="sm" className="text-xs ml-2" onClick={() => {
               downloadCsv(`utilization-${dateRange.start}-${dateRange.end}.csv`,
-                ["Employee", "Skill", "Days Worked", "Hours", "OT Hours", "Idle Hours", "Capacity", "Utilization %"],
-                data.rows.map((r) => [r.name, r.skill_type, r.daysWorked, r.totalHours, r.otHours, r.idleHours, r.capacity, r.utilization])
+                ["Employee", "Skill", "Days Worked", "Hours", "OT Hours", "Travel Hours", "Idle Hours", "Capacity", "Utilization %"],
+                data.rows.map((r) => [r.name, r.skill_type, r.daysWorked, r.totalHours, r.otHours, r.travelHours, r.idleHours, r.capacity, r.utilization])
               );
             }}><Download className="h-3.5 w-3.5 mr-1" />CSV</Button>
             <Button variant="outline" size="sm" className="text-xs" onClick={() => {
@@ -100,13 +100,14 @@ export default function Utilization() {
                 summaryCards: [
                   { label: "Avg Utilization", value: `${data.avgUtilization}%` },
                   { label: "Total Worked", value: `${data.totalWorkedHours}h` },
+                  { label: "Travel Hours", value: `${data.totalTravelHours}h` },
                   { label: "Idle Hours", value: `${data.totalIdleHours}h` },
                   { label: "OT Hours", value: `${data.totalOtHours}h` },
                 ],
                 tables: [{
                   title: "Employee Utilization Detail",
-                  headers: ["Employee", "Skill", "Days", "Hours", "OT", "Idle", "Capacity", "Utilization %"],
-                  rows: data.rows.map((r) => [r.name, r.skill_type, r.daysWorked, `${r.totalHours}h`, `${r.otHours}h`, `${r.idleHours}h`, `${r.capacity}h`, `${r.utilization}%`]),
+                  headers: ["Employee", "Skill", "Days", "Hours", "OT", "Travel", "Idle", "Capacity", "Utilization %"],
+                  rows: data.rows.map((r) => [r.name, r.skill_type, r.daysWorked, `${r.totalHours}h`, `${r.otHours}h`, `${r.travelHours}h`, `${r.idleHours}h`, `${r.capacity}h`, `${r.utilization}%`]),
                 }],
               });
             }}><Download className="h-3.5 w-3.5 mr-1" />PDF</Button>
@@ -140,9 +141,10 @@ export default function Utilization() {
       ) : !data ? null : (
         <>
           {/* Stat Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <StatCard title="Avg Utilization" value={`${data.avgUtilization}%`} icon={TrendingUp} variant="brand" />
             <StatCard title="Total Worked" value={`${data.totalWorkedHours}h`} icon={Clock} variant="success" />
+            <StatCard title="Travel Hours" value={`${data.totalTravelHours}h`} icon={Car} variant="brand" />
             <StatCard title="Idle Hours" value={`${data.totalIdleHours}h`} icon={BatteryLow} variant="warning" />
             <StatCard title="OT Hours" value={`${data.totalOtHours}h`} icon={Timer} variant="destructive" />
           </div>
@@ -312,6 +314,7 @@ export default function Utilization() {
                     <th className="text-right py-2 font-medium">Days</th>
                     <th className="text-right py-2 font-medium">Hours</th>
                     <th className="text-right py-2 font-medium">OT</th>
+                    <th className="text-right py-2 font-medium">Travel</th>
                     <th className="text-right py-2 font-medium">Idle</th>
                     <th className="text-right py-2 font-medium">Capacity</th>
                     <th className="text-right py-2 font-medium">Utilization</th>
@@ -326,6 +329,7 @@ export default function Utilization() {
                       <td className="py-2 text-right font-mono text-xs">{r.daysWorked}</td>
                       <td className="py-2 text-right font-mono text-xs">{r.totalHours}h</td>
                       <td className="py-2 text-right font-mono text-xs text-status-overtime">{r.otHours > 0 ? `${r.otHours}h` : "—"}</td>
+                      <td className="py-2 text-right font-mono text-xs text-status-traveling">{r.travelHours > 0 ? `${r.travelHours}h` : "—"}</td>
                       <td className="py-2 text-right font-mono text-xs text-muted-foreground">{r.idleHours > 0 ? `${r.idleHours}h` : "—"}</td>
                       <td className="py-2 text-right font-mono text-xs text-muted-foreground">{r.capacity}h</td>
                       <td className="py-2 text-right font-mono text-xs font-medium">{r.utilization}%</td>
