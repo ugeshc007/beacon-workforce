@@ -255,7 +255,7 @@ export default function Schedule() {
                     setSelectedProjectId("all");
                   }
                 }
-                setSelectedDay(null);
+                // Keep the user's selected date — do not reset it
               }}
             >
               <SelectTrigger className="w-[180px]"><SelectValue placeholder="All Job Cards" /></SelectTrigger>
