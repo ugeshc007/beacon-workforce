@@ -418,27 +418,69 @@ const SECTIONS: Section[] = [
       {
         q: "How is Overtime (OT) calculated?",
         a: (
-          <div className="space-y-2">
-            <p><b>Worked minutes</b> = punch-out − punch-in − break minutes (default 1h break).</p>
-            <p><b>Standard day</b> = employee's <i>standard hours per day</i> (default 8h productive, i.e. 9h on site including 1h break).</p>
+          <div className="space-y-3">
+            <p><b>Formula</b></p>
             <ul className="list-disc pl-5 space-y-1">
+              <li><b>Worked minutes</b> = punch-out − punch-in − break (default 1h)</li>
+              <li><b>Standard day</b> = employee's <i>standard hours per day</i> (default 8h productive = 9h on site incl. 1h break)</li>
               <li><b>Regular pay</b> = min(worked, standard) × hourly rate</li>
-              <li><b>Overtime</b> = max(0, worked − standard) × hourly rate × <i>OT multiplier</i> (from <Path>Settings</Path>, default ×1.5)</li>
+              <li><b>Overtime pay</b> = max(0, worked − standard) × hourly rate × <i>OT multiplier</i> (default ×1.5)</li>
             </ul>
+
+            <div className="rounded-lg border bg-muted/40 p-3 space-y-2">
+              <p className="font-semibold">Example 1 — Normal day, 10h on site</p>
+              <ul className="list-disc pl-5 space-y-1 text-sm">
+                <li>Punch in 08:00 · Punch out 18:00 · Break 1h</li>
+                <li>Worked = 10h − 1h = <b>9h</b></li>
+                <li>Standard = 8h → Regular = 8h, OT = <b>1h</b></li>
+                <li>Hourly rate AED 20, OT multiplier ×1.5 → OT rate = AED 30/h</li>
+                <li>Regular pay = 8 × 20 = <b>AED 160</b></li>
+                <li>OT pay = 1 × 30 = <b>AED 30</b></li>
+                <li>Total = <b>AED 190</b></li>
+              </ul>
+            </div>
+
+            <div className="rounded-lg border bg-muted/40 p-3 space-y-2">
+              <p className="font-semibold">Example 2 — Short day, 7h work</p>
+              <ul className="list-disc pl-5 space-y-1 text-sm">
+                <li>Punch in 08:00 · Punch out 16:00 · Break 1h → Worked = <b>7h</b></li>
+                <li>7 &lt; 8 standard → no OT</li>
+                <li>Regular pay = 7 × 20 = <b>AED 140</b>, OT = AED 0</li>
+              </ul>
+            </div>
+
             <p>OT hours show as <Badge className="bg-purple-500/20 text-purple-500">Overtime</Badge> in Attendance and Timesheets.</p>
           </div>
         ),
       },
       {
-        q: "Public holiday & weekly off-day OT",
+        q: "Public holiday & weekly off-day OT (with example)",
         a: (
-          <div className="space-y-2">
+          <div className="space-y-3">
             <p>On a public holiday or the employee's weekly off day, <b>all hours are premium</b> — there is no regular-pay portion.</p>
             <ul className="list-disc pl-5 space-y-1">
-              <li><b>Multiplier mode</b>: hourly rate × OT multiplier × holiday rate value (default 1.5)</li>
+              <li><b>Multiplier mode</b>: per-hour pay = hourly rate × OT multiplier × holiday rate value</li>
               <li><b>Fixed mode</b>: flat AED/hour set on the skill role</li>
             </ul>
-            <p>Configure per skill in <Path>Settings → Skill Roles</Path> (holiday rate type + value). The premium amount is stored as overtime cost in reports.</p>
+
+            <div className="rounded-lg border bg-muted/40 p-3 space-y-2">
+              <p className="font-semibold">Example — 9h on a public holiday (multiplier mode)</p>
+              <ul className="list-disc pl-5 space-y-1 text-sm">
+                <li>Worked = 9h − 1h break = <b>8h</b></li>
+                <li>Hourly rate AED 20, OT multiplier ×1.5, holiday rate value 1.5</li>
+                <li>Per-hour holiday pay = 20 × 1.5 × 1.5 = <b>AED 45/h</b></li>
+                <li>Total premium = 8 × 45 = <b>AED 360</b> (no regular portion)</li>
+              </ul>
+            </div>
+
+            <div className="rounded-lg border bg-muted/40 p-3 space-y-2">
+              <p className="font-semibold">Example — 8h holiday (fixed mode at AED 50/h)</p>
+              <ul className="list-disc pl-5 space-y-1 text-sm">
+                <li>Total premium = 8 × 50 = <b>AED 400</b></li>
+              </ul>
+            </div>
+
+            <p>Configure per skill in <Path>Settings → Skill Roles</Path>. The premium amount is stored as overtime cost in reports.</p>
           </div>
         ),
       },
