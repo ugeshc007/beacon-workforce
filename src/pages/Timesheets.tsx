@@ -964,7 +964,7 @@ function DaySummaryView({
                 </tr>
               </thead>
               <tbody>
-                {data.rows.map((r) => (
+                {filteredRows.map((r) => (
                   <tr key={r.employee_id} className="border-b border-border/30 hover:bg-accent/20">
                     <td className="py-2 px-3">
                       <div className="font-medium text-foreground">{r.employee_name}</div>
