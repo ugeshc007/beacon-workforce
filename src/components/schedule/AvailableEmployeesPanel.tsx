@@ -133,7 +133,7 @@ export function AvailableEmployeesPanel({ date, canAssign = true }: Props) {
               <p className="text-sm">No employees match</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
               {filtered.map((emp) => {
                 const meta = statusMeta[emp.status];
                 const Icon = meta.icon;
