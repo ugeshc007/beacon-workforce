@@ -443,6 +443,10 @@ export function useAssignEmployee() {
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ["project-team", vars.projectId] });
       qc.invalidateQueries({ queryKey: ["project-stats", vars.projectId] });
+      qc.invalidateQueries({ queryKey: ["schedule-assignments"] });
+      qc.invalidateQueries({ queryKey: ["available-employees"] });
+      qc.invalidateQueries({ queryKey: ["schedule-report-assignments"] });
+      qc.invalidateQueries({ queryKey: ["project-labor-breakdown"] });
     },
   });
 }
