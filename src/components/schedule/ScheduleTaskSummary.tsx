@@ -101,12 +101,10 @@ export function ScheduleTaskSummary({ date, projects, assignments = [], onSelect
             <tbody>
               {projects.map((project) => {
                 const projAssign = assignments.filter((a) => a.project_id === project.id);
-                const team = projAssign.filter(
-                  (a) => (a.assigned_role ?? a.employee_skill) !== "driver"
-                );
-                const drivers = projAssign.filter(
-                  (a) => (a.assigned_role ?? a.employee_skill) === "driver"
-                );
+                const isDriver = (a: AssignmentLite) =>
+                  a.assigned_role === "driver" || a.employee_skill === "driver";
+                const team = projAssign.filter((a) => !isDriver(a));
+                const drivers = projAssign.filter(isDriver);
                 const logs = (allLogs ?? []).filter((l) => l.project_id === project.id && l.status !== "completed");
                 const todayLogs = logs.filter((l) => l.date === date);
                 const carriedLogs = logs.filter((l) => l.date !== date);
