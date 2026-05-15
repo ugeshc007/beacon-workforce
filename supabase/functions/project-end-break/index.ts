@@ -14,16 +14,16 @@ Deno.serve(async (req) => {
 
     const { data: session } = await supabase
       .from("project_work_sessions")
-      .select("break_start_time, break_minutes")
+      .select("break_start_time, break_end_time, break_minutes, work_end_time")
       .eq("id", session_id)
       .eq("employee_id", employee_id)
       .maybeSingle();
     if (!session) return errorResponse("Session not found", 404);
+    if (session.work_end_time) return errorResponse("Session already ended", 400);
+    if (!session.break_start_time) return errorResponse("Break was never started", 400);
+    if (session.break_end_time) return errorResponse("Break already ended", 400);
 
-    let addBreak = 0;
-    if (session.break_start_time) {
-      addBreak = Math.max(0, Math.round((new Date(now).getTime() - new Date(session.break_start_time).getTime()) / 60000));
-    }
+    const addBreak = Math.max(0, Math.round((new Date(now).getTime() - new Date(session.break_start_time).getTime()) / 60000));
 
     const { error } = await supabase
       .from("project_work_sessions")
