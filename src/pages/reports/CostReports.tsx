@@ -199,6 +199,7 @@ function ProjectCard({ project: p, isOpen, onToggle }: { project: ProjectLaborRo
                     <th className="text-right py-2 font-medium" title="Site → office return">← Office</th>
                     <th className="text-right py-2 font-medium">Travel Total</th>
                     <th className="text-right py-2 font-medium">Worked</th>
+                    <th className="text-right py-2 font-medium text-amber-400" title="Idle time = travel time (non-productive on-clock hours)">Idle</th>
                     <th className="text-right py-2 font-medium">OT</th>
                     <th className="text-right py-2 font-medium">Rate</th>
                     <th className="text-right py-2 font-medium">Regular</th>
