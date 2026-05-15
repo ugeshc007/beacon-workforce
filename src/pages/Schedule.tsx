@@ -255,7 +255,7 @@ export default function Schedule() {
                     setSelectedProjectId("all");
                   }
                 }
-                setSelectedDay(null);
+                // Keep the user's selected date — do not reset it
               }}
             >
               <SelectTrigger className="w-[180px]"><SelectValue placeholder="All Job Cards" /></SelectTrigger>
@@ -279,7 +279,7 @@ export default function Schedule() {
             </Select>
           </div>
 
-          <Select value={selectedProjectId} onValueChange={(v) => { setSelectedProjectId(v); setSelectedDay(null); }}>
+          <Select value={selectedProjectId} onValueChange={(v) => { setSelectedProjectId(v); }}>
             <SelectTrigger className="w-[220px]"><SelectValue placeholder="All Projects" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Projects</SelectItem>
