@@ -499,6 +499,7 @@ export default function Schedule() {
             <ScheduleTaskSummary
               date={selectedDay}
               projects={projectsWithAssignments}
+              assignments={da}
               onSelectProject={(pid) => setExpandedProjectId(pid)}
               onCopyProject={canCreate ? (pid, pName) => {
                 const next = new Date(selectedDay! + "T00:00:00");
