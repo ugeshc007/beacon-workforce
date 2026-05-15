@@ -17,12 +17,16 @@ Deno.serve(async (req) => {
 
     const { data: log } = await supabase
       .from("attendance_logs")
-      .select("id")
+      .select("id, work_start_time, work_end_time, break_start_time, break_end_time, office_punch_out")
       .eq("employee_id", employee_id)
       .eq("date", today)
       .maybeSingle();
 
     if (!log) return errorResponse("Must punch in first", 400);
+    if (log.office_punch_out) return errorResponse("Already punched out for the day", 400);
+    if (!log.work_start_time) return errorResponse("Must start work before taking a break", 400);
+    if (log.work_end_time) return errorResponse("Work already ended", 400);
+    if (log.break_start_time && !log.break_end_time) return errorResponse("Break already in progress", 400);
 
     const { error } = await supabase
       .from("attendance_logs")
