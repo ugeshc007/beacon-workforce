@@ -223,6 +223,7 @@ function ProjectCard({ project: p, isOpen, onToggle }: { project: ProjectLaborRo
                       <td className="py-2 text-right font-mono text-xs text-status-traveling">{e.travelReturnMin > 0 ? fmtH(e.travelReturnMin) : "—"}</td>
                       <td className="py-2 text-right font-mono text-xs text-status-traveling font-medium">{e.travelTotalMin > 0 ? fmtH(e.travelTotalMin) : "—"}</td>
                       <td className="py-2 text-right font-mono text-xs font-medium">{fmtH(e.workedMin)}</td>
+                      <td className="py-2 text-right font-mono text-xs text-amber-400" title="Travel time treated as idle">{e.travelTotalMin > 0 ? fmtH(e.travelTotalMin) : "—"}</td>
                       <td className="py-2 text-right font-mono text-xs text-status-overtime">{e.otMin > 0 ? fmtH(e.otMin) : "—"}</td>
                       <td className="py-2 text-right font-mono text-[10px] text-muted-foreground">AED {e.hourlyRate}/h</td>
                       <td className="py-2 text-right font-mono text-xs">{fmtAED(e.regularCost)}</td>
