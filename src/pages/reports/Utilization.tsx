@@ -140,9 +140,10 @@ export default function Utilization() {
       ) : !data ? null : (
         <>
           {/* Stat Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <StatCard title="Avg Utilization" value={`${data.avgUtilization}%`} icon={TrendingUp} variant="brand" />
             <StatCard title="Total Worked" value={`${data.totalWorkedHours}h`} icon={Clock} variant="success" />
+            <StatCard title="Travel Hours" value={`${data.totalTravelHours}h`} icon={Car} variant="brand" />
             <StatCard title="Idle Hours" value={`${data.totalIdleHours}h`} icon={BatteryLow} variant="warning" />
             <StatCard title="OT Hours" value={`${data.totalOtHours}h`} icon={Timer} variant="destructive" />
           </div>
