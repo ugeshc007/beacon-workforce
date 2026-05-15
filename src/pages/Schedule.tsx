@@ -15,7 +15,7 @@ import {
 import { DayAssignmentPanel } from "@/components/schedule/DayAssignmentPanel";
 import { AvailableEmployeesPanel } from "@/components/schedule/AvailableEmployeesPanel";
 import { ScheduleTaskSummary } from "@/components/schedule/ScheduleTaskSummary";
-import { AvailableEmployeesSheet } from "@/components/schedule/AvailableEmployeesSheet";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
