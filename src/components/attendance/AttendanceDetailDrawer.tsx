@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, MapPinOff, ShieldAlert, Clock, CheckCircle2, Briefcase } from "lucide-react";
 import MiniMap from "./MiniMap";
 import { useProjectSessions, type ProjectWorkSession } from "@/hooks/useProjectSessions";
+import { ProjectSessionCard } from "./ProjectSessionCard";
 
 interface Props {
   log: AttendanceLog | null;
