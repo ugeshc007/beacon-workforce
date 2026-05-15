@@ -212,15 +212,6 @@ export default function Schedule() {
           <p className="text-sm text-muted-foreground">{weekLabel}</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-xs gap-1.5 border-brand/40 text-brand hover:bg-brand/10"
-            onClick={() => setAvailSheetOpen(true)}
-          >
-            <UserCheck className="h-3.5 w-3.5" />
-            Available Employees
-          </Button>
           {/* Bulk actions menu */}
           {canEdit && (
             <DropdownMenu>
