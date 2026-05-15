@@ -985,14 +985,14 @@ function DaySummaryView({
               </tbody>
               <tfoot>
                 <tr className="border-t-2 border-border bg-muted/20">
-                  <td colSpan={4} className="py-2 px-3 font-semibold">Totals ({data.rows.length})</td>
-                  <td className="py-2 px-2 text-right font-mono text-xs font-bold">{formatWorkedMinutes(data.totals.workedMin)}</td>
-                  <td className="py-2 px-2 text-right font-mono text-xs font-bold text-status-overtime">{formatWorkedMinutes(data.totals.otMin)}</td>
-                  <td className="py-2 px-2 text-right font-mono text-xs font-bold">{data.totals.breakMin}m</td>
-                  {travelPaid && <td className="py-2 px-2 text-right font-mono text-xs font-bold">{data.totals.travelMin}m</td>}
-                  <td className="py-2 px-2 text-right font-mono text-xs font-bold">AED {Math.round(data.totals.regPay).toLocaleString()}</td>
-                  <td className="py-2 px-2 text-right font-mono text-xs font-bold text-status-overtime">AED {Math.round(data.totals.otPay).toLocaleString()}</td>
-                  <td className="py-2 px-2 text-right font-mono text-xs font-bold">AED {Math.round(data.totals.totalPay).toLocaleString()}</td>
+                  <td colSpan={4} className="py-2 px-3 font-semibold">Totals ({filteredRows.length})</td>
+                  <td className="py-2 px-2 text-right font-mono text-xs font-bold">{formatWorkedMinutes(filteredTotals.workedMin)}</td>
+                  <td className="py-2 px-2 text-right font-mono text-xs font-bold text-status-overtime">{formatWorkedMinutes(filteredTotals.otMin)}</td>
+                  <td className="py-2 px-2 text-right font-mono text-xs font-bold">{filteredTotals.breakMin}m</td>
+                  {travelPaid && <td className="py-2 px-2 text-right font-mono text-xs font-bold">{filteredTotals.travelMin}m</td>}
+                  <td className="py-2 px-2 text-right font-mono text-xs font-bold">AED {Math.round(filteredTotals.regPay).toLocaleString()}</td>
+                  <td className="py-2 px-2 text-right font-mono text-xs font-bold text-status-overtime">AED {Math.round(filteredTotals.otPay).toLocaleString()}</td>
+                  <td className="py-2 px-2 text-right font-mono text-xs font-bold">AED {Math.round(filteredTotals.totalPay).toLocaleString()}</td>
                 </tr>
               </tfoot>
             </table>
