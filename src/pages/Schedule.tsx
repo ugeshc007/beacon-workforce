@@ -646,6 +646,11 @@ export default function Schedule() {
         </div>
       )}
 
+      {/* Inline Available Employees panel — fills the empty area below */}
+      {selectedDay && (
+        <AvailableEmployeesPanel date={selectedDay} canAssign={canEdit} />
+      )}
+
       {/* Copy from Previous Week Dialog */}
       <Dialog open={bulkDialog === "copy"} onOpenChange={(v) => { if (!v) setBulkDialog(null); }}>
         <DialogContent>
