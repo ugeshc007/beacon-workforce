@@ -51,7 +51,10 @@ export function AttendanceDetailDrawer({ log, open, onOpenChange }: Props) {
   const effectivePunchOut = log.office_punch_out ?? latestSessionEnd;
   const effectiveWorkEnd = log.work_end_time ?? latestSessionEnd;
 
-  const steps: TimelineStep[] = [
+  // In-House = no project assigned and no project sessions. Hide site/travel rows.
+  const isInHouse = !log.project_id && sessions.length === 0;
+
+  const allSteps: TimelineStep[] = [
     {
       label: "Office Punch-in",
       time: log.office_punch_in,
