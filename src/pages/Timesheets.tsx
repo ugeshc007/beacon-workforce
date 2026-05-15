@@ -883,20 +883,59 @@ function useDaySummary(date: string) {
 function DaySummaryView({
   date,
   travelPaid,
+  search = "",
+  skillFilter = "all",
+  projectFilter = "all",
+  employeeFilter = "all",
 }: {
   date: string;
   travelPaid: boolean;
+  search?: string;
+  skillFilter?: string;
+  projectFilter?: string;
+  employeeFilter?: string;
 }) {
   const { data, isLoading } = useDaySummary(date);
+
+  const filteredRows = useMemo(() => {
+    if (!data?.rows) return [];
+    const s = search.trim().toLowerCase();
+    return data.rows.filter((r) => {
+      if (s && !r.employee_name.toLowerCase().includes(s) && !r.employee_code.toLowerCase().includes(s)) return false;
+      if (skillFilter !== "all" && r.skill_type !== skillFilter) return false;
+      if (employeeFilter !== "all" && r.employee_id !== employeeFilter) return false;
+      if (projectFilter !== "all") {
+        // project filter requires matching project_id; daySummary rows only have project_name, so skip if not present
+        if ((r as any).project_id !== projectFilter) return false;
+      }
+      return true;
+    });
+  }, [data, search, skillFilter, projectFilter, employeeFilter]);
+
+  const filteredTotals = useMemo(() => {
+    return filteredRows.reduce(
+      (acc, r) => {
+        acc.workedMin += r.workedMin;
+        acc.otMin += r.otMin;
+        acc.breakMin += r.breakMin;
+        acc.travelMin += r.travelMin;
+        acc.regPay += r.regPay;
+        acc.otPay += r.otPay;
+        acc.totalPay += r.totalPay;
+        return acc;
+      },
+      { workedMin: 0, otMin: 0, breakMin: 0, travelMin: 0, regPay: 0, otPay: 0, totalPay: 0 }
+    );
+  }, [filteredRows]);
 
   if (isLoading) {
     return <div className="space-y-2 py-4">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>;
   }
-  if (!data || !data.rows.length) {
+  if (!data || !filteredRows.length) {
     return (
       <div className="text-center py-12 text-muted-foreground">
         <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
-        <p className="text-sm">No attendance records for this day</p>
+        <p className="text-sm">No attendance records match the current filters</p>
       </div>
     );
   }
