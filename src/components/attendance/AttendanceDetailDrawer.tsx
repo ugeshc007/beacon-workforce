@@ -3,8 +3,9 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, MapPinOff, ShieldAlert, Clock, CheckCircle2 } from "lucide-react";
+import { MapPin, MapPinOff, ShieldAlert, Clock, CheckCircle2, Briefcase } from "lucide-react";
 import MiniMap from "./MiniMap";
+import { useProjectSessions, type ProjectWorkSession } from "@/hooks/useProjectSessions";
 
 interface Props {
   log: AttendanceLog | null;
