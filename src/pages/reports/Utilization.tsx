@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import {
   ChevronLeft, ChevronRight, Users, Clock, BarChart3, TrendingUp,
-  Download, Timer, BatteryLow, AlertTriangle, CalendarX,
+  Download, Timer, BatteryLow, AlertTriangle, CalendarX, Car,
 } from "lucide-react";
 import { downloadCsv } from "@/lib/csv-export";
 import { exportReportPdf } from "@/lib/pdf-export";
