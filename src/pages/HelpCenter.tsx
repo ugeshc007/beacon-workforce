@@ -365,17 +365,27 @@ const SECTIONS: Section[] = [
     summary: "Multi-leg flow for drivers (drop-off / pickup / wait).",
     topics: [
       {
-        q: "Driver daily flow",
+        q: "Driver daily flow (step by step)",
         a: (
           <ol className="list-decimal pl-5 space-y-1">
-            <li><b>Punch In</b> at office.</li>
-            <li>Select pre-assigned project → <b>Start Travel</b>.</li>
-            <li>Arrive site → choose <b>Drop Off</b>, <b>Pickup</b>, or <b>Wait</b> (waiting is paid).</li>
-            <li>End leg → start travel to next pre-assigned project.</li>
-            <li>Repeat for each scheduled project.</li>
-            <li>Return to office → <b>Punch Out</b>.</li>
+            <li><b>Punch In</b> at office (standard).</li>
+            <li><b>Pick a project</b> from today's driver assignments.</li>
+            <li><b>Start Travel</b> — leg status becomes <i>traveling</i>.</li>
+            <li>Arrive at site → tap one of:
+              <ul className="list-disc pl-5 mt-1">
+                <li><b>Drop Off</b> — log time, free to leave.</li>
+                <li><b>Pick Up</b> — log time, free to leave.</li>
+                <li><b>Wait</b> — stays on site, paid until <i>Done Waiting</i>.</li>
+              </ul>
+            </li>
+            <li><b>End Leg</b> (Leaving Site / Done Waiting) — leg becomes <i>completed</i>.</li>
+            <li>Then either <b>Start another project</b> (new leg) or <b>Return to Office</b> → Arrive Office → <b>Punch Out</b>.</li>
           </ol>
         ),
+      },
+      {
+        q: "What counts as a 'leg'?",
+        a: <p>Each drop-off, pickup, or wait is a separate leg with its own travel time and on-site time. A pickup later in the day is a new leg, not a continuation of an earlier drop-off.</p>,
       },
       {
         q: "How are driver costs split per project?",
