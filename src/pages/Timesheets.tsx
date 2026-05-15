@@ -366,7 +366,14 @@ export default function Timesheets() {
 
         {/* ── Daily View ── */}
         <TabsContent value="daily">
-          <DaySummaryView date={daySummaryDate} travelPaid={travelPaid} />
+          <DaySummaryView
+            date={daySummaryDate}
+            travelPaid={travelPaid}
+            search={search}
+            skillFilter={skillFilter}
+            projectFilter={projectFilter}
+            employeeFilter={employeeFilter}
+          />
         </TabsContent>
 
         {/* ── Employee View ── */}
