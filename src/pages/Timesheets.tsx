@@ -849,6 +849,7 @@ function useDaySummary(date: string) {
           employee_code: emp?.employee_code ?? "—",
           skill_type: emp?.skill_type ?? "—",
           project_id: log.project_id,
+          project_name: log.projects?.name ?? "In-House",
           punchIn: log.office_punch_in,
           punchOut: log.office_punch_out,
           workedMin,
