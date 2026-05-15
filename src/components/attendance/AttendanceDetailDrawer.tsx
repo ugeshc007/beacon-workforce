@@ -51,7 +51,10 @@ export function AttendanceDetailDrawer({ log, open, onOpenChange }: Props) {
   const effectivePunchOut = log.office_punch_out ?? latestSessionEnd;
   const effectiveWorkEnd = log.work_end_time ?? latestSessionEnd;
 
-  const steps: TimelineStep[] = [
+  // In-House = no project assigned and no project sessions. Hide site/travel rows.
+  const isInHouse = !log.project_id && sessions.length === 0;
+
+  const allSteps: TimelineStep[] = [
     {
       label: "Office Punch-in",
       time: log.office_punch_in,
@@ -118,6 +121,9 @@ export function AttendanceDetailDrawer({ log, open, onOpenChange }: Props) {
       icon: <Clock className="h-4 w-4" />,
     },
   ];
+
+  const hiddenInHouse = new Set(["Travel Start", "Site Arrival", "Return Travel"]);
+  const steps = isInHouse ? allSteps.filter((s) => !hiddenInHouse.has(s.label)) : allSteps;
 
   const totalHours = log.total_work_minutes != null ? (log.total_work_minutes / 60).toFixed(1) : "—";
   const otHours = log.overtime_minutes != null ? (log.overtime_minutes / 60).toFixed(1) : "0";
