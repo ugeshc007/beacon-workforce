@@ -13,6 +13,7 @@ import {
   type MaintenanceScheduleItem,
 } from "@/hooks/useSchedule";
 import { DayAssignmentPanel } from "@/components/schedule/DayAssignmentPanel";
+import { AvailableEmployeesPanel } from "@/components/schedule/AvailableEmployeesPanel";
 import { ScheduleTaskSummary } from "@/components/schedule/ScheduleTaskSummary";
 import { AvailableEmployeesSheet } from "@/components/schedule/AvailableEmployeesSheet";
 import { Card, CardContent } from "@/components/ui/card";
@@ -643,6 +644,11 @@ export default function Schedule() {
           <CalendarDays className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
           <p className="text-sm text-muted-foreground">Click a day to view and manage assignments</p>
         </div>
+      )}
+
+      {/* Inline Available Employees panel — fills the empty area below */}
+      {selectedDay && (
+        <AvailableEmployeesPanel date={selectedDay} canAssign={canEdit} />
       )}
 
       {/* Copy from Previous Week Dialog */}
