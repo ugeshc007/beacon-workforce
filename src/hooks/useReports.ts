@@ -34,6 +34,7 @@ export interface UtilizationRow {
   totalHours: number;
   otHours: number;
   idleHours: number;
+  travelHours: number;
   capacity: number;
   utilization: number;
   dailyMinutes: Record<string, number>;
