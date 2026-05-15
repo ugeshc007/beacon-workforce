@@ -102,13 +102,13 @@ export function AttendanceDetailDrawer({ log, open, onOpenChange }: Props) {
     },
     {
       label: "Work End",
-      time: log.work_end_time,
+      time: effectiveWorkEnd,
       color: "text-status-overtime",
       icon: <Clock className="h-4 w-4" />,
     },
     {
       label: "Office Punch-out",
-      time: log.office_punch_out,
+      time: effectivePunchOut,
       color: "text-muted-foreground",
       icon: <Clock className="h-4 w-4" />,
     },
