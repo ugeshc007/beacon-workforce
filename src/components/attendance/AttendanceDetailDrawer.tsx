@@ -208,8 +208,21 @@ export function AttendanceDetailDrawer({ log, open, onOpenChange }: Props) {
                 </div>
               );
             })}
-          </div>
         </div>
+
+        {/* Per-project sessions (when employee used Project flow) */}
+        {sessions.length > 0 && (
+          <div className="mt-6">
+            <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+              <Briefcase className="h-4 w-4" /> Project Sessions ({sessions.length})
+            </h3>
+            <div className="space-y-4">
+              {sessions.map((s, idx) => (
+                <ProjectSessionCard key={s.id} session={s} index={idx + 1} />
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Notes */}
         {log.notes && (
