@@ -65,7 +65,7 @@ export default function Schedule() {
   const [copyMaintTargetDate, setCopyMaintTargetDate] = useState("");
   const [copyProjectDialog, setCopyProjectDialog] = useState<{ projectId: string; projectName: string; sourceDate: string } | null>(null);
   const [copyProjectTargetDate, setCopyProjectTargetDate] = useState("");
-  const [availSheetOpen, setAvailSheetOpen] = useState(false);
+  
 
   // Apply-to-range state
   const [rangeStart, setRangeStart] = useState("");
