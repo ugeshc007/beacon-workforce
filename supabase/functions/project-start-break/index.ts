@@ -10,6 +10,17 @@ Deno.serve(async (req) => {
     const auth = await authenticateEmployee(req, supabase, employee_id);
     if (auth.error) return auth.error;
 
+    const { data: session } = await supabase
+      .from("project_work_sessions")
+      .select("id, work_start_time, work_end_time, break_start_time, break_end_time")
+      .eq("id", session_id)
+      .eq("employee_id", employee_id)
+      .maybeSingle();
+    if (!session) return errorResponse("Session not found", 404);
+    if (session.work_end_time) return errorResponse("Session already ended", 400);
+    if (!session.work_start_time) return errorResponse("Must start work before taking a break", 400);
+    if (session.break_start_time && !session.break_end_time) return errorResponse("Break already in progress", 400);
+
     const now = nowTimestamp();
     const { error } = await supabase
       .from("project_work_sessions")
