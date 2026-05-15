@@ -313,6 +313,7 @@ export default function Utilization() {
                     <th className="text-right py-2 font-medium">Days</th>
                     <th className="text-right py-2 font-medium">Hours</th>
                     <th className="text-right py-2 font-medium">OT</th>
+                    <th className="text-right py-2 font-medium">Travel</th>
                     <th className="text-right py-2 font-medium">Idle</th>
                     <th className="text-right py-2 font-medium">Capacity</th>
                     <th className="text-right py-2 font-medium">Utilization</th>
@@ -327,6 +328,7 @@ export default function Utilization() {
                       <td className="py-2 text-right font-mono text-xs">{r.daysWorked}</td>
                       <td className="py-2 text-right font-mono text-xs">{r.totalHours}h</td>
                       <td className="py-2 text-right font-mono text-xs text-status-overtime">{r.otHours > 0 ? `${r.otHours}h` : "—"}</td>
+                      <td className="py-2 text-right font-mono text-xs text-status-traveling">{r.travelHours > 0 ? `${r.travelHours}h` : "—"}</td>
                       <td className="py-2 text-right font-mono text-xs text-muted-foreground">{r.idleHours > 0 ? `${r.idleHours}h` : "—"}</td>
                       <td className="py-2 text-right font-mono text-xs text-muted-foreground">{r.capacity}h</td>
                       <td className="py-2 text-right font-mono text-xs font-medium">{r.utilization}%</td>
