@@ -37,6 +37,7 @@ interface TimelineStep {
 }
 
 export function AttendanceDetailDrawer({ log, open, onOpenChange }: Props) {
+  const { data: sessions = [] } = useProjectSessions(log?.id);
   if (!log) return null;
 
   const steps: TimelineStep[] = [
