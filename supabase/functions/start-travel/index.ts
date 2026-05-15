@@ -20,12 +20,15 @@ Deno.serve(async (req) => {
 
     const { data: log } = await supabase
       .from("attendance_logs")
-      .select("id")
+      .select("id, office_punch_in, travel_start_time, work_end_time, office_punch_out")
       .eq("employee_id", employee_id)
       .eq("date", today)
       .maybeSingle();
 
-    if (!log) return errorResponse("Must punch in first", 400);
+    if (!log) return errorResponse("Must punch in at office first", 400);
+    if (!log.office_punch_in) return errorResponse("Must punch in at office first", 400);
+    if (log.office_punch_out) return errorResponse("Already punched out for the day", 400);
+    if (log.travel_start_time) return errorResponse("Travel already started", 400);
 
     const { error } = await supabase
       .from("attendance_logs")
