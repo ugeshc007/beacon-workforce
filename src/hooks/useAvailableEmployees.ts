@@ -58,8 +58,8 @@ export function useAvailableEmployees(date: string | null) {
 
       // Official working day = 9 hours including 1 hour break (so 540 mins on-shift).
       // Treat 8h+ of shift coverage as fully Booked.
-      const FULL_DAY_MIN = 540; // 9h
-      const NEAR_FULL_MIN = 480; // 8h threshold
+      const FULL_DAY_MIN = 540; // 9h official day (incl. 1h break)
+      const NEAR_FULL_MIN = 540; // 9h — anything below this leaves room for more work
       const shiftMinutes = (s: string | null, e: string | null) => {
         if (!s || !e) return FULL_DAY_MIN; // unknown shift treated as full day
         const [sh, sm] = s.split(":").map(Number);
