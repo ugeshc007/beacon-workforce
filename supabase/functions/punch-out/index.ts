@@ -18,12 +18,14 @@ Deno.serve(async (req) => {
 
     const { data: log } = await supabase
       .from("attendance_logs")
-      .select("id")
+      .select("id, office_arrival_time, office_punch_out")
       .eq("employee_id", employee_id)
       .eq("date", today)
       .maybeSingle();
 
     if (!log) return errorResponse("No attendance record for today", 400);
+    if (log.office_punch_out) return errorResponse("Already punched out", 400);
+    if (!log.office_arrival_time) return errorResponse("Must arrive at office before punching out", 400);
 
     // Validate office GPS
     const { data: emp } = await supabase
