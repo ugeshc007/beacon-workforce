@@ -208,6 +208,7 @@ export function AttendanceDetailDrawer({ log, open, onOpenChange }: Props) {
                 </div>
               );
             })}
+          </div>
         </div>
 
         {/* Per-project sessions (when employee used Project flow) */}
