@@ -224,11 +224,12 @@ export function useUtilizationData(start: string, end: string, filters?: {
       const totalWorkedHours = Math.round(rows.reduce((s, r) => s + r.totalHours, 0));
       const totalOtHours = Math.round(rows.reduce((s, r) => s + r.otHours, 0) * 10) / 10;
       const totalIdleHours = Math.round(rows.reduce((s, r) => s + r.idleHours, 0));
+      const totalTravelHours = Math.round(rows.reduce((s, r) => s + r.travelHours, 0));
       const avgUtilization = rows.length ? Math.round(rows.reduce((s, r) => s + r.utilization, 0) / rows.length) : 0;
 
       return {
         rows, bySkill, weeklyTrend, heatmapDays, absenceRows, dowTotals,
-        avgUtilization, totalWorkedHours, totalOtHours, totalIdleHours,
+        avgUtilization, totalWorkedHours, totalOtHours, totalIdleHours, totalTravelHours,
         branches: branches.map((b) => ({ id: b.id, name: b.name })),
         employees: filteredEmps.map((e) => ({ id: e.id, name: e.name })),
         workingDays,
