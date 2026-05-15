@@ -88,8 +88,8 @@ export default function Utilization() {
           {data && (<>
             <Button variant="outline" size="sm" className="text-xs ml-2" onClick={() => {
               downloadCsv(`utilization-${dateRange.start}-${dateRange.end}.csv`,
-                ["Employee", "Skill", "Days Worked", "Hours", "OT Hours", "Idle Hours", "Capacity", "Utilization %"],
-                data.rows.map((r) => [r.name, r.skill_type, r.daysWorked, r.totalHours, r.otHours, r.idleHours, r.capacity, r.utilization])
+                ["Employee", "Skill", "Days Worked", "Hours", "OT Hours", "Travel Hours", "Idle Hours", "Capacity", "Utilization %"],
+                data.rows.map((r) => [r.name, r.skill_type, r.daysWorked, r.totalHours, r.otHours, r.travelHours, r.idleHours, r.capacity, r.utilization])
               );
             }}><Download className="h-3.5 w-3.5 mr-1" />CSV</Button>
             <Button variant="outline" size="sm" className="text-xs" onClick={() => {
@@ -100,13 +100,14 @@ export default function Utilization() {
                 summaryCards: [
                   { label: "Avg Utilization", value: `${data.avgUtilization}%` },
                   { label: "Total Worked", value: `${data.totalWorkedHours}h` },
+                  { label: "Travel Hours", value: `${data.totalTravelHours}h` },
                   { label: "Idle Hours", value: `${data.totalIdleHours}h` },
                   { label: "OT Hours", value: `${data.totalOtHours}h` },
                 ],
                 tables: [{
                   title: "Employee Utilization Detail",
-                  headers: ["Employee", "Skill", "Days", "Hours", "OT", "Idle", "Capacity", "Utilization %"],
-                  rows: data.rows.map((r) => [r.name, r.skill_type, r.daysWorked, `${r.totalHours}h`, `${r.otHours}h`, `${r.idleHours}h`, `${r.capacity}h`, `${r.utilization}%`]),
+                  headers: ["Employee", "Skill", "Days", "Hours", "OT", "Travel", "Idle", "Capacity", "Utilization %"],
+                  rows: data.rows.map((r) => [r.name, r.skill_type, r.daysWorked, `${r.totalHours}h`, `${r.otHours}h`, `${r.travelHours}h`, `${r.idleHours}h`, `${r.capacity}h`, `${r.utilization}%`]),
                 }],
               });
             }}><Download className="h-3.5 w-3.5 mr-1" />PDF</Button>
