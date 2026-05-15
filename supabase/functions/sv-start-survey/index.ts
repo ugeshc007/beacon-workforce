@@ -10,6 +10,17 @@ Deno.serve(async (req) => {
     const auth = await authenticateEmployee(req, supabase, employee_id);
     if (auth.error) return auth.error;
 
+    const { data: session } = await supabase
+      .from("site_visit_work_sessions")
+      .select("id, site_arrival_time, work_start_time, work_end_time")
+      .eq("id", session_id)
+      .eq("employee_id", employee_id)
+      .maybeSingle();
+    if (!session) return errorResponse("Session not found", 404);
+    if (session.work_end_time) return errorResponse("Visit already ended", 400);
+    if (!session.site_arrival_time) return errorResponse("Must arrive at site before starting the survey", 400);
+    if (session.work_start_time) return errorResponse("Survey already started", 400);
+
     const now = nowTimestamp();
     const { error } = await supabase
       .from("site_visit_work_sessions")
