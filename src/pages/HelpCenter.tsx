@@ -416,8 +416,35 @@ const SECTIONS: Section[] = [
         a: <p>Use the checkbox column → tick rows → <Path>Approve Selected</Path> at the top.</p>,
       },
       {
-        q: "Overtime calculation",
-        a: <p>Hours beyond the daily standard configured in <Path>Settings</Path> are marked purple as OT.</p>,
+        q: "How is Overtime (OT) calculated?",
+        a: (
+          <div className="space-y-2">
+            <p><b>Worked minutes</b> = punch-out − punch-in − break minutes (default 1h break).</p>
+            <p><b>Standard day</b> = employee's <i>standard hours per day</i> (default 8h productive, i.e. 9h on site including 1h break).</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li><b>Regular pay</b> = min(worked, standard) × hourly rate</li>
+              <li><b>Overtime</b> = max(0, worked − standard) × hourly rate × <i>OT multiplier</i> (from <Path>Settings</Path>, default ×1.5)</li>
+            </ul>
+            <p>OT hours show as <Badge className="bg-purple-500/20 text-purple-500">Overtime</Badge> in Attendance and Timesheets.</p>
+          </div>
+        ),
+      },
+      {
+        q: "Public holiday & weekly off-day OT",
+        a: (
+          <div className="space-y-2">
+            <p>On a public holiday or the employee's weekly off day, <b>all hours are premium</b> — there is no regular-pay portion.</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li><b>Multiplier mode</b>: hourly rate × OT multiplier × holiday rate value (default 1.5)</li>
+              <li><b>Fixed mode</b>: flat AED/hour set on the skill role</li>
+            </ul>
+            <p>Configure per skill in <Path>Settings → Skill Roles</Path> (holiday rate type + value). The premium amount is stored as overtime cost in reports.</p>
+          </div>
+        ),
+      },
+      {
+        q: "Why does OT seem off for a 9-hour day?",
+        a: <p>The official day is <b>9 hours including a 1-hour break</b> = 8 productive hours. OT triggers only after 8 productive hours, not 9 clock hours. If you want OT to start at 9 productive hours, raise <i>standard hours per day</i> on the employee profile.</p>,
       },
       {
         q: "Edit a timesheet entry",
