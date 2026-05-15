@@ -41,6 +41,16 @@ export function AttendanceDetailDrawer({ log, open, onOpenChange }: Props) {
   const { data: sessions = [] } = useProjectSessions(log?.id);
   if (!log) return null;
 
+  // Fallback: if office punch-out / work-end not recorded on the main log
+  // (employee used the per-project flow), derive from the latest session.
+  const sessionTimes = sessions
+    .map((s) => s.work_end_time)
+    .filter((t): t is string => !!t)
+    .sort();
+  const latestSessionEnd = sessionTimes.length ? sessionTimes[sessionTimes.length - 1] : null;
+  const effectivePunchOut = log.office_punch_out ?? latestSessionEnd;
+  const effectiveWorkEnd = log.work_end_time ?? latestSessionEnd;
+
   const steps: TimelineStep[] = [
     {
       label: "Office Punch-in",
@@ -92,13 +102,13 @@ export function AttendanceDetailDrawer({ log, open, onOpenChange }: Props) {
     },
     {
       label: "Work End",
-      time: log.work_end_time,
+      time: effectiveWorkEnd,
       color: "text-status-overtime",
       icon: <Clock className="h-4 w-4" />,
     },
     {
       label: "Office Punch-out",
-      time: log.office_punch_out,
+      time: effectivePunchOut,
       color: "text-muted-foreground",
       icon: <Clock className="h-4 w-4" />,
     },
