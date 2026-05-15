@@ -81,7 +81,27 @@ Deno.serve(async (req) => {
       .select("id")
       .single();
 
-    if (error) return errorResponse(error.message, 500);
+    if (error) {
+      // Unique-index race: a parallel request already created an open log
+      if ((error as any).code === "23505") {
+        const { data: existing } = await supabase
+          .from("attendance_logs")
+          .select("id")
+          .eq("employee_id", employee_id)
+          .eq("date", today)
+          .is("office_punch_out", null)
+          .maybeSingle();
+        return jsonResponse({
+          success: true,
+          attendance_id: existing?.id ?? null,
+          gps_valid: valid,
+          distance_meters: Math.round(distance),
+          timestamp: now,
+          deduped: true,
+        });
+      }
+      return errorResponse(error.message, 500);
+    }
 
     // Check if late — compare punch-in time against shift_start
     if (assignment?.shift_start) {
