@@ -17,11 +17,14 @@ Deno.serve(async (req) => {
 
     const { data: session } = await supabase
       .from("project_work_sessions")
-      .select("id, project_id, employee_id")
+      .select("id, project_id, employee_id, travel_start_time, site_arrival_time, work_end_time")
       .eq("id", session_id)
       .eq("employee_id", employee_id)
       .maybeSingle();
     if (!session) return errorResponse("Session not found", 404);
+    if (session.work_end_time) return errorResponse("Session already ended", 400);
+    if (!session.travel_start_time) return errorResponse("Must start travel before arriving at site", 400);
+    if (session.site_arrival_time) return errorResponse("Site arrival already recorded", 400);
 
     const { data: project } = await supabase
       .from("projects")

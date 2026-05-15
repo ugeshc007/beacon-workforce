@@ -13,11 +13,12 @@ Deno.serve(async (req) => {
     const now = nowTimestamp();
     const { data: session } = await supabase
       .from("site_visit_work_sessions")
-      .select("work_start_time, break_start_time, break_end_time, break_minutes, employee_id")
+      .select("work_start_time, work_end_time, break_start_time, break_end_time, break_minutes, employee_id")
       .eq("id", session_id)
       .eq("employee_id", employee_id)
       .maybeSingle();
     if (!session) return errorResponse("Session not found", 404);
+    if (session.work_end_time) return errorResponse("Visit already ended", 400);
     if (!session.work_start_time) return errorResponse("Survey was never started", 400);
 
     let breakMinutes = session.break_minutes ?? 0;
