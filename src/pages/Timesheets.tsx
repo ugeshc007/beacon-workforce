@@ -366,7 +366,14 @@ export default function Timesheets() {
 
         {/* ── Daily View ── */}
         <TabsContent value="daily">
-          <DaySummaryView date={daySummaryDate} travelPaid={travelPaid} />
+          <DaySummaryView
+            date={daySummaryDate}
+            travelPaid={travelPaid}
+            search={search}
+            skillFilter={skillFilter}
+            projectFilter={projectFilter}
+            employeeFilter={employeeFilter}
+          />
         </TabsContent>
 
         {/* ── Employee View ── */}
@@ -841,6 +848,7 @@ function useDaySummary(date: string) {
           employee_name: emp?.name ?? "Unknown",
           employee_code: emp?.employee_code ?? "—",
           skill_type: emp?.skill_type ?? "—",
+          project_id: log.project_id,
           project_name: log.projects?.name ?? "In-House",
           punchIn: log.office_punch_in,
           punchOut: log.office_punch_out,
@@ -876,20 +884,59 @@ function useDaySummary(date: string) {
 function DaySummaryView({
   date,
   travelPaid,
+  search = "",
+  skillFilter = "all",
+  projectFilter = "all",
+  employeeFilter = "all",
 }: {
   date: string;
   travelPaid: boolean;
+  search?: string;
+  skillFilter?: string;
+  projectFilter?: string;
+  employeeFilter?: string;
 }) {
   const { data, isLoading } = useDaySummary(date);
+
+  const filteredRows = useMemo(() => {
+    if (!data?.rows) return [];
+    const s = search.trim().toLowerCase();
+    return data.rows.filter((r) => {
+      if (s && !r.employee_name.toLowerCase().includes(s) && !r.employee_code.toLowerCase().includes(s)) return false;
+      if (skillFilter !== "all" && r.skill_type !== skillFilter) return false;
+      if (employeeFilter !== "all" && r.employee_id !== employeeFilter) return false;
+      if (projectFilter !== "all") {
+        // project filter requires matching project_id; daySummary rows only have project_name, so skip if not present
+        if ((r as any).project_id !== projectFilter) return false;
+      }
+      return true;
+    });
+  }, [data, search, skillFilter, projectFilter, employeeFilter]);
+
+  const filteredTotals = useMemo(() => {
+    return filteredRows.reduce(
+      (acc, r) => {
+        acc.workedMin += r.workedMin;
+        acc.otMin += r.otMin;
+        acc.breakMin += r.breakMin;
+        acc.travelMin += r.travelMin;
+        acc.regPay += r.regPay;
+        acc.otPay += r.otPay;
+        acc.totalPay += r.totalPay;
+        return acc;
+      },
+      { workedMin: 0, otMin: 0, breakMin: 0, travelMin: 0, regPay: 0, otPay: 0, totalPay: 0 }
+    );
+  }, [filteredRows]);
 
   if (isLoading) {
     return <div className="space-y-2 py-4">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>;
   }
-  if (!data || !data.rows.length) {
+  if (!data || !filteredRows.length) {
     return (
       <div className="text-center py-12 text-muted-foreground">
         <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
-        <p className="text-sm">No attendance records for this day</p>
+        <p className="text-sm">No attendance records match the current filters</p>
       </div>
     );
   }
@@ -917,7 +964,7 @@ function DaySummaryView({
                 </tr>
               </thead>
               <tbody>
-                {data.rows.map((r) => (
+                {filteredRows.map((r) => (
                   <tr key={r.employee_id} className="border-b border-border/30 hover:bg-accent/20">
                     <td className="py-2 px-3">
                       <div className="font-medium text-foreground">{r.employee_name}</div>
@@ -938,14 +985,14 @@ function DaySummaryView({
               </tbody>
               <tfoot>
                 <tr className="border-t-2 border-border bg-muted/20">
-                  <td colSpan={4} className="py-2 px-3 font-semibold">Totals ({data.rows.length})</td>
-                  <td className="py-2 px-2 text-right font-mono text-xs font-bold">{formatWorkedMinutes(data.totals.workedMin)}</td>
-                  <td className="py-2 px-2 text-right font-mono text-xs font-bold text-status-overtime">{formatWorkedMinutes(data.totals.otMin)}</td>
-                  <td className="py-2 px-2 text-right font-mono text-xs font-bold">{data.totals.breakMin}m</td>
-                  {travelPaid && <td className="py-2 px-2 text-right font-mono text-xs font-bold">{data.totals.travelMin}m</td>}
-                  <td className="py-2 px-2 text-right font-mono text-xs font-bold">AED {Math.round(data.totals.regPay).toLocaleString()}</td>
-                  <td className="py-2 px-2 text-right font-mono text-xs font-bold text-status-overtime">AED {Math.round(data.totals.otPay).toLocaleString()}</td>
-                  <td className="py-2 px-2 text-right font-mono text-xs font-bold">AED {Math.round(data.totals.totalPay).toLocaleString()}</td>
+                  <td colSpan={4} className="py-2 px-3 font-semibold">Totals ({filteredRows.length})</td>
+                  <td className="py-2 px-2 text-right font-mono text-xs font-bold">{formatWorkedMinutes(filteredTotals.workedMin)}</td>
+                  <td className="py-2 px-2 text-right font-mono text-xs font-bold text-status-overtime">{formatWorkedMinutes(filteredTotals.otMin)}</td>
+                  <td className="py-2 px-2 text-right font-mono text-xs font-bold">{filteredTotals.breakMin}m</td>
+                  {travelPaid && <td className="py-2 px-2 text-right font-mono text-xs font-bold">{filteredTotals.travelMin}m</td>}
+                  <td className="py-2 px-2 text-right font-mono text-xs font-bold">AED {Math.round(filteredTotals.regPay).toLocaleString()}</td>
+                  <td className="py-2 px-2 text-right font-mono text-xs font-bold text-status-overtime">AED {Math.round(filteredTotals.otPay).toLocaleString()}</td>
+                  <td className="py-2 px-2 text-right font-mono text-xs font-bold">AED {Math.round(filteredTotals.totalPay).toLocaleString()}</td>
                 </tr>
               </tfoot>
             </table>
