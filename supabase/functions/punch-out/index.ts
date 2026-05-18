@@ -25,7 +25,24 @@ Deno.serve(async (req) => {
 
     if (!log) return errorResponse("No attendance record for today", 400);
     if (log.office_punch_out) return errorResponse("Already punched out", 400);
-    if (!log.office_arrival_time) return errorResponse("Must arrive at office before punching out", 400);
+
+    // Skip "arrive at office" check for in-house employees (they never left the office).
+    // Only require it if the employee has at least one site-based assignment today.
+    if (!log.office_arrival_time) {
+      const { data: todayAssignments } = await supabase
+        .from("project_assignments")
+        .select("work_location")
+        .eq("employee_id", employee_id)
+        .eq("date", today);
+
+      const hasSiteAssignment = (todayAssignments ?? []).some(
+        (a) => a.work_location === "site"
+      );
+
+      if (hasSiteAssignment) {
+        return errorResponse("Must arrive at office before punching out", 400);
+      }
+    }
 
     // Validate office GPS
     const { data: emp } = await supabase
