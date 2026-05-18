@@ -40,7 +40,10 @@ Deno.serve(async (req) => {
       );
 
       if (hasSiteAssignment) {
-        return errorResponse("Must arrive at office before punching out", 400);
+        return errorResponse(
+          "You went to a site today — please tap 'Arrive Office' after returning, then punch out. (In-house employees can punch out directly.)",
+          400
+        );
       }
     }
 
