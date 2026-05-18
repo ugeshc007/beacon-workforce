@@ -1,0 +1,1 @@
+UPDATE public.users SET name = 'Tamir' WHERE name = 'Rashid Al Maktoum';
