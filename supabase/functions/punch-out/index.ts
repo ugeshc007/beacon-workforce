@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
 
       if (hasSiteAssignment) {
         return errorResponse(
-          "You went to a site today — please tap 'Arrive Office' after returning, then punch out. (In-house employees can punch out directly.)",
+          "Can't punch out yet. You were assigned to a site today, so you must return to the office and tap 'Arrive Office' before punching out. Steps: 1) Tap 'Start Return Travel' at the site, 2) Tap 'Arrive Office' when you reach the office, 3) Then punch out. (In-house employees can punch out directly without these steps.)",
           400
         );
       }
