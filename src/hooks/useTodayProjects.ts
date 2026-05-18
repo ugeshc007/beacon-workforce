@@ -38,7 +38,24 @@ export function useTodayProjects() {
         .eq("employee_id", employee.id)
         .eq("date", today);
 
-      if (!assignments?.length) return [];
+      // Fetch today's manager overrides (cancellations/replacements) for this employee
+      const { data: overrides } = await supabase
+        .from("daily_team_overrides")
+        .select("project_id, action")
+        .eq("date", today)
+        .eq("employee_id", employee.id);
+
+      const cancelledProjectIds = new Set(
+        (overrides ?? [])
+          .filter((o) => o.action === "removed" || o.action === "absent")
+          .map((o) => o.project_id)
+      );
+
+      const filteredAssignments = (assignments ?? []).filter(
+        (a) => !cancelledProjectIds.has(a.project_id)
+      );
+
+      if (!filteredAssignments.length) return [];
 
       const { data: sessions } = await supabase
         .from("project_work_sessions")
