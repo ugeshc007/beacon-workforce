@@ -67,7 +67,7 @@ export function useTodayProjects() {
         (sessions ?? []).map((s) => [s.project_id, s])
       );
 
-      return assignments.map((a) => {
+      return filteredAssignments.map((a) => {
         const project = a.projects as { name?: string; site_address?: string | null; site_latitude?: number | null; site_longitude?: number | null; site_gps_radius?: number | null } | null;
         const session = sessionByProject.get(a.project_id);
         return {
