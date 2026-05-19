@@ -182,10 +182,12 @@ export function useProjectWorkflow(projectId: string | null) {
   return {
     session,
     step,
-    availableActions: getProjectActions(step),
+    workLocation: workLocation ?? null,
+    availableActions: getProjectActions(step, workLocation ?? null),
     loading,
     actionLoading,
     executeAction,
     refresh: fetchSession,
   };
 }
+
