@@ -165,7 +165,6 @@ export default function Attendance() {
                 <thead>
                   <tr className="text-xs text-muted-foreground border-b border-border">
                     <th className="text-left py-2 font-medium">Employee</th>
-                    <th className="text-left py-2 font-medium">Project</th>
                     <th className="text-left py-2 font-medium">GPS</th>
                     <th className="text-left py-2 font-medium">Punch In</th>
                     <th className="text-left py-2 font-medium">On Site</th>
@@ -203,18 +202,6 @@ export default function Attendance() {
                             )}
                           </div>
                           <span className="text-[10px] text-muted-foreground">{log.employees?.employee_code}</span>
-                        </td>
-                        <td className="py-2.5 text-xs">
-                          {log.projects?.name ? (
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="text-muted-foreground">{log.projects.name}</span>
-                              {log.work_location === "in_house" && (
-                                <Badge variant="outline" className="text-[9px] bg-primary/10 text-primary border-primary/30">In-House</Badge>
-                              )}
-                            </div>
-                          ) : (
-                            <Badge variant="outline" className="text-[9px] bg-primary/10 text-primary border-primary/30">In-House</Badge>
-                          )}
                         </td>
                         <td className="py-2.5" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center gap-1">
