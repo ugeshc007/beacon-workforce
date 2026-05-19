@@ -25,7 +25,7 @@ export default function MobileProjectWorkflow() {
   const navigate = useNavigate();
   const { employee } = useMobileAuth();
   const { data: todayProjects } = useTodayProjects();
-  const { session, step, availableActions, loading, actionLoading, executeAction } = useProjectWorkflow(projectId ?? null);
+  const { session, step, workLocation, availableActions, loading, actionLoading, executeAction } = useProjectWorkflow(projectId ?? null);
   const { toast } = useToast();
 
   const [gpsQuality, setGpsQuality] = useState<"high" | "medium" | "low" | "none">("none");
