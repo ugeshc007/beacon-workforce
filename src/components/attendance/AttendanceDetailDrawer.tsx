@@ -123,7 +123,13 @@ export function AttendanceDetailDrawer({ log, open, onOpenChange }: Props) {
   ];
 
   const hiddenInHouse = new Set(["Travel Start", "Site Arrival", "Return Travel"]);
-  const steps = isInHouse ? allSteps.filter((s) => !hiddenInHouse.has(s.label)) : allSteps;
+  // When the employee used the per-project flow, hide the generic work/break
+  // rows from the top timeline — they're already shown per session below.
+  const hiddenWhenSessions = new Set(["Work Start", "Break Start", "Break End", "Work End"]);
+  let steps = isInHouse ? allSteps.filter((s) => !hiddenInHouse.has(s.label)) : allSteps;
+  if (sessions.length > 0) {
+    steps = steps.filter((s) => !hiddenWhenSessions.has(s.label));
+  }
 
   const totalHours = log.total_work_minutes != null ? (log.total_work_minutes / 60).toFixed(1) : "—";
   const otHours = log.overtime_minutes != null ? (log.overtime_minutes / 60).toFixed(1) : "0";
