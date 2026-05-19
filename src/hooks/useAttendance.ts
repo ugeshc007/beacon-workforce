@@ -14,6 +14,7 @@ export type AttendanceLog = Tables<"attendance_logs"> & {
     standard_hours_per_day?: number;
   } | null;
   projects?: { name: string } | null;
+  work_location?: "in_house" | "site" | null;
   live_cost?: number;
 };
 
@@ -71,6 +72,21 @@ export function useAttendanceLogs(filters: {
       if (error) throw error;
 
       let results = data as AttendanceLog[];
+
+      // Enrich each log with the day's work_location (in_house vs site) for its project
+      const projectIds = Array.from(new Set(results.map((r) => r.project_id).filter(Boolean))) as string[];
+      if (projectIds.length > 0) {
+        const { data: locs } = await supabase
+          .from("project_day_work_locations")
+          .select("project_id, location")
+          .eq("date", filters.date)
+          .in("project_id", projectIds);
+        const locMap = new Map((locs ?? []).map((l: any) => [l.project_id, l.location]));
+        results = results.map((r) => ({
+          ...r,
+          work_location: r.project_id ? (locMap.get(r.project_id) ?? null) : null,
+        }));
+      }
 
       if (filters.search) {
         const s = filters.search.toLowerCase();
