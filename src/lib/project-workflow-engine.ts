@@ -24,9 +24,22 @@ const transitions: Record<ProjectStep, ProjectAction[]> = {
   completed: [],
 };
 
-export function getProjectActions(step: ProjectStep): ProjectAction[] {
-  return transitions[step] || [];
+// In-house mode skips travel + arrive_site entirely.
+// Employee just starts work and ends work (with optional break).
+const inHouseTransitions: Record<ProjectStep, ProjectAction[]> = {
+  idle: ["start_work"],
+  traveling: ["start_work"],     // safety: if a stray travel exists, let them continue
+  at_site: ["start_work"],
+  working: ["start_break", "end_work"],
+  on_break: ["end_break"],
+  completed: [],
+};
+
+export function getProjectActions(step: ProjectStep, workLocation?: "in_house" | "site" | null): ProjectAction[] {
+  const table = workLocation === "in_house" ? inHouseTransitions : transitions;
+  return table[step] || [];
 }
+
 
 export function getNextProjectStep(current: ProjectStep, action: ProjectAction): ProjectStep | null {
   if (!transitions[current].includes(action)) return null;
