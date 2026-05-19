@@ -165,7 +165,6 @@ export default function Attendance() {
                 <thead>
                   <tr className="text-xs text-muted-foreground border-b border-border">
                     <th className="text-left py-2 font-medium">Employee</th>
-                    <th className="text-left py-2 font-medium">Project</th>
                     <th className="text-left py-2 font-medium">GPS</th>
                     <th className="text-left py-2 font-medium">Punch In</th>
                     <th className="text-left py-2 font-medium">On Site</th>
