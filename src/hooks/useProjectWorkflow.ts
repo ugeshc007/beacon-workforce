@@ -35,6 +35,8 @@ export function useProjectWorkflow(projectId: string | null) {
   const [actionLoading, setActionLoading] = useState(false);
 
   const today = toLocalDateStr(new Date());
+  const { data: workLocation } = useDayWorkLocation(projectId ?? "", today);
+
 
   const fetchSession = useCallback(async () => {
     if (!employee || !projectId) {
