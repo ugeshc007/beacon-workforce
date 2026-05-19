@@ -77,24 +77,22 @@ export function AttendanceTimeline({ log }: Props) {
         })}
       </div>
 
-      {/* Per-project session dots (start → end) */}
+      {/* Per-project session dots (start → end), no project name */}
       {sessions.length > 0 && (
-        <div className="flex items-center gap-2 flex-wrap pt-4">
+        <div className="flex items-center gap-2 flex-wrap pt-1">
           {sessions.map((s, idx) => {
             const color = sessionColors[idx % sessionColors.length];
             return (
               <div
                 key={s.id}
-                className="flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/30 px-2 py-0.5"
+                className="flex items-center gap-1 rounded-full border border-border/60 bg-muted/30 px-1.5 py-0.5"
                 title={`${s.project_name ?? "Project"}: ${fmt(s.work_start_time) ?? "—"} → ${fmt(s.work_end_time) ?? "…"}`}
               >
                 <span className={`h-2 w-2 rounded-full ${color}`} />
-                <span className="text-[9px] font-medium text-foreground truncate max-w-[80px]">
-                  {s.project_name ?? "Project"}
-                </span>
                 <span className="text-[9px] font-mono text-muted-foreground">
                   {fmt(s.work_start_time) ?? "—"}
                 </span>
+                <span className="text-muted-foreground/50 text-[9px]">→</span>
                 <span className={`h-2 w-2 rounded-full ${s.work_end_time ? color : "border border-muted-foreground/40 bg-transparent"}`} />
                 <span className="text-[9px] font-mono text-muted-foreground">
                   {fmt(s.work_end_time) ?? "…"}
