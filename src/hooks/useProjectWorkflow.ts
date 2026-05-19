@@ -5,6 +5,7 @@ import { toLocalDateStr } from "@/lib/utils";
 import { enqueueAction } from "@/lib/offline-queue";
 import { syncPendingActions } from "@/lib/offline-sync";
 import { invokeEdge } from "@/lib/invoke-edge";
+import { useDayWorkLocation } from "@/hooks/useDayWorkLocation";
 import {
   ProjectStep,
   ProjectAction,
@@ -12,6 +13,7 @@ import {
   getProjectActions,
   getNextProjectStep,
 } from "@/lib/project-workflow-engine";
+
 
 interface SessionRow {
   id: string;
@@ -33,6 +35,8 @@ export function useProjectWorkflow(projectId: string | null) {
   const [actionLoading, setActionLoading] = useState(false);
 
   const today = toLocalDateStr(new Date());
+  const { data: workLocation } = useDayWorkLocation(projectId ?? "", today);
+
 
   const fetchSession = useCallback(async () => {
     if (!employee || !projectId) {
@@ -109,9 +113,13 @@ export function useProjectWorkflow(projectId: string | null) {
     };
     if (action === "start_travel") {
       body.project_id = projectId;
+    } else if (action === "start_work" && !session?.id) {
+      // In-house mode: no session exists yet — server creates one from project_id.
+      body.project_id = projectId;
     } else {
       body.session_id = session?.id;
     }
+
 
     setActionLoading(false);
 
@@ -174,10 +182,12 @@ export function useProjectWorkflow(projectId: string | null) {
   return {
     session,
     step,
-    availableActions: getProjectActions(step),
+    workLocation: workLocation ?? null,
+    availableActions: getProjectActions(step, workLocation ?? null),
     loading,
     actionLoading,
     executeAction,
     refresh: fetchSession,
   };
 }
+
