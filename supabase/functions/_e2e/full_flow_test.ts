@@ -78,7 +78,7 @@ Deno.test("E2E: in-house + site project full flow", async () => {
   const { data: pIn, error: pInErr } = await admin.from("projects").insert({
     name: `E2E-INHOUSE-${tag}`,
     branch_id,
-    status: "active",
+    status: "in_progress",
     site_latitude: site_lat,
     site_longitude: site_lng,
     site_gps_radius: 100,
@@ -91,7 +91,7 @@ Deno.test("E2E: in-house + site project full flow", async () => {
   const { data: pSite, error: pSiteErr } = await admin.from("projects").insert({
     name: `E2E-SITE-${tag}`,
     branch_id,
-    status: "active",
+    status: "in_progress",
     site_latitude: site_lat,
     site_longitude: site_lng,
     site_gps_radius: 100,
