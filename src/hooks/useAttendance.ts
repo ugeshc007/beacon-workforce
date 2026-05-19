@@ -4,6 +4,15 @@ import type { Tables } from "@/integrations/supabase/types";
 
 import { getDisplayWorkedMinutes, getDisplayOvertimeMinutes, groupAndAggregateLogs } from "@/lib/timesheet-display";
 
+export type AttendanceSessionSummary = {
+  id: string;
+  project_id: string | null;
+  project_name: string | null;
+  work_start_time: string | null;
+  work_end_time: string | null;
+  work_location?: "in_house" | "site" | null;
+};
+
 export type AttendanceLog = Tables<"attendance_logs"> & {
   employees?: {
     name: string;
@@ -15,6 +24,7 @@ export type AttendanceLog = Tables<"attendance_logs"> & {
   } | null;
   projects?: { name: string } | null;
   work_location?: "in_house" | "site" | null;
+  sessions?: AttendanceSessionSummary[];
   live_cost?: number;
 };
 
