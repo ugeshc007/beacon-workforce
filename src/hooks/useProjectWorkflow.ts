@@ -5,6 +5,7 @@ import { toLocalDateStr } from "@/lib/utils";
 import { enqueueAction } from "@/lib/offline-queue";
 import { syncPendingActions } from "@/lib/offline-sync";
 import { invokeEdge } from "@/lib/invoke-edge";
+import { useDayWorkLocation } from "@/hooks/useDayWorkLocation";
 import {
   ProjectStep,
   ProjectAction,
@@ -12,6 +13,7 @@ import {
   getProjectActions,
   getNextProjectStep,
 } from "@/lib/project-workflow-engine";
+
 
 interface SessionRow {
   id: string;
