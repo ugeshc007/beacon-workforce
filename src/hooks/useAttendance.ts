@@ -83,20 +83,52 @@ export function useAttendanceLogs(filters: {
 
       let results = data as AttendanceLog[];
 
+      // Enrich logs with project sessions for this date (per-project start/end)
+      const logIds = results.map((r) => r.id);
+      let sessionsByLog = new Map<string, AttendanceSessionSummary[]>();
+      let sessionProjectIds: string[] = [];
+      if (logIds.length > 0) {
+        const { data: pws } = await supabase
+          .from("project_work_sessions")
+          .select("id, attendance_log_id, project_id, work_start_time, work_end_time, projects(name)")
+          .in("attendance_log_id", logIds)
+          .order("created_at", { ascending: true });
+        for (const s of (pws ?? []) as any[]) {
+          const list = sessionsByLog.get(s.attendance_log_id) ?? [];
+          list.push({
+            id: s.id,
+            project_id: s.project_id,
+            project_name: s.projects?.name ?? null,
+            work_start_time: s.work_start_time,
+            work_end_time: s.work_end_time,
+          });
+          sessionsByLog.set(s.attendance_log_id, list);
+          if (s.project_id) sessionProjectIds.push(s.project_id);
+        }
+      }
+
       // Enrich each log with the day's work_location (in_house vs site) for its project
-      const projectIds = Array.from(new Set(results.map((r) => r.project_id).filter(Boolean))) as string[];
+      const projectIds = Array.from(new Set([
+        ...results.map((r) => r.project_id).filter(Boolean) as string[],
+        ...sessionProjectIds,
+      ]));
+      let locMap = new Map<string, "in_house" | "site">();
       if (projectIds.length > 0) {
         const { data: locs } = await supabase
           .from("project_day_work_locations")
           .select("project_id, location")
           .eq("date", filters.date)
           .in("project_id", projectIds);
-        const locMap = new Map((locs ?? []).map((l: any) => [l.project_id, l.location]));
-        results = results.map((r) => ({
-          ...r,
-          work_location: r.project_id ? (locMap.get(r.project_id) ?? null) : null,
-        }));
+        locMap = new Map((locs ?? []).map((l: any) => [l.project_id, l.location]));
       }
+      results = results.map((r) => ({
+        ...r,
+        work_location: r.project_id ? (locMap.get(r.project_id) ?? null) : null,
+        sessions: (sessionsByLog.get(r.id) ?? []).map((s) => ({
+          ...s,
+          work_location: s.project_id ? (locMap.get(s.project_id) ?? null) : null,
+        })),
+      }));
 
       if (filters.search) {
         const s = filters.search.toLowerCase();
