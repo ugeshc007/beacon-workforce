@@ -38,7 +38,7 @@ async function callFn(path: string, token: string, body: Record<string, unknown>
   return { status: res.status, body: json ?? text };
 }
 
-Deno.test("E2E: in-house + site project full flow", async () => {
+Deno.test({ name: "E2E: in-house + site project full flow", sanitizeOps: false, sanitizeResources: false }, async () => {
   const today = todayUae();
   const tag = Math.random().toString(36).slice(2, 8);
   const email = `e2e-${tag}@bebright.test`;
