@@ -9,18 +9,12 @@ const fmt = (ts: string | null) => {
   return new Date(ts).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false });
 };
 
-const steps = [
-  { key: "office_punch_in", label: "Punch In", color: "bg-brand" },
-  { key: "travel_start_time", label: "Travel", color: "bg-status-traveling" },
-  { key: "site_arrival_time", label: "On Site", color: "bg-status-present" },
-  { key: "work_start_time", label: "Working", color: "bg-status-present" },
-  { key: "break_start_time", label: "Break Start", color: "bg-orange-400" },
-  { key: "break_end_time", label: "Break End", color: "bg-status-present" },
-  { key: "work_end_time", label: "Work End", color: "bg-status-overtime" },
-  { key: "return_travel_start_time", label: "Returning", color: "bg-status-traveling" },
-  { key: "office_arrival_time", label: "At Office", color: "bg-brand" },
-  { key: "office_punch_out", label: "Punch Out", color: "bg-muted-foreground" },
-] as const;
+type Dot = {
+  key: string;
+  label: string;
+  color: string;
+  time: string | null;
+};
 
 // Distinct colors for project session dots (cycled)
 const sessionColors = [
@@ -32,76 +26,108 @@ const sessionColors = [
 ];
 
 export function AttendanceTimeline({ log }: Props) {
-  // Find the last completed step
+  const sessions = (log.sessions ?? []).filter((s) => s.work_start_time || s.work_end_time);
+
+  // Build a single ordered list of dots. When the employee has multiple project
+  // sessions in the same day, replace the single Work Start / Work End dots
+  // with per-session start+end pairs (color-coded) so the whole day fits on
+  // ONE line.
+  const dots: Dot[] = [
+    { key: "office_punch_in", label: "Punch In", color: "bg-brand", time: log.office_punch_in },
+    { key: "travel_start_time", label: "Travel", color: "bg-status-traveling", time: log.travel_start_time },
+    { key: "site_arrival_time", label: "On Site", color: "bg-status-present", time: log.site_arrival_time },
+  ];
+
+  if (sessions.length > 1) {
+    sessions.forEach((s, idx) => {
+      const color = sessionColors[idx % sessionColors.length];
+      const name = s.project_name ?? `Project ${idx + 1}`;
+      dots.push({
+        key: `s-${s.id}-start`,
+        label: `${name} — Start`,
+        color,
+        time: s.work_start_time,
+      });
+      dots.push({
+        key: `s-${s.id}-end`,
+        label: `${name} — End`,
+        color,
+        time: s.work_end_time,
+      });
+    });
+  } else {
+    dots.push({ key: "work_start_time", label: "Working", color: "bg-status-present", time: log.work_start_time });
+    dots.push({ key: "work_end_time", label: "Work End", color: "bg-status-overtime", time: log.work_end_time });
+  }
+
+  // Break + tail
+  dots.splice(
+    sessions.length > 1 ? 3 + sessions.length * 2 : 5,
+    0,
+  );
+  // Insert break dots right after the first work_start dot for the single-session case;
+  // for multi-session, keep break dots at the end of session block.
+  const breakDots: Dot[] = [
+    { key: "break_start_time", label: "Break Start", color: "bg-orange-400", time: log.break_start_time },
+    { key: "break_end_time", label: "Break End", color: "bg-status-present", time: log.break_end_time },
+  ];
+  if (sessions.length > 1) {
+    // place break dots after sessions block (index = 3 + sessions*2)
+    dots.splice(3 + sessions.length * 2, 0, ...breakDots);
+  } else {
+    // place after Working dot (index 4), before Work End (currently at index 4)
+    dots.splice(4, 0, ...breakDots);
+  }
+
+  dots.push(
+    { key: "return_travel_start_time", label: "Returning", color: "bg-status-traveling", time: (log as any).return_travel_start_time ?? null },
+    { key: "office_arrival_time", label: "At Office", color: "bg-brand", time: (log as any).office_arrival_time ?? null },
+    { key: "office_punch_out", label: "Punch Out", color: "bg-muted-foreground", time: log.office_punch_out },
+  );
+
+  // Find the last completed dot for "active" ring
   let lastCompleted = -1;
-  for (let i = steps.length - 1; i >= 0; i--) {
-    if ((log as any)[steps[i].key]) {
+  for (let i = dots.length - 1; i >= 0; i--) {
+    if (dots[i].time) {
       lastCompleted = i;
       break;
     }
   }
 
-  const sessions = (log.sessions ?? []).filter((s) => s.work_start_time || s.work_end_time);
-
   return (
-    <div className="flex flex-col gap-1 w-full">
-      <div className="flex items-center gap-0.5 w-full">
-        {steps.map((step, i) => {
-          const value = (log as any)[step.key] as string | null;
-          const completed = !!value;
-          const isActive = i === lastCompleted && !log.office_punch_out;
+    <div className="flex items-center gap-0.5 w-full">
+      {dots.map((d, i) => {
+        const completed = !!d.time;
+        const isActive = i === lastCompleted && !log.office_punch_out;
+        const nextCompleted = i < dots.length - 1 && !!dots[i + 1].time;
 
-          return (
-            <div key={step.key} className="flex items-center gap-0.5 flex-1 min-w-0">
-              <div className="relative flex items-center justify-center shrink-0" title={`${step.label}: ${fmt(value) ?? "—"}`}>
-                <div
-                  className={`h-2.5 w-2.5 rounded-full border-2 transition-all ${
-                    completed ? `${step.color} border-transparent` : "bg-transparent border-muted-foreground/30"
-                  } ${isActive ? "ring-2 ring-brand/30 ring-offset-1 ring-offset-background" : ""}`}
-                />
-                {completed && (
-                  <span className="absolute -bottom-4 text-[8px] text-muted-foreground font-mono whitespace-nowrap">
-                    {fmt(value)}
-                  </span>
-                )}
-              </div>
-              {i < steps.length - 1 && (
-                <div
-                  className={`h-0.5 flex-1 rounded-full transition-all ${
-                    completed && (log as any)[steps[i + 1].key] ? step.color : "bg-muted-foreground/20"
-                  }`}
-                />
+        return (
+          <div key={d.key} className="flex items-center gap-0.5 flex-1 min-w-0">
+            <div
+              className="relative flex items-center justify-center shrink-0"
+              title={`${d.label}: ${fmt(d.time) ?? "—"}`}
+            >
+              <div
+                className={`h-2.5 w-2.5 rounded-full border-2 transition-all ${
+                  completed ? `${d.color} border-transparent` : "bg-transparent border-muted-foreground/30"
+                } ${isActive ? "ring-2 ring-brand/30 ring-offset-1 ring-offset-background" : ""}`}
+              />
+              {completed && (
+                <span className="absolute -bottom-4 text-[8px] text-muted-foreground font-mono whitespace-nowrap">
+                  {fmt(d.time)}
+                </span>
               )}
             </div>
-          );
-        })}
-      </div>
-
-      {/* Per-project session dots (start → end), no project name */}
-      {sessions.length > 0 && (
-        <div className="flex items-center gap-2 flex-wrap pt-1">
-          {sessions.map((s, idx) => {
-            const color = sessionColors[idx % sessionColors.length];
-            return (
+            {i < dots.length - 1 && (
               <div
-                key={s.id}
-                className="flex items-center gap-1 rounded-full border border-border/60 bg-muted/30 px-1.5 py-0.5"
-                title={`${s.project_name ?? "Project"}: ${fmt(s.work_start_time) ?? "—"} → ${fmt(s.work_end_time) ?? "…"}`}
-              >
-                <span className={`h-2 w-2 rounded-full ${color}`} />
-                <span className="text-[9px] font-mono text-muted-foreground">
-                  {fmt(s.work_start_time) ?? "—"}
-                </span>
-                <span className="text-muted-foreground/50 text-[9px]">→</span>
-                <span className={`h-2 w-2 rounded-full ${s.work_end_time ? color : "border border-muted-foreground/40 bg-transparent"}`} />
-                <span className="text-[9px] font-mono text-muted-foreground">
-                  {fmt(s.work_end_time) ?? "…"}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      )}
+                className={`h-0.5 flex-1 rounded-full transition-all ${
+                  completed && nextCompleted ? d.color : "bg-muted-foreground/20"
+                }`}
+              />
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
