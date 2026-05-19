@@ -113,9 +113,13 @@ export function useProjectWorkflow(projectId: string | null) {
     };
     if (action === "start_travel") {
       body.project_id = projectId;
+    } else if (action === "start_work" && !session?.id) {
+      // In-house mode: no session exists yet — server creates one from project_id.
+      body.project_id = projectId;
     } else {
       body.session_id = session?.id;
     }
+
 
     setActionLoading(false);
 
