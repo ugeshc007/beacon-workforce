@@ -206,7 +206,12 @@ export default function Attendance() {
                         </td>
                         <td className="py-2.5 text-xs">
                           {log.projects?.name ? (
-                            <span className="text-muted-foreground">{log.projects.name}</span>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-muted-foreground">{log.projects.name}</span>
+                              {log.work_location === "in_house" && (
+                                <Badge variant="outline" className="text-[9px] bg-primary/10 text-primary border-primary/30">In-House</Badge>
+                              )}
+                            </div>
                           ) : (
                             <Badge variant="outline" className="text-[9px] bg-primary/10 text-primary border-primary/30">In-House</Badge>
                           )}
