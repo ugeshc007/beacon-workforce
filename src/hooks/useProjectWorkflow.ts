@@ -33,9 +33,37 @@ export function useProjectWorkflow(projectId: string | null) {
   const [step, setStep] = useState<ProjectStep>("idle");
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [assignmentLocation, setAssignmentLocation] = useState<"in_house" | "site" | null>(null);
 
   const today = toLocalDateStr(new Date());
-  const { data: workLocation } = useDayWorkLocation(projectId ?? "", today);
+  const { data: dayWorkLocation } = useDayWorkLocation(projectId ?? "", today);
+
+  // Per-employee per-day work location set on the schedule page takes priority
+  // over the project-wide day location.
+  useEffect(() => {
+    if (!employee || !projectId) {
+      setAssignmentLocation(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("project_assignments")
+        .select("work_location")
+        .eq("employee_id", employee.id)
+        .eq("project_id", projectId)
+        .eq("date", today)
+        .maybeSingle();
+      if (!cancelled) {
+        setAssignmentLocation((data?.work_location as "in_house" | "site" | null) ?? null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [employee, projectId, today]);
+
+  const workLocation = assignmentLocation ?? dayWorkLocation ?? null;
+
+
 
 
   const fetchSession = useCallback(async () => {
