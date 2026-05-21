@@ -1,6 +1,10 @@
 import { Outlet, NavLink, Navigate } from "react-router-dom";
+import { useEffect } from "react";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
 import { Home, ClipboardList, Bell, User, Loader2, Users, FileText, MapPin } from "lucide-react";
+import { initAutoSync } from "@/lib/offline-sync";
+import { initDailyLogAutoSync } from "@/lib/offline-daily-logs";
+import { SyncStatusBadge } from "@/components/mobile/SyncStatusBadge";
 
 export default function MobileLayout() {
   const { session, employee, loading } = useMobileAuth();
