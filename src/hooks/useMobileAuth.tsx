@@ -23,22 +23,51 @@ interface MobileAuthContextType {
 
 const MobileAuthContext = createContext<MobileAuthContextType | undefined>(undefined);
 
+const EMP_CACHE_KEY = "bb_emp_profile_v1";
+
+function readCachedEmployee(authId: string): EmployeeUser | null {
+  try {
+    const raw = localStorage.getItem(EMP_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as EmployeeUser;
+    return parsed.authId === authId ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedEmployee(emp: EmployeeUser) {
+  try { localStorage.setItem(EMP_CACHE_KEY, JSON.stringify(emp)); } catch { /* ignore */ }
+}
+
+function clearCachedEmployee() {
+  try { localStorage.removeItem(EMP_CACHE_KEY); } catch { /* ignore */ }
+}
+
 export function MobileAuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [employee, setEmployee] = useState<EmployeeUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchEmployee = useCallback(async (authId: string) => {
+  const fetchEmployee = useCallback(async (authId: string): Promise<EmployeeUser | null> => {
+    // Offline → use cache immediately, no network attempt
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      return readCachedEmployee(authId);
+    }
+
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("employees")
         .select("id, name, email, employee_code, skill_type, branch_id, auth_id")
         .eq("auth_id", authId)
         .single();
 
-      if (!data) return null;
+      if (error || !data) {
+        // Network/server error → fall back to cache so user isn't locked out
+        return readCachedEmployee(authId);
+      }
 
-      return {
+      const emp: EmployeeUser = {
         id: data.id,
         authId,
         name: data.name,
@@ -48,8 +77,10 @@ export function MobileAuthProvider({ children }: { children: ReactNode }) {
         branchId: data.branch_id,
         isTeamLeader: data.skill_type === "team_leader",
       };
+      writeCachedEmployee(emp);
+      return emp;
     } catch {
-      return null;
+      return readCachedEmployee(authId);
     }
   }, []);
 
