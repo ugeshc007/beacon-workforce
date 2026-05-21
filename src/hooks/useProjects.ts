@@ -429,29 +429,32 @@ export function useAssignEmployee() {
       let finalStart = shiftStart ?? "08:00";
       const finalEnd = shiftEnd ?? "17:00";
 
-      // If this employee already has another assignment for the same day, treat
-      // this as a mid-day reassignment (e.g. first project finished early) and
-      // use the current local time (Asia/Dubai) as the shift start instead of
-      // the default 08:00. Only applies to today, not future planning.
-      const { data: existing } = await supabase
-        .from("project_assignments")
-        .select("id")
-        .eq("employee_id", employeeId)
-        .eq("date", date)
-        .limit(1);
+      // Mid-day auto-bump ONLY when admin didn't pick a custom start time
+      // (i.e. left it at the default 08:00). If admin explicitly chose times,
+      // respect them.
+      const isDefaultStart = !shiftStart || shiftStart === "08:00" || shiftStart === "08:00:00";
+      if (isDefaultStart) {
+        const { data: existing } = await supabase
+          .from("project_assignments")
+          .select("id")
+          .eq("employee_id", employeeId)
+          .eq("date", date)
+          .limit(1);
 
-      if (existing && existing.length > 0) {
-        const todayStr = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Dubai" }).format(new Date());
-        if (date === todayStr) {
-          const nowHHMM = new Intl.DateTimeFormat("en-GB", {
-            timeZone: "Asia/Dubai",
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
-          }).format(new Date());
-          if (nowHHMM > finalStart) finalStart = nowHHMM;
+        if (existing && existing.length > 0) {
+          const todayStr = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Dubai" }).format(new Date());
+          if (date === todayStr) {
+            const nowHHMM = new Intl.DateTimeFormat("en-GB", {
+              timeZone: "Asia/Dubai",
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            }).format(new Date());
+            finalStart = nowHHMM;
+          }
         }
       }
+
 
       const { data, error } = await supabase
         .from("project_assignments")
