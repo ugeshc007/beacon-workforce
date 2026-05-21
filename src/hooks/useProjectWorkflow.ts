@@ -32,11 +32,12 @@ export function useProjectWorkflow(projectId: string | null) {
   const [session, setSession] = useState<SessionRow | null>(null);
   const [step, setStep] = useState<ProjectStep>("idle");
   const [loading, setLoading] = useState(true);
+  const [locationLoading, setLocationLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [assignmentLocation, setAssignmentLocation] = useState<"in_house" | "site" | null>(null);
 
   const today = toLocalDateStr(new Date());
-  const { data: dayWorkLocation } = useDayWorkLocation(projectId ?? "", today);
+  const { data: dayWorkLocation, isLoading: dayWorkLocationLoading } = useDayWorkLocation(projectId ?? "", today);
   const workLocCacheKey = employee && projectId ? `pwl_${employee.id}_${projectId}_${today}` : null;
 
   // Per-employee per-day work location set on the schedule page takes priority
@@ -45,14 +46,17 @@ export function useProjectWorkflow(projectId: string | null) {
   useEffect(() => {
     if (!employee || !projectId) {
       setAssignmentLocation(null);
+      setLocationLoading(false);
       return;
     }
+    setLocationLoading(true);
     // Offline → hydrate from cache, don't try the network
     if (!navigator.onLine) {
       try {
         const cached = workLocCacheKey ? localStorage.getItem(workLocCacheKey) : null;
         if (cached) setAssignmentLocation(JSON.parse(cached));
       } catch { /* ignore */ }
+      setLocationLoading(false);
       return;
     }
     let cancelled = false;
@@ -70,6 +74,7 @@ export function useProjectWorkflow(projectId: string | null) {
         if (workLocCacheKey) {
           try { localStorage.setItem(workLocCacheKey, JSON.stringify(loc)); } catch { /* ignore */ }
         }
+        setLocationLoading(false);
       }
     })();
     return () => { cancelled = true; };
@@ -250,7 +255,7 @@ export function useProjectWorkflow(projectId: string | null) {
     step,
     workLocation: workLocation ?? null,
     availableActions: getProjectActions(step, workLocation ?? null),
-    loading,
+    loading: loading || locationLoading || dayWorkLocationLoading,
     actionLoading,
     executeAction,
     refresh: fetchSession,

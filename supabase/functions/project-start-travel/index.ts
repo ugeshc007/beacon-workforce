@@ -60,15 +60,19 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Verify assignment
+    // Verify assignment and block accidental travel flow for in-house work.
     const { data: assignment } = await supabase
       .from("project_assignments")
-      .select("id")
+      .select("id, work_location")
       .eq("employee_id", employee_id)
       .eq("project_id", project_id)
       .eq("date", today)
       .maybeSingle();
     if (!assignment) return errorResponse("No assignment for this project today", 403);
+
+    if (assignment.work_location === "in_house") {
+      return errorResponse("This project is scheduled in-house today. Start work directly from the project screen.", 400);
+    }
 
     const { data: inserted, error } = await supabase
       .from("project_work_sessions")
