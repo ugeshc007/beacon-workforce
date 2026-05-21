@@ -5,7 +5,6 @@ import { useBackgroundTracking } from "@/hooks/useBackgroundTracking";
 import { actionLabels, stepLabels, stepColors, WorkflowAction } from "@/lib/workflow-engine";
 import { projectStepLabels, projectStepColors } from "@/lib/project-workflow-engine";
 import { getGpsPosition, qualityColor, qualityLabel } from "@/lib/gps";
-import { enqueueAction } from "@/lib/offline-queue";
 import { initAutoSync } from "@/lib/offline-sync";
 import { HoldToConfirm } from "@/components/mobile/HoldToConfirm";
 import { MapPicker } from "@/components/mobile/MapPicker";
@@ -104,15 +103,6 @@ export default function MobileHome() {
 
   const submitAction = async (action: WorkflowAction, payload: Record<string, unknown>) => {
     if (!employee) return;
-    if (!navigator.onLine) {
-      await enqueueAction({
-        action_type: action,
-        payload: { employee_id: employee.id, ...payload },
-        timestamp: new Date().toISOString(),
-      });
-      toast({ title: "Queued Offline", description: `${actionLabels[action]} will sync when back online.` });
-      return;
-    }
     const result = await executeAction(action, payload);
     if (!result?.success) {
       toast({ title: "Failed", description: result?.error || "Something went wrong.", variant: "destructive" });
