@@ -206,8 +206,16 @@ export default function Attendance() {
                               <Badge variant="outline" className="ml-1.5 text-[9px] border-amber-500/50 text-amber-400">Override</Badge>
                             )}
                           </div>
-                          <span className="text-[10px] text-muted-foreground">{log.employees?.employee_code}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] text-muted-foreground">{log.employees?.employee_code}</span>
+                            {(log as any).work_location === "in_house" ? (
+                              <Badge variant="outline" className="text-[9px] border-primary/40 text-primary">In-House</Badge>
+                            ) : (log as any).work_location === "site" ? (
+                              <Badge variant="outline" className="text-[9px] border-status-traveling/40 text-status-traveling">Site</Badge>
+                            ) : null}
+                          </div>
                         </td>
+
                         <td className="py-2.5" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center gap-1">
                             {log.office_punch_in_valid === true ? (
