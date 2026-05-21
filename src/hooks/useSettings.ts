@@ -210,7 +210,7 @@ export function useCreateOffice() {
 export function useUpdateOffice() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...payload }: { id: string; name?: string; address?: string; latitude?: number | null; longitude?: number | null; gps_radius_meters?: number }) => {
+    mutationFn: async ({ id, ...payload }: { id: string; name?: string; address?: string; latitude?: number | null; longitude?: number | null; gps_radius_meters?: number; gps_validation_enabled?: boolean }) => {
       const { error } = await supabase.from("offices").update(payload).eq("id", id);
       if (error) throw error;
     },
