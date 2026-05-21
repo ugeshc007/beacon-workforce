@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
 
     const { data: office } = await supabase
       .from("offices")
-      .select("latitude, longitude, gps_radius_meters")
+      .select("latitude, longitude, gps_radius_meters, gps_validation_enabled")
       .eq("branch_id", emp.branch_id)
       .limit(1)
       .single();
@@ -39,7 +39,10 @@ Deno.serve(async (req) => {
     }
 
     const distance = haversineDistance(lat, lng, Number(office.latitude), Number(office.longitude));
-    const valid = distance <= office.gps_radius_meters;
+    // If the office has GPS validation turned off, always accept the punch-in
+    // regardless of distance from the configured coordinates.
+    const gpsValidationEnabled = office.gps_validation_enabled !== false;
+    const valid = !gpsValidationEnabled || distance <= office.gps_radius_meters;
 
     // Get today's assignment for project_id and shift_start
     const { data: assignment } = await supabase
