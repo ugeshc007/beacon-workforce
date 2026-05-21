@@ -91,7 +91,7 @@ export function AttendanceTimeline({ log }: Props) {
   // for multi-session, keep break dots at the end of session block.
   const breakDots: Dot[] = [
     { key: "break_start_time", label: "Break Start", color: "bg-orange-400", time: breakStartTime },
-    { key: "break_end_time", label: "Break End", color: "bg-status-present", time: breakEndTime },
+    { key: "break_end_time", label: "Break End", color: "bg-orange-300", time: breakEndTime },
   ];
   if (sessions.length > 1) {
     // place break dots after sessions block (index = 3 + sessions*2)
