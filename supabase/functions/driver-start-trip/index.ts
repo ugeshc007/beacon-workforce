@@ -26,17 +26,47 @@ Deno.serve(async (req) => {
     if (!log?.office_punch_in) return errorResponse("Must punch in at office first", 400);
     if (log.office_punch_out) return errorResponse("Already punched out for the day", 400);
 
-    // No active leg allowed
-    const { data: activeLeg } = await supabase
+    // Auto-close any previously open leg from today (driver forgot to end it).
+    // We consider the old leg ended at "now" — minutes computed from whichever
+    // timestamps exist. A note is added so managers can see it was auto-closed.
+    const { data: openLegs } = await supabase
       .from("driver_trip_legs")
-      .select("id, status, project_id")
+      .select("id, travel_start_time, site_arrival_time, status, notes")
       .eq("driver_id", employee_id)
       .eq("date", today)
-      .neq("status", "completed")
-      .maybeSingle();
-    if (activeLeg) {
-      return errorResponse("Finish your current trip before starting a new one", 409);
+      .neq("status", "completed");
+
+    if (openLegs && openLegs.length > 0) {
+      for (const leg of openLegs) {
+        const travelStart = leg.travel_start_time ? new Date(leg.travel_start_time).getTime() : null;
+        const siteArrival = leg.site_arrival_time ? new Date(leg.site_arrival_time).getTime() : null;
+        const endMs = new Date(now).getTime();
+
+        let travelMin = 0;
+        let onsiteMin = 0;
+        if (travelStart && siteArrival) {
+          travelMin = Math.max(0, Math.round((siteArrival - travelStart) / 60000));
+          onsiteMin = Math.max(0, Math.round((endMs - siteArrival) / 60000));
+        } else if (travelStart) {
+          // Never arrived at site — treat the whole window as travel
+          travelMin = Math.max(0, Math.round((endMs - travelStart) / 60000));
+        }
+
+        await supabase
+          .from("driver_trip_legs")
+          .update({
+            status: "completed",
+            leg_end_time: now,
+            leg_end_lat: lat,
+            leg_end_lng: lng,
+            total_travel_minutes: travelMin,
+            total_onsite_minutes: onsiteMin,
+            notes: [leg.notes, "Auto-closed: driver started a new trip without ending this one"].filter(Boolean).join(" | "),
+          })
+          .eq("id", leg.id);
+      }
     }
+
 
     // Verify driver assignment for this project today
     const { data: assignment } = await supabase
