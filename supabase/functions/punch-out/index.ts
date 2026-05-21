@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
 
     const { data: log } = await supabase
       .from("attendance_logs")
-      .select("id, office_arrival_time, office_punch_out")
+      .select("id, office_arrival_time, office_punch_out, travel_start_time, site_arrival_time")
       .eq("employee_id", employee_id)
       .eq("date", today)
       .maybeSingle();
@@ -29,8 +29,6 @@ Deno.serve(async (req) => {
     if (log.office_punch_out) return errorResponse("Already punched out", 400);
 
     // Block punch-out if the driver still has an open trip leg from today.
-    // Drivers must explicitly end every leg before closing out the day so
-    // travel/onsite minutes are accurate.
     const { data: openLegs } = await supabase
       .from("driver_trip_legs")
       .select("id, leg_number, projects(name)")
@@ -48,27 +46,32 @@ Deno.serve(async (req) => {
       );
     }
 
-
-    // Skip "arrive at office" check for in-house employees (they never left the office).
-    // Only require it if the employee has at least one site-based assignment today.
+    // Require "Arrive Office" only if the employee actually traveled today.
+    // We check real evidence of travel (log OR any project work session has
+    // travel/site-arrival timestamps) — NOT just the assignment's work_location,
+    // because a site-tagged assignment that was never started shouldn't block
+    // punch-out for an in-house workday.
     if (!log.office_arrival_time) {
-      const { data: todayAssignments } = await supabase
-        .from("project_assignments")
-        .select("work_location")
-        .eq("employee_id", employee_id)
-        .eq("date", today);
+      let actuallyTraveled = !!log.travel_start_time || !!log.site_arrival_time;
 
-      const hasSiteAssignment = (todayAssignments ?? []).some(
-        (a) => a.work_location === "site"
-      );
+      if (!actuallyTraveled) {
+        const { data: sessions } = await supabase
+          .from("project_work_sessions")
+          .select("travel_start_time, site_arrival_time, return_travel_start_time")
+          .eq("attendance_log_id", log.id);
+        actuallyTraveled = (sessions ?? []).some(
+          (s: any) => s.travel_start_time || s.site_arrival_time || s.return_travel_start_time
+        );
+      }
 
-      if (hasSiteAssignment) {
+      if (actuallyTraveled) {
         return errorResponse(
-          "Can't punch out yet. You were assigned to a site today, so you must return to the office and tap 'Arrive Office' before punching out. Steps: 1) Tap 'Start Return Travel' at the site, 2) Tap 'Arrive Office' when you reach the office, 3) Then punch out. (In-house employees can punch out directly without these steps.)",
+          "Can't punch out yet. You went to a site today, so you must return to the office and tap 'Arrive Office' before punching out. Steps: 1) Tap 'Start Return Travel' at the site, 2) Tap 'Arrive Office' when you reach the office, 3) Then punch out.",
           400
         );
       }
     }
+
 
     // Validate office GPS
     const { data: emp } = await supabase
