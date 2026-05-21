@@ -300,13 +300,33 @@ export default function Schedule() {
 
       {/* Conflict banner */}
       {conflicts.length > 0 && (
-        <div className="rounded-lg bg-status-absent/10 border border-status-absent/30 p-3 flex items-center gap-2">
-          <AlertTriangle className="h-4 w-4 text-status-absent shrink-0" />
-          <p className="text-sm text-status-absent">
-            {conflicts.length} scheduling conflict{conflicts.length > 1 ? "s" : ""} detected this week
-          </p>
-        </div>
+        <details className="group rounded-lg bg-status-absent/10 border border-status-absent/30 p-3 open:pb-2">
+          <summary className="flex items-center gap-2 cursor-pointer list-none">
+            <AlertTriangle className="h-4 w-4 text-status-absent shrink-0" />
+            <p className="text-sm text-status-absent flex-1">
+              {conflicts.length} scheduling conflict{conflicts.length > 1 ? "s" : ""} detected this week
+            </p>
+            <span className="text-[11px] text-status-absent/80 group-open:hidden">Show details</span>
+            <span className="text-[11px] text-status-absent/80 hidden group-open:inline">Hide</span>
+          </summary>
+          <ul className="mt-2 space-y-1 pl-6 text-xs text-status-absent/90">
+            {conflicts.map((c, i) => {
+              const d = new Date(c.date + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+              return (
+                <li
+                  key={i}
+                  className="cursor-pointer hover:underline"
+                  onClick={() => setSelectedDay(c.date)}
+                >
+                  <span className="font-medium">{c.employee_name}</span> — {d} — double-booked on{" "}
+                  <span className="font-medium">{c.projects.join(", ")}</span>
+                </li>
+              );
+            })}
+          </ul>
+        </details>
       )}
+
 
       {/* Week grid */}
       {isLoading ? (
