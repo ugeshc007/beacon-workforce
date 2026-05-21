@@ -224,15 +224,18 @@ export default function Attendance() {
                               <Badge variant="outline" className="ml-1.5 text-[9px] border-amber-500/50 text-amber-400">Override</Badge>
                             )}
                           </div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] text-muted-foreground">{log.employees?.employee_code}</span>
-                            {resolvedLoc === "in_house" ? (
-                              <Badge variant="outline" className="text-[9px] border-primary/40 text-primary">In-House</Badge>
-                            ) : resolvedLoc === "site" ? (
-                              <Badge variant="outline" className="text-[9px] border-status-traveling/40 text-status-traveling">Site</Badge>
-                            ) : null}
-                          </div>
+                          <span className="text-[10px] text-muted-foreground">{log.employees?.employee_code}</span>
                         </td>
+                        <td className="py-2.5">
+                          {resolvedLoc === "in_house" ? (
+                            <Badge variant="outline" className="text-[9px] border-primary/40 text-primary">In-House</Badge>
+                          ) : resolvedLoc === "site" ? (
+                            <Badge variant="outline" className="text-[9px] border-status-traveling/40 text-status-traveling">Site</Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">—</span>
+                          )}
+                        </td>
+
 
 
 
