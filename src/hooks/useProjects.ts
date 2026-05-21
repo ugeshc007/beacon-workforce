@@ -426,14 +426,41 @@ export function useAssignEmployee() {
       shiftStart?: string;
       shiftEnd?: string;
     }) => {
+      let finalStart = shiftStart ?? "08:00";
+      const finalEnd = shiftEnd ?? "17:00";
+
+      // If this employee already has another assignment for the same day, treat
+      // this as a mid-day reassignment (e.g. first project finished early) and
+      // use the current local time (Asia/Dubai) as the shift start instead of
+      // the default 08:00. Only applies to today, not future planning.
+      const { data: existing } = await supabase
+        .from("project_assignments")
+        .select("id")
+        .eq("employee_id", employeeId)
+        .eq("date", date)
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        const todayStr = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Dubai" }).format(new Date());
+        if (date === todayStr) {
+          const nowHHMM = new Intl.DateTimeFormat("en-GB", {
+            timeZone: "Asia/Dubai",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          }).format(new Date());
+          if (nowHHMM > finalStart) finalStart = nowHHMM;
+        }
+      }
+
       const { data, error } = await supabase
         .from("project_assignments")
         .insert({
           project_id: projectId,
           employee_id: employeeId,
           date,
-          shift_start: shiftStart ?? "08:00",
-          shift_end: shiftEnd ?? "17:00",
+          shift_start: finalStart,
+          shift_end: finalEnd,
         })
         .select()
         .single();
