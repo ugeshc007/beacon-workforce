@@ -211,57 +211,88 @@ export function useConvertSiteVisitToProject() {
 
 /** Mobile: get site visits assigned to current employee */
 export function useMySiteVisits(employeeId: string | null) {
+  const cacheKey = employeeId ? `my_site_visits_${employeeId}` : null;
   return useQuery({
     queryKey: ["my-site-visits", employeeId],
     enabled: !!employeeId,
+    staleTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("site_visits")
-        .select("*")
-        .eq("assigned_employee_id", employeeId!)
-        .order("visit_date", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as SiteVisit[];
+      if (!navigator.onLine && cacheKey) {
+        const cached = await getCachedData<SiteVisit[]>(cacheKey);
+        if (cached) return cached.data;
+      }
+      try {
+        const { data, error } = await supabase
+          .from("site_visits")
+          .select("*")
+          .eq("assigned_employee_id", employeeId!)
+          .order("visit_date", { ascending: false });
+        if (error) throw error;
+        const result = (data ?? []) as SiteVisit[];
+        if (cacheKey) await cacheData(cacheKey, result);
+        return result;
+      } catch (err) {
+        if (cacheKey) {
+          const cached = await getCachedData<SiteVisit[]>(cacheKey);
+          if (cached) return cached.data;
+        }
+        throw err;
+      }
     },
   });
 }
 
 /** Mobile: today's visits for an employee + their workflow sessions, ordered for sequential execution */
 export function useMyTodaySiteVisits(employeeId: string | null) {
+  const today = new Date();
+  const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const cacheKey = employeeId ? `my_today_site_visits_${employeeId}_${localDate}` : null;
   return useQuery({
     queryKey: ["my-today-site-visits", employeeId],
     enabled: !!employeeId,
     refetchInterval: 30000,
+    staleTime: 60_000,
     queryFn: async () => {
-      const today = new Date();
-      const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-      const { data: visits, error } = await supabase
-        .from("site_visits")
-        .select("*")
-        .eq("assigned_employee_id", employeeId!)
-        .eq("visit_date", localDate)
-        .order("created_at", { ascending: true });
-      if (error) throw error;
+      if (!navigator.onLine && cacheKey) {
+        const cached = await getCachedData<any[]>(cacheKey);
+        if (cached) return cached.data;
+      }
+      try {
+        const { data: visits, error } = await supabase
+          .from("site_visits")
+          .select("*")
+          .eq("assigned_employee_id", employeeId!)
+          .eq("visit_date", localDate)
+          .order("created_at", { ascending: true });
+        if (error) throw error;
 
-      const { data: sessions } = await supabase
-        .from("site_visit_work_sessions")
-        .select("id, site_visit_id, travel_start_time, site_arrival_time, work_start_time, break_start_time, break_end_time, work_end_time")
-        .eq("employee_id", employeeId!)
-        .eq("date", localDate);
+        const { data: sessions } = await supabase
+          .from("site_visit_work_sessions")
+          .select("id, site_visit_id, travel_start_time, site_arrival_time, work_start_time, break_start_time, break_end_time, work_end_time")
+          .eq("employee_id", employeeId!)
+          .eq("date", localDate);
 
-      const sessionByVisit = new Map<string, NonNullable<typeof sessions>[number]>();
-      (sessions ?? []).forEach((s) => sessionByVisit.set(s.site_visit_id, s));
+        const sessionByVisit = new Map<string, NonNullable<typeof sessions>[number]>();
+        (sessions ?? []).forEach((s) => sessionByVisit.set(s.site_visit_id, s));
 
-      // Determine which visit (if any) is currently active
-      const activeSession = (sessions ?? []).find((s) => !s.work_end_time);
+        const activeSession = (sessions ?? []).find((s) => !s.work_end_time);
 
-      return ((visits ?? []) as SiteVisit[]).map((v) => {
-        const sess = sessionByVisit.get(v.id) ?? null;
-        const isCompleted = !!sess?.work_end_time || v.status === "completed";
-        const isActive = activeSession?.site_visit_id === v.id;
-        const isLocked = !!activeSession && !isActive && !isCompleted;
-        return { visit: v, session: sess, isCompleted, isActive, isLocked };
-      });
+        const result = ((visits ?? []) as SiteVisit[]).map((v) => {
+          const sess = sessionByVisit.get(v.id) ?? null;
+          const isCompleted = !!sess?.work_end_time || v.status === "completed";
+          const isActive = activeSession?.site_visit_id === v.id;
+          const isLocked = !!activeSession && !isActive && !isCompleted;
+          return { visit: v, session: sess, isCompleted, isActive, isLocked };
+        });
+        if (cacheKey) await cacheData(cacheKey, result);
+        return result;
+      } catch (err) {
+        if (cacheKey) {
+          const cached = await getCachedData<any[]>(cacheKey);
+          if (cached) return cached.data;
+        }
+        throw err;
+      }
     },
   });
 }
