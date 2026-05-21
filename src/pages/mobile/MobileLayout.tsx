@@ -9,6 +9,12 @@ import { SyncStatusBadge } from "@/components/mobile/SyncStatusBadge";
 export default function MobileLayout() {
   const { session, employee, loading } = useMobileAuth();
 
+  useEffect(() => {
+    const cleanupActions = initAutoSync();
+    const cleanupLogs = initDailyLogAutoSync();
+    return () => { cleanupActions(); cleanupLogs(); };
+  }, []);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
