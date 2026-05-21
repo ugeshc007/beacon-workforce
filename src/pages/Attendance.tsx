@@ -216,23 +216,7 @@ export default function Attendance() {
                           </div>
                         </td>
 
-                        <td className="py-2.5" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex items-center gap-1">
-                            {log.office_punch_in_valid === true ? (
-                              <span title="GPS valid"><MapPin className="h-3.5 w-3.5 text-status-present" /></span>
-                            ) : log.office_punch_in_valid === false ? (
-                              <span title="GPS invalid"><MapPinOff className="h-3.5 w-3.5 text-status-absent" /></span>
-                            ) : (
-                              <span className="text-muted-foreground text-xs">—</span>
-                            )}
-                            {log.office_punch_in_spoofed && (
-                              <span title="GPS spoofing detected"><ShieldAlert className="h-3.5 w-3.5 text-amber-400" /></span>
-                            )}
-                            {log.office_punch_in_distance_m != null && (
-                              <span className="text-[10px] text-muted-foreground font-mono">{Math.round(Number(log.office_punch_in_distance_m))}m</span>
-                            )}
-                          </div>
-                        </td>
+
                         <td className="py-2.5 font-mono text-xs text-muted-foreground">{fmt(log.office_punch_in)}</td>
                         <td className="py-2.5 font-mono text-xs text-muted-foreground">{fmt(log.site_arrival_time)}</td>
                         <td className="py-2.5 font-mono text-xs text-muted-foreground">
