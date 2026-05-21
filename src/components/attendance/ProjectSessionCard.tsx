@@ -3,7 +3,9 @@ import { MapPinOff } from "lucide-react";
 import type { ProjectWorkSession } from "@/hooks/useProjectSessions";
 
 export function ProjectSessionCard({ session, index }: { session: ProjectWorkSession; index: number }) {
-  const steps: { label: string; time: string | null; distance?: number | null; valid?: boolean | null }[] = [
+  // In-house sessions never travel — detect when work started without any travel/arrival timestamp.
+  const isInHouse = !session.travel_start_time && !session.site_arrival_time && !session.return_travel_start_time;
+  const allSteps: { label: string; time: string | null; distance?: number | null; valid?: boolean | null }[] = [
     { label: "Travel Start", time: session.travel_start_time },
     { label: "Site Arrival", time: session.site_arrival_time, distance: session.site_arrival_distance_m, valid: session.site_arrival_valid },
     { label: "Work Start", time: session.work_start_time },
@@ -12,6 +14,8 @@ export function ProjectSessionCard({ session, index }: { session: ProjectWorkSes
     { label: "Work End", time: session.work_end_time },
     { label: "Return Travel", time: session.return_travel_start_time },
   ];
+  const hiddenInHouse = new Set(["Travel Start", "Site Arrival", "Return Travel"]);
+  const steps = isInHouse ? allSteps.filter((s) => !hiddenInHouse.has(s.label)) : allSteps;
 
   const totalH = session.total_work_minutes != null ? (session.total_work_minutes / 60).toFixed(1) : "—";
   const otH = session.overtime_minutes != null ? (session.overtime_minutes / 60).toFixed(1) : "0";
