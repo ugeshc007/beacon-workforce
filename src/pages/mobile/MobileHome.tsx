@@ -140,6 +140,10 @@ export default function MobileHome() {
   // Driver mode — when ALL today assignments are driver role, swap in the driver workflow
   const isDriverDay = !!todayProjects?.length && todayProjects.every((p) => p.assignedRole === "driver");
 
+  // If every project assigned today is in-house, the employee never left the office,
+  // so we skip the "Start Return Travel" → "Arrive Office" steps and offer Punch Out directly.
+  const allInHouseDay = !!todayProjects?.length && todayProjects.every((p) => p.workLocation === "in_house");
+
   return (
     <div className="flex flex-col gap-4 p-4 pb-24 safe-area-inset">
       {/* Greeting */}
