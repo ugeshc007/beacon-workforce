@@ -65,6 +65,61 @@ export function nowTimestamp(): string {
   return new Date().toISOString();
 }
 
+/**
+ * Resolve the effective timestamp for a mutating action.
+ * Prefers a client-supplied timestamp (set when an action was queued offline)
+ * over the server clock, so attendance/leg minutes stay accurate even when
+ * sync happens hours later. Falls back to server now if missing, invalid,
+ * in the future, or > 24h old.
+ */
+export function resolveTimestamp(clientTimestamp?: string | null): string {
+  if (!clientTimestamp) return nowTimestamp();
+  const t = Date.parse(clientTimestamp);
+  if (Number.isNaN(t)) return nowTimestamp();
+  const now = Date.now();
+  if (t > now + 60_000) return nowTimestamp();
+  if (now - t > 24 * 60 * 60 * 1000) return nowTimestamp();
+  return new Date(t).toISOString();
+}
+
+/**
+ * Idempotency check for replayed offline actions.
+ * Returns a cached success response if the key was already processed,
+ * otherwise reserves the key and returns null (caller should proceed
+ * then call recordIdempotencyResult on success).
+ */
+export async function checkIdempotency(
+  supabase: ReturnType<typeof createSupabaseAdmin>,
+  key: string | undefined | null,
+  employeeId: string,
+  action: string
+): Promise<Response | null> {
+  if (!key) return null;
+  const { data } = await supabase
+    .from("idempotency_keys")
+    .select("response")
+    .eq("key", key)
+    .maybeSingle();
+  if (data?.response) {
+    return jsonResponse({ ...(data.response as Record<string, unknown>), deduped: true });
+  }
+  if (!data) {
+    await supabase.from("idempotency_keys").insert({
+      key, employee_id: employeeId, action, response: null,
+    });
+  }
+  return null;
+}
+
+export async function recordIdempotencyResult(
+  supabase: ReturnType<typeof createSupabaseAdmin>,
+  key: string | undefined | null,
+  response: Record<string, unknown>
+): Promise<void> {
+  if (!key) return;
+  await supabase.from("idempotency_keys").update({ response }).eq("key", key);
+}
+
 /** Verify JWT and resolve employee_id, ensuring it matches the authenticated user */
 export async function authenticateEmployee(
   req: Request,
