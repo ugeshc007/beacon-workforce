@@ -197,6 +197,23 @@ export default function Attendance() {
                     const sl = statusLabel[status];
                     const breakMin = log.break_minutes ?? 0;
 
+                    // Resolve work location: explicit value, else infer from travel data.
+                    // Any travel/site arrival on log or sessions → site; otherwise in-house.
+                    const sessionsArr = (log as any).sessions as Array<any> | undefined;
+                    const hasAnyTravel =
+                      !!log.travel_start_time ||
+                      !!log.site_arrival_time ||
+                      !!(log as any).return_travel_start_time ||
+                      !!(log as any).office_arrival_time ||
+                      !!sessionsArr?.some((s) => s.travel_start_time || s.site_arrival_time || s.return_travel_start_time);
+                    const hasAnyWork =
+                      !!log.work_start_time ||
+                      !!log.office_punch_in ||
+                      !!sessionsArr?.some((s) => s.work_start_time);
+                    const explicitLoc = (log as any).work_location as "in_house" | "site" | null | undefined;
+                    const resolvedLoc: "in_house" | "site" | null =
+                      explicitLoc ?? (hasAnyTravel ? "site" : hasAnyWork ? "in_house" : null);
+
                     return (
                       <tr key={log.id} className="border-b border-border/50 last:border-0 hover:bg-accent/30 transition-colors cursor-pointer" onClick={() => setDetailLog(log)}>
                         <td className="py-2.5">
@@ -208,13 +225,14 @@ export default function Attendance() {
                           </div>
                           <div className="flex items-center gap-1.5">
                             <span className="text-[10px] text-muted-foreground">{log.employees?.employee_code}</span>
-                            {(log as any).work_location === "in_house" ? (
+                            {resolvedLoc === "in_house" ? (
                               <Badge variant="outline" className="text-[9px] border-primary/40 text-primary">In-House</Badge>
-                            ) : (log as any).work_location === "site" ? (
+                            ) : resolvedLoc === "site" ? (
                               <Badge variant="outline" className="text-[9px] border-status-traveling/40 text-status-traveling">Site</Badge>
                             ) : null}
                           </div>
                         </td>
+
 
 
                         <td className="py-2.5 font-mono text-xs text-muted-foreground">{fmt(log.office_punch_in)}</td>
