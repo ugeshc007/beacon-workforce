@@ -94,7 +94,7 @@ export function useProjectWorkflow(projectId: string | null) {
 
     const previousStep = step;
     const previousSession = session;
-    const next = getNextProjectStep(step, action);
+    const next = getNextProjectStep(step, action, workLocation);
     if (next) setStep(next);
 
     // Optimistically advance session timestamps so the live timer keeps ticking

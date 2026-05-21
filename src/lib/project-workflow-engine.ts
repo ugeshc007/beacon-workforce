@@ -41,8 +41,13 @@ export function getProjectActions(step: ProjectStep, workLocation?: "in_house" |
 }
 
 
-export function getNextProjectStep(current: ProjectStep, action: ProjectAction): ProjectStep | null {
-  if (!transitions[current].includes(action)) return null;
+export function getNextProjectStep(
+  current: ProjectStep,
+  action: ProjectAction,
+  workLocation?: "in_house" | "site" | null,
+): ProjectStep | null {
+  const table = workLocation === "in_house" ? inHouseTransitions : transitions;
+  if (!table[current].includes(action)) return null;
   const map: Record<ProjectAction, ProjectStep> = {
     start_travel: "traveling",
     arrive_site: "at_site",
