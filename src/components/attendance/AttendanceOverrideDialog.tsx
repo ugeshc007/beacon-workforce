@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,9 +36,9 @@ export function AttendanceOverrideDialog({ log, open, onOpenChange }: Props) {
     override_reason: "",
   });
 
-  // Reset form when log changes
-  useState(() => {
-    if (log) {
+  // Reset form when log changes or dialog re-opens — populate with existing saved values
+  useEffect(() => {
+    if (log && open) {
       setForm({
         office_punch_in: toLocalInput(log.office_punch_in),
         travel_start_time: toLocalInput(log.travel_start_time),
@@ -52,7 +52,7 @@ export function AttendanceOverrideDialog({ log, open, onOpenChange }: Props) {
         override_reason: "",
       });
     }
-  });
+  }, [log?.id, open]);
 
   const set = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
 
