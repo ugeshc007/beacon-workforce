@@ -35,8 +35,13 @@ function deriveStatus(log: AttendanceLog): string {
   if ((log as any).office_arrival_time) return "at_office";
   if ((log as any).return_travel_start_time) return "returning";
   if (log.work_end_time) return "work_ended";
+  // Active break on the attendance log
   if (log.break_start_time && !log.break_end_time) return "on_break";
+  // Active break on any project work session (mobile flow updates session, not log)
+  const sessions = (log as any).sessions as Array<{ break_start_time: string | null; break_end_time: string | null; work_end_time: string | null }> | undefined;
+  if (sessions?.some((s) => s.break_start_time && !s.break_end_time && !s.work_end_time)) return "on_break";
   if (log.work_start_time) return "working";
+  if (sessions?.some((s) => s.work_start_time && !s.work_end_time)) return "working";
   if (log.site_arrival_time) return "on_site";
   if (log.travel_start_time) return "traveling";
   if (log.office_punch_in) return "punched_in";
