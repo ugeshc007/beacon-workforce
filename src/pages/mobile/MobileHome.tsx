@@ -228,55 +228,20 @@ export default function MobileHome() {
                 <p className="text-xs text-muted-foreground mt-0.5">
                   No site project today. Working from office.
                 </p>
-                {step === "on_break" && (
-                  <p className="text-xs text-orange-400 mt-2 font-medium flex items-center gap-1">
-                    <Coffee className="h-3 w-3" /> On break
-                  </p>
-                )}
               </div>
             </div>
           </Card>
 
-
-          {/* Break controls */}
-          {step !== "on_break" && (
-            <HoldToConfirm
-              onConfirm={() => handleOfficeAction("start_break")}
-              disabled={actionLoading}
-              loading={actionLoading}
-              variant="secondary"
-            >
-              <Coffee className="h-5 w-5" />
-              {actionLabels.start_break}
-            </HoldToConfirm>
-          )}
-          {step === "on_break" && (
-            <HoldToConfirm
-              onConfirm={() => handleOfficeAction("end_break")}
-              disabled={actionLoading}
-              loading={actionLoading}
-              variant="primary"
-            >
-              <PlayCircle className="h-5 w-5" />
-              {actionLabels.end_break}
-            </HoldToConfirm>
-          )}
-
           {/* Punch out — always available in-house */}
           <HoldToConfirm
             onConfirm={() => handleOfficeAction("punch_out")}
-            disabled={actionLoading || step === "on_break"}
+            disabled={actionLoading}
             loading={actionLoading}
             variant="secondary"
           >
             <CheckCircle2 className="h-5 w-5" />
             {actionLabels.punch_out}
           </HoldToConfirm>
-          {step === "on_break" && (
-            <p className="text-[11px] text-muted-foreground text-center">
-              End your break before punching out.
-            </p>
-          )}
         </div>
       )}
 
