@@ -26,7 +26,13 @@ const sessionColors = [
 ];
 
 export function AttendanceTimeline({ log }: Props) {
-  const sessions = (log.sessions ?? []).filter((s) => s.work_start_time || s.work_end_time);
+  const sessions = (log.sessions ?? []).filter((s) => s.work_start_time || s.break_start_time || s.break_end_time || s.work_end_time);
+  const sessionBreakStart = sessions.find((s) => s.break_start_time && !s.break_end_time)?.break_start_time
+    ?? sessions.find((s) => s.break_start_time)?.break_start_time
+    ?? null;
+  const sessionBreakEnd = sessions.find((s) => s.break_end_time)?.break_end_time ?? null;
+  const breakStartTime = log.break_start_time ?? sessionBreakStart;
+  const breakEndTime = log.break_end_time ?? sessionBreakEnd;
 
   // Build a single ordered list of dots. When the employee has multiple project
   // sessions in the same day, replace the single Work Start / Work End dots
@@ -68,8 +74,8 @@ export function AttendanceTimeline({ log }: Props) {
   // Insert break dots right after the first work_start dot for the single-session case;
   // for multi-session, keep break dots at the end of session block.
   const breakDots: Dot[] = [
-    { key: "break_start_time", label: "Break Start", color: "bg-orange-400", time: log.break_start_time },
-    { key: "break_end_time", label: "Break End", color: "bg-status-present", time: log.break_end_time },
+    { key: "break_start_time", label: "Break Start", color: "bg-orange-400", time: breakStartTime },
+    { key: "break_end_time", label: "Break End", color: "bg-status-present", time: breakEndTime },
   ];
   if (sessions.length > 1) {
     // place break dots after sessions block (index = 3 + sessions*2)
