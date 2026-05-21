@@ -28,12 +28,16 @@ export default function MobileLayout() {
   }
 
   if (!employee) {
-    // Session exists but no linked employee record — show error instead of redirect loop
+    const offline = typeof navigator !== "undefined" && navigator.onLine === false;
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6 text-center gap-3">
-        <p className="text-base font-semibold text-foreground">No employee profile linked</p>
+        <p className="text-base font-semibold text-foreground">
+          {offline ? "You're offline" : "No employee profile linked"}
+        </p>
         <p className="text-sm text-muted-foreground">
-          Your account isn't linked to an employee record. Please contact your supervisor.
+          {offline
+            ? "Connect to the internet once so we can load your profile, then you can keep working offline."
+            : "Your account isn't linked to an employee record. Please contact your supervisor."}
         </p>
       </div>
     );
