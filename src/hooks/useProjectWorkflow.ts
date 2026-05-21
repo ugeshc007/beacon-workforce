@@ -66,12 +66,29 @@ export function useProjectWorkflow(projectId: string | null) {
 
 
 
+  const sessionCacheKey = employee && projectId ? `pws_${employee.id}_${projectId}_${today}` : null;
+
   const fetchSession = useCallback(async () => {
     if (!employee || !projectId) {
       setLoading(false);
       return;
     }
     setLoading(true);
+
+    // Offline → hydrate from localStorage cache, never overwrite with null
+    if (!navigator.onLine) {
+      try {
+        const cached = sessionCacheKey ? localStorage.getItem(sessionCacheKey) : null;
+        if (cached) {
+          const parsed = JSON.parse(cached) as SessionRow;
+          setSession(parsed);
+          setStep(deriveProjectStep(parsed));
+        }
+      } catch { /* ignore */ }
+      setLoading(false);
+      return;
+    }
+
     const { data } = await supabase
       .from("project_work_sessions")
       .select("id, project_id, travel_start_time, site_arrival_time, work_start_time, break_start_time, break_end_time, work_end_time, total_work_minutes")
@@ -81,8 +98,11 @@ export function useProjectWorkflow(projectId: string | null) {
       .maybeSingle();
     setSession(data ?? null);
     setStep(deriveProjectStep(data ?? null));
+    if (sessionCacheKey) {
+      try { localStorage.setItem(sessionCacheKey, JSON.stringify(data ?? null)); } catch { /* ignore */ }
+    }
     setLoading(false);
-  }, [employee, projectId, today]);
+  }, [employee, projectId, today, sessionCacheKey]);
 
   useEffect(() => {
     fetchSession();
