@@ -80,7 +80,12 @@ export function ProjectStepTimeline({
         .filter((s) => s.key !== "on_break" || breakTaken || step === "on_break")
         .map((s) => {
         const sIdx = order.indexOf(s.key);
-        const isDone = sIdx < currentIdx || (step === "completed" && s.key !== "completed");
+        // Break is "done" once breakEnd is set, even though step has returned to "working".
+        const breakIsDone = s.key === "on_break" && !!breakEnd;
+        const isDone =
+          breakIsDone ||
+          sIdx < currentIdx ||
+          (step === "completed" && s.key !== "completed");
         const isCurrent = (s.key === currentKey && step !== "completed") || (s.key === "completed" && step === "completed");
 
         const stamp =
