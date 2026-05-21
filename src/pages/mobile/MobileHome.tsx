@@ -140,6 +140,10 @@ export default function MobileHome() {
   // Driver mode — when ALL today assignments are driver role, swap in the driver workflow
   const isDriverDay = !!todayProjects?.length && todayProjects.every((p) => p.assignedRole === "driver");
 
+  // If every project assigned today is in-house, the employee never left the office,
+  // so we skip the "Start Return Travel" → "Arrive Office" steps and offer Punch Out directly.
+  const allInHouseDay = !!todayProjects?.length && todayProjects.every((p) => p.workLocation === "in_house");
+
   return (
     <div className="flex flex-col gap-4 p-4 pb-24 safe-area-inset">
       {/* Greeting */}
@@ -335,14 +339,25 @@ export default function MobileHome() {
           <Card className="p-4 border-green-500/30 bg-green-500/5">
             <p className="text-sm text-foreground font-medium">All assigned projects done!</p>
             <p className="text-xs text-muted-foreground mt-1">
-              {step === "returning"
-                ? "Tap below when you reach the office — or pick up another project."
-                : "Pick up another project to keep working, or head back to the office."}
+              {allInHouseDay
+                ? "In-house work complete. Punch out when you're ready to end the day."
+                : step === "returning"
+                  ? "Tap below when you reach the office — or pick up another project."
+                  : "Pick up another project to keep working, or head back to the office."}
             </p>
           </Card>
 
-
-          {step !== "returning" && (
+          {allInHouseDay ? (
+            <HoldToConfirm
+              onConfirm={() => handleOfficeAction("punch_out")}
+              disabled={actionLoading}
+              loading={actionLoading}
+              variant="primary"
+            >
+              <CheckCircle2 className="h-5 w-5" />
+              {actionLabels.punch_out}
+            </HoldToConfirm>
+          ) : step !== "returning" ? (
             <HoldToConfirm
               onConfirm={() => handleOfficeAction("start_return_travel")}
               disabled={actionLoading}
@@ -352,9 +367,7 @@ export default function MobileHome() {
               <MapPin className="h-5 w-5" />
               {actionLabels.start_return_travel}
             </HoldToConfirm>
-          )}
-
-          {step === "returning" && (
+          ) : (
             <HoldToConfirm
               onConfirm={() => handleOfficeAction("arrive_office")}
               disabled={actionLoading}
@@ -367,6 +380,7 @@ export default function MobileHome() {
           )}
         </div>
       )}
+
 
       {/* Punch Out — when projects exist and we're at office (after return-travel flow) */}
       {step === "at_office" && (

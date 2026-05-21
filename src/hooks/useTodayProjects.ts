@@ -18,6 +18,7 @@ export interface TodayProject {
   step: ProjectStep;
   totalWorkMinutes: number | null;
   assignedRole: string;
+  workLocation: "in_house" | "site" | null;
 }
 
 /** Returns ALL today's project assignments + their session state */
@@ -34,7 +35,7 @@ export function useTodayProjects() {
 
       const { data: assignments } = await supabase
         .from("project_assignments")
-        .select("id, project_id, shift_start, shift_end, assigned_role, projects(name, site_address, site_latitude, site_longitude, site_gps_radius)")
+        .select("id, project_id, shift_start, shift_end, assigned_role, work_location, projects(name, site_address, site_latitude, site_longitude, site_gps_radius)")
         .eq("employee_id", employee.id)
         .eq("date", today);
 
@@ -67,6 +68,14 @@ export function useTodayProjects() {
         (sessions ?? []).map((s) => [s.project_id, s])
       );
 
+      const projectIds = filteredAssignments.map((a) => a.project_id);
+      const { data: dayLocs } = await supabase
+        .from("project_day_work_locations")
+        .select("project_id, location")
+        .eq("date", today)
+        .in("project_id", projectIds);
+      const dayLocByProject = new Map((dayLocs ?? []).map((d) => [d.project_id, d.location as "in_house" | "site"]));
+
       return filteredAssignments.map((a) => {
         const project = a.projects as { name?: string; site_address?: string | null; site_latitude?: number | null; site_longitude?: number | null; site_gps_radius?: number | null } | null;
         const session = sessionByProject.get(a.project_id);
@@ -84,6 +93,7 @@ export function useTodayProjects() {
           step: deriveProjectStep(session ?? null),
           totalWorkMinutes: session?.total_work_minutes ?? null,
           assignedRole: a.assigned_role ?? "team_member",
+          workLocation: (a.work_location as "in_house" | "site" | null) ?? dayLocByProject.get(a.project_id) ?? null,
         };
       });
     },
