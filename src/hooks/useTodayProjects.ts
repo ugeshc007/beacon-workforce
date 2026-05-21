@@ -18,6 +18,7 @@ export interface TodayProject {
   step: ProjectStep;
   totalWorkMinutes: number | null;
   assignedRole: string;
+  workLocation: "in_house" | "site" | null;
 }
 
 /** Returns ALL today's project assignments + their session state */
