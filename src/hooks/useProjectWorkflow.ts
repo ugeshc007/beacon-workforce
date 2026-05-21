@@ -37,12 +37,22 @@ export function useProjectWorkflow(projectId: string | null) {
 
   const today = toLocalDateStr(new Date());
   const { data: dayWorkLocation } = useDayWorkLocation(projectId ?? "", today);
+  const workLocCacheKey = employee && projectId ? `pwl_${employee.id}_${projectId}_${today}` : null;
 
   // Per-employee per-day work location set on the schedule page takes priority
-  // over the project-wide day location.
+  // over the project-wide day location. Cache it so offline reloads keep the
+  // in-house vs site distinction (otherwise we'd fall back to travel flow).
   useEffect(() => {
     if (!employee || !projectId) {
       setAssignmentLocation(null);
+      return;
+    }
+    // Offline → hydrate from cache, don't try the network
+    if (!navigator.onLine) {
+      try {
+        const cached = workLocCacheKey ? localStorage.getItem(workLocCacheKey) : null;
+        if (cached) setAssignmentLocation(JSON.parse(cached));
+      } catch { /* ignore */ }
       return;
     }
     let cancelled = false;
@@ -55,11 +65,15 @@ export function useProjectWorkflow(projectId: string | null) {
         .eq("date", today)
         .maybeSingle();
       if (!cancelled) {
-        setAssignmentLocation((data?.work_location as "in_house" | "site" | null) ?? null);
+        const loc = (data?.work_location as "in_house" | "site" | null) ?? null;
+        setAssignmentLocation(loc);
+        if (workLocCacheKey) {
+          try { localStorage.setItem(workLocCacheKey, JSON.stringify(loc)); } catch { /* ignore */ }
+        }
       }
     })();
     return () => { cancelled = true; };
-  }, [employee, projectId, today]);
+  }, [employee, projectId, today, workLocCacheKey]);
 
   const workLocation = assignmentLocation ?? dayWorkLocation ?? null;
 
