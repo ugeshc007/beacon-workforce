@@ -9,6 +9,8 @@ export type AttendanceSessionSummary = {
   project_id: string | null;
   project_name: string | null;
   work_start_time: string | null;
+  break_start_time: string | null;
+  break_end_time: string | null;
   work_end_time: string | null;
   work_location?: "in_house" | "site" | null;
 };
@@ -90,7 +92,7 @@ export function useAttendanceLogs(filters: {
       if (logIds.length > 0) {
         const { data: pws } = await supabase
           .from("project_work_sessions")
-          .select("id, attendance_log_id, project_id, work_start_time, work_end_time, projects(name)")
+          .select("id, attendance_log_id, project_id, work_start_time, break_start_time, break_end_time, work_end_time, projects(name)")
           .in("attendance_log_id", logIds)
           .order("created_at", { ascending: true });
         for (const s of (pws ?? []) as any[]) {
@@ -100,6 +102,8 @@ export function useAttendanceLogs(filters: {
             project_id: s.project_id,
             project_name: s.projects?.name ?? null,
             work_start_time: s.work_start_time,
+            break_start_time: s.break_start_time,
+            break_end_time: s.break_end_time,
             work_end_time: s.work_end_time,
           });
           sessionsByLog.set(s.attendance_log_id, list);
