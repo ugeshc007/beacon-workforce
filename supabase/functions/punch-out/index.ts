@@ -26,6 +26,27 @@ Deno.serve(async (req) => {
     if (!log) return errorResponse("No attendance record for today", 400);
     if (log.office_punch_out) return errorResponse("Already punched out", 400);
 
+    // Block punch-out if the driver still has an open trip leg from today.
+    // Drivers must explicitly end every leg before closing out the day so
+    // travel/onsite minutes are accurate.
+    const { data: openLegs } = await supabase
+      .from("driver_trip_legs")
+      .select("id, leg_number, projects(name)")
+      .eq("driver_id", employee_id)
+      .eq("date", today)
+      .neq("status", "completed");
+
+    if (openLegs && openLegs.length > 0) {
+      const names = openLegs
+        .map((l: any) => l.projects?.name || `Leg #${l.leg_number}`)
+        .join(", ");
+      return errorResponse(
+        `Finish your trip first before punching out. Open trip(s): ${names}. Tap 'Arrived at Site' then 'End Leg' to close them.`,
+        400
+      );
+    }
+
+
     // Skip "arrive at office" check for in-house employees (they never left the office).
     // Only require it if the employee has at least one site-based assignment today.
     if (!log.office_arrival_time) {
