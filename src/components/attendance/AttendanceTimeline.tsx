@@ -27,26 +27,28 @@ const sessionColors = [
 
 export function AttendanceTimeline({ log }: Props) {
   const sessions = (log.sessions ?? []).filter((s) => s.work_start_time || s.break_start_time || s.break_end_time || s.work_end_time);
-  // Prefer an active (open) session break so an ongoing break shows immediately,
-  // even if the attendance_log still reflects a previously-finished break.
+  // When the employee has exactly one active project session for the day, that
+  // session is the source of truth for work/break times — the attendance_log
+  // row may contain stale values from an earlier (cancelled/superseded) flow.
+  const singleSession = sessions.length === 1 ? sessions[0] : null;
+
+  // Prefer an active (open) session break so an ongoing break shows immediately.
   const openBreakSession = sessions.find((s) => s.break_start_time && !s.break_end_time);
   const anyBreakStartSession = sessions.find((s) => s.break_start_time);
   const anyBreakEndSession = sessions.find((s) => s.break_end_time);
   const breakStartTime = openBreakSession?.break_start_time
+    ?? singleSession?.break_start_time
     ?? log.break_start_time
     ?? anyBreakStartSession?.break_start_time
     ?? null;
   const breakEndTime = openBreakSession
     ? null
-    : (log.break_end_time ?? anyBreakEndSession?.break_end_time ?? null);
+    : (singleSession?.break_end_time ?? log.break_end_time ?? anyBreakEndSession?.break_end_time ?? null);
 
-  // For single-session days (typical inhouse / one-project day), fall back to
-  // the session's work_start_time / work_end_time when the attendance_log row
-  // does not mirror them — otherwise the pipeline shows blank dots even
-  // though the employee already started/ended work.
-  const singleSession = sessions.length === 1 ? sessions[0] : null;
-  const workStartTime = log.work_start_time ?? singleSession?.work_start_time ?? null;
-  const workEndTime = log.work_end_time ?? singleSession?.work_end_time ?? null;
+  // For single-session days, use the session's work_start/end as authoritative.
+  const workStartTime = singleSession?.work_start_time ?? log.work_start_time ?? null;
+  const workEndTime = singleSession?.work_end_time ?? log.work_end_time ?? null;
+
 
   // Build a single ordered list of dots. When the employee has multiple project
   // sessions in the same day, replace the single Work Start / Work End dots
