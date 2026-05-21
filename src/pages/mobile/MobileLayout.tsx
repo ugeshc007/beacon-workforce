@@ -43,6 +43,9 @@ export default function MobileLayout() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <div className="fixed top-2 right-2 z-50 safe-area-top">
+        <SyncStatusBadge />
+      </div>
       <main className="flex-1 overflow-y-auto">
         <Outlet />
       </main>
