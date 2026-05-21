@@ -25,24 +25,30 @@ Deno.serve(async (req) => {
         .maybeSingle();
       if (!log?.office_punch_in) return errorResponse("Must punch in at office first", 400);
 
-      // Verify assignment for this project today
+      // Verify assignment for this project today (and read its per-assignment work_location)
       const { data: assignment } = await supabase
         .from("project_assignments")
-        .select("id")
+        .select("id, work_location")
         .eq("employee_id", employee_id)
         .eq("project_id", project_id)
         .eq("date", today)
         .maybeSingle();
       if (!assignment) return errorResponse("No assignment for this project today", 403);
 
-      // Verify the day work-location is in_house — otherwise force the normal site flow
-      const { data: dayLoc } = await supabase
-        .from("project_day_work_locations")
-        .select("location")
-        .eq("project_id", project_id)
-        .eq("date", today)
-        .maybeSingle();
-      if (dayLoc?.location !== "in_house") {
+      // In-house if EITHER the per-employee assignment.work_location is 'in_house'
+      // OR the project-wide day location is 'in_house'. The per-assignment value
+      // takes priority because the schedule page sets it per employee.
+      let isInHouse = assignment.work_location === "in_house";
+      if (!isInHouse) {
+        const { data: dayLoc } = await supabase
+          .from("project_day_work_locations")
+          .select("location")
+          .eq("project_id", project_id)
+          .eq("date", today)
+          .maybeSingle();
+        isInHouse = dayLoc?.location === "in_house";
+      }
+      if (!isInHouse) {
         return errorResponse(
           "This project is scheduled at site today. Start travel first, then arrive at site before starting work.",
           400,
