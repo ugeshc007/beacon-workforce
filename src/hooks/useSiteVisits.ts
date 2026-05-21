@@ -48,17 +48,32 @@ export function useSiteVisits(filters?: {
 }
 
 export function useSiteVisit(id: string | null) {
+  const cacheKey = id ? `site_visit_${id}` : null;
   return useQuery({
     queryKey: ["site-visit", id],
     enabled: !!id,
+    staleTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("site_visits")
-        .select("*, assigned_employee:employees!site_visits_assigned_employee_id_fkey(id,name,employee_code), branches(name)")
-        .eq("id", id!)
-        .maybeSingle();
-      if (error) throw error;
-      return data as SiteVisit | null;
+      if (!navigator.onLine && cacheKey) {
+        const cached = await getCachedData<SiteVisit | null>(cacheKey);
+        if (cached) return cached.data;
+      }
+      try {
+        const { data, error } = await supabase
+          .from("site_visits")
+          .select("*, assigned_employee:employees!site_visits_assigned_employee_id_fkey(id,name,employee_code), branches(name)")
+          .eq("id", id!)
+          .maybeSingle();
+        if (error) throw error;
+        if (cacheKey) await cacheData(cacheKey, data);
+        return data as SiteVisit | null;
+      } catch (err) {
+        if (cacheKey) {
+          const cached = await getCachedData<SiteVisit | null>(cacheKey);
+          if (cached) return cached.data;
+        }
+        throw err;
+      }
     },
   });
 }
