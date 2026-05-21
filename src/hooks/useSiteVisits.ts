@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
+import { cacheData, getCachedData } from "@/lib/offline-queue";
 
 export type SiteVisit = Tables<"site_visits"> & {
   assigned_employee?: { id: string; name: string; employee_code: string } | null;
