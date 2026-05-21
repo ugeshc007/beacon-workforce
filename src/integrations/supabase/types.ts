@@ -931,6 +931,7 @@ export type Database = {
           branch_id: string
           created_at: string
           gps_radius_meters: number
+          gps_validation_enabled: boolean
           id: string
           latitude: number | null
           longitude: number | null
@@ -941,6 +942,7 @@ export type Database = {
           branch_id: string
           created_at?: string
           gps_radius_meters?: number
+          gps_validation_enabled?: boolean
           id?: string
           latitude?: number | null
           longitude?: number | null
@@ -951,6 +953,7 @@ export type Database = {
           branch_id?: string
           created_at?: string
           gps_radius_meters?: number
+          gps_validation_enabled?: boolean
           id?: string
           latitude?: number | null
           longitude?: number | null
