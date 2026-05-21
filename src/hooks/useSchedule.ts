@@ -209,14 +209,41 @@ export function useAddAssignment() {
       assignment_mode?: "manual" | "auto" | "hybrid";
       assigned_role?: string;
     }) => {
+      let finalStart = payload.shift_start ?? null;
+      const finalEnd = payload.shift_end ?? null;
+
+      // Mid-day reassignment: if the employee already has another assignment
+      // for this same date and we're assigning for TODAY, bump the shift_start
+      // to the current local time (Asia/Dubai) so the "in time" reflects when
+      // they actually joined the second project.
+      const { data: existing } = await supabase
+        .from("project_assignments")
+        .select("id")
+        .eq("employee_id", payload.employee_id)
+        .eq("date", payload.date)
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        const todayStr = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Dubai" }).format(new Date());
+        if (payload.date === todayStr) {
+          const nowHHMM = new Intl.DateTimeFormat("en-GB", {
+            timeZone: "Asia/Dubai",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          }).format(new Date());
+          if (!finalStart || nowHHMM > finalStart) finalStart = nowHHMM;
+        }
+      }
+
       const { data, error } = await supabase
         .from("project_assignments")
         .insert({
           project_id: payload.project_id,
           employee_id: payload.employee_id,
           date: payload.date,
-          shift_start: payload.shift_start ?? null,
-          shift_end: payload.shift_end ?? null,
+          shift_start: finalStart,
+          shift_end: finalEnd,
           assignment_mode: payload.assignment_mode ?? "manual",
           assigned_role: payload.assigned_role ?? "team_member",
         })
