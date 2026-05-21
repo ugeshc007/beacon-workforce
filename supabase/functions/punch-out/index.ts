@@ -1,10 +1,10 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, haversineDistance, todayDate, nowTimestamp, authenticateEmployee } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, haversineDistance, todayDate, nowTimestamp, resolveTimestamp, checkIdempotency, authenticateEmployee } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
 
   try {
-    const { employee_id, lat, lng, accuracy } = await req.json();
+    const { employee_id, client_timestamp, idempotency_key, lat, lng, accuracy } = await req.json();
     if (!employee_id) return errorResponse("employee_id is required");
     if (lat == null || lng == null) return errorResponse("lat and lng are required for punch out");
 
@@ -14,7 +14,9 @@ Deno.serve(async (req) => {
     if (auth.error) return auth.error;
 
     const today = todayDate();
-    const now = nowTimestamp();
+    const now = resolveTimestamp(client_timestamp);
+    const dup = await checkIdempotency(supabase, idempotency_key, employee_id, "punch-out");
+    if (dup) return dup;
 
     const { data: log } = await supabase
       .from("attendance_logs")

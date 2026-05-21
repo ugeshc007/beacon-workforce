@@ -1,10 +1,10 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, todayDate, nowTimestamp, authenticateEmployee } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, todayDate, nowTimestamp, resolveTimestamp, checkIdempotency, authenticateEmployee } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
 
   try {
-    const { employee_id, project_id, lat, lng } = await req.json();
+    const { employee_id, client_timestamp, idempotency_key, project_id, lat, lng } = await req.json();
     if (!employee_id || !project_id || lat == null || lng == null) {
       return errorResponse("employee_id, project_id, lat, lng required");
     }
@@ -14,7 +14,9 @@ Deno.serve(async (req) => {
     if (auth.error) return auth.error;
 
     const today = todayDate();
-    const now = nowTimestamp();
+    const now = resolveTimestamp(client_timestamp);
+    const dup = await checkIdempotency(supabase, idempotency_key, employee_id, "driver-start-trip");
+    if (dup) return dup;
 
     // Driver must have punched in
     const { data: log } = await supabase

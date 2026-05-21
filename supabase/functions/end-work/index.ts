@@ -1,4 +1,4 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, todayDate, nowTimestamp, notifyBranchManagers, authenticateEmployee } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, todayDate, nowTimestamp, resolveTimestamp, checkIdempotency, notifyBranchManagers, authenticateEmployee } from "../_shared/helpers.ts";
 
 const DAY_NAMES = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 
@@ -6,7 +6,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
 
   try {
-    const { employee_id } = await req.json();
+    const { employee_id, client_timestamp, idempotency_key } = await req.json();
     if (!employee_id) return errorResponse("employee_id is required");
 
     const supabase = createSupabaseAdmin();
@@ -15,7 +15,9 @@ Deno.serve(async (req) => {
     if (auth.error) return auth.error;
 
     const today = todayDate();
-    const now = nowTimestamp();
+    const now = resolveTimestamp(client_timestamp);
+    const dup = await checkIdempotency(supabase, idempotency_key, employee_id, "end-work");
+    if (dup) return dup;
 
     const { data: log } = await supabase
       .from("attendance_logs")

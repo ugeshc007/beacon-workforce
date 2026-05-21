@@ -1,73 +1,76 @@
-## Driver Workflow — Multi-Leg Trips
+# Offline-First for Mobile App — Full Wire-Up
 
-A new flow that activates **only** when an employee's assigned role for today is `driver`. If the same person is assigned as `team_member`/`team_leader` on another day or project, the existing technician flow runs unchanged.
+## The real problem
 
-### Mobile Flow
+The offline plumbing already exists in the codebase (`offline-queue.ts`, `offline-sync.ts`, `offline-daily-logs.ts`) but **nothing is wired up**:
 
+- `executeAction` in `useMobileWorkflow` calls `invokeEdge` directly — on failure it just rolls back the UI
+- `initAutoSync` / `initDailyLogAutoSync` are never called at app startup
+- Edge functions ignore the `idempotency_key` already being sent → risk of duplicate records when sync retries
+- No UI shows queued actions or sync status
+
+So when a driver is in a basement / poor signal at site, every tap fails and he gets stuck.
+
+## What this plan ships
+
+### 1. Wire startup sync
+- Call `initAutoSync()` and `initDailyLogAutoSync()` once inside `MobileLayout` mount
+- Auto-flushes queued actions whenever connection returns
+
+### 2. Offline-aware action handler (attendance + project + site-visit)
+Update `executeAction` in `useMobileWorkflow.ts`:
+- If `navigator.onLine === false` **OR** `invokeEdge` throws a network error → call `enqueueAction(...)` instead of failing
+- Keep the optimistic step advancement (don't roll back)
+- Update local cached `attendance_log` so UI reflects the action even before sync
+- Show toast: *"Saved offline — will sync when online"*
+
+Same treatment for site-visit workflow hook (`useSiteVisitWorkflow`).
+
+### 3. Offline driver trip legs
+`useDriverWorkflow` mutations (`startTrip`, `arriveSite`, `endLeg`) get the same offline fallback. Driver leg payloads queued with `driver_start_trip` / `driver_arrive_site` / `driver_end_leg` action types (add to `edgeFunctionMap` in `offline-sync.ts`).
+
+### 4. Offline daily logs + photos (already half-built)
+- `MobileDailyLog` page already has the queue infra — just verify it calls `enqueueDailyLog` when offline and falls back gracefully
+- Photos stored as base64 in Capacitor Preferences (already implemented)
+- On reconnect: photos upload to `daily-log-photos` bucket → row inserted → notify
+
+### 5. Server-side idempotency (prevents duplicates)
+Add an `idempotency_keys` table:
+```text
+idempotency_keys(key text primary key, employee_id uuid, created_at timestamptz)
 ```
-Punch In (office)
-   ↓
-[Select Project]  ← from today's pre-assigned driver projects
-   ↓
-Start Travel  → status: traveling
-   ↓
-Arrive at Site → choose:
-   ├─ Drop Off  → log time, free to leave
-   ├─ Pick Up   → log time, free to leave
-   └─ Waiting   → stays on site, paid (tap "Done Waiting" when leaving)
-   ↓
-Leg Complete → choose:
-   ├─ Start Another Project  → back to [Select Project]
-   └─ Return to Office       → travel back → arrive office → Punch Out
-```
+Wrap every mutating edge function with: *if key exists → return success without re-executing*. Add to: punch-in, punch-out, start-travel, arrive-site, start-work, start-break, end-break, end-work, start-return-travel, arrive-office, driver-start-trip, driver-arrive-site, driver-end-leg, plus sv-* functions. Auto-cleanup keys older than 7 days via existing cron.
 
-Each drop / pickup / wait is a **separate leg**. A pickup later in the day is a new leg, not a continuation.
+### 6. Sync status UI
+Small badge in `MobileLayout` header:
+- Green dot + "Online" when connected and queue empty
+- Amber dot + "3 pending sync" when queue has items
+- Red dot + "Offline" when no connection
+Tap badge → bottom sheet listing queued actions with timestamps + manual "Retry now" button.
 
-### Database
+### 7. Original-timestamp preservation
+Critical for accuracy: edge functions must use the `timestamp` from the queued payload (not `now()`) when set. Update each function to accept optional `client_timestamp` field and prefer it when present.
 
-New table `driver_trip_legs`:
-- `driver_id`, `date`, `project_id`
-- `attendance_log_id` (links to the driver's daily punch-in row)
-- `leg_number` (1, 2, 3… per day)
-- `travel_start_time` + GPS
-- `site_arrival_time` + GPS
-- `leg_type`: `drop_off` | `pick_up` | `wait`
-- `leg_end_time` (when driver leaves site or ends wait)
-- `total_travel_minutes`, `total_onsite_minutes`
-- `status`: `traveling` | `on_site` | `completed`
+## Technical notes
 
-The driver's `attendance_logs` row continues to track punch-in / punch-out and total daily minutes (for OT/cost).
+- Queue uses `@capacitor/preferences` (already installed) — works on web preview too via localStorage shim
+- Idempotency key format: `{action}_{ms_epoch}_{rand}` (already generated client-side)
+- Photos: base64 in Preferences works up to ~5MB/photo; we'll add a 2MB resize step before queueing using existing `usePhotoCapture` hook
+- Retry: exponential backoff already present (2s, 4s, 8s, then mark error)
+- Failed items stay in queue with `error` status and show in the sync sheet for manual retry
 
-### Edge Functions
+## Out of scope
+- Background sync while app is killed (would need Capacitor Background Tasks plugin — separate effort)
+- Conflict resolution UI (rare; for now last-write-wins server-side, manager can override in attendance page)
 
-- `driver-start-trip` — driver picks project + starts travel → creates new leg
-- `driver-arrive-site` — sets site_arrival + leg_type (drop/pick/wait)
-- `driver-end-leg` — closes leg (driver leaves site or ends wait)
-- Reuse existing `start-return-travel`, `arrive-office`, `punch-out` for the final return.
-
-### Cost Report Allocation
-
-Driver's daily total minutes (from `attendance_logs`) are split per project proportional to `(travel + on-site) minutes per project / total leg minutes`. Each project's labor breakdown shows the driver as a separate line item with the time they spent serving that project. Travel + on-site go into the **Site** bucket (or honor the day's In-House/Site tag if set, same as technicians).
-
-### UI Changes
-
-1. **Mobile** — new screens for driver:
-   - `MobileHome.tsx` detects role and renders `DriverWorkflowCard` instead of standard workflow
-   - Project picker (today's pre-assigned driver projects)
-   - Trip leg timeline showing all completed + active legs
-   - Action buttons: Start Travel / Arrive (drop/pick/wait) / End Leg / Return to Office
-
-2. **Web schedule** — driver assignments display already works (driver role exists). No change.
-
-3. **Web attendance/timeline** — show driver legs in the daily timeline drawer (collapsed list).
-
-### Out of scope for this iteration
-- Editing legs from web (admins still use override on `attendance_logs` totals).
-- Mileage / vehicle tracking.
-
-### Build order
-1. Migration: `driver_trip_legs` table + RLS.
-2. Edge functions: start-trip, arrive-site, end-leg.
-3. Mobile UI: `DriverWorkflowCard` + integration into `MobileHome.tsx`.
-4. Web: leg list in `AttendanceDetailDrawer`.
-5. Cost report: per-project driver allocation in `useProjectLaborBreakdown`.
+## Files touched
+- `src/pages/mobile/MobileLayout.tsx` — startup sync init + status badge
+- `src/hooks/useMobileWorkflow.ts` — offline fallback in executeAction
+- `src/hooks/useSiteVisitWorkflow.ts` — same pattern
+- `src/hooks/useDriverWorkflow.ts` — same pattern
+- `src/lib/offline-sync.ts` — add driver_* / sv_* action mappings
+- `src/components/mobile/SyncStatusBadge.tsx` — new
+- `src/components/mobile/SyncQueueSheet.tsx` — new
+- `supabase/functions/_shared/helpers.ts` — `checkIdempotency()` helper
+- All ~15 mutating edge functions — add idempotency check + accept client_timestamp
+- 1 migration — `idempotency_keys` table + cleanup function

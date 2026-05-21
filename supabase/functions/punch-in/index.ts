@@ -1,10 +1,10 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, haversineDistance, todayDate, nowTimestamp, notifyBranchManagers, authenticateEmployee } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, haversineDistance, todayDate, nowTimestamp, resolveTimestamp, checkIdempotency, notifyBranchManagers, authenticateEmployee } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
 
   try {
-    const { employee_id, lat, lng, accuracy, is_spoofed } = await req.json();
+    const { employee_id, client_timestamp, idempotency_key, lat, lng, accuracy, is_spoofed } = await req.json();
 
     if (!employee_id || lat == null || lng == null) {
       return errorResponse("employee_id, lat, and lng are required");
@@ -63,7 +63,9 @@ Deno.serve(async (req) => {
       return errorResponse("You are already punched in. Please punch out before starting a new shift.");
     }
 
-    const now = nowTimestamp();
+    const now = resolveTimestamp(client_timestamp);
+    const dup = await checkIdempotency(supabase, idempotency_key, employee_id, "punch-in");
+    if (dup) return dup;
     const { data: log, error } = await supabase
       .from("attendance_logs")
       .insert({

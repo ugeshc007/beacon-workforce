@@ -58,7 +58,13 @@ const edgeFunctionMap: Record<string, string> = {
   sv_end_break: "sv-end-break",
   sv_end_visit: "sv-end-visit",
   sv_start_return_travel: "sv-start-return-travel",
+  // Driver trip-leg actions
+  driver_start_trip: "driver-start-trip",
+  driver_arrive_site: "driver-arrive-site",
+  driver_end_leg: "driver-end-leg",
 };
+
+
 
 /**
  * Process all pending items in the queue, oldest first.

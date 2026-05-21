@@ -691,6 +691,30 @@ export type Database = {
           },
         ]
       }
+      idempotency_keys: {
+        Row: {
+          action: string | null
+          created_at: string
+          employee_id: string | null
+          key: string
+          response: Json | null
+        }
+        Insert: {
+          action?: string | null
+          created_at?: string
+          employee_id?: string | null
+          key: string
+          response?: Json | null
+        }
+        Update: {
+          action?: string | null
+          created_at?: string
+          employee_id?: string | null
+          key?: string
+          response?: Json | null
+        }
+        Relationships: []
+      }
       maintenance_assignments: {
         Row: {
           assigned_by: string | null
@@ -2239,6 +2263,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_old_idempotency_keys: { Args: never; Returns: undefined }
       delete_employee_cascade: { Args: { emp_id: string }; Returns: undefined }
       employee_has_project_assignment: {
         Args: { _project_id: string }
