@@ -54,58 +54,64 @@ export function AttendanceTimeline({ log }: Props) {
   // sessions in the same day, replace the single Work Start / Work End dots
   // with per-session start+end pairs (color-coded) so the whole day fits on
   // ONE line.
-  const dots: Dot[] = [
-    { key: "office_punch_in", label: "Punch In", color: "bg-brand", time: log.office_punch_in },
-    { key: "travel_start_time", label: "Travel", color: "bg-status-traveling", time: log.travel_start_time },
-    { key: "site_arrival_time", label: "On Site", color: "bg-status-present", time: log.site_arrival_time },
-  ];
+  // Detect in-house day: no travel data anywhere on the log
+  const isInHouse =
+    !log.travel_start_time &&
+    !log.site_arrival_time &&
+    !(log as any).return_travel_start_time &&
+    !(log as any).office_arrival_time;
 
+  const head: Dot[] = [
+    { key: "office_punch_in", label: "Punch In", color: "bg-brand", time: log.office_punch_in },
+  ];
+  if (!isInHouse) {
+    head.push(
+      { key: "travel_start_time", label: "Travel", color: "bg-status-traveling", time: log.travel_start_time },
+      { key: "site_arrival_time", label: "On Site", color: "bg-status-present", time: log.site_arrival_time },
+    );
+  }
+
+  // Middle dots — work/sessions + break — sorted chronologically so a second
+  // project's start that happens AFTER break end shows up after the break dots.
+  const middle: Dot[] = [];
   if (sessions.length > 1) {
     sessions.forEach((s, idx) => {
       const color = sessionColors[idx % sessionColors.length];
       const name = s.project_name ?? `Project ${idx + 1}`;
-      dots.push({
-        key: `s-${s.id}-start`,
-        label: `${name} — Start`,
-        color,
-        time: s.work_start_time,
-      });
-      dots.push({
-        key: `s-${s.id}-end`,
-        label: `${name} — End`,
-        color,
-        time: s.work_end_time,
-      });
+      middle.push(
+        { key: `s-${s.id}-start`, label: `${name} — Start`, color, time: s.work_start_time },
+        { key: `s-${s.id}-end`, label: `${name} — End`, color, time: s.work_end_time },
+      );
     });
   } else {
-    dots.push({ key: "work_start_time", label: "Working", color: "bg-status-present", time: workStartTime });
-    dots.push({ key: "work_end_time", label: "Work End", color: "bg-status-overtime", time: workEndTime });
+    middle.push(
+      { key: "work_start_time", label: "Working", color: "bg-status-present", time: workStartTime },
+      { key: "work_end_time", label: "Work End", color: "bg-status-overtime", time: workEndTime },
+    );
   }
-
-  // Break + tail
-  dots.splice(
-    sessions.length > 1 ? 3 + sessions.length * 2 : 5,
-    0,
-  );
-  // Insert break dots right after the first work_start dot for the single-session case;
-  // for multi-session, keep break dots at the end of session block.
-  const breakDots: Dot[] = [
+  middle.push(
     { key: "break_start_time", label: "Break Start", color: "bg-orange-400", time: breakStartTime },
     { key: "break_end_time", label: "Break End", color: "bg-orange-300", time: breakEndTime },
-  ];
-  if (sessions.length > 1) {
-    // place break dots after sessions block (index = 3 + sessions*2)
-    dots.splice(3 + sessions.length * 2, 0, ...breakDots);
-  } else {
-    // place after Working dot (index 4), before Work End (currently at index 4)
-    dots.splice(4, 0, ...breakDots);
-  }
-
-  dots.push(
-    { key: "return_travel_start_time", label: "Returning", color: "bg-status-traveling", time: (log as any).return_travel_start_time ?? null },
-    { key: "office_arrival_time", label: "At Office", color: "bg-brand", time: (log as any).office_arrival_time ?? null },
-    { key: "office_punch_out", label: "Punch Out", color: "bg-muted-foreground", time: log.office_punch_out },
   );
+
+  // Chronological sort: timestamped dots ordered by time; pending dots after.
+  middle.sort((a, b) => {
+    if (a.time && b.time) return new Date(a.time).getTime() - new Date(b.time).getTime();
+    if (a.time) return -1;
+    if (b.time) return 1;
+    return 0;
+  });
+
+  const tail: Dot[] = [];
+  if (!isInHouse) {
+    tail.push(
+      { key: "return_travel_start_time", label: "Returning", color: "bg-status-traveling", time: (log as any).return_travel_start_time ?? null },
+      { key: "office_arrival_time", label: "At Office", color: "bg-brand", time: (log as any).office_arrival_time ?? null },
+    );
+  }
+  tail.push({ key: "office_punch_out", label: "Punch Out", color: "bg-muted-foreground", time: log.office_punch_out });
+
+  const dots: Dot[] = [...head, ...middle, ...tail];
 
   // Find the last completed dot for "active" ring
   let lastCompleted = -1;
