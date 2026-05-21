@@ -1,0 +1,1 @@
+ALTER TABLE public.offices ADD COLUMN IF NOT EXISTS gps_validation_enabled boolean NOT NULL DEFAULT true;
