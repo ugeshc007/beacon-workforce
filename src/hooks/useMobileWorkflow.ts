@@ -225,9 +225,11 @@ export function useMobileWorkflow() {
         setTimeout(() => { syncPendingActions().catch(() => {}); }, 5000);
         return { success: true, queued: true };
       }
-      // Real validation error → rollback step and surface to caller
+      // Real validation error → rollback step + log and surface to caller
       console.error(`Action ${action} failed:`, e);
       setStep(previousStep);
+      setAttendanceLog(previousLog);
+      cacheData(`attendance_${employee.id}_${today}`, previousLog).catch(() => {});
       return { success: false, error: e.message || "Action failed" };
     }
   };
