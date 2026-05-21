@@ -100,7 +100,7 @@ export function SyncStatusBadge() {
           {actions.map((a) => (
             <QueueItem
               key={a.local_id}
-              title={a.action_type.replaceAll("_", " ")}
+              title={a.action_type.replace(/_/g, " ")}
               timestamp={a.timestamp}
               status={a.sync_status}
               error={a.error_message}
