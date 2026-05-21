@@ -148,39 +148,54 @@ export function useMobileWorkflow() {
     }
     if (next) setStep(next);
 
+    const edgeFunctionMap: Record<WorkflowAction, string> = {
+      punch_in: "punch-in",
+      start_travel: "start-travel",
+      arrive_site: "arrive-site",
+      start_work: "start-work",
+      start_break: "start-break",
+      end_break: "end-break",
+      end_work: "end-work",
+      start_return_travel: "start-return-travel",
+      arrive_office: "arrive-office",
+      punch_out: "punch-out",
+    };
+
+    const fnName = edgeFunctionMap[action];
+    const clientTimestamp = new Date().toISOString();
+    const body = {
+      employee_id: employee.id,
+      client_timestamp: clientTimestamp,
+      ...payload,
+    };
+
+    // If offline → queue immediately, don't even try the network call
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      await enqueueAction({ action_type: action, payload: body, timestamp: clientTimestamp });
+      setActionLoading(false);
+      toast({ title: "Saved offline", description: "Will sync when you're back online." });
+      return { success: true, queued: true };
+    }
+
+    setActionLoading(false);
     try {
-      const edgeFunctionMap: Record<WorkflowAction, string> = {
-        punch_in: "punch-in",
-        start_travel: "start-travel",
-        arrive_site: "arrive-site",
-        start_work: "start-work",
-        start_break: "start-break",
-        end_break: "end-break",
-        end_work: "end-work",
-        start_return_travel: "start-return-travel",
-        arrive_office: "arrive-office",
-        punch_out: "punch-out",
-      };
-
-      const fnName = edgeFunctionMap[action];
-      const body = {
-        employee_id: employee.id,
-        ...payload,
-      };
-
-      setActionLoading(false); // Release loading immediately after optimistic update
-
       const data = await invokeEdge(fnName, body);
-
-      // Background refresh — don't block UI
       fetchData();
-
       return { success: true, data };
     } catch (e: any) {
+      // Network-style failure → queue for later. Keep optimistic step.
+      const msg = (e?.message || "").toLowerCase();
+      const isNetwork = msg.includes("network") || msg.includes("fetch") || msg.includes("failed to") || msg.includes("timeout");
+      if (isNetwork || typeof navigator !== "undefined" && !navigator.onLine) {
+        await enqueueAction({ action_type: action, payload: body, timestamp: clientTimestamp });
+        toast({ title: "Saved offline", description: "Will sync when connection returns." });
+        // Try a background sync attempt shortly in case the blip cleared
+        setTimeout(() => { syncPendingActions().catch(() => {}); }, 5000);
+        return { success: true, queued: true };
+      }
+      // Real validation error → rollback step and surface to caller
       console.error(`Action ${action} failed:`, e);
-      // Rollback optimistic update on failure
       setStep(previousStep);
-      setActionLoading(false);
       return { success: false, error: e.message || "Action failed" };
     }
   };
