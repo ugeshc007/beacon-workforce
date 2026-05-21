@@ -40,6 +40,14 @@ export function AttendanceTimeline({ log }: Props) {
     ? null
     : (log.break_end_time ?? anyBreakEndSession?.break_end_time ?? null);
 
+  // For single-session days (typical inhouse / one-project day), fall back to
+  // the session's work_start_time / work_end_time when the attendance_log row
+  // does not mirror them — otherwise the pipeline shows blank dots even
+  // though the employee already started/ended work.
+  const singleSession = sessions.length === 1 ? sessions[0] : null;
+  const workStartTime = log.work_start_time ?? singleSession?.work_start_time ?? null;
+  const workEndTime = log.work_end_time ?? singleSession?.work_end_time ?? null;
+
   // Build a single ordered list of dots. When the employee has multiple project
   // sessions in the same day, replace the single Work Start / Work End dots
   // with per-session start+end pairs (color-coded) so the whole day fits on
@@ -68,8 +76,8 @@ export function AttendanceTimeline({ log }: Props) {
       });
     });
   } else {
-    dots.push({ key: "work_start_time", label: "Working", color: "bg-status-present", time: log.work_start_time });
-    dots.push({ key: "work_end_time", label: "Work End", color: "bg-status-overtime", time: log.work_end_time });
+    dots.push({ key: "work_start_time", label: "Working", color: "bg-status-present", time: workStartTime });
+    dots.push({ key: "work_end_time", label: "Work End", color: "bg-status-overtime", time: workEndTime });
   }
 
   // Break + tail
