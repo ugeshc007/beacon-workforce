@@ -27,12 +27,18 @@ const sessionColors = [
 
 export function AttendanceTimeline({ log }: Props) {
   const sessions = (log.sessions ?? []).filter((s) => s.work_start_time || s.break_start_time || s.break_end_time || s.work_end_time);
-  const sessionBreakStart = sessions.find((s) => s.break_start_time && !s.break_end_time)?.break_start_time
-    ?? sessions.find((s) => s.break_start_time)?.break_start_time
+  // Prefer an active (open) session break so an ongoing break shows immediately,
+  // even if the attendance_log still reflects a previously-finished break.
+  const openBreakSession = sessions.find((s) => s.break_start_time && !s.break_end_time);
+  const anyBreakStartSession = sessions.find((s) => s.break_start_time);
+  const anyBreakEndSession = sessions.find((s) => s.break_end_time);
+  const breakStartTime = openBreakSession?.break_start_time
+    ?? log.break_start_time
+    ?? anyBreakStartSession?.break_start_time
     ?? null;
-  const sessionBreakEnd = sessions.find((s) => s.break_end_time)?.break_end_time ?? null;
-  const breakStartTime = log.break_start_time ?? sessionBreakStart;
-  const breakEndTime = log.break_end_time ?? sessionBreakEnd;
+  const breakEndTime = openBreakSession
+    ? null
+    : (log.break_end_time ?? anyBreakEndSession?.break_end_time ?? null);
 
   // Build a single ordered list of dots. When the employee has multiple project
   // sessions in the same day, replace the single Work Start / Work End dots
