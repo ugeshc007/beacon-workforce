@@ -126,7 +126,7 @@ function BranchDialog({ branch, open, onOpenChange }: {
 
 // ─── Office dialog ──────────────────────────────────────────
 function OfficeDialog({ office, branchId, open, onOpenChange }: {
-  office?: { id: string; name: string; address: string | null; latitude: number | null; longitude: number | null; gps_radius_meters: number } | null;
+  office?: { id: string; name: string; address: string | null; latitude: number | null; longitude: number | null; gps_radius_meters: number; gps_validation_enabled?: boolean | null } | null;
   branchId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -136,6 +136,7 @@ function OfficeDialog({ office, branchId, open, onOpenChange }: {
   const [lat, setLat] = useState("");
   const [lng, setLng] = useState("");
   const [radius, setRadius] = useState("100");
+  const [gpsValidationEnabled, setGpsValidationEnabled] = useState(true);
   const [showMap, setShowMap] = useState(false);
   const create = useCreateOffice();
   const update = useUpdateOffice();
@@ -148,6 +149,7 @@ function OfficeDialog({ office, branchId, open, onOpenChange }: {
       setLat(office?.latitude?.toString() ?? "");
       setLng(office?.longitude?.toString() ?? "");
       setRadius(office?.gps_radius_meters?.toString() ?? "100");
+      setGpsValidationEnabled(office?.gps_validation_enabled ?? true);
       setShowMap(false);
     }
   }, [open, office]);
@@ -160,6 +162,7 @@ function OfficeDialog({ office, branchId, open, onOpenChange }: {
       latitude: lat ? parseFloat(lat) : undefined,
       longitude: lng ? parseFloat(lng) : undefined,
       gps_radius_meters: parseInt(radius) || 100,
+      gps_validation_enabled: gpsValidationEnabled,
     };
     if (office) {
       update.mutate({ id: office.id, ...payload }, { onSuccess: () => onOpenChange(false) });
@@ -203,8 +206,17 @@ function OfficeDialog({ office, branchId, open, onOpenChange }: {
             />
           )}
           <Field label="GPS Radius (m)" hint="Punch-in valid within this radius of the office.">
-            <Input type="number" value={radius} onChange={(e) => setRadius(e.target.value)} placeholder="100" />
+            <Input type="number" value={radius} onChange={(e) => setRadius(e.target.value)} placeholder="100" disabled={!gpsValidationEnabled} />
           </Field>
+          <div className="flex items-start justify-between gap-3 rounded-lg border border-border/40 bg-muted/10 p-3">
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-foreground">GPS Validation</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                When OFF, employees at this office can punch in from anywhere — distance / radius is ignored.
+              </p>
+            </div>
+            <Switch checked={gpsValidationEnabled} onCheckedChange={setGpsValidationEnabled} />
+          </div>
         </div>
         <DialogFooter>
           <Button size="sm" onClick={handleSave} disabled={saving || !name.trim()}>
