@@ -10,6 +10,7 @@ interface Props {
   breakStart?: string | null;
   breakEnd?: string | null;
   workEnd?: string | null;
+  workLocation?: "in_house" | "site" | null;
 }
 
 const STEPS: { key: ProjectStep; label: string; doneLabel: string }[] = [
@@ -39,7 +40,7 @@ function fmtTime(iso: string | null | undefined): string {
 }
 
 export function ProjectStepTimeline({
-  step, travelStart, siteArrival, workStart, breakStart, breakEnd, workEnd,
+  step, travelStart, siteArrival, workStart, breakStart, breakEnd, workEnd, workLocation,
 }: Props) {
   const [tick, setTick] = useState(0);
   useEffect(() => {
@@ -47,10 +48,12 @@ export function ProjectStepTimeline({
     return () => clearInterval(t);
   }, []);
 
+  const isInHouse = workLocation === "in_house";
+
   let currentKey: ProjectStep = step;
   let currentStartedAt: string | null = null;
   if (step === "idle") {
-    currentKey = "traveling";
+    currentKey = isInHouse ? "working" : "traveling";
     currentStartedAt = null;
   } else if (step === "traveling") {
     currentStartedAt = travelStart ?? null;
@@ -72,7 +75,10 @@ export function ProjectStepTimeline({
 
   return (
     <div className="flex flex-col gap-2">
-      {STEPS.filter((s) => s.key !== "on_break" || breakTaken || step === "on_break").map((s) => {
+      {STEPS
+        .filter((s) => !(isInHouse && (s.key === "traveling" || s.key === "at_site")))
+        .filter((s) => s.key !== "on_break" || breakTaken || step === "on_break")
+        .map((s) => {
         const sIdx = order.indexOf(s.key);
         const isDone = sIdx < currentIdx || (step === "completed" && s.key !== "completed");
         const isCurrent = (s.key === currentKey && step !== "completed") || (s.key === "completed" && step === "completed");

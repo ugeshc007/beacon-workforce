@@ -193,6 +193,7 @@ export default function MobileProjectWorkflow() {
         breakStart={session?.break_start_time}
         breakEnd={session?.break_end_time}
         workEnd={session?.work_end_time}
+        workLocation={workLocation}
       />
 
       {/* Next action hint */}
