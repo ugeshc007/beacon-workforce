@@ -212,29 +212,32 @@ export function useAddAssignment() {
       let finalStart = payload.shift_start ?? null;
       const finalEnd = payload.shift_end ?? null;
 
-      // Mid-day reassignment: if the employee already has another assignment
-      // for this same date and we're assigning for TODAY, bump the shift_start
-      // to the current local time (Asia/Dubai) so the "in time" reflects when
-      // they actually joined the second project.
-      const { data: existing } = await supabase
-        .from("project_assignments")
-        .select("id")
-        .eq("employee_id", payload.employee_id)
-        .eq("date", payload.date)
-        .limit(1);
+      // Mid-day reassignment auto-bump: ONLY apply when the admin didn't pick
+      // a custom start time (i.e. shift_start is empty or the default 08:00).
+      // If admin explicitly chose a from/to time, respect it as-is.
+      const isDefaultStart = !finalStart || finalStart === "08:00" || finalStart === "08:00:00";
+      if (isDefaultStart) {
+        const { data: existing } = await supabase
+          .from("project_assignments")
+          .select("id")
+          .eq("employee_id", payload.employee_id)
+          .eq("date", payload.date)
+          .limit(1);
 
-      if (existing && existing.length > 0) {
-        const todayStr = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Dubai" }).format(new Date());
-        if (payload.date === todayStr) {
-          const nowHHMM = new Intl.DateTimeFormat("en-GB", {
-            timeZone: "Asia/Dubai",
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
-          }).format(new Date());
-          if (!finalStart || nowHHMM > finalStart) finalStart = nowHHMM;
+        if (existing && existing.length > 0) {
+          const todayStr = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Dubai" }).format(new Date());
+          if (payload.date === todayStr) {
+            const nowHHMM = new Intl.DateTimeFormat("en-GB", {
+              timeZone: "Asia/Dubai",
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            }).format(new Date());
+            finalStart = nowHHMM;
+          }
         }
       }
+
 
       const { data, error } = await supabase
         .from("project_assignments")
