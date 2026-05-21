@@ -125,16 +125,20 @@ export function useProjectWorkflow(projectId: string | null) {
         case "start_travel": return { travel_start_time: nowIso };
         case "arrive_site": return { site_arrival_time: nowIso };
         case "start_work": return { work_start_time: nowIso };
-        case "start_break": return { break_start_time: nowIso };
+        case "start_break": return { break_start_time: nowIso, break_end_time: null };
         case "end_break": return { break_end_time: nowIso };
         case "end_work": return { work_end_time: nowIso };
         default: return {};
       }
     })();
-    setSession((prev) => ({
-      ...(prev ?? { id: "", project_id: projectId, travel_start_time: null, site_arrival_time: null, work_start_time: null, break_start_time: null, break_end_time: null, work_end_time: null, total_work_minutes: null }),
+    const optimisticSession: SessionRow = {
+      ...(session ?? { id: "", project_id: projectId, travel_start_time: null, site_arrival_time: null, work_start_time: null, break_start_time: null, break_end_time: null, work_end_time: null, total_work_minutes: null }),
       ...optimisticPatch,
-    }));
+    };
+    setSession(optimisticSession);
+    if (sessionCacheKey) {
+      try { localStorage.setItem(sessionCacheKey, JSON.stringify(optimisticSession)); } catch { /* ignore */ }
+    }
 
     const fnMap: Record<ProjectAction, string> = {
       start_travel: "project-start-travel",
