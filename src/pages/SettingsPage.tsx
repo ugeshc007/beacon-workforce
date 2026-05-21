@@ -250,12 +250,15 @@ function BranchOfficeList({ branchId }: { branchId: string }) {
       ) : (
         offices.map((o) => (
           <div key={o.id} className="flex items-center justify-between p-2 rounded border border-border/30 bg-muted/10 text-xs">
-            <div>
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="font-medium text-foreground">{o.name}</span>
               {o.latitude && o.longitude ? (
-                <span className="text-muted-foreground ml-2">📍 {Number(o.latitude).toFixed(4)}, {Number(o.longitude).toFixed(4)} ({o.gps_radius_meters}m)</span>
+                <span className="text-muted-foreground">📍 {Number(o.latitude).toFixed(4)}, {Number(o.longitude).toFixed(4)} ({o.gps_radius_meters}m)</span>
               ) : (
-                <span className="text-amber-400 ml-2">⚠ No coordinates set</span>
+                <span className="text-amber-400">⚠ No coordinates set</span>
+              )}
+              {o.gps_validation_enabled === false && (
+                <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-amber-500/40 text-amber-400">GPS off</Badge>
               )}
             </div>
             <div className="flex gap-1">
