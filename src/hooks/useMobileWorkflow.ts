@@ -141,12 +141,44 @@ export function useMobileWorkflow() {
 
     // Optimistically advance the step immediately for instant UI feedback
     const previousStep = step;
+    const previousLog = attendanceLog;
     let next = getNextStep(step, action);
     // For in-house break end, return to punched_in (no work_start_time set)
     if (action === "end_break" && !attendanceLog?.work_start_time) {
       next = "punched_in";
     }
     if (next) setStep(next);
+
+    // Optimistically patch attendance log + cache so the UI survives remounts/refresh
+    // (otherwise an offline action would be reverted by the next cache hydration).
+    const nowIso = new Date().toISOString();
+    const logPatch: Partial<AttendanceLog> = (() => {
+      switch (action) {
+        case "punch_in": return { office_punch_in: nowIso };
+        case "start_travel": return { travel_start_time: nowIso };
+        case "arrive_site": return { site_arrival_time: nowIso };
+        case "start_work": return { work_start_time: nowIso };
+        case "start_break": return { break_start_time: nowIso, break_end_time: null };
+        case "end_break": return { break_end_time: nowIso };
+        case "end_work": return { work_end_time: nowIso };
+        case "start_return_travel": return { return_travel_start_time: nowIso };
+        case "arrive_office": return { office_arrival_time: nowIso };
+        case "punch_out": return { office_punch_out: nowIso };
+        default: return {};
+      }
+    })();
+    const optimisticLog: AttendanceLog = {
+      ...(attendanceLog ?? {
+        id: "",
+        office_punch_in: null, travel_start_time: null, site_arrival_time: null,
+        work_start_time: null, break_start_time: null, break_end_time: null,
+        work_end_time: null, return_travel_start_time: null,
+        office_arrival_time: null, office_punch_out: null,
+      }),
+      ...logPatch,
+    };
+    setAttendanceLog(optimisticLog);
+    cacheData(`attendance_${employee.id}_${today}`, optimisticLog).catch(() => {});
 
     const edgeFunctionMap: Record<WorkflowAction, string> = {
       punch_in: "punch-in",
@@ -162,7 +194,7 @@ export function useMobileWorkflow() {
     };
 
     const fnName = edgeFunctionMap[action];
-    const clientTimestamp = new Date().toISOString();
+    const clientTimestamp = nowIso;
     const body = {
       employee_id: employee.id,
       client_timestamp: clientTimestamp,
