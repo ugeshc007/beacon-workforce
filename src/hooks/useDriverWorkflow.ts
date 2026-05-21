@@ -77,21 +77,21 @@ export function useDriverWorkflow() {
 
   const startTrip = useMutation({
     mutationFn: async (vars: { project_id: string; lat: number; lng: number }) => {
-      return await invokeEdge("driver-start-trip", { employee_id: employee?.id, ...vars });
+      return await invokeOrQueue("driver_start_trip", "driver-start-trip", { employee_id: employee?.id, ...vars });
     },
     onSuccess: invalidate,
   });
 
   const arriveSite = useMutation({
     mutationFn: async (vars: { leg_id: string; leg_type: DriverLegType; lat: number; lng: number }) => {
-      return await invokeEdge("driver-arrive-site", { employee_id: employee?.id, ...vars });
+      return await invokeOrQueue("driver_arrive_site", "driver-arrive-site", { employee_id: employee?.id, ...vars });
     },
     onSuccess: invalidate,
   });
 
   const endLeg = useMutation({
     mutationFn: async (vars: { leg_id: string; lat: number; lng: number }) => {
-      return await invokeEdge("driver-end-leg", { employee_id: employee?.id, ...vars });
+      return await invokeOrQueue("driver_end_leg", "driver-end-leg", { employee_id: employee?.id, ...vars });
     },
     onSuccess: invalidate,
   });
