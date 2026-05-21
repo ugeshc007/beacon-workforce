@@ -62,6 +62,9 @@ const edgeFunctionMap: Record<string, string> = {
   driver_start_trip: "driver-start-trip",
   driver_arrive_site: "driver-arrive-site",
   driver_end_leg: "driver-end-leg",
+};
+
+
 
 /**
  * Process all pending items in the queue, oldest first.
