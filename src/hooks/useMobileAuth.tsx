@@ -128,6 +128,7 @@ export function MobileAuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    clearCachedEmployee();
     await supabase.auth.signOut();
     setEmployee(null);
     setSession(null);
