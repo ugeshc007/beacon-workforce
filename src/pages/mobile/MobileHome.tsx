@@ -289,6 +289,8 @@ export default function MobileHome() {
                     <CheckCircle2 className="h-5 w-5 text-green-400 mt-0.5 shrink-0" />
                   ) : isActive ? (
                     <PlayCircle className="h-5 w-5 text-brand mt-0.5 shrink-0 animate-pulse" />
+                  ) : p.workLocation === "in_house" ? (
+                    <Building2 className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
                   ) : (
                     <MapPin className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
                   )}
@@ -320,7 +322,7 @@ export default function MobileHome() {
 
           {singleProject && !singleProject.sessionId && (
             <p className="text-[11px] text-muted-foreground text-center mt-1">
-              Tap your project above to start travel.
+              Tap your project above to {singleProject.workLocation === "in_house" ? "start work" : "start travel"}.
             </p>
           )}
         </div>
