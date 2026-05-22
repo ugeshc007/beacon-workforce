@@ -31,11 +31,27 @@ export function useTodayProjects() {
   const { employee } = useMobileAuth();
   const today = toLocalDateStr(new Date());
   const cacheKey = employee ? `today_projects_${employee.id}_${today}` : null;
+  const qc = useQueryClient();
+
+  // Realtime: instantly refresh when a new assignment is created/updated/deleted for this employee today
+  useEffect(() => {
+    if (!employee) return;
+    const channel = supabase
+      .channel(`today-assignments-${employee.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "project_assignments", filter: `employee_id=eq.${employee.id}` },
+        () => qc.invalidateQueries({ queryKey: ["today-projects", employee.id, today] }),
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [employee, today, qc]);
 
   return useQuery({
     queryKey: ["today-projects", employee?.id, today],
     enabled: !!employee,
     refetchInterval: 30000,
+
     // Don't drop the cached value while offline retries spin
     staleTime: 60_000,
     queryFn: async (): Promise<TodayProject[]> => {
