@@ -207,7 +207,7 @@ function ProjectCard({ project: p, isOpen, onToggle }: { project: ProjectLaborRo
                 </thead>
                 <tbody>
                   {p.employees.length === 0 ? (
-                    <tr><td colSpan={14} className="py-6 text-center text-muted-foreground text-xs">No employee labor data</td></tr>
+                    <tr><td colSpan={12} className="py-6 text-center text-muted-foreground text-xs">No employee labor data</td></tr>
                   ) : p.employees.map((e) => (
                     <tr key={e.id} className="border-b border-border/30 hover:bg-accent/10">
                       <td className="py-2">
