@@ -195,8 +195,6 @@ function ProjectCard({ project: p, isOpen, onToggle }: { project: ProjectLaborRo
                     <th className="text-right py-2 font-medium">Days</th>
                     <th className="text-right py-2 font-medium" title="Office punch-in → travel start"><Building2 className="h-3 w-3 inline" /> In-House</th>
                     <th className="text-right py-2 font-medium" title="Site arrival → return travel"><MapPin className="h-3 w-3 inline" /> Site</th>
-                    <th className="text-right py-2 font-medium" title="Office → site travel">→ Site</th>
-                    <th className="text-right py-2 font-medium" title="Site → office return">← Office</th>
                     <th className="text-right py-2 font-medium">Travel Total</th>
                     <th className="text-right py-2 font-medium">Worked</th>
                     <th className="text-right py-2 font-medium text-amber-400" title="Idle time = travel time (non-productive on-clock hours)">Idle</th>
@@ -209,7 +207,7 @@ function ProjectCard({ project: p, isOpen, onToggle }: { project: ProjectLaborRo
                 </thead>
                 <tbody>
                   {p.employees.length === 0 ? (
-                    <tr><td colSpan={14} className="py-6 text-center text-muted-foreground text-xs">No employee labor data</td></tr>
+                    <tr><td colSpan={12} className="py-6 text-center text-muted-foreground text-xs">No employee labor data</td></tr>
                   ) : p.employees.map((e) => (
                     <tr key={e.id} className="border-b border-border/30 hover:bg-accent/10">
                       <td className="py-2">
@@ -219,8 +217,6 @@ function ProjectCard({ project: p, isOpen, onToggle }: { project: ProjectLaborRo
                       <td className="py-2 text-right font-mono text-xs">{e.days}</td>
                       <td className="py-2 text-right font-mono text-xs">{e.inHouseMin > 0 ? fmtH(e.inHouseMin) : "—"}</td>
                       <td className="py-2 text-right font-mono text-xs text-status-present">{e.siteMin > 0 ? fmtH(e.siteMin) : "—"}</td>
-                      <td className="py-2 text-right font-mono text-xs text-status-traveling">{e.travelToSiteMin > 0 ? fmtH(e.travelToSiteMin) : "—"}</td>
-                      <td className="py-2 text-right font-mono text-xs text-status-traveling">{e.travelReturnMin > 0 ? fmtH(e.travelReturnMin) : "—"}</td>
                       <td className="py-2 text-right font-mono text-xs text-status-traveling font-medium">{e.travelTotalMin > 0 ? fmtH(e.travelTotalMin) : "—"}</td>
                       <td className="py-2 text-right font-mono text-xs font-medium">{fmtH(e.workedMin)}</td>
                       <td className="py-2 text-right font-mono text-xs text-amber-400" title="Travel time treated as idle">{e.travelTotalMin > 0 ? fmtH(e.travelTotalMin) : "—"}</td>
@@ -237,8 +233,6 @@ function ProjectCard({ project: p, isOpen, onToggle }: { project: ProjectLaborRo
                     <td className="py-2" colSpan={2}>Project Totals</td>
                     <td className="py-2 text-right font-mono text-xs">{fmtH(p.inHouseMin)}</td>
                     <td className="py-2 text-right font-mono text-xs text-status-present">{fmtH(p.siteMin)}</td>
-                    <td className="py-2 text-right font-mono text-xs text-status-traveling">{fmtH(p.travelToSiteMin)}</td>
-                    <td className="py-2 text-right font-mono text-xs text-status-traveling">{fmtH(p.travelReturnMin)}</td>
                     <td className="py-2 text-right font-mono text-xs text-status-traveling">{fmtH(p.travelTotalMin)}</td>
                     <td className="py-2 text-right font-mono text-xs">{fmtH(p.workedMin)}</td>
                     <td className="py-2 text-right font-mono text-xs text-amber-400">{fmtH(p.travelTotalMin)}</td>
