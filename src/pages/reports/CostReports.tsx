@@ -233,8 +233,6 @@ function ProjectCard({ project: p, isOpen, onToggle }: { project: ProjectLaborRo
                     <td className="py-2" colSpan={2}>Project Totals</td>
                     <td className="py-2 text-right font-mono text-xs">{fmtH(p.inHouseMin)}</td>
                     <td className="py-2 text-right font-mono text-xs text-status-present">{fmtH(p.siteMin)}</td>
-                    <td className="py-2 text-right font-mono text-xs text-status-traveling">{fmtH(p.travelToSiteMin)}</td>
-                    <td className="py-2 text-right font-mono text-xs text-status-traveling">{fmtH(p.travelReturnMin)}</td>
                     <td className="py-2 text-right font-mono text-xs text-status-traveling">{fmtH(p.travelTotalMin)}</td>
                     <td className="py-2 text-right font-mono text-xs">{fmtH(p.workedMin)}</td>
                     <td className="py-2 text-right font-mono text-xs text-amber-400">{fmtH(p.travelTotalMin)}</td>
