@@ -11,7 +11,6 @@ Deno.serve(async (req) => {
       return errorResponse("employee_id, project_id, and date required");
     }
 
-    // Get project name
     const { data: project } = await supabase
       .from("projects")
       .select("name")
@@ -21,16 +20,39 @@ Deno.serve(async (req) => {
     if (!project) return errorResponse("Project not found", 404);
 
     const shiftInfo = shift_start && shift_end ? ` (${shift_start}–${shift_end})` : "";
+    const title = "📅 New Assignment";
+    const message = `You've been assigned to ${project.name} on ${date}${shiftInfo}`;
 
+    // Save in-app notification
     await supabase.from("employee_notifications").insert({
       employee_id,
       type: "assignment",
-      title: "📅 New Assignment",
-      message: `You've been assigned to ${project.name} on ${date}${shiftInfo}`,
-      priority: "normal",
+      title,
+      message,
+      priority: "high",
       reference_id: project_id,
       reference_type: "project",
     });
+
+    // Fire FCM push (with sound) — fire & forget, don't block
+    try {
+      await supabase.functions.invoke("send-push", {
+        body: {
+          employee_id,
+          title,
+          message,
+          data: {
+            type: "assignment",
+            priority: "high",
+            project_id,
+            date,
+            sound: "default",
+          },
+        },
+      });
+    } catch (_e) {
+      // ignore push failure — in-app notification is already saved
+    }
 
     return jsonResponse({ ok: true });
   } catch (e) {
