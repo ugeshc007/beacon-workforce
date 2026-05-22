@@ -145,6 +145,21 @@ Deno.serve(async (req) => {
             message: {
               token: fcm_token,
               notification: { title, body: message || "" },
+              android: {
+                priority: "HIGH",
+                notification: {
+                  sound: "default",
+                  channel_id: "default",
+                  default_sound: true,
+                  default_vibrate_timings: true,
+                  notification_priority: "PRIORITY_MAX",
+                },
+              },
+              apns: {
+                payload: {
+                  aps: { sound: "default", "content-available": 1 },
+                },
+              },
               data: data ? Object.fromEntries(
                 Object.entries(data).map(([k, v]) => [k, String(v)])
               ) : undefined,
