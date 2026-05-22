@@ -1,9 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
 import { toLocalDateStr } from "@/lib/utils";
 import { deriveProjectStep, ProjectStep } from "@/lib/project-workflow-engine";
 import { cacheData, getCachedData } from "@/lib/offline-queue";
+
 
 export interface TodayProject {
   assignmentId: string;
