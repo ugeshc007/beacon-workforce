@@ -19,12 +19,11 @@ Deno.serve(async (req) => {
     const dup = await checkIdempotency(supabase, idempotency_key, employee_id, "end-work");
     if (dup) return dup;
 
-    const { data: log } = await supabase
-      .from("attendance_logs")
-      .select("id, work_start_time, break_minutes, project_id")
-      .eq("employee_id", employee_id)
-      .eq("date", today)
-      .maybeSingle();
+    const log = await findOpenAttendanceLog(
+      supabase,
+      employee_id,
+      "id, date, work_start_time, break_minutes, project_id"
+    );
 
     if (!log) return errorResponse("Must punch in first", 400);
     if (!log.work_start_time) return errorResponse("Work not started", 400);
