@@ -98,19 +98,36 @@ export function useMobileWorkflow() {
       setAssignment(assignmentValue);
       cacheData(cacheKeyAssignment, assignmentValue).catch(() => {});
 
-      // Fetch the LATEST attendance log for today.
-      // Employees can have multiple shifts/day (e.g. day shift + night shift),
-      // so we order by punch-in desc and take the most recent log to derive
-      // the current step. Otherwise the UI would stay stuck on a closed log.
-      const { data: logs } = await supabase
+      // Fetch the LATEST OPEN attendance log across today + yesterday.
+      // Night shifts started before midnight roll into the next UAE day, so
+      // restricting to today would lose the active session and force a re-punch-in.
+      // Employees can also have multiple shifts/day (day + night), so we order by
+      // date desc then punch-in desc and take the most recent open log.
+      const yesterday = toLocalDateStr(new Date(Date.now() - 86_400_000));
+      const { data: openLogs } = await supabase
         .from("attendance_logs")
         .select("id, office_punch_in, travel_start_time, site_arrival_time, work_start_time, break_start_time, break_end_time, work_end_time, return_travel_start_time, office_arrival_time, office_punch_out")
         .eq("employee_id", employee.id)
-        .eq("date", today)
+        .in("date", [today, yesterday])
+        .is("office_punch_out", null)
+        .order("date", { ascending: false })
         .order("office_punch_in", { ascending: false, nullsFirst: false })
         .limit(1);
 
-      const log = logs?.[0] || null;
+      let log = openLogs?.[0] || null;
+
+      // No open log? Fall back to today's most recent (possibly closed) log so
+      // a fresh punch-in screen renders cleanly after the previous shift ended.
+      if (!log) {
+        const { data: logs } = await supabase
+          .from("attendance_logs")
+          .select("id, office_punch_in, travel_start_time, site_arrival_time, work_start_time, break_start_time, break_end_time, work_end_time, return_travel_start_time, office_arrival_time, office_punch_out")
+          .eq("employee_id", employee.id)
+          .eq("date", today)
+          .order("office_punch_in", { ascending: false, nullsFirst: false })
+          .limit(1);
+        log = logs?.[0] || null;
+      }
       setAttendanceLog(log);
       setStep(deriveStepFromLog(log));
       cacheData(cacheKeyLog, log).catch(() => {});
