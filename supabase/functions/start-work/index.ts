@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
         const thresholdMin = parseInt(setting?.value ?? "15", 10);
 
         const shiftTimeParts = assignment.shift_start.split(":");
-        const shiftDate = new Date(today + "T00:00:00+04:00");
+        const shiftDate = new Date(log.date + "T00:00:00+04:00");
         shiftDate.setHours(parseInt(shiftTimeParts[0]), parseInt(shiftTimeParts[1]), 0, 0);
         const expectedStart = new Date(shiftDate.getTime() + thresholdMin * 60000);
 
