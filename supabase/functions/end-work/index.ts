@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
     const { data: holidayRows } = await supabase
       .from("public_holidays")
       .select("id, branch_id")
-      .eq("date", today);
+      .eq("date", log.date);
 
     const isPublicHoliday = (holidayRows ?? []).some(
       (h: { branch_id: string | null }) => h.branch_id === null || h.branch_id === emp.branch_id
