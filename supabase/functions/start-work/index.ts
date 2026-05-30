@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
         .from("project_assignments")
         .select("shift_start")
         .eq("employee_id", employee_id)
-        .eq("date", today)
+        .eq("date", log.date)
         .maybeSingle();
 
       if (assignment?.shift_start) {
