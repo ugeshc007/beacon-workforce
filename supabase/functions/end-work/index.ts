@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
     const offDay = (offDaySetting?.value ?? "sunday").toLowerCase();
     // Day-of-week in UAE (UTC+4)
-    const todayDow = DAY_NAMES[new Date(new Date().getTime() + 4 * 60 * 60 * 1000).getUTCDay()];
+    const todayDow = DAY_NAMES[new Date(log.date + "T12:00:00+04:00").getUTCDay()];
     const isWeeklyOff = offDay !== "none" && todayDow === offDay;
 
     const isHoliday = isPublicHoliday || isWeeklyOff;
