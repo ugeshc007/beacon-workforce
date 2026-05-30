@@ -1,4 +1,4 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, todayDate, nowTimestamp, resolveTimestamp, checkIdempotency, authenticateEmployee } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, todayDate, nowTimestamp, resolveTimestamp, checkIdempotency, authenticateEmployee, findOpenAttendanceLog } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
@@ -20,12 +20,11 @@ Deno.serve(async (req) => {
     const dup = await checkIdempotency(supabase, idempotency_key, employee_id, "start-travel");
     if (dup) return dup;
 
-    const { data: log } = await supabase
-      .from("attendance_logs")
-      .select("id, office_punch_in, travel_start_time, work_end_time, office_punch_out")
-      .eq("employee_id", employee_id)
-      .eq("date", today)
-      .maybeSingle();
+    const log = await findOpenAttendanceLog(
+      supabase,
+      employee_id,
+      "id, date, office_punch_in, travel_start_time, work_end_time, office_punch_out"
+    );
 
     if (!log) return errorResponse("Must punch in at office first", 400);
     if (!log.office_punch_in) return errorResponse("Must punch in at office first", 400);

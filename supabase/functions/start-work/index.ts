@@ -1,4 +1,4 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, todayDate, nowTimestamp, resolveTimestamp, checkIdempotency, notifyBranchManagers, authenticateEmployee } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, todayDate, nowTimestamp, resolveTimestamp, checkIdempotency, notifyBranchManagers, authenticateEmployee, findOpenAttendanceLog } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
@@ -17,12 +17,11 @@ Deno.serve(async (req) => {
     const dup = await checkIdempotency(supabase, idempotency_key, employee_id, "start-work");
     if (dup) return dup;
 
-    const { data: log } = await supabase
-      .from("attendance_logs")
-      .select("id, project_id, site_arrival_time, work_start_time, work_end_time, office_punch_out")
-      .eq("employee_id", employee_id)
-      .eq("date", today)
-      .maybeSingle();
+    const log = await findOpenAttendanceLog(
+      supabase,
+      employee_id,
+      "id, date, project_id, site_arrival_time, work_start_time, work_end_time, office_punch_out"
+    );
 
     if (!log) return errorResponse("Must punch in first", 400);
     if (log.office_punch_out) return errorResponse("Already punched out for the day", 400);
@@ -43,7 +42,7 @@ Deno.serve(async (req) => {
         .from("project_assignments")
         .select("shift_start")
         .eq("employee_id", employee_id)
-        .eq("date", today)
+        .eq("date", log.date)
         .maybeSingle();
 
       if (assignment?.shift_start) {
@@ -55,7 +54,7 @@ Deno.serve(async (req) => {
         const thresholdMin = parseInt(setting?.value ?? "15", 10);
 
         const shiftTimeParts = assignment.shift_start.split(":");
-        const shiftDate = new Date(today + "T00:00:00+04:00");
+        const shiftDate = new Date(log.date + "T00:00:00+04:00");
         shiftDate.setHours(parseInt(shiftTimeParts[0]), parseInt(shiftTimeParts[1]), 0, 0);
         const expectedStart = new Date(shiftDate.getTime() + thresholdMin * 60000);
 

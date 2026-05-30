@@ -1,4 +1,4 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, haversineDistance, todayDate, nowTimestamp, resolveTimestamp, checkIdempotency, authenticateEmployee } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, haversineDistance, todayDate, nowTimestamp, resolveTimestamp, checkIdempotency, authenticateEmployee, findOpenAttendanceLog } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
@@ -20,12 +20,11 @@ Deno.serve(async (req) => {
     const dup = await checkIdempotency(supabase, idempotency_key, employee_id, "arrive-office");
     if (dup) return dup;
 
-    const { data: log } = await supabase
-      .from("attendance_logs")
-      .select("id, return_travel_start_time")
-      .eq("employee_id", employee_id)
-      .eq("date", today)
-      .maybeSingle();
+    const log = await findOpenAttendanceLog(
+      supabase,
+      employee_id,
+      "id, date, return_travel_start_time"
+    );
 
     if (!log) return errorResponse("No attendance record for today", 400);
     if (!log.return_travel_start_time) return errorResponse("Must start return travel first", 400);

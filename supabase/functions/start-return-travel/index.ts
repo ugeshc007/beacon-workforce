@@ -1,4 +1,4 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, todayDate, nowTimestamp, resolveTimestamp, checkIdempotency, authenticateEmployee } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, todayDate, nowTimestamp, resolveTimestamp, checkIdempotency, authenticateEmployee, findOpenAttendanceLog } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
@@ -20,12 +20,11 @@ Deno.serve(async (req) => {
     const dup = await checkIdempotency(supabase, idempotency_key, employee_id, "start-return-travel");
     if (dup) return dup;
 
-    const { data: log } = await supabase
-      .from("attendance_logs")
-      .select("id, work_end_time")
-      .eq("employee_id", employee_id)
-      .eq("date", today)
-      .maybeSingle();
+    const log = await findOpenAttendanceLog(
+      supabase,
+      employee_id,
+      "id, date, work_end_time"
+    );
 
     if (!log) return errorResponse("Must punch in first", 400);
 
@@ -37,7 +36,7 @@ Deno.serve(async (req) => {
         .from("project_work_sessions")
         .select("work_end_time, total_work_minutes, overtime_minutes, regular_cost, overtime_cost, break_minutes, status")
         .eq("employee_id", employee_id)
-        .eq("date", today);
+        .eq("date", log.date);
 
       const sess = sessions ?? [];
       if (sess.length === 0) return errorResponse("Must end work first", 400);

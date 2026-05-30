@@ -83,6 +83,38 @@ export function resolveTimestamp(clientTimestamp?: string | null): string {
 }
 
 /**
+ * Find the currently active (open) attendance log for an employee.
+ * Looks at today first, then yesterday — so night shifts that started before
+ * midnight and continue into the next UAE day still resolve to the same log.
+ * "Open" = office_punch_out IS NULL. Returns null if none found.
+ *
+ * `columns` must always include `id` and `date`; callers should add `office_punch_out`
+ * only if they need to read it (the helper already filters on it).
+ */
+export async function findOpenAttendanceLog(
+  supabase: ReturnType<typeof createSupabaseAdmin>,
+  employeeId: string,
+  columns: string
+) {
+  const today = todayDate();
+  const yesterday = new Date(new Date(today + "T00:00:00Z").getTime() - 86_400_000)
+    .toISOString()
+    .split("T")[0];
+
+  const { data } = await supabase
+    .from("attendance_logs")
+    .select(columns)
+    .eq("employee_id", employeeId)
+    .in("date", [today, yesterday])
+    .is("office_punch_out", null)
+    .order("date", { ascending: false })
+    .order("office_punch_in", { ascending: false, nullsFirst: false })
+    .limit(1)
+    .maybeSingle();
+  return data;
+}
+
+/**
  * Idempotency check for replayed offline actions.
  * Returns a cached success response if the key was already processed,
  * otherwise reserves the key and returns null (caller should proceed

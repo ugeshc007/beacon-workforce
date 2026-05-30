@@ -1,4 +1,4 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, todayDate, nowTimestamp, resolveTimestamp, checkIdempotency, notifyBranchManagers, authenticateEmployee } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, todayDate, nowTimestamp, resolveTimestamp, checkIdempotency, notifyBranchManagers, authenticateEmployee, findOpenAttendanceLog } from "../_shared/helpers.ts";
 
 const DAY_NAMES = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 
@@ -19,12 +19,11 @@ Deno.serve(async (req) => {
     const dup = await checkIdempotency(supabase, idempotency_key, employee_id, "end-work");
     if (dup) return dup;
 
-    const { data: log } = await supabase
-      .from("attendance_logs")
-      .select("id, work_start_time, break_minutes, project_id")
-      .eq("employee_id", employee_id)
-      .eq("date", today)
-      .maybeSingle();
+    const log = await findOpenAttendanceLog(
+      supabase,
+      employee_id,
+      "id, date, work_start_time, break_minutes, project_id"
+    );
 
     if (!log) return errorResponse("Must punch in first", 400);
     if (!log.work_start_time) return errorResponse("Work not started", 400);
@@ -50,7 +49,7 @@ Deno.serve(async (req) => {
     const { data: holidayRows } = await supabase
       .from("public_holidays")
       .select("id, branch_id")
-      .eq("date", today);
+      .eq("date", log.date);
 
     const isPublicHoliday = (holidayRows ?? []).some(
       (h: { branch_id: string | null }) => h.branch_id === null || h.branch_id === emp.branch_id
@@ -64,7 +63,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
     const offDay = (offDaySetting?.value ?? "sunday").toLowerCase();
     // Day-of-week in UAE (UTC+4)
-    const todayDow = DAY_NAMES[new Date(new Date().getTime() + 4 * 60 * 60 * 1000).getUTCDay()];
+    const todayDow = DAY_NAMES[new Date(log.date + "T12:00:00+04:00").getUTCDay()];
     const isWeeklyOff = offDay !== "none" && todayDow === offDay;
 
     const isHoliday = isPublicHoliday || isWeeklyOff;
