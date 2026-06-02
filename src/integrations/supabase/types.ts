@@ -1050,6 +1050,7 @@ export type Database = {
       }
       project_daily_logs: {
         Row: {
+          assigned_employee_ids: string[]
           completion_pct: number | null
           created_at: string
           date: string
@@ -1066,6 +1067,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          assigned_employee_ids?: string[]
           completion_pct?: number | null
           created_at?: string
           date?: string
@@ -1082,6 +1084,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          assigned_employee_ids?: string[]
           completion_pct?: number | null
           created_at?: string
           date?: string

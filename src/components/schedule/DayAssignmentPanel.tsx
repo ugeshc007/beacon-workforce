@@ -109,6 +109,7 @@ export function DayAssignmentPanel({
   const [logIssues, setLogIssues] = useState("");
   const [logTaskStart, setLogTaskStart] = useState("");
   const [logTaskEnd, setLogTaskEnd] = useState("");
+  const [logAssignedIds, setLogAssignedIds] = useState<string[]>([]);
 
   const resetLogForm = () => {
     setLogDescription("");
@@ -117,6 +118,7 @@ export function DayAssignmentPanel({
     setLogIssues("");
     setLogTaskStart("");
     setLogTaskEnd("");
+    setLogAssignedIds([]);
   };
 
   const handleSubmitLog = async () => {
@@ -135,6 +137,7 @@ export function DayAssignmentPanel({
         posted_by: user?.id ?? null,
         task_start_date: logTaskStart || null,
         task_end_date: logTaskEnd || null,
+        assigned_employee_ids: logAssignedIds,
       });
       toast({ title: "Daily log posted" });
       resetLogForm();
@@ -907,6 +910,58 @@ export function DayAssignmentPanel({
                 <Label className="text-xs text-muted-foreground mb-1 block">Task End</Label>
                 <DateInput value={logTaskEnd} onChange={setLogTaskEnd} />
               </div>
+            </div>
+
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <Label className="text-xs text-muted-foreground">Assign Task To</Label>
+                {assignments.length > 0 && (
+                  <button
+                    type="button"
+                    className="text-[11px] text-brand hover:underline"
+                    onClick={() =>
+                      setLogAssignedIds(
+                        logAssignedIds.length === assignments.length
+                          ? []
+                          : assignments.map((a) => a.employee_id)
+                      )
+                    }
+                  >
+                    {logAssignedIds.length === assignments.length ? "Clear all" : "Select all"}
+                  </button>
+                )}
+              </div>
+              {assignments.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic px-2 py-3 rounded border border-dashed border-border/50">
+                  No employees assigned to this project today.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-2 rounded border border-border/50 bg-background/40">
+                  {assignments.map((a) => {
+                    const checked = logAssignedIds.includes(a.employee_id);
+                    return (
+                      <button
+                        type="button"
+                        key={a.id}
+                        onClick={() =>
+                          setLogAssignedIds((prev) =>
+                            checked ? prev.filter((x) => x !== a.employee_id) : [...prev, a.employee_id]
+                          )
+                        }
+                        className={`text-xs px-2 py-1 rounded-full border transition ${
+                          checked
+                            ? "bg-brand/20 border-brand/50 text-brand"
+                            : "bg-muted/40 border-border/50 text-muted-foreground hover:bg-muted"
+                        }`}
+                      >
+                        {checked && <Check className="h-3 w-3 inline mr-1" />}
+                        {a.employee_name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             <div>

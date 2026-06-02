@@ -16,6 +16,7 @@ export interface DailyLog {
   status: DailyLogStatus;
   task_start_date: string | null;
   task_end_date: string | null;
+  assigned_employee_ids: string[];
   created_at: string;
   updated_at: string;
   users?: { name: string } | null;
@@ -53,6 +54,7 @@ export function useCreateDailyLog() {
       status?: string;
       task_start_date?: string | null;
       task_end_date?: string | null;
+      assigned_employee_ids?: string[];
     }) => {
       const { error } = await supabase.from("project_daily_logs").insert(log as any);
       if (error) throw error;
@@ -77,6 +79,7 @@ export function useUpdateDailyLog() {
       status?: string;
       task_start_date?: string | null;
       task_end_date?: string | null;
+      assigned_employee_ids?: string[];
     }) => {
       const { error } = await supabase.from("project_daily_logs").update(updates as any).eq("id", id);
       if (error) throw error;
