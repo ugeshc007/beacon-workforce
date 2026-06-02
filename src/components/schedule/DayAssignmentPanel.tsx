@@ -109,6 +109,7 @@ export function DayAssignmentPanel({
   const [logIssues, setLogIssues] = useState("");
   const [logTaskStart, setLogTaskStart] = useState("");
   const [logTaskEnd, setLogTaskEnd] = useState("");
+  const [logAssignedIds, setLogAssignedIds] = useState<string[]>([]);
 
   const resetLogForm = () => {
     setLogDescription("");
@@ -117,6 +118,7 @@ export function DayAssignmentPanel({
     setLogIssues("");
     setLogTaskStart("");
     setLogTaskEnd("");
+    setLogAssignedIds([]);
   };
 
   const handleSubmitLog = async () => {
