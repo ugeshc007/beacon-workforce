@@ -16,6 +16,7 @@ export interface DailyLog {
   status: DailyLogStatus;
   task_start_date: string | null;
   task_end_date: string | null;
+  assigned_employee_ids: string[];
   created_at: string;
   updated_at: string;
   users?: { name: string } | null;
