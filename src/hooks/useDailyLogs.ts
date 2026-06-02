@@ -79,6 +79,7 @@ export function useUpdateDailyLog() {
       status?: string;
       task_start_date?: string | null;
       task_end_date?: string | null;
+      assigned_employee_ids?: string[];
     }) => {
       const { error } = await supabase.from("project_daily_logs").update(updates as any).eq("id", id);
       if (error) throw error;
