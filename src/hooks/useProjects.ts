@@ -472,6 +472,7 @@ export function useAssignEmployee() {
           shift_start: finalStart,
           shift_end: finalEnd,
           work_location: workLocation,
+          task: task?.trim() ? task.trim() : null,
         })
         .select()
         .single();
