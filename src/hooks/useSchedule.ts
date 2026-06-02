@@ -61,7 +61,7 @@ export function useWeekAssignments(weekStart: string, weekEnd: string, projectId
     queryFn: async () => {
       let query = supabase
         .from("project_assignments")
-        .select("id, project_id, employee_id, date, shift_start, shift_end, assignment_mode, is_locked, assigned_role, work_location, employees(name, skill_type), projects(name)")
+        .select("id, project_id, employee_id, date, shift_start, shift_end, assignment_mode, is_locked, assigned_role, work_location, task, employees(name, skill_type), projects(name)")
         .gte("date", weekStart)
         .lte("date", weekEnd)
         .order("date");
@@ -87,6 +87,7 @@ export function useWeekAssignments(weekStart: string, weekEnd: string, projectId
         employee_skill: a.employees?.skill_type ?? "helper",
         project_name: a.projects?.name ?? "Unknown",
         work_location: a.work_location ?? null,
+        task: a.task ?? null,
       })) as ScheduleAssignment[];
     },
   });
