@@ -601,6 +601,41 @@ export function DayAssignmentPanel({
                   </Button>
                 )}
               </div>
+              {/* Task subline */}
+              <div className="pl-7 pr-2">
+                {editTaskId === a.id ? (
+                  <div className="flex items-center gap-1">
+                    <Input
+                      value={editTaskValue}
+                      onChange={(e) => setEditTaskValue(e.target.value)}
+                      placeholder="Task (e.g. Wiring)"
+                      className="h-6 text-[11px] flex-1"
+                      autoFocus
+                    />
+                    <Button variant="ghost" size="icon" className="h-5 w-5 text-status-present" onClick={handleSaveTask}><Check className="h-3 w-3" /></Button>
+                    <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => { setEditTaskId(null); setEditTaskValue(""); }}><X className="h-3 w-3" /></Button>
+                  </div>
+                ) : a.task ? (
+                  <button
+                    type="button"
+                    className="text-[11px] text-brand hover:underline disabled:no-underline disabled:cursor-default text-left"
+                    disabled={readOnly || a.is_locked}
+                    onClick={() => { setEditTaskId(a.id); setEditTaskValue(a.task ?? ""); }}
+                    title={readOnly ? a.task : "Click to edit task"}
+                  >
+                    Task: {a.task}
+                  </button>
+                ) : !readOnly ? (
+                  <button
+                    type="button"
+                    className="text-[10px] text-muted-foreground hover:text-brand"
+                    disabled={a.is_locked}
+                    onClick={() => { setEditTaskId(a.id); setEditTaskValue(""); }}
+                  >
+                    + Add task
+                  </button>
+                ) : null}
+              </div>
             </div>
             );
           })}
