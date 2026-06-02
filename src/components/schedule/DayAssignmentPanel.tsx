@@ -168,6 +168,10 @@ export function DayAssignmentPanel({
   const totalToFill = needMembers + needTL + needDrivers;
 
   const handleAdd = async (employeeId: string) => {
+    if (!addWorkLocation) {
+      toast({ title: "Pick Site or In-House", description: "Work location is required before assigning.", variant: "destructive" });
+      return;
+    }
     try {
       await addAssignment.mutateAsync({
         project_id: projectId,
@@ -176,9 +180,11 @@ export function DayAssignmentPanel({
         shift_start: shiftStart,
         shift_end: shiftEnd,
         assigned_role: addingSkill ?? "team_member",
+        work_location: addWorkLocation,
       });
       toast({ title: "Employee assigned" });
       setAddingSkill(null);
+      setAddWorkLocation("");
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     }
