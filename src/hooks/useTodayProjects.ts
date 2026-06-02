@@ -130,6 +130,7 @@ export function useTodayProjects() {
             totalWorkMinutes: session?.total_work_minutes ?? null,
             assignedRole: a.assigned_role ?? "team_member",
             workLocation: (a.work_location as "in_house" | "site" | null) ?? dayLocByProject.get(a.project_id) ?? null,
+            task: (a as any).task ?? null,
           };
         });
 
