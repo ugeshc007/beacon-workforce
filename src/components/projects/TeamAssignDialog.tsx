@@ -24,6 +24,7 @@ export function TeamAssignDialog({ open, onOpenChange, projectId, existingEmploy
   const [date, setDate] = useState(() => toLocalDateStr(new Date()));
   const [shiftStart, setShiftStart] = useState("08:00");
   const [shiftEnd, setShiftEnd] = useState("17:00");
+  const [workLocation, setWorkLocation] = useState<"site" | "in_house" | "">("");
   const { data: empData, isLoading } = useEmployees({ search, status: "active", pageSize: 50 });
   const assignMutation = useAssignEmployee();
   const { toast } = useToast();
@@ -32,6 +33,10 @@ export function TeamAssignDialog({ open, onOpenChange, projectId, existingEmploy
   const available = employees.filter((e) => !existingEmployeeIds.includes(e.id));
 
   const handleAssign = async (employeeId: string) => {
+    if (!workLocation) {
+      toast({ title: "Select work location", description: "Choose Site or In-House before assigning.", variant: "destructive" });
+      return;
+    }
     try {
       await assignMutation.mutateAsync({
         projectId,
@@ -39,6 +44,7 @@ export function TeamAssignDialog({ open, onOpenChange, projectId, existingEmploy
         date,
         shiftStart,
         shiftEnd,
+        workLocation,
       });
       toast({ title: "Employee assigned", description: "Successfully added to project team." });
     } catch (err: any) {
@@ -65,6 +71,30 @@ export function TeamAssignDialog({ open, onOpenChange, projectId, existingEmploy
           <div className="space-y-1">
             <Label className="text-xs">Shift End</Label>
             <Input type="time" value={shiftEnd} onChange={(e) => setShiftEnd(e.target.value)} />
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <Label className="text-xs">Work Location <span className="text-destructive">*</span></Label>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant={workLocation === "site" ? "default" : "outline"}
+              size="sm"
+              className="flex-1"
+              onClick={() => setWorkLocation("site")}
+            >
+              Site
+            </Button>
+            <Button
+              type="button"
+              variant={workLocation === "in_house" ? "default" : "outline"}
+              size="sm"
+              className="flex-1"
+              onClick={() => setWorkLocation("in_house")}
+            >
+              In-House
+            </Button>
           </div>
         </div>
 
