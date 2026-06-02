@@ -33,6 +33,7 @@ export function AvailableEmployeesSheet({ open, onOpenChange, date, canAssign = 
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<AvailabilityStatus | "all">("available");
   const [pickProject, setPickProject] = useState<Record<string, string>>({});
+  const [pickLocation, setPickLocation] = useState<Record<string, "site" | "in_house">>({});
 
   const activeProjects = useMemo(
     () => (projects ?? []).filter((p) => ["on_hold", "in_progress"].includes(p.status)),
@@ -60,6 +61,11 @@ export function AvailableEmployeesSheet({ open, onOpenChange, date, canAssign = 
       toast.error("Pick a project first");
       return;
     }
+    const loc = pickLocation[emp.id];
+    if (!loc) {
+      toast.error("Pick Site or In-House first");
+      return;
+    }
     try {
       await assignMutation.mutateAsync({
         projectId: pid,
@@ -67,9 +73,11 @@ export function AvailableEmployeesSheet({ open, onOpenChange, date, canAssign = 
         date: date!,
         shiftStart: "08:00",
         shiftEnd: "17:00",
+        workLocation: loc,
       });
       toast.success(`${emp.name} assigned`);
       setPickProject((p) => ({ ...p, [emp.id]: "" }));
+      setPickLocation((p) => { const n = { ...p }; delete n[emp.id]; return n; });
     } catch (e: any) {
       toast.error(e.message ?? "Assignment failed");
     }
@@ -186,33 +194,53 @@ export function AvailableEmployeesSheet({ open, onOpenChange, date, canAssign = 
                     )}
 
                     {canAssign && emp.status !== "on_leave" && (
-                      <div className="flex items-center gap-2 pt-1">
-                        <Select
-                          value={pickProject[emp.id] ?? ""}
-                          onValueChange={(v) => setPickProject((p) => ({ ...p, [emp.id]: v }))}
-                        >
-                          <SelectTrigger className="h-7 text-[11px] flex-1">
-                            <SelectValue placeholder="Assign to project..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {activeProjects
-                              .filter((p) => !emp.assignments.some((a) => a.project_id === p.id))
-                              .map((p) => (
-                                <SelectItem key={p.id} value={p.id} className="text-xs">
-                                  {p.name}
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-[11px] px-2"
-                          disabled={!pickProject[emp.id] || assignMutation.isPending}
-                          onClick={() => handleAssign(emp)}
-                        >
-                          Assign
-                        </Button>
+                      <div className="space-y-1.5 pt-1">
+                        <div className="flex items-center gap-2">
+                          <Select
+                            value={pickProject[emp.id] ?? ""}
+                            onValueChange={(v) => setPickProject((p) => ({ ...p, [emp.id]: v }))}
+                          >
+                            <SelectTrigger className="h-7 text-[11px] flex-1">
+                              <SelectValue placeholder="Assign to project..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {activeProjects
+                                .filter((p) => !emp.assignments.some((a) => a.project_id === p.id))
+                                .map((p) => (
+                                  <SelectItem key={p.id} value={p.id} className="text-xs">
+                                    {p.name}
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-[11px] px-2"
+                            disabled={!pickProject[emp.id] || !pickLocation[emp.id] || assignMutation.isPending}
+                            onClick={() => handleAssign(emp)}
+                          >
+                            Assign
+                          </Button>
+                        </div>
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant={pickLocation[emp.id] === "site" ? "default" : "outline"}
+                            className="h-6 px-2 text-[10px] flex-1"
+                            onClick={() => setPickLocation((p) => ({ ...p, [emp.id]: "site" }))}
+                          >
+                            Site
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant={pickLocation[emp.id] === "in_house" ? "default" : "outline"}
+                            className="h-6 px-2 text-[10px] flex-1"
+                            onClick={() => setPickLocation((p) => ({ ...p, [emp.id]: "in_house" }))}
+                          >
+                            In-House
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </div>

@@ -90,6 +90,7 @@ export function DayAssignmentPanel({
   };
 
   const [addingSkill, setAddingSkill] = useState<string | null>(null);
+  const [addWorkLocation, setAddWorkLocation] = useState<"site" | "in_house" | "">("");
   const [shiftStart, setShiftStart] = useState("08:00");
   const [shiftEnd, setShiftEnd] = useState("17:00");
   const [autoShiftStart, setAutoShiftStart] = useState("08:00");
@@ -167,6 +168,10 @@ export function DayAssignmentPanel({
   const totalToFill = needMembers + needTL + needDrivers;
 
   const handleAdd = async (employeeId: string) => {
+    if (!addWorkLocation) {
+      toast({ title: "Pick Site or In-House", description: "Work location is required before assigning.", variant: "destructive" });
+      return;
+    }
     try {
       await addAssignment.mutateAsync({
         project_id: projectId,
@@ -175,9 +180,11 @@ export function DayAssignmentPanel({
         shift_start: shiftStart,
         shift_end: shiftEnd,
         assigned_role: addingSkill ?? "team_member",
+        work_location: addWorkLocation,
       });
       toast({ title: "Employee assigned" });
       setAddingSkill(null);
+      setAddWorkLocation("");
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     }
@@ -602,6 +609,32 @@ export function DayAssignmentPanel({
                 className="h-7 text-xs w-24"
               />
             </div>
+
+            {/* Work location — required */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground shrink-0">Where:</span>
+              <Button
+                size="sm"
+                variant={addWorkLocation === "site" ? "default" : "outline"}
+                className="h-7 px-2 text-xs gap-1"
+                onClick={() => setAddWorkLocation("site")}
+              >
+                <MapPin className="h-3 w-3" /> Site
+              </Button>
+              <Button
+                size="sm"
+                variant={addWorkLocation === "in_house" ? "default" : "outline"}
+                className="h-7 px-2 text-xs gap-1"
+                onClick={() => setAddWorkLocation("in_house")}
+              >
+                <Building2 className="h-3 w-3" /> In-House
+              </Button>
+              {!addWorkLocation && (
+                <span className="text-[10px] text-amber-400">required</span>
+              )}
+            </div>
+
+
             {empLoading ? (
               <Skeleton className="h-8 w-full" />
             ) : availableForSkill(addingSkill).length === 0 ? (

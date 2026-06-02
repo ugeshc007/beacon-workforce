@@ -208,7 +208,11 @@ export function useAddAssignment() {
       shift_end?: string;
       assignment_mode?: "manual" | "auto" | "hybrid";
       assigned_role?: string;
+      work_location: "in_house" | "site";
     }) => {
+      if (payload.work_location !== "in_house" && payload.work_location !== "site") {
+        throw new Error("Work location (Site or In-House) is required");
+      }
       let finalStart = payload.shift_start ?? null;
       const finalEnd = payload.shift_end ?? null;
 
@@ -249,6 +253,7 @@ export function useAddAssignment() {
           shift_end: finalEnd,
           assignment_mode: payload.assignment_mode ?? "manual",
           assigned_role: payload.assigned_role ?? "team_member",
+          work_location: payload.work_location,
         })
         .select()
         .single();
