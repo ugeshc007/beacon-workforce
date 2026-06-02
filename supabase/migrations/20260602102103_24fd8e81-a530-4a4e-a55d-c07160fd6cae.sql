@@ -1,0 +1,1 @@
+ALTER TABLE public.project_assignments ADD COLUMN IF NOT EXISTS task text;

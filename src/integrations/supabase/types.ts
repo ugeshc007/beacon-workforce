@@ -983,6 +983,7 @@ export type Database = {
           project_id: string
           shift_end: string | null
           shift_start: string | null
+          task: string | null
           work_location:
             | Database["public"]["Enums"]["work_location_type"]
             | null
@@ -1000,6 +1001,7 @@ export type Database = {
           project_id: string
           shift_end?: string | null
           shift_start?: string | null
+          task?: string | null
           work_location?:
             | Database["public"]["Enums"]["work_location_type"]
             | null
@@ -1017,6 +1019,7 @@ export type Database = {
           project_id?: string
           shift_end?: string | null
           shift_start?: string | null
+          task?: string | null
           work_location?:
             | Database["public"]["Enums"]["work_location_type"]
             | null
