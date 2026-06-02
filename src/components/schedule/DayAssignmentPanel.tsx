@@ -137,6 +137,7 @@ export function DayAssignmentPanel({
         posted_by: user?.id ?? null,
         task_start_date: logTaskStart || null,
         task_end_date: logTaskEnd || null,
+        assigned_employee_ids: logAssignedIds,
       });
       toast({ title: "Daily log posted" });
       resetLogForm();
