@@ -241,6 +241,12 @@ export function AvailableEmployeesPanel({ date, canAssign = true }: Props) {
                             In-House
                           </Button>
                         </div>
+                        <Input
+                          value={pickTask[emp.id] ?? ""}
+                          onChange={(e) => setPickTask((p) => ({ ...p, [emp.id]: e.target.value }))}
+                          placeholder="Task (optional)"
+                          className="h-6 text-[10px]"
+                        />
                       </div>
                     )}
                   </div>
