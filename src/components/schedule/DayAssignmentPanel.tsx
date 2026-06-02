@@ -185,10 +185,24 @@ export function DayAssignmentPanel({
         shift_end: shiftEnd,
         assigned_role: addingSkill ?? "team_member",
         work_location: addWorkLocation,
+        task: addTask.trim() || null,
       });
       toast({ title: "Employee assigned" });
       setAddingSkill(null);
       setAddWorkLocation("");
+      setAddTask("");
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+  };
+
+  const handleSaveTask = async () => {
+    if (!editTaskId) return;
+    try {
+      await updateAssignment.mutateAsync({ id: editTaskId, task: editTaskValue });
+      toast({ title: "Task updated" });
+      setEditTaskId(null);
+      setEditTaskValue("");
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     }
