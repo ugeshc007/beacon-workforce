@@ -261,13 +261,6 @@ export default function Attendance() {
                         <td className="py-2.5">
                           <Badge variant="outline" className={`text-[9px] ${sl.className}`}>{sl.text}</Badge>
                         </td>
-                        <td className="py-2.5 text-right font-mono text-xs text-muted-foreground">
-                          {cost > 0 ? (
-                            <span className={isLiveCost ? "text-status-traveling" : ""} title={isLiveCost ? "Live estimate (work in progress)" : undefined}>
-                              AED {Math.round(cost)}{isLiveCost ? "*" : ""}
-                            </span>
-                          ) : "—"}
-                        </td>
                         <td className="py-2.5" onClick={(e) => e.stopPropagation()}>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
