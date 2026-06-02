@@ -1,6 +1,6 @@
 import { toLocalDateStr } from "@/lib/utils";
 import { useState } from "react";
-import { useAttendanceLogs, useAttendanceSummary, computeLiveCost, type AttendanceLog } from "@/hooks/useAttendance";
+import { useAttendanceLogs, useAttendanceSummary, type AttendanceLog } from "@/hooks/useAttendance";
 import { useCanAccess } from "@/hooks/usePermissions";
 import { useProjects } from "@/hooks/useProjects";
 import { AttendanceTimeline } from "@/components/attendance/AttendanceTimeline";
@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Users, UserCheck, Wrench, Clock, DollarSign, Search, Coffee, CheckCircle2, Plane, AlarmClock, UserX,
+  Users, UserCheck, Wrench, Clock, Search, Coffee, CheckCircle2, Plane, AlarmClock, UserX,
   ChevronLeft, ChevronRight, MapPin, MapPinOff, ShieldAlert, Pencil, Eye,
 } from "lucide-react";
 import {
@@ -181,7 +181,7 @@ export default function Attendance() {
                     <th className="text-right py-2 font-medium">Total</th>
                     <th className="text-right py-2 font-medium">OT</th>
                     <th className="text-left py-2 font-medium">Status</th>
-                    <th className="text-right py-2 font-medium">Cost</th>
+                    
                     <th className="w-8"></th>
                   </tr>
                 </thead>
@@ -192,8 +192,6 @@ export default function Attendance() {
                     const otMin = getDisplayOvertimeMinutes(log as any, stdHours);
                     const totalDisplay = workedMin > 0 ? formatWorkedMinutes(workedMin) : "—";
                     const otDisplay = otMin > 0 ? formatWorkedMinutes(otMin) : "0m";
-                    const cost = computeLiveCost(log);
-                    const isLiveCost = cost > 0 && !log.work_end_time;
                     const status = deriveStatus(log);
                     const sl = statusLabel[status];
                     const breakMin = log.break_minutes ?? 0;
@@ -262,13 +260,6 @@ export default function Attendance() {
                         </td>
                         <td className="py-2.5">
                           <Badge variant="outline" className={`text-[9px] ${sl.className}`}>{sl.text}</Badge>
-                        </td>
-                        <td className="py-2.5 text-right font-mono text-xs text-muted-foreground">
-                          {cost > 0 ? (
-                            <span className={isLiveCost ? "text-status-traveling" : ""} title={isLiveCost ? "Live estimate (work in progress)" : undefined}>
-                              AED {Math.round(cost)}{isLiveCost ? "*" : ""}
-                            </span>
-                          ) : "—"}
                         </td>
                         <td className="py-2.5" onClick={(e) => e.stopPropagation()}>
                           <DropdownMenu>
