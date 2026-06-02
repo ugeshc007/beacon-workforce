@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Users, UserCheck, Wrench, Clock, DollarSign, Search, Coffee, CheckCircle2, Plane, AlarmClock, UserX,
+  Users, UserCheck, Wrench, Clock, Search, Coffee, CheckCircle2, Plane, AlarmClock, UserX,
   ChevronLeft, ChevronRight, MapPin, MapPinOff, ShieldAlert, Pencil, Eye,
 } from "lucide-react";
 import {
