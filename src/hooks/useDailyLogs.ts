@@ -54,6 +54,7 @@ export function useCreateDailyLog() {
       status?: string;
       task_start_date?: string | null;
       task_end_date?: string | null;
+      assigned_employee_ids?: string[];
     }) => {
       const { error } = await supabase.from("project_daily_logs").insert(log as any);
       if (error) throw error;
