@@ -609,6 +609,7 @@ export function DayAssignmentPanel({
                 className="h-7 text-xs w-24"
               />
             </div>
+
             {/* Work location — required */}
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground shrink-0">Where:</span>
