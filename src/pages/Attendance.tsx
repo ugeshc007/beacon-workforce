@@ -181,7 +181,7 @@ export default function Attendance() {
                     <th className="text-right py-2 font-medium">Total</th>
                     <th className="text-right py-2 font-medium">OT</th>
                     <th className="text-left py-2 font-medium">Status</th>
-                    <th className="text-right py-2 font-medium">Cost</th>
+                    
                     <th className="w-8"></th>
                   </tr>
                 </thead>
