@@ -68,7 +68,7 @@ export function useTodayProjects() {
       try {
         const { data: assignments, error: aErr } = await supabase
           .from("project_assignments")
-          .select("id, project_id, shift_start, shift_end, assigned_role, work_location, projects(name, site_address, site_latitude, site_longitude, site_gps_radius)")
+          .select("id, project_id, shift_start, shift_end, assigned_role, work_location, task, projects(name, site_address, site_latitude, site_longitude, site_gps_radius)")
           .eq("employee_id", employee.id)
           .eq("date", today);
         if (aErr) throw aErr;
