@@ -46,6 +46,7 @@ export function TeamAssignDialog({ open, onOpenChange, projectId, existingEmploy
         shiftStart,
         shiftEnd,
         workLocation,
+        task: task.trim() || null,
       });
       toast({ title: "Employee assigned", description: "Successfully added to project team." });
     } catch (err: any) {
