@@ -631,7 +631,9 @@ export function DayAssignmentPanel({
               </Button>
               {!addWorkLocation && (
                 <span className="text-[10px] text-amber-400">required</span>
+              )}
             </div>
+
 
             {empLoading ? (
               <Skeleton className="h-8 w-full" />
