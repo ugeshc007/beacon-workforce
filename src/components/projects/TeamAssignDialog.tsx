@@ -25,6 +25,7 @@ export function TeamAssignDialog({ open, onOpenChange, projectId, existingEmploy
   const [shiftStart, setShiftStart] = useState("08:00");
   const [shiftEnd, setShiftEnd] = useState("17:00");
   const [workLocation, setWorkLocation] = useState<"site" | "in_house" | "">("");
+  const [task, setTask] = useState("");
   const { data: empData, isLoading } = useEmployees({ search, status: "active", pageSize: 50 });
   const assignMutation = useAssignEmployee();
   const { toast } = useToast();
