@@ -59,6 +59,11 @@ export function AvailableEmployeesPanel({ date, canAssign = true }: Props) {
       toast.error("Pick a project first");
       return;
     }
+    const loc = pickLocation[emp.id];
+    if (!loc) {
+      toast.error("Pick Site or In-House first");
+      return;
+    }
     try {
       await assignMutation.mutateAsync({
         projectId: pid,
@@ -66,9 +71,11 @@ export function AvailableEmployeesPanel({ date, canAssign = true }: Props) {
         date,
         shiftStart: "08:00",
         shiftEnd: "17:00",
+        workLocation: loc,
       });
       toast.success(`${emp.name} assigned`);
       setPickProject((p) => ({ ...p, [emp.id]: "" }));
+      setPickLocation((p) => { const n = { ...p }; delete n[emp.id]; return n; });
     } catch (e: any) {
       toast.error(e.message ?? "Assignment failed");
     }
