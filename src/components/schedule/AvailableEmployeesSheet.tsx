@@ -33,6 +33,7 @@ export function AvailableEmployeesSheet({ open, onOpenChange, date, canAssign = 
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<AvailabilityStatus | "all">("available");
   const [pickProject, setPickProject] = useState<Record<string, string>>({});
+  const [pickLocation, setPickLocation] = useState<Record<string, "site" | "in_house">>({});
 
   const activeProjects = useMemo(
     () => (projects ?? []).filter((p) => ["on_hold", "in_progress"].includes(p.status)),
@@ -60,6 +61,11 @@ export function AvailableEmployeesSheet({ open, onOpenChange, date, canAssign = 
       toast.error("Pick a project first");
       return;
     }
+    const loc = pickLocation[emp.id];
+    if (!loc) {
+      toast.error("Pick Site or In-House first");
+      return;
+    }
     try {
       await assignMutation.mutateAsync({
         projectId: pid,
@@ -67,9 +73,11 @@ export function AvailableEmployeesSheet({ open, onOpenChange, date, canAssign = 
         date: date!,
         shiftStart: "08:00",
         shiftEnd: "17:00",
+        workLocation: loc,
       });
       toast.success(`${emp.name} assigned`);
       setPickProject((p) => ({ ...p, [emp.id]: "" }));
+      setPickLocation((p) => { const n = { ...p }; delete n[emp.id]; return n; });
     } catch (e: any) {
       toast.error(e.message ?? "Assignment failed");
     }
