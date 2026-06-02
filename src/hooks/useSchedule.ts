@@ -310,10 +310,11 @@ export function useRemoveAssignment() {
 export function useUpdateAssignment() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, shift_start, shift_end }: { id: string; shift_start?: string; shift_end?: string }) => {
-      const updates: { shift_start?: string; shift_end?: string } = {};
+    mutationFn: async ({ id, shift_start, shift_end, task }: { id: string; shift_start?: string; shift_end?: string; task?: string | null }) => {
+      const updates: { shift_start?: string; shift_end?: string; task?: string | null } = {};
       if (shift_start !== undefined) updates.shift_start = shift_start;
       if (shift_end !== undefined) updates.shift_end = shift_end;
+      if (task !== undefined) updates.task = task && task.trim() ? task.trim() : null;
       const { error } = await supabase.from("project_assignments").update(updates).eq("id", id);
       if (error) throw error;
     },
