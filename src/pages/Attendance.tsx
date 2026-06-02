@@ -192,8 +192,6 @@ export default function Attendance() {
                     const otMin = getDisplayOvertimeMinutes(log as any, stdHours);
                     const totalDisplay = workedMin > 0 ? formatWorkedMinutes(workedMin) : "—";
                     const otDisplay = otMin > 0 ? formatWorkedMinutes(otMin) : "0m";
-                    const cost = computeLiveCost(log);
-                    const isLiveCost = cost > 0 && !log.work_end_time;
                     const status = deriveStatus(log);
                     const sl = statusLabel[status];
                     const breakMin = log.break_minutes ?? 0;
