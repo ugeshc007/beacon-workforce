@@ -609,6 +609,28 @@ export function DayAssignmentPanel({
                 className="h-7 text-xs w-24"
               />
             </div>
+            {/* Work location — required */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground shrink-0">Where:</span>
+              <Button
+                size="sm"
+                variant={addWorkLocation === "site" ? "default" : "outline"}
+                className="h-7 px-2 text-xs gap-1"
+                onClick={() => setAddWorkLocation("site")}
+              >
+                <MapPin className="h-3 w-3" /> Site
+              </Button>
+              <Button
+                size="sm"
+                variant={addWorkLocation === "in_house" ? "default" : "outline"}
+                className="h-7 px-2 text-xs gap-1"
+                onClick={() => setAddWorkLocation("in_house")}
+              >
+                <Building2 className="h-3 w-3" /> In-House
+              </Button>
+              {!addWorkLocation && (
+                <span className="text-[10px] text-amber-400">required</span>
+              )}
             {empLoading ? (
               <Skeleton className="h-8 w-full" />
             ) : availableForSkill(addingSkill).length === 0 ? (
