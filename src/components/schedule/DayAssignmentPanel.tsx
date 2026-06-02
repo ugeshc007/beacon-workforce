@@ -148,6 +148,9 @@ export function DayAssignmentPanel({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editStart, setEditStart] = useState("");
   const [editEnd, setEditEnd] = useState("");
+  // Edit task state (separate inline edit)
+  const [editTaskId, setEditTaskId] = useState<string | null>(null);
+  const [editTaskValue, setEditTaskValue] = useState("");
 
   // Reassign state
   const [reassignId, setReassignId] = useState<string | null>(null);
