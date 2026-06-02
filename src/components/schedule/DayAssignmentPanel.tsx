@@ -91,6 +91,7 @@ export function DayAssignmentPanel({
 
   const [addingSkill, setAddingSkill] = useState<string | null>(null);
   const [addWorkLocation, setAddWorkLocation] = useState<"site" | "in_house" | "">("");
+  const [addTask, setAddTask] = useState("");
   const [shiftStart, setShiftStart] = useState("08:00");
   const [shiftEnd, setShiftEnd] = useState("17:00");
   const [autoShiftStart, setAutoShiftStart] = useState("08:00");
