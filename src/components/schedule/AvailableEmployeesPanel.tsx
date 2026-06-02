@@ -31,6 +31,7 @@ export function AvailableEmployeesPanel({ date, canAssign = true }: Props) {
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<AvailabilityStatus | "all">("available");
   const [pickProject, setPickProject] = useState<Record<string, string>>({});
+  const [pickLocation, setPickLocation] = useState<Record<string, "site" | "in_house">>({});
 
   const activeProjects = useMemo(
     () => (projects ?? []).filter((p) => ["on_hold", "in_progress"].includes(p.status)),
