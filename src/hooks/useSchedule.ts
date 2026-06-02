@@ -257,6 +257,7 @@ export function useAddAssignment() {
           assignment_mode: payload.assignment_mode ?? "manual",
           assigned_role: payload.assigned_role ?? "team_member",
           work_location: payload.work_location,
+          task: payload.task?.trim() ? payload.task.trim() : null,
         })
         .select()
         .single();
