@@ -652,6 +652,19 @@ export function DayAssignmentPanel({
               )}
             </div>
 
+            {/* Task — optional, per-employee */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground shrink-0">Task:</span>
+              <Input
+                value={addTask}
+                onChange={(e) => setAddTask(e.target.value)}
+                placeholder="e.g. Wiring, Mounting (optional)"
+                className="h-7 text-xs"
+              />
+            </div>
+
+
+
 
             {empLoading ? (
               <Skeleton className="h-8 w-full" />
