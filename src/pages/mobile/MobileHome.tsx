@@ -296,6 +296,9 @@ export default function MobileHome() {
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-foreground truncate">{p.projectName}</p>
+                    {p.task && (
+                      <p className="text-xs text-brand truncate mt-0.5">Task: {p.task}</p>
+                    )}
                     {p.siteAddress && <p className="text-xs text-muted-foreground truncate">{p.siteAddress}</p>}
                     <div className="flex items-center gap-3 mt-1.5">
                       <span className={`text-xs font-medium ${projectStepColors[p.step]}`}>
