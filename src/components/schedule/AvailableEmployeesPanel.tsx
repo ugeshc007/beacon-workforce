@@ -73,10 +73,12 @@ export function AvailableEmployeesPanel({ date, canAssign = true }: Props) {
         shiftStart: "08:00",
         shiftEnd: "17:00",
         workLocation: loc,
+        task: pickTask[emp.id]?.trim() || null,
       });
       toast.success(`${emp.name} assigned`);
       setPickProject((p) => ({ ...p, [emp.id]: "" }));
       setPickLocation((p) => { const n = { ...p }; delete n[emp.id]; return n; });
+      setPickTask((p) => { const n = { ...p }; delete n[emp.id]; return n; });
     } catch (e: any) {
       toast.error(e.message ?? "Assignment failed");
     }
