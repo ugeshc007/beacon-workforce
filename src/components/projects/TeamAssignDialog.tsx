@@ -25,6 +25,7 @@ export function TeamAssignDialog({ open, onOpenChange, projectId, existingEmploy
   const [shiftStart, setShiftStart] = useState("08:00");
   const [shiftEnd, setShiftEnd] = useState("17:00");
   const [workLocation, setWorkLocation] = useState<"site" | "in_house" | "">("");
+  const [task, setTask] = useState("");
   const { data: empData, isLoading } = useEmployees({ search, status: "active", pageSize: 50 });
   const assignMutation = useAssignEmployee();
   const { toast } = useToast();
@@ -45,6 +46,7 @@ export function TeamAssignDialog({ open, onOpenChange, projectId, existingEmploy
         shiftStart,
         shiftEnd,
         workLocation,
+        task: task.trim() || null,
       });
       toast({ title: "Employee assigned", description: "Successfully added to project team." });
     } catch (err: any) {
@@ -95,7 +97,16 @@ export function TeamAssignDialog({ open, onOpenChange, projectId, existingEmploy
             >
               In-House
             </Button>
-          </div>
+        </div>
+
+        <div className="space-y-1">
+          <Label className="text-xs">Task <span className="text-muted-foreground">(optional)</span></Label>
+          <Input
+            placeholder="e.g. Wiring, Mounting LED panel..."
+            value={task}
+            onChange={(e) => setTask(e.target.value)}
+          />
+        </div>
         </div>
 
         <div className="relative">

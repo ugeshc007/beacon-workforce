@@ -32,6 +32,7 @@ export function AvailableEmployeesPanel({ date, canAssign = true }: Props) {
   const [tab, setTab] = useState<AvailabilityStatus | "all">("available");
   const [pickProject, setPickProject] = useState<Record<string, string>>({});
   const [pickLocation, setPickLocation] = useState<Record<string, "site" | "in_house">>({});
+  const [pickTask, setPickTask] = useState<Record<string, string>>({});
 
   const activeProjects = useMemo(
     () => (projects ?? []).filter((p) => ["on_hold", "in_progress"].includes(p.status)),
@@ -72,10 +73,12 @@ export function AvailableEmployeesPanel({ date, canAssign = true }: Props) {
         shiftStart: "08:00",
         shiftEnd: "17:00",
         workLocation: loc,
+        task: pickTask[emp.id]?.trim() || null,
       });
       toast.success(`${emp.name} assigned`);
       setPickProject((p) => ({ ...p, [emp.id]: "" }));
       setPickLocation((p) => { const n = { ...p }; delete n[emp.id]; return n; });
+      setPickTask((p) => { const n = { ...p }; delete n[emp.id]; return n; });
     } catch (e: any) {
       toast.error(e.message ?? "Assignment failed");
     }
@@ -238,6 +241,12 @@ export function AvailableEmployeesPanel({ date, canAssign = true }: Props) {
                             In-House
                           </Button>
                         </div>
+                        <Input
+                          value={pickTask[emp.id] ?? ""}
+                          onChange={(e) => setPickTask((p) => ({ ...p, [emp.id]: e.target.value }))}
+                          placeholder="Task (optional)"
+                          className="h-6 text-[10px]"
+                        />
                       </div>
                     )}
                   </div>

@@ -22,6 +22,7 @@ export interface TodayProject {
   totalWorkMinutes: number | null;
   assignedRole: string;
   workLocation: "in_house" | "site" | null;
+  task: string | null;
 }
 
 /** Returns ALL today's project assignments + their session state.
@@ -67,7 +68,7 @@ export function useTodayProjects() {
       try {
         const { data: assignments, error: aErr } = await supabase
           .from("project_assignments")
-          .select("id, project_id, shift_start, shift_end, assigned_role, work_location, projects(name, site_address, site_latitude, site_longitude, site_gps_radius)")
+          .select("id, project_id, shift_start, shift_end, assigned_role, work_location, task, projects(name, site_address, site_latitude, site_longitude, site_gps_radius)")
           .eq("employee_id", employee.id)
           .eq("date", today);
         if (aErr) throw aErr;
@@ -129,6 +130,7 @@ export function useTodayProjects() {
             totalWorkMinutes: session?.total_work_minutes ?? null,
             assignedRole: a.assigned_role ?? "team_member",
             workLocation: (a.work_location as "in_house" | "site" | null) ?? dayLocByProject.get(a.project_id) ?? null,
+            task: (a as any).task ?? null,
           };
         });
 

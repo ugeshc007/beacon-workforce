@@ -420,6 +420,7 @@ export function useAssignEmployee() {
       shiftStart,
       shiftEnd,
       workLocation,
+      task,
     }: {
       projectId: string;
       employeeId: string;
@@ -427,6 +428,7 @@ export function useAssignEmployee() {
       shiftStart?: string;
       shiftEnd?: string;
       workLocation: "in_house" | "site";
+      task?: string | null;
     }) => {
       if (workLocation !== "in_house" && workLocation !== "site") {
         throw new Error("Work location (Site or In-House) is required");
@@ -470,6 +472,7 @@ export function useAssignEmployee() {
           shift_start: finalStart,
           shift_end: finalEnd,
           work_location: workLocation,
+          task: task?.trim() ? task.trim() : null,
         })
         .select()
         .single();

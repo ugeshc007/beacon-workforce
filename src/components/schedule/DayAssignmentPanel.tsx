@@ -91,6 +91,7 @@ export function DayAssignmentPanel({
 
   const [addingSkill, setAddingSkill] = useState<string | null>(null);
   const [addWorkLocation, setAddWorkLocation] = useState<"site" | "in_house" | "">("");
+  const [addTask, setAddTask] = useState("");
   const [shiftStart, setShiftStart] = useState("08:00");
   const [shiftEnd, setShiftEnd] = useState("17:00");
   const [autoShiftStart, setAutoShiftStart] = useState("08:00");
@@ -147,6 +148,9 @@ export function DayAssignmentPanel({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editStart, setEditStart] = useState("");
   const [editEnd, setEditEnd] = useState("");
+  // Edit task state (separate inline edit)
+  const [editTaskId, setEditTaskId] = useState<string | null>(null);
+  const [editTaskValue, setEditTaskValue] = useState("");
 
   // Reassign state
   const [reassignId, setReassignId] = useState<string | null>(null);
@@ -181,10 +185,24 @@ export function DayAssignmentPanel({
         shift_end: shiftEnd,
         assigned_role: addingSkill ?? "team_member",
         work_location: addWorkLocation,
+        task: addTask.trim() || null,
       });
       toast({ title: "Employee assigned" });
       setAddingSkill(null);
       setAddWorkLocation("");
+      setAddTask("");
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+  };
+
+  const handleSaveTask = async () => {
+    if (!editTaskId) return;
+    try {
+      await updateAssignment.mutateAsync({ id: editTaskId, task: editTaskValue });
+      toast({ title: "Task updated" });
+      setEditTaskId(null);
+      setEditTaskValue("");
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     }
@@ -583,6 +601,41 @@ export function DayAssignmentPanel({
                   </Button>
                 )}
               </div>
+              {/* Task subline */}
+              <div className="pl-7 pr-2">
+                {editTaskId === a.id ? (
+                  <div className="flex items-center gap-1">
+                    <Input
+                      value={editTaskValue}
+                      onChange={(e) => setEditTaskValue(e.target.value)}
+                      placeholder="Task (e.g. Wiring)"
+                      className="h-6 text-[11px] flex-1"
+                      autoFocus
+                    />
+                    <Button variant="ghost" size="icon" className="h-5 w-5 text-status-present" onClick={handleSaveTask}><Check className="h-3 w-3" /></Button>
+                    <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => { setEditTaskId(null); setEditTaskValue(""); }}><X className="h-3 w-3" /></Button>
+                  </div>
+                ) : a.task ? (
+                  <button
+                    type="button"
+                    className="text-[11px] text-brand hover:underline disabled:no-underline disabled:cursor-default text-left"
+                    disabled={readOnly || a.is_locked}
+                    onClick={() => { setEditTaskId(a.id); setEditTaskValue(a.task ?? ""); }}
+                    title={readOnly ? a.task : "Click to edit task"}
+                  >
+                    Task: {a.task}
+                  </button>
+                ) : !readOnly ? (
+                  <button
+                    type="button"
+                    className="text-[10px] text-muted-foreground hover:text-brand"
+                    disabled={a.is_locked}
+                    onClick={() => { setEditTaskId(a.id); setEditTaskValue(""); }}
+                  >
+                    + Add task
+                  </button>
+                ) : null}
+              </div>
             </div>
             );
           })}
@@ -633,6 +686,19 @@ export function DayAssignmentPanel({
                 <span className="text-[10px] text-amber-400">required</span>
               )}
             </div>
+
+            {/* Task — optional, per-employee */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground shrink-0">Task:</span>
+              <Input
+                value={addTask}
+                onChange={(e) => setAddTask(e.target.value)}
+                placeholder="e.g. Wiring, Mounting (optional)"
+                className="h-7 text-xs"
+              />
+            </div>
+
+
 
 
             {empLoading ? (

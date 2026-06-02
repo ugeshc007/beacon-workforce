@@ -17,6 +17,7 @@ export interface ScheduleAssignment {
   employee_skill: string;
   project_name: string;
   work_location: "in_house" | "site" | null;
+  task: string | null;
 }
 
 export interface MaintenanceScheduleItem {
@@ -60,7 +61,7 @@ export function useWeekAssignments(weekStart: string, weekEnd: string, projectId
     queryFn: async () => {
       let query = supabase
         .from("project_assignments")
-        .select("id, project_id, employee_id, date, shift_start, shift_end, assignment_mode, is_locked, assigned_role, work_location, employees(name, skill_type), projects(name)")
+        .select("id, project_id, employee_id, date, shift_start, shift_end, assignment_mode, is_locked, assigned_role, work_location, task, employees(name, skill_type), projects(name)")
         .gte("date", weekStart)
         .lte("date", weekEnd)
         .order("date");
@@ -86,6 +87,7 @@ export function useWeekAssignments(weekStart: string, weekEnd: string, projectId
         employee_skill: a.employees?.skill_type ?? "helper",
         project_name: a.projects?.name ?? "Unknown",
         work_location: a.work_location ?? null,
+        task: a.task ?? null,
       })) as ScheduleAssignment[];
     },
   });
@@ -209,6 +211,7 @@ export function useAddAssignment() {
       assignment_mode?: "manual" | "auto" | "hybrid";
       assigned_role?: string;
       work_location: "in_house" | "site";
+      task?: string | null;
     }) => {
       if (payload.work_location !== "in_house" && payload.work_location !== "site") {
         throw new Error("Work location (Site or In-House) is required");
@@ -254,6 +257,7 @@ export function useAddAssignment() {
           assignment_mode: payload.assignment_mode ?? "manual",
           assigned_role: payload.assigned_role ?? "team_member",
           work_location: payload.work_location,
+          task: payload.task?.trim() ? payload.task.trim() : null,
         })
         .select()
         .single();
@@ -306,10 +310,11 @@ export function useRemoveAssignment() {
 export function useUpdateAssignment() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, shift_start, shift_end }: { id: string; shift_start?: string; shift_end?: string }) => {
-      const updates: { shift_start?: string; shift_end?: string } = {};
+    mutationFn: async ({ id, shift_start, shift_end, task }: { id: string; shift_start?: string; shift_end?: string; task?: string | null }) => {
+      const updates: { shift_start?: string; shift_end?: string; task?: string | null } = {};
       if (shift_start !== undefined) updates.shift_start = shift_start;
       if (shift_end !== undefined) updates.shift_end = shift_end;
+      if (task !== undefined) updates.task = task && task.trim() ? task.trim() : null;
       const { error } = await supabase.from("project_assignments").update(updates).eq("id", id);
       if (error) throw error;
     },
