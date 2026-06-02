@@ -97,7 +97,16 @@ export function TeamAssignDialog({ open, onOpenChange, projectId, existingEmploy
             >
               In-House
             </Button>
-          </div>
+        </div>
+
+        <div className="space-y-1">
+          <Label className="text-xs">Task <span className="text-muted-foreground">(optional)</span></Label>
+          <Input
+            placeholder="e.g. Wiring, Mounting LED panel..."
+            value={task}
+            onChange={(e) => setTask(e.target.value)}
+          />
+        </div>
         </div>
 
         <div className="relative">
