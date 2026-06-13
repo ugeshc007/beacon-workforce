@@ -83,6 +83,22 @@ const App = () => (
             <Route path="profile" element={<MobileProfile />} />
           </Route>
 
+          {/* ── Super Admin Console ── */}
+          <Route
+            element={
+              <AuthProvider>
+                <ProtectedRoute>
+                  <SuperAdminLayout />
+                </ProtectedRoute>
+              </AuthProvider>
+            }
+          >
+            <Route path="/admin" element={<SuperAdminOverview />} />
+            <Route path="/admin/companies" element={<CompaniesPage />} />
+            <Route path="/admin/users" element={<AdminComingSoon title="Users" />} />
+            <Route path="/admin/activity" element={<AdminComingSoon title="Platform Activity" />} />
+          </Route>
+
           {/* ── Admin Portal Routes ── */}
           <Route path="/login" element={<AuthProvider><Login /></AuthProvider>} />
           <Route path="/forgot-password" element={<AuthProvider><ForgotPassword /></AuthProvider>} />
