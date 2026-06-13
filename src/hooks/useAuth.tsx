@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 
-type UserRole = "admin" | "manager" | "team_leader" | "employee";
+type UserRole = "super_admin" | "admin" | "manager" | "team_leader" | "employee";
 
 interface AuthUser {
   id: string;
@@ -11,6 +11,7 @@ interface AuthUser {
   name: string;
   role: UserRole | null;
   branchId: string | null;
+  companyId: string | null;
 }
 
 interface AuthContextType {
@@ -19,6 +20,7 @@ interface AuthContextType {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  isSuperAdmin: boolean;
   isAdmin: boolean;
   isManager: boolean;
   isTeamLeader: boolean;
