@@ -1,5 +1,4 @@
 import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse } from "../_shared/helpers.ts";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 // Admin/Manager creates a Supabase Auth account for an employee
 // and links the auth_id back to the employees row.
@@ -17,7 +16,7 @@ Deno.serve(async (req) => {
 
     const { data: callerUser } = await supabase
       .from("users")
-      .select("id")
+      .select("id, company_id")
       .eq("auth_id", caller.id)
       .single();
     if (!callerUser) return errorResponse("Caller not found in users table", 403);
@@ -26,10 +25,11 @@ Deno.serve(async (req) => {
       .from("user_roles")
       .select("role")
       .eq("user_id", callerUser.id)
-      .in("role", ["admin", "manager"])
+      .in("role", ["admin", "manager", "super_admin"])
       .limit(1)
       .single();
     if (!callerRole) return errorResponse("Only admin/manager can create employee accounts", 403);
+    const isSuperAdmin = callerRole.role === "super_admin";
 
     const { employee_id, email, password, name } = await req.json();
     if (!employee_id || !email || !password) {
@@ -39,11 +39,16 @@ Deno.serve(async (req) => {
     // Check employee exists and has no auth_id yet
     const { data: emp } = await supabase
       .from("employees")
-      .select("id, auth_id, name")
+      .select("id, auth_id, name, company_id")
       .eq("id", employee_id)
       .single();
     if (!emp) return errorResponse("Employee not found", 404);
     if (emp.auth_id) return errorResponse("Employee already has an auth account");
+
+    // Tenant guard: caller must be super_admin or in the same company as the target employee
+    if (!isSuperAdmin && emp.company_id !== callerUser.company_id) {
+      return errorResponse("Forbidden: employee belongs to another company", 403);
+    }
 
     // Create Supabase Auth user
     const { data: newUser, error: createErr } = await supabase.auth.admin.createUser({
