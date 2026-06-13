@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 1) Check the users table (admin/manager/team_leader)
       const { data: userData } = await supabase
         .from("users")
-        .select("id, name, email, branch_id, auth_id")
+        .select("id, name, email, branch_id, auth_id, company_id")
         .eq("auth_id", authUser.id)
         .single();
 
@@ -57,18 +57,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           name: userData.name,
           role: (roleData?.role as UserRole) ?? null,
           branchId: userData.branch_id,
+          companyId: userData.company_id ?? null,
         };
       }
 
       // 2) Fallback: check the employees table (field workers)
       const { data: empData } = await supabase
         .from("employees")
-        .select("id, name, email, branch_id, auth_id, skill_type")
+        .select("id, name, email, branch_id, auth_id, skill_type, company_id")
         .eq("auth_id", authUser.id)
         .single();
 
       if (empData) {
-        // Team leaders get the team_leader role; others get employee
         const empRole: UserRole = empData.skill_type === "team_leader" ? "team_leader" : "employee";
         return {
           id: empData.id,
@@ -77,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           name: empData.name,
           role: empRole,
           branchId: empData.branch_id,
+          companyId: empData.company_id ?? null,
         };
       }
 
