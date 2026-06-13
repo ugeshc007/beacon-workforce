@@ -67,6 +67,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <TenantProvider>
         <Routes>
           {/* ── Mobile App Routes ── */}
           <Route path="/m/login" element={<MobileAuthProvider><MobileLogin /></MobileAuthProvider>} />
