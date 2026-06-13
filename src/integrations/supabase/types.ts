@@ -274,7 +274,7 @@ export type Database = {
         Insert: {
           address?: string | null
           city?: string | null
-          company_id: string
+          company_id?: string
           created_at?: string
           id?: string
           manager_id?: string | null
@@ -769,7 +769,7 @@ export type Database = {
           auth_id?: string | null
           basic_salary?: number
           branch_id: string
-          company_id: string
+          company_id?: string
           created_at?: string
           custom_skill_id?: string | null
           designation?: string | null
@@ -1639,7 +1639,7 @@ export type Database = {
           client_email?: string | null
           client_name?: string | null
           client_phone?: string | null
-          company_id: string
+          company_id?: string
           created_at?: string
           created_by?: string | null
           end_date?: string | null
