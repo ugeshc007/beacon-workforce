@@ -5,9 +5,14 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import { MobileAuthProvider } from "@/hooks/useMobileAuth";
+import { TenantProvider } from "@/hooks/useTenant";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { ModuleGuard } from "@/components/auth/ModuleGuard";
 import { AppLayout } from "@/components/layout/AppLayout";
+import SuperAdminLayout from "./pages/admin/SuperAdminLayout";
+import SuperAdminOverview from "./pages/admin/SuperAdminOverview";
+import CompaniesPage from "./pages/admin/CompaniesPage";
+import AdminComingSoon from "./pages/admin/ComingSoon";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
@@ -62,6 +67,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <TenantProvider>
         <Routes>
           {/* ── Mobile App Routes ── */}
           <Route path="/m/login" element={<MobileAuthProvider><MobileLogin /></MobileAuthProvider>} />
@@ -75,6 +81,22 @@ const App = () => (
             <Route path="site-visits/:id" element={<MobileSiteVisitDetail />} />
             <Route path="project/:projectId" element={<MobileProjectWorkflow />} />
             <Route path="profile" element={<MobileProfile />} />
+          </Route>
+
+          {/* ── Super Admin Console ── */}
+          <Route
+            element={
+              <AuthProvider>
+                <ProtectedRoute>
+                  <SuperAdminLayout />
+                </ProtectedRoute>
+              </AuthProvider>
+            }
+          >
+            <Route path="/admin" element={<SuperAdminOverview />} />
+            <Route path="/admin/companies" element={<CompaniesPage />} />
+            <Route path="/admin/users" element={<AdminComingSoon title="Users" />} />
+            <Route path="/admin/activity" element={<AdminComingSoon title="Platform Activity" />} />
           </Route>
 
           {/* ── Admin Portal Routes ── */}
@@ -121,6 +143,7 @@ const App = () => (
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </TenantProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
