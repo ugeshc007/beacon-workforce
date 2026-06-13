@@ -2335,7 +2335,7 @@ export type Database = {
         | "team_leader"
         | "team_member"
         | "driver"
-      user_role: "admin" | "manager" | "team_leader"
+      user_role: "admin" | "manager" | "team_leader" | "super_admin"
       work_location_type: "in_house" | "site"
     }
     CompositeTypes: {
@@ -2505,7 +2505,7 @@ export const Constants = {
         "team_member",
         "driver",
       ],
-      user_role: ["admin", "manager", "team_leader"],
+      user_role: ["admin", "manager", "team_leader", "super_admin"],
       work_location_type: ["in_house", "site"],
     },
   },
