@@ -313,6 +313,7 @@ export type Database = {
           contact_phone: string | null
           created_at: string
           currency: string
+          domain: string | null
           id: string
           is_active: boolean
           locale: string
@@ -330,6 +331,7 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string
           currency?: string
+          domain?: string | null
           id?: string
           is_active?: boolean
           locale?: string
@@ -347,6 +349,7 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string
           currency?: string
+          domain?: string | null
           id?: string
           is_active?: boolean
           locale?: string
@@ -2501,6 +2504,18 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
+      resolve_tenant: {
+        Args: { _host?: string; _slug?: string }
+        Returns: {
+          accent_color: string
+          id: string
+          is_active: boolean
+          logo_url: string
+          name: string
+          primary_color: string
+          slug: string
+        }[]
+      }
       update_absent_check_cron: {
         Args: { cron_expr: string }
         Returns: undefined
