@@ -265,6 +265,7 @@ export type Database = {
         Row: {
           address: string | null
           city: string | null
+          company_id: string
           created_at: string
           id: string
           manager_id: string | null
@@ -273,6 +274,7 @@ export type Database = {
         Insert: {
           address?: string | null
           city?: string | null
+          company_id?: string
           created_at?: string
           id?: string
           manager_id?: string | null
@@ -281,6 +283,7 @@ export type Database = {
         Update: {
           address?: string | null
           city?: string | null
+          company_id?: string
           created_at?: string
           id?: string
           manager_id?: string | null
@@ -288,10 +291,141 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "branches_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fk_branches_manager"
             columns: ["manager_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      companies: {
+        Row: {
+          accent_color: string | null
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          currency: string
+          id: string
+          is_active: boolean
+          locale: string
+          logo_url: string | null
+          name: string
+          plan: string
+          primary_color: string | null
+          slug: string
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          accent_color?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          is_active?: boolean
+          locale?: string
+          logo_url?: string | null
+          name: string
+          plan?: string
+          primary_color?: string | null
+          slug: string
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          accent_color?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          is_active?: boolean
+          locale?: string
+          logo_url?: string | null
+          name?: string
+          plan?: string
+          primary_color?: string | null
+          slug?: string
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      company_features: {
+        Row: {
+          company_id: string
+          config: Json | null
+          enabled: boolean
+          id: string
+          module: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          config?: Json | null
+          enabled?: boolean
+          id?: string
+          module: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          config?: Json | null
+          enabled?: boolean
+          id?: string
+          module?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_features_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_settings: {
+        Row: {
+          company_id: string
+          id: string
+          is_encrypted: boolean
+          key: string
+          updated_at: string
+          value: string | null
+        }
+        Insert: {
+          company_id: string
+          id?: string
+          is_encrypted?: boolean
+          key: string
+          updated_at?: string
+          value?: string | null
+        }
+        Update: {
+          company_id?: string
+          id?: string
+          is_encrypted?: boolean
+          key?: string
+          updated_at?: string
+          value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_settings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
@@ -612,6 +746,7 @@ export type Database = {
           auth_id: string | null
           basic_salary: number
           branch_id: string
+          company_id: string
           created_at: string
           custom_skill_id: string | null
           designation: string | null
@@ -634,6 +769,7 @@ export type Database = {
           auth_id?: string | null
           basic_salary?: number
           branch_id: string
+          company_id?: string
           created_at?: string
           custom_skill_id?: string | null
           designation?: string | null
@@ -656,6 +792,7 @@ export type Database = {
           auth_id?: string | null
           basic_salary?: number
           branch_id?: string
+          company_id?: string
           created_at?: string
           custom_skill_id?: string | null
           designation?: string | null
@@ -680,6 +817,13 @@ export type Database = {
             columns: ["branch_id"]
             isOneToOne: false
             referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employees_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
           {
@@ -965,6 +1109,53 @@ export type Database = {
             columns: ["branch_id"]
             isOneToOne: false
             referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pending_invitations: {
+        Row: {
+          accepted_at: string | null
+          branch_id: string | null
+          company_id: string
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          branch_id?: string | null
+          company_id: string
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          branch_id?: string | null
+          company_id?: string
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_invitations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
@@ -1414,6 +1605,7 @@ export type Database = {
           client_email: string | null
           client_name: string | null
           client_phone: string | null
+          company_id: string
           created_at: string
           created_by: string | null
           end_date: string | null
@@ -1447,6 +1639,7 @@ export type Database = {
           client_email?: string | null
           client_name?: string | null
           client_phone?: string | null
+          company_id?: string
           created_at?: string
           created_by?: string | null
           end_date?: string | null
@@ -1480,6 +1673,7 @@ export type Database = {
           client_email?: string | null
           client_name?: string | null
           client_phone?: string | null
+          company_id?: string
           created_at?: string
           created_by?: string | null
           end_date?: string | null
@@ -1513,6 +1707,13 @@ export type Database = {
             columns: ["branch_id"]
             isOneToOne: false
             referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
           {
@@ -2225,6 +2426,7 @@ export type Database = {
           auth_id: string | null
           avatar_url: string | null
           branch_id: string | null
+          company_id: string | null
           created_at: string
           email: string
           id: string
@@ -2237,6 +2439,7 @@ export type Database = {
           auth_id?: string | null
           avatar_url?: string | null
           branch_id?: string | null
+          company_id?: string | null
           created_at?: string
           email: string
           id?: string
@@ -2249,6 +2452,7 @@ export type Database = {
           auth_id?: string | null
           avatar_url?: string | null
           branch_id?: string | null
+          company_id?: string | null
           created_at?: string
           email?: string
           id?: string
@@ -2265,6 +2469,13 @@ export type Database = {
             referencedRelation: "branches"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "users_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
@@ -2279,6 +2490,7 @@ export type Database = {
         Returns: boolean
       }
       get_user_branch_id: { Args: never; Returns: string }
+      get_user_company_id: { Args: never; Returns: string }
       get_user_id: { Args: never; Returns: string }
       has_role: {
         Args: {
@@ -2288,6 +2500,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      is_super_admin: { Args: never; Returns: boolean }
       update_absent_check_cron: {
         Args: { cron_expr: string }
         Returns: undefined
@@ -2335,7 +2548,7 @@ export type Database = {
         | "team_leader"
         | "team_member"
         | "driver"
-      user_role: "admin" | "manager" | "team_leader"
+      user_role: "admin" | "manager" | "team_leader" | "super_admin"
       work_location_type: "in_house" | "site"
     }
     CompositeTypes: {
@@ -2505,7 +2718,7 @@ export const Constants = {
         "team_member",
         "driver",
       ],
-      user_role: ["admin", "manager", "team_leader"],
+      user_role: ["admin", "manager", "team_leader", "super_admin"],
       work_location_type: ["in_house", "site"],
     },
   },
