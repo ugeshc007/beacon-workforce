@@ -233,6 +233,8 @@ function OnboardingWizard({ open, onOpenChange, onCreated }: { open: boolean; on
           admin_email: state.admin_email,
           admin_name: state.admin_name,
           branch_name: state.branch_name || `${state.name} HQ`,
+          temp_password: state.temp_password || undefined,
+
         },
       });
       if (error) throw error;
