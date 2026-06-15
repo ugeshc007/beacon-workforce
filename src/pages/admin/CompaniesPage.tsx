@@ -178,7 +178,7 @@ const initialState: WizardState = {
   currency: "AED", timezone: "Asia/Dubai", locale: "en",
   plan: "standard",
   modules: ALL_MODULES.map((m) => m.id),
-  admin_email: "", admin_name: "", branch_name: "",
+  admin_email: "", admin_name: "", branch_name: "", temp_password: "",
 };
 
 const slugify = (v: string) => v.toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40);
