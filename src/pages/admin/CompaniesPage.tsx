@@ -448,7 +448,7 @@ function OnboardingWizard({ open, onOpenChange, onCreated }: { open: boolean; on
 
           {step === 4 && (
             <div className="space-y-4">
-              <p className="text-sm text-slate-400">We'll create an admin account and email them an invite to set their password.</p>
+              <p className="text-sm text-slate-400">We'll create an admin account. Leave the temp password blank to send an invite email, or set one to give the admin instant access.</p>
               <div>
                 <Label className="text-slate-400">Admin full name</Label>
                 <Input value={state.admin_name} onChange={(e) => update("admin_name", e.target.value)}
@@ -459,8 +459,14 @@ function OnboardingWizard({ open, onOpenChange, onCreated }: { open: boolean; on
                 <Input type="email" value={state.admin_email} onChange={(e) => update("admin_email", e.target.value)}
                   className="bg-slate-950 border-slate-800" placeholder="admin@acme.com" />
               </div>
+              <div>
+                <Label className="text-slate-400">Temporary password <span className="text-slate-600">(optional)</span></Label>
+                <Input value={state.temp_password} onChange={(e) => update("temp_password", e.target.value)}
+                  className="bg-slate-950 border-slate-800 font-mono" placeholder="leave blank to email an invite" />
+              </div>
               <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3 text-xs text-slate-400">
                 <div className="flex items-center gap-2 text-slate-300 mb-1"><Mail className="h-3.5 w-3.5" /> What happens on submit</div>
+
                 <ul className="list-disc pl-5 space-y-1">
                   <li>Tenant <b className="text-slate-200">{state.name || "—"}</b> is created at <span className="font-mono">{state.slug}.planner.bebright.global</span></li>
                   <li>{state.modules.length} modules enabled · {state.plan} plan</li>
