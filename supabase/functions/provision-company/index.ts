@@ -33,7 +33,9 @@ Deno.serve(async (req) => {
       name, slug, domain, contact_email, contact_phone,
       primary_color, accent_color, currency, timezone, locale, plan,
       logo_url, modules, admin_email, admin_name, branch_name,
+      temp_password,
     } = body || {};
+
 
     if (!name || !slug || !admin_email) {
       return errorResponse("name, slug, and admin_email are required");
