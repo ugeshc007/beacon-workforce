@@ -166,7 +166,9 @@ interface WizardState {
   admin_email: string;
   admin_name: string;
   branch_name: string;
+  temp_password: string;
 }
+
 
 const initialState: WizardState = {
   name: "", slug: "", domain: "",
