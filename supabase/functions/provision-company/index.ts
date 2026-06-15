@@ -96,6 +96,7 @@ Deno.serve(async (req) => {
     } else {
       const { data: created, error: createErr } = await supabase.auth.admin.createUser({
         email: admin_email,
+        password: temp_password || undefined,
         email_confirm: true,
         user_metadata: { full_name: admin_name || admin_email, company_id: company.id },
       });
@@ -105,6 +106,7 @@ Deno.serve(async (req) => {
         return errorResponse("Failed to create admin auth user: " + createErr.message, 400);
       }
       authUserId = created.user!.id;
+
     }
 
     // ---- Ensure users row, scoped to new company ----
