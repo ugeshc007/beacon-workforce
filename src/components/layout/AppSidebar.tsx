@@ -60,7 +60,7 @@ export function AppSidebar() {
   const location = useLocation();
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + "/");
   const { permissions } = useMyPermissions();
-  const { isAdmin, isEmployee } = useAuth();
+  const { isAdmin, isEmployee, isSuperAdmin } = useAuth();
 
   const canView = (module: string) => {
     if (isAdmin) return true;
