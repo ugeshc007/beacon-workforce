@@ -213,8 +213,8 @@ export default function MobileHome() {
         </Card>
       )}
 
-      {/* Upcoming assignments — tomorrow and beyond */}
-      {step === "idle" && !!upcomingProjects?.length && (
+      {/* Upcoming assignments — tomorrow and beyond (always visible) */}
+      {!!upcomingProjects?.length && (
         <Card className="p-4 border-border/50 bg-card">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Upcoming</p>
           <div className="space-y-2">
