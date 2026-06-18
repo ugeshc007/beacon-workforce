@@ -17,8 +17,22 @@ const statusColors: Record<string, string> = {
 
 export default function MobileSiteVisits() {
   const { employee } = useMobileAuth();
-  const { data: today = [], isLoading: todayLoading } = useMyTodaySiteVisits(employee?.id ?? null);
-  const { data: allVisits = [], isLoading } = useMySiteVisits(employee?.id ?? null);
+  const { data: today = [], isLoading: todayLoading, refetch: refetchToday } = useMyTodaySiteVisits(employee?.id ?? null);
+  const { data: allVisits = [], isLoading, refetch: refetchAll } = useMySiteVisits(employee?.id ?? null);
+
+  // Timeout state: if still loading after 8s, show a retry hint instead of an infinite spinner.
+  const [slowLoad, setSlowLoad] = useState(false);
+  useEffect(() => {
+    if (!todayLoading && !isLoading) { setSlowLoad(false); return; }
+    const t = setTimeout(() => setSlowLoad(true), 8000);
+    return () => clearTimeout(t);
+  }, [todayLoading, isLoading]);
+
+  const handleRetry = () => {
+    setSlowLoad(false);
+    refetchToday();
+    refetchAll();
+  };
 
   // Other = not in today's list
   const todayIds = new Set(today.map((t) => t.visit.id));
@@ -27,17 +41,35 @@ export default function MobileSiteVisits() {
   return (
     <div className="p-4 pb-24 space-y-4 safe-area-inset">
       <div>
-        <h1 className="text-xl font-bold text-foreground">My Site Visits</h1>
-        <p className="text-sm text-muted-foreground">Sequential — finish one before starting the next</p>
+        <h1 className="text-base font-bold text-foreground">My Site Visits</h1>
+        <p className="text-[11px] text-muted-foreground">Sequential — finish one before starting the next</p>
       </div>
 
       {/* Today */}
       <section className="space-y-2">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Today</h2>
         {todayLoading ? (
-          <p className="text-sm text-muted-foreground text-center py-4">Loading...</p>
+          slowLoad ? (
+            <Card className="p-4 text-center space-y-2">
+              <p className="text-sm text-muted-foreground">Could not load visits.</p>
+              <Button size="sm" variant="outline" onClick={handleRetry} className="gap-1.5">
+                <RotateCcw className="h-3.5 w-3.5" /> Retry
+              </Button>
+            </Card>
+          ) : (
+            <div className="space-y-2">
+              {[0, 1].map((i) => (
+                <Card key={i} className="p-4 border-border/50">
+                  <div className="animate-pulse space-y-2">
+                    <div className="h-4 w-1/2 bg-muted/50 rounded" />
+                    <div className="h-3 w-3/4 bg-muted/40 rounded" />
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )
         ) : today.length === 0 ? (
-          <Card className="p-6 text-center text-sm text-muted-foreground">No site visits for today.</Card>
+          <Card className="p-6 text-center text-sm text-muted-foreground">No visits assigned today.</Card>
         ) : (
           today.map(({ visit: v, isActive, isCompleted, isLocked }) => {
             const stateBadge = isCompleted ? (
