@@ -154,16 +154,27 @@ export function useWeekSiteVisits(weekStart: string, weekEnd: string) {
   });
 }
 
-/** Check if two time ranges overlap. If either has no times set, assume full-day overlap. */
+/** Convert "HH:MM" / "HH:MM:SS" to minutes since midnight. */
+function toMinutes(t: string): number {
+  const [h, m] = t.split(":").map(Number);
+  return (h || 0) * 60 + (m || 0);
+}
+
+/** Check if two time ranges overlap. If either has no times set, assume full-day overlap.
+ *  Handles shifts that cross midnight (end <= start → end is next day). */
 function timesOverlap(
   s1: string | null, e1: string | null,
   s2: string | null, e2: string | null,
 ): boolean {
-  // If either assignment has no shift times, treat as full-day → always overlaps
   if (!s1 || !e1 || !s2 || !e2) return true;
-  // Times are "HH:MM" or "HH:MM:SS" strings — lexicographic comparison works
-  return s1 < e2 && s2 < e1;
+  let a1 = toMinutes(s1), b1 = toMinutes(e1);
+  let a2 = toMinutes(s2), b2 = toMinutes(e2);
+  // Treat 00:00 / wrap-around end as end-of-day (24h) so overnight shifts are handled.
+  if (b1 <= a1) b1 += 24 * 60;
+  if (b2 <= a2) b2 += 24 * 60;
+  return a1 < b2 && a2 < b1;
 }
+
 
 export function useDetectConflicts(assignments: ScheduleAssignment[]): ConflictInfo[] {
   // Group assignments by employee+date
