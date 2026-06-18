@@ -43,6 +43,7 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-md space-y-8">
         {/* Logo */}
+        <div className="flex flex-col items-center gap-3">
           <img src={tenant?.logo_url || "/bebright-logo.png"} alt={tenant?.name || "BeBright"} className="h-12 w-auto" />
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gradient-brand">Planner</h1>
