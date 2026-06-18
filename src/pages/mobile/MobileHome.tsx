@@ -149,17 +149,16 @@ export default function MobileHome() {
       {/* Greeting */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-foreground">
+          <h1 className="text-lg font-bold text-foreground leading-tight">
             Hello, {employee?.name?.split(" ")[0] || "Worker"}
           </h1>
-          <p className="text-sm text-muted-foreground">{employee?.employeeCode}</p>
+          <p className="text-xs text-muted-foreground">{employee?.employeeCode}</p>
         </div>
         <div className="text-right">
-          <p className="text-2xl font-mono font-bold text-foreground">{timeStr}</p>
-          <div className="flex items-center gap-1 justify-end">
-            {isOnline ? <Wifi className="h-3.5 w-3.5 text-green-400" /> : <WifiOff className="h-3.5 w-3.5 text-red-400" />}
-            <span className="text-xs text-muted-foreground">{isOnline ? "Online" : "Offline"}</span>
-          </div>
+          <p className="text-xl font-mono font-bold text-foreground leading-none">{timeStr}</p>
+          <p className="text-[10px] text-muted-foreground mt-1">
+            {new Date().toLocaleDateString("en-AE", { weekday: "short", day: "2-digit", month: "short", timeZone: "Asia/Dubai" })}
+          </p>
         </div>
       </div>
 
