@@ -15,6 +15,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { signIn } = useAuth();
+  const { tenant } = useTenant();
   const navigate = useNavigate();
   const { toast } = useToast();
 
