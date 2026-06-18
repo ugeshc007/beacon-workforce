@@ -32,7 +32,7 @@ export function MapPicker({ open, onClose, onConfirm, initialLat = 25.2048, init
   const mapUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${lng - 0.005},${lat - 0.005},${lng + 0.005},${lat + 0.005}&layer=mapnik&marker=${lat},${lng}`;
 
   return (
-    <div className="fixed inset-0 z-50 bg-background/95 flex flex-col safe-area-inset">
+    <div className="fixed inset-0 z-[100] bg-background flex flex-col safe-area-inset">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border/50">
         <div className="flex items-center gap-2">
