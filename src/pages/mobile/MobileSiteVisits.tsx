@@ -17,8 +17,13 @@ const statusColors: Record<string, string> = {
 
 export default function MobileSiteVisits() {
   const { employee } = useMobileAuth();
-  const { data: today = [], isLoading: todayLoading, refetch: refetchToday } = useMyTodaySiteVisits(employee?.id ?? null);
-  const { data: allVisits = [], isLoading, refetch: refetchAll } = useMySiteVisits(employee?.id ?? null);
+  const { data: today = [], isLoading: rawTodayLoading, refetch: refetchToday } = useMyTodaySiteVisits(employee?.id ?? null);
+  const { data: allVisits = [], isLoading: rawAllLoading, refetch: refetchAll } = useMySiteVisits(employee?.id ?? null);
+
+  // React-Query keeps isLoading=true when query is disabled (no employeeId).
+  // Treat it as "not loading" so we render the proper empty state instead of skeletons.
+  const todayLoading = !!employee?.id && rawTodayLoading;
+  const isLoading = !!employee?.id && rawAllLoading;
 
   // Timeout state: if still loading after 8s, show a retry hint instead of an infinite spinner.
   const [slowLoad, setSlowLoad] = useState(false);
