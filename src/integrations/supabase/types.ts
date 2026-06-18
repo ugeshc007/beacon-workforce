@@ -2503,6 +2503,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      is_company_admin: { Args: { _company_id: string }; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
       resolve_tenant: {
         Args: { _host?: string; _slug?: string }
