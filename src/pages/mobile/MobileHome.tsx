@@ -23,6 +23,7 @@ export default function MobileHome() {
   const navigate = useNavigate();
   const { step, attendanceLog, availableActions, loading, actionLoading, executeAction } = useMobileWorkflow();
   const { data: todayProjects, isLoading: projectsLoading } = useTodayProjects();
+  const { data: upcomingProjects } = useUpcomingProjects(7);
   const { startTracking, stopTracking } = useBackgroundTracking();
   const { toast } = useToast();
   const [currentTime, setCurrentTime] = useState(new Date());
