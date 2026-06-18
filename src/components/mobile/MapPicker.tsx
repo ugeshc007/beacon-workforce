@@ -85,8 +85,11 @@ export function MapPicker({ open, onClose, onConfirm, initialLat = 25.2048, init
         </div>
       </div>
 
-      {/* Confirm button */}
-      <div className="p-4 pb-8">
+      {/* Confirm button — sticky above any nav, with safe-area padding */}
+      <div
+        className="sticky bottom-0 left-0 right-0 p-4 bg-background border-t border-border/50"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)" }}
+      >
         <Button
           className="w-full h-12 text-base font-bold rounded-xl"
           onClick={handleConfirm}
