@@ -46,6 +46,7 @@ import Maintenance from "./pages/Maintenance";
 import MaintenanceDetail from "./pages/MaintenanceDetail";
 import SiteVisits from "./pages/SiteVisits";
 import SiteVisitDetail from "./pages/SiteVisitDetail";
+import RecurringJobs from "./pages/RecurringJobs";
 
 // Mobile screens
 import MobileLogin from "./pages/mobile/MobileLogin";
@@ -124,6 +125,7 @@ const App = () => (
             <Route path="/attendance/daily" element={<ModuleGuard module="attendance"><DailyTeam /></ModuleGuard>} />
             <Route path="/travel" element={<ModuleGuard module="attendance"><Travel /></ModuleGuard>} />
             <Route path="/timesheets" element={<ModuleGuard module="timesheets"><Timesheets /></ModuleGuard>} />
+            <Route path="/recurring-jobs" element={<ModuleGuard module="projects"><RecurringJobs /></ModuleGuard>} />
             <Route path="/maintenance" element={<ModuleGuard module="maintenance"><Maintenance /></ModuleGuard>} />
             <Route path="/maintenance/:id" element={<ModuleGuard module="maintenance"><MaintenanceDetail /></ModuleGuard>} />
             <Route path="/site-visits" element={<ModuleGuard module="site_visits"><SiteVisits /></ModuleGuard>} />

@@ -12,6 +12,7 @@ import {
   ClipboardList,
   HelpCircle,
   Shield,
+  Repeat,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -35,6 +36,7 @@ import { useTenant } from "@/hooks/useTenant";
 const mainNav = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, module: "dashboard" },
   { title: "Projects", url: "/projects", icon: FolderKanban, module: "projects" },
+  { title: "Recurring Jobs", url: "/recurring-jobs", icon: Repeat, module: "projects" },
   { title: "Maintenance", url: "/maintenance", icon: Wrench, module: "maintenance" },
   { title: "Site Visits", url: "/site-visits", icon: ClipboardList, module: "site_visits" },
   { title: "Employees", url: "/employees", icon: Users, module: "employees" },
