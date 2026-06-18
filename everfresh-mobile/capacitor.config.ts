@@ -21,7 +21,7 @@ const isDev = process.env.CAPACITOR_DEV === 'true';
 
 const config: CapacitorConfig = {
   appId: 'ae.everfresh.planner',
-  appName: 'Everfresh Planner',
+  appName: 'EverFresh',
   // Web bundle lives at the project root, one level up from this folder.
   webDir: '../dist',
   ...(isDev && {
@@ -35,7 +35,7 @@ const config: CapacitorConfig = {
       launchShowDuration: 2000,
       launchAutoHide: true,
       // Everfresh brand green — swap to your exact brand hex if different.
-      backgroundColor: '#0F7A3D',
+      backgroundColor: '#EFFFFA',
       showSpinner: false,
       androidScaleType: 'CENTER_INSIDE',
       splashFullScreen: true,
