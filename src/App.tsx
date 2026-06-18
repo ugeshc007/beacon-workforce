@@ -46,6 +46,7 @@ import Maintenance from "./pages/Maintenance";
 import MaintenanceDetail from "./pages/MaintenanceDetail";
 import SiteVisits from "./pages/SiteVisits";
 import SiteVisitDetail from "./pages/SiteVisitDetail";
+import RecurringJobs from "./pages/RecurringJobs";
 
 // Mobile screens
 import MobileLogin from "./pages/mobile/MobileLogin";
