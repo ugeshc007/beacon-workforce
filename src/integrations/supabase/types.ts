@@ -1890,6 +1890,7 @@ export type Database = {
           lat: number | null
           lng: number | null
           notes: string | null
+          project_id: string | null
           required_skills: string[] | null
           site_name: string | null
           skip_holidays: boolean
@@ -1917,6 +1918,7 @@ export type Database = {
           lat?: number | null
           lng?: number | null
           notes?: string | null
+          project_id?: string | null
           required_skills?: string[] | null
           site_name?: string | null
           skip_holidays?: boolean
@@ -1944,6 +1946,7 @@ export type Database = {
           lat?: number | null
           lng?: number | null
           notes?: string | null
+          project_id?: string | null
           required_skills?: string[] | null
           site_name?: string | null
           skip_holidays?: boolean
@@ -1958,6 +1961,13 @@ export type Database = {
             columns: ["branch_id"]
             isOneToOne: false
             referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_jobs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
