@@ -102,7 +102,7 @@ export const HoldToConfirm = forwardRef<HTMLButtonElement, HoldToConfirmProps>(f
         "transition-transform duration-100",
         heightCls,
         isPrimary
-          ? "bg-primary text-primary-foreground"
+          ? "bg-primary text-white"
           : "bg-secondary text-secondary-foreground border border-border",
         disabled && "opacity-50 cursor-not-allowed",
         holding && "scale-[0.98]",

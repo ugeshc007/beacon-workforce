@@ -139,7 +139,7 @@ export default function MobileHome() {
   const allInHouseDay = !!todayProjects?.length && todayProjects.every((p) => p.workLocation === "in_house");
 
   return (
-    <div className="flex flex-col gap-4 p-4 pb-24 safe-area-inset">
+    <div className="flex flex-col gap-4 px-4 pb-24 safe-area-inset" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 3rem)' }}>
       {/* Greeting */}
       <div className="flex items-center justify-between">
         <div>

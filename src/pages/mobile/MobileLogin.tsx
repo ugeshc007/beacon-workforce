@@ -47,13 +47,13 @@ export default function MobileLogin() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background px-6 safe-area-inset">
       {/* Logo area */}
-      <div className="flex flex-col items-center gap-4 mb-8">
-        <div className="w-20 h-20 flex items-center justify-center">
-          <img src={bebrightLogo} alt="BeBright" className="w-full h-full object-contain drop-shadow-lg" />
+      <div className="flex flex-col items-center gap-5 mb-10">
+        <div className="w-32 h-32 flex items-center justify-center rounded-3xl bg-white/95 p-4 shadow-[0_8px_30px_-6px_hsl(var(--brand)/0.35)] ring-1 ring-white/10">
+          <img src={bebrightLogo} alt="Logo" className="w-full h-full object-contain" />
         </div>
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-foreground">BeBright</h1>
-          <p className="text-sm text-muted-foreground mt-1">Field Worker App</p>
+          <h1 className="text-2xl font-bold text-foreground">Field Worker App</h1>
+          <p className="text-sm text-muted-foreground mt-1">Sign in to continue</p>
         </div>
       </div>
 
