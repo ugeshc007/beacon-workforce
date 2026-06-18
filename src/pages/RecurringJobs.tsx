@@ -217,6 +217,21 @@ export default function RecurringJobs() {
   );
 }
 
+function useProjectsLite() {
+  return useQuery({
+    queryKey: ["projects_lite_for_recurring"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("id, name, client_name, site_address, status")
+        .in("status", ["active", "on_hold"] as any)
+        .order("name", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
 function RecurringJobDialog({
   open, onOpenChange, job,
 }: { open: boolean; onOpenChange: (v: boolean) => void; job: RecurringJob | null }) {
@@ -224,8 +239,17 @@ function RecurringJobDialog({
   const qc = useQueryClient();
   const { data: empData } = useEmployees({ status: "active", pageSize: 500 });
   const employees = (empData as any)?.data ?? (empData as any) ?? [];
+  const { data: projects = [] } = useProjectsLite();
 
+  const customers = Array.from(
+    new Set((projects ?? []).map((p: any) => (p.client_name ?? "").trim()).filter(Boolean)),
+  ).sort();
+
+  const [projectId, setProjectId] = useState<string>(job?.project_id ?? "");
   const [clientName, setClientName] = useState(job?.client_name ?? "");
+  const [customerMode, setCustomerMode] = useState<"existing" | "new">(
+    job?.client_name && !customers.includes(job.client_name) ? "new" : "existing",
+  );
   const [siteName, setSiteName] = useState(job?.site_name ?? "");
   const [address, setAddress] = useState(job?.address ?? "");
   const [frequency, setFrequency] = useState<Frequency>(job?.frequency ?? "weekly");
@@ -243,6 +267,20 @@ function RecurringJobDialog({
     job?.recurring_job_employees?.map((e) => e.employee_id) ?? [],
   );
 
+  const selectedProject: any = projects.find((p: any) => p.id === projectId);
+  const lockedFromProject = !!selectedProject;
+
+  const handlePickProject = (id: string) => {
+    setProjectId(id);
+    const p: any = projects.find((x: any) => x.id === id);
+    if (p) {
+      setClientName(p.client_name ?? "");
+      setCustomerMode(p.client_name && !customers.includes(p.client_name) ? "new" : "existing");
+      setSiteName(p.name ?? "");
+      setAddress(p.site_address ?? "");
+    }
+  };
+
   const toggleDay = (d: number) =>
     setDaysOfWeek((prev) => prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort());
   const toggleCrew = (id: string) =>
@@ -250,7 +288,8 @@ function RecurringJobDialog({
 
   const save = useMutation({
     mutationFn: async () => {
-      const payload = {
+      const payload: any = {
+        project_id: projectId || null,
         client_name: clientName.trim(),
         site_name: siteName.trim() || null,
         address: address.trim() || null,
@@ -306,11 +345,91 @@ function RecurringJobDialog({
         </DialogHeader>
 
         <div className="grid gap-4 py-2">
-          <div className="grid grid-cols-2 gap-3">
-            <div><Label>Client *</Label><Input value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="e.g. ADCB Tower" /></div>
-            <div><Label>Site / location</Label><Input value={siteName} onChange={(e) => setSiteName(e.target.value)} placeholder="e.g. Lobby + 3 floors" /></div>
+          {/* Project + Customer picker */}
+          <div className="rounded-md border border-border bg-muted/30 p-3 space-y-3">
+            <div>
+              <Label>Link to existing project (optional)</Label>
+              <Select
+                value={projectId || "__none__"}
+                onValueChange={(v) => handlePickProject(v === "__none__" ? "" : v)}
+              >
+                <SelectTrigger className="mt-1"><SelectValue placeholder="Select a project…" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">— None (custom recurring job) —</SelectItem>
+                  {projects.map((p: any) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}{p.client_name ? ` · ${p.client_name}` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Picking a project auto-fills the customer, site and address.
+              </p>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between">
+                <Label>Customer *</Label>
+                {!lockedFromProject && (
+                  <button
+                    type="button"
+                    className="text-xs text-brand hover:underline"
+                    onClick={() => {
+                      setCustomerMode(customerMode === "existing" ? "new" : "existing");
+                      setClientName("");
+                    }}
+                  >
+                    {customerMode === "existing" ? "+ Add new customer" : "← Pick existing"}
+                  </button>
+                )}
+              </div>
+              {customerMode === "existing" && !lockedFromProject ? (
+                <Select value={clientName || "__pick__"} onValueChange={(v) => setClientName(v === "__pick__" ? "" : v)}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="Choose a customer…" /></SelectTrigger>
+                  <SelectContent>
+                    {!customers.length && <SelectItem value="__pick__" disabled>No customers yet</SelectItem>}
+                    {customers.map((c) => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  className="mt-1"
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                  placeholder="e.g. ADCB Tower"
+                  disabled={lockedFromProject}
+                />
+              )}
+            </div>
           </div>
-          <div><Label>Address</Label><Input value={address} onChange={(e) => setAddress(e.target.value)} /></div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Site / location</Label>
+              <Input
+                value={siteName}
+                onChange={(e) => setSiteName(e.target.value)}
+                placeholder="e.g. Lobby + 3 floors"
+                disabled={lockedFromProject}
+              />
+            </div>
+            <div>
+              <Label>Address</Label>
+              <Input
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                disabled={lockedFromProject}
+              />
+            </div>
+          </div>
+          {lockedFromProject && (
+            <p className="text-xs text-muted-foreground -mt-2">
+              Site & address come from <span className="text-foreground">{selectedProject?.name}</span>. Unlink the project to edit them.
+            </p>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>
