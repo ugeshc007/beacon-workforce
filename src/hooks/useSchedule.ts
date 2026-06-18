@@ -568,10 +568,16 @@ export function useAvailableEmployees(date: string, projectId: string) {
       const timeSlotsMap = new Map<string, { start: string; end: string; project: string }[]>();
       for (const a of allAssignments ?? []) {
         if (!timeSlotsMap.has(a.employee_id)) timeSlotsMap.set(a.employee_id, []);
+        const rawName = (a.projects as any)?.name ?? "Other";
+        // Recurring-job shadow projects are prefixed "[Recurring] " by the generator —
+        // surface them with a 🔁 badge so planners instantly see the conflict source.
+        const label = rawName.startsWith("[Recurring]")
+          ? `🔁 ${rawName.replace(/^\[Recurring\]\s*/, "")}`
+          : rawName;
         timeSlotsMap.get(a.employee_id)!.push({
           start: a.shift_start?.slice(0, 5) ?? "08:00",
           end: a.shift_end?.slice(0, 5) ?? "17:00",
-          project: (a.projects as any)?.name ?? "Other",
+          project: label,
         });
       }
       // Add maintenance slots
