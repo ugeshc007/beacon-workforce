@@ -2487,6 +2487,12 @@ export type Database = {
     }
     Functions: {
       cleanup_old_idempotency_keys: { Args: never; Returns: undefined }
+      company_of_branch: { Args: { _id: string }; Returns: string }
+      company_of_employee: { Args: { _id: string }; Returns: string }
+      company_of_maintenance_call: { Args: { _id: string }; Returns: string }
+      company_of_project: { Args: { _id: string }; Returns: string }
+      company_of_site_visit: { Args: { _id: string }; Returns: string }
+      company_of_user: { Args: { _id: string }; Returns: string }
       delete_employee_cascade: { Args: { emp_id: string }; Returns: undefined }
       employee_has_project_assignment: {
         Args: { _project_id: string }
