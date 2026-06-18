@@ -1777,6 +1777,191 @@ export type Database = {
           },
         ]
       }
+      recurring_job_employees: {
+        Row: {
+          created_at: string
+          employee_id: string
+          id: string
+          is_lead: boolean
+          recurring_job_id: string
+          role: string | null
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          id?: string
+          is_lead?: boolean
+          recurring_job_id: string
+          role?: string | null
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          id?: string
+          is_lead?: boolean
+          recurring_job_id?: string
+          role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_job_employees_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_job_employees_recurring_job_id_fkey"
+            columns: ["recurring_job_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recurring_job_occurrences: {
+        Row: {
+          created_at: string
+          generated_at: string
+          id: string
+          notes: string | null
+          occurrence_date: string
+          project_assignment_id: string | null
+          recurring_job_id: string
+          status: Database["public"]["Enums"]["recurring_occurrence_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          generated_at?: string
+          id?: string
+          notes?: string | null
+          occurrence_date: string
+          project_assignment_id?: string | null
+          recurring_job_id: string
+          status?: Database["public"]["Enums"]["recurring_occurrence_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          generated_at?: string
+          id?: string
+          notes?: string | null
+          occurrence_date?: string
+          project_assignment_id?: string | null
+          recurring_job_id?: string
+          status?: Database["public"]["Enums"]["recurring_occurrence_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_job_occurrences_project_assignment_id_fkey"
+            columns: ["project_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "project_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_job_occurrences_recurring_job_id_fkey"
+            columns: ["recurring_job_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recurring_jobs: {
+        Row: {
+          address: string | null
+          branch_id: string | null
+          break_minutes: number
+          client_name: string
+          color: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          day_of_month: number | null
+          days_of_week: number[] | null
+          end_date: string | null
+          end_time: string
+          frequency: Database["public"]["Enums"]["recurring_frequency"]
+          headcount: number
+          id: string
+          lat: number | null
+          lng: number | null
+          notes: string | null
+          required_skills: string[] | null
+          site_name: string | null
+          skip_holidays: boolean
+          start_date: string
+          start_time: string
+          status: Database["public"]["Enums"]["recurring_status"]
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          branch_id?: string | null
+          break_minutes?: number
+          client_name: string
+          color?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          day_of_month?: number | null
+          days_of_week?: number[] | null
+          end_date?: string | null
+          end_time?: string
+          frequency?: Database["public"]["Enums"]["recurring_frequency"]
+          headcount?: number
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          notes?: string | null
+          required_skills?: string[] | null
+          site_name?: string | null
+          skip_holidays?: boolean
+          start_date?: string
+          start_time?: string
+          status?: Database["public"]["Enums"]["recurring_status"]
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          branch_id?: string | null
+          break_minutes?: number
+          client_name?: string
+          color?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          day_of_month?: number | null
+          days_of_week?: number[] | null
+          end_date?: string | null
+          end_time?: string
+          frequency?: Database["public"]["Enums"]["recurring_frequency"]
+          headcount?: number
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          notes?: string | null
+          required_skills?: string[] | null
+          site_name?: string | null
+          skip_holidays?: boolean
+          start_date?: string
+          start_time?: string
+          status?: Database["public"]["Enums"]["recurring_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_jobs_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       report_presets: {
         Row: {
           created_at: string
@@ -2556,6 +2741,13 @@ export type Database = {
       notification_priority: "low" | "normal" | "high" | "critical"
       override_action: "absent" | "replaced" | "added" | "removed"
       project_status: "on_hold" | "in_progress" | "completed"
+      recurring_frequency: "daily" | "weekly" | "monthly" | "custom"
+      recurring_occurrence_status:
+        | "scheduled"
+        | "skipped"
+        | "done"
+        | "cancelled"
+      recurring_status: "active" | "paused" | "ended"
       report_schedule: "none" | "daily" | "weekly" | "monthly"
       site_visit_priority: "low" | "normal" | "high" | "urgent"
       site_visit_status:
@@ -2724,6 +2916,14 @@ export const Constants = {
       notification_priority: ["low", "normal", "high", "critical"],
       override_action: ["absent", "replaced", "added", "removed"],
       project_status: ["on_hold", "in_progress", "completed"],
+      recurring_frequency: ["daily", "weekly", "monthly", "custom"],
+      recurring_occurrence_status: [
+        "scheduled",
+        "skipped",
+        "done",
+        "cancelled",
+      ],
+      recurring_status: ["active", "paused", "ended"],
       report_schedule: ["none", "daily", "weekly", "monthly"],
       site_visit_priority: ["low", "normal", "high", "urgent"],
       site_visit_status: [
