@@ -7,7 +7,7 @@ import { projectStepLabels, projectStepColors } from "@/lib/project-workflow-eng
 import { getGpsPosition, qualityColor, qualityLabel } from "@/lib/gps";
 import { initAutoSync } from "@/lib/offline-sync";
 import { HoldToConfirm } from "@/components/mobile/HoldToConfirm";
-import { MapPicker } from "@/components/mobile/MapPicker";
+
 import { DriverWorkflowCard } from "@/components/mobile/DriverWorkflowCard";
 import { Card } from "@/components/ui/card";
 import { Loader2, MapPin, Clock, Wifi, WifiOff, CheckCircle2, AlertTriangle, Crosshair, ChevronRight, PlayCircle, RotateCcw, Coffee, Building2, ClipboardList } from "lucide-react";
@@ -27,8 +27,6 @@ export default function MobileHome() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [gpsQuality, setGpsQuality] = useState<"high" | "medium" | "low" | "none">("none");
-  const [showMapPicker, setShowMapPicker] = useState(false);
-  const [pendingAction, setPendingAction] = useState<WorkflowAction | null>(null);
   const autoSyncCleanup = useRef<(() => void) | null>(null);
   useEffect(() => {
     const t = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -77,28 +75,22 @@ export default function MobileHome() {
     if (GPS_ACTIONS.includes(action)) {
       const gps = await getGpsPosition();
       setGpsQuality(gps.quality);
-      if (gps.needsMapFallback && !gps.reading) {
-        setPendingAction(action);
-        setShowMapPicker(true);
+      if (!gps.reading) {
+        toast({
+          title: "Location unavailable",
+          description: gps.error || "Please enable location permission and try again.",
+          variant: "destructive",
+        });
         return;
       }
-      if (gps.reading) {
-        payload = {
-          lat: gps.reading.lat,
-          lng: gps.reading.lng,
-          accuracy: gps.reading.accuracy,
-          is_spoofed: gps.reading.isMock,
-        };
-      }
+      payload = {
+        lat: gps.reading.lat,
+        lng: gps.reading.lng,
+        accuracy: gps.reading.accuracy,
+        is_spoofed: gps.reading.isMock,
+      };
     }
     await submitAction(action, payload);
-  };
-
-  const handleMapConfirm = async (lat: number, lng: number) => {
-    setShowMapPicker(false);
-    if (!pendingAction) return;
-    await submitAction(pendingAction, { lat, lng, accuracy: 999, is_spoofed: false, manual_location: true });
-    setPendingAction(null);
   };
 
   const submitAction = async (action: WorkflowAction, payload: Record<string, unknown>) => {
@@ -515,13 +507,6 @@ export default function MobileHome() {
         );
       })()}
 
-      <MapPicker
-        open={showMapPicker}
-        onClose={() => { setShowMapPicker(false); setPendingAction(null); }}
-        onConfirm={handleMapConfirm}
-        initialLat={25.2048}
-        initialLng={55.2708}
-      />
     </div>
   );
 }
