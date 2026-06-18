@@ -31,13 +31,13 @@ Then from this `everfresh-mobile/` folder:
 
 ```bash
 # 1. Add the Android platform (creates ./android)
-npx cap add android --config capacitor.config.ts
+npx cap add android
 
 # 2. Sync the web build into the native shell
-npx cap sync android --config capacitor.config.ts
+npx cap sync android
 
 # 3. Open in Android Studio
-npx cap open android --config capacitor.config.ts
+npx cap open android
 ```
 
 > Requires Android Studio + JDK 17 installed locally. Lovable's sandbox can't
@@ -53,7 +53,7 @@ Every time the web code changes:
 ```bash
 npm run build                                       # from project root
 cd everfresh-mobile
-npx cap sync android --config capacitor.config.ts
+npx cap sync android
 ```
 
 ---
@@ -74,7 +74,7 @@ npx cap sync android --config capacitor.config.ts
    ```
 3. Re-sync:
    ```bash
-   npx cap sync android --config capacitor.config.ts
+    npx cap sync android
    ```
 
 To change the splash background color, edit `backgroundColor` in
@@ -103,7 +103,7 @@ Set `CAPACITOR_DEV=true` before syncing to point the installed app at the live
 Lovable preview URL instead of the bundled `dist/`:
 
 ```bash
-CAPACITOR_DEV=true npx cap sync android --config capacitor.config.ts
+CAPACITOR_DEV=true npx cap sync android
 ```
 
 Unset it (and re-sync) for production builds.
