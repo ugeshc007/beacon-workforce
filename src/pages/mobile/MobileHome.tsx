@@ -1,6 +1,7 @@
 import { useMobileWorkflow } from "@/hooks/useMobileWorkflow";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
 import { useTodayProjects } from "@/hooks/useTodayProjects";
+import { useUpcomingProjects } from "@/hooks/useUpcomingProjects";
 import { useBackgroundTracking } from "@/hooks/useBackgroundTracking";
 import { actionLabels, stepLabels, stepColors, WorkflowAction } from "@/lib/workflow-engine";
 import { projectStepLabels, projectStepColors } from "@/lib/project-workflow-engine";
@@ -22,6 +23,7 @@ export default function MobileHome() {
   const navigate = useNavigate();
   const { step, attendanceLog, availableActions, loading, actionLoading, executeAction } = useMobileWorkflow();
   const { data: todayProjects, isLoading: projectsLoading } = useTodayProjects();
+  const { data: upcomingProjects } = useUpcomingProjects(7);
   const { startTracking, stopTracking } = useBackgroundTracking();
   const { toast } = useToast();
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -210,6 +212,53 @@ export default function MobileHome() {
           <p className="text-sm text-foreground">No site project assigned. You'll work in-house today.</p>
         </Card>
       )}
+
+      {/* Upcoming assignments — tomorrow and beyond */}
+      {step === "idle" && !!upcomingProjects?.length && (
+        <Card className="p-4 border-border/50 bg-card">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Upcoming</p>
+          <div className="space-y-2">
+            {upcomingProjects.slice(0, 5).map((p) => {
+              const d = new Date(p.date + "T00:00:00");
+              const today0 = new Date(); today0.setHours(0, 0, 0, 0);
+              const diffDays = Math.round((d.getTime() - today0.getTime()) / 86400000);
+              const label =
+                diffDays === 1 ? "Tomorrow" :
+                d.toLocaleDateString("en-AE", { weekday: "short", day: "2-digit", month: "short" });
+              return (
+                <div key={p.assignmentId} className="flex items-start gap-2">
+                  <div className="min-w-[68px] shrink-0">
+                    <p className="text-[11px] font-semibold text-brand">{label}</p>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-foreground truncate">{p.projectName}</p>
+                    {p.siteAddress && <p className="text-[11px] text-muted-foreground truncate">{p.siteAddress}</p>}
+                    <div className="flex items-center gap-2 mt-0.5">
+                      {p.shiftStart && p.shiftEnd && (
+                        <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {p.shiftStart.slice(0, 5)}–{p.shiftEnd.slice(0, 5)}
+                        </p>
+                      )}
+                      {p.task && (
+                        <p className="text-[11px] text-muted-foreground truncate flex items-center gap-1">
+                          <ClipboardList className="h-3 w-3" />
+                          {p.task}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {upcomingProjects.length > 5 && (
+            <p className="text-[10px] text-muted-foreground mt-2">+ {upcomingProjects.length - 5} more this week</p>
+          )}
+        </Card>
+      )}
+
+
 
       {/* Punch In (idle) */}
       {step === "idle" && officeAction === "punch_in" && (
