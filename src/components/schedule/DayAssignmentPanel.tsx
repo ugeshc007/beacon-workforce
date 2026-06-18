@@ -183,9 +183,14 @@ export function DayAssignmentPanel({
     const emp = (employees ?? []).find((x: any) => x.id === employeeId) as any;
     const slots = (emp?.existing_slots ?? []) as { start: string; end: string; project: string }[];
     if (slots.length > 0) {
-      const toMin = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
-      const ns = toMin(shiftStart), ne = toMin(shiftEnd);
-      const overlapping = slots.filter((s) => ns < toMin(s.end) && ne > toMin(s.start));
+      const toMin = (t: string) => { const [h, m] = t.split(":").map(Number); return (h || 0) * 60 + (m || 0); };
+      let ns = toMin(shiftStart), ne = toMin(shiftEnd);
+      if (ne <= ns) ne += 24 * 60; // shift crosses midnight
+      const overlapping = slots.filter((s) => {
+        let ss = toMin(s.start), se = toMin(s.end);
+        if (se <= ss) se += 24 * 60;
+        return ns < se && ne > ss;
+      });
       if (overlapping.length > 0) {
         const list = overlapping.map((s) => `• ${s.project} (${s.start}–${s.end})`).join("\n");
         const ok = window.confirm(
