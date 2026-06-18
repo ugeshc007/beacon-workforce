@@ -54,14 +54,14 @@ export default function MobileLayout() {
         <Outlet />
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border/50 safe-area-bottom z-50">
+      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border/50 safe-area-bottom z-40">
         <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
           <MobileNavItem to="/m" icon={Home} label="Home" end />
-          <MobileNavItem to="/m/site-visits" icon={MapPin} label="Visits" />
-          <MobileNavItem to="/m/timesheet" icon={ClipboardList} label="Timesheet" />
-          {isTeamLeader && <MobileNavItem to="/m/team" icon={Users} label="Team" />}
-          <MobileNavItem to="/m/notifications" icon={Bell} label="Alerts" />
-          <MobileNavItem to="/m/profile" icon={User} label="Profile" />
+          <MobileNavItem to="/m/site-visits" icon={MapPin} label="Visits" end />
+          <MobileNavItem to="/m/timesheet" icon={ClipboardList} label="Timesheet" end />
+          {isTeamLeader && <MobileNavItem to="/m/team" icon={Users} label="Team" end />}
+          <MobileNavItem to="/m/notifications" icon={Bell} label="Alerts" end />
+          <MobileNavItem to="/m/profile" icon={User} label="Profile" end />
         </div>
       </nav>
     </div>
