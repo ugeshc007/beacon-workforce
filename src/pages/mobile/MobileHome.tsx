@@ -509,13 +509,6 @@ export default function MobileHome() {
         );
       })()}
 
-      <MapPicker
-        open={showMapPicker}
-        onClose={() => { setShowMapPicker(false); setPendingAction(null); }}
-        onConfirm={handleMapConfirm}
-        initialLat={25.2048}
-        initialLng={55.2708}
-      />
     </div>
   );
 }
