@@ -179,6 +179,21 @@ export function DayAssignmentPanel({
       toast({ title: "Pick Site or In-House", description: "Work location is required before assigning.", variant: "destructive" });
       return;
     }
+    // Warn if this employee already has an overlapping shift on another project/maintenance
+    const emp = (employees ?? []).find((x: any) => x.id === employeeId) as any;
+    const slots = (emp?.existing_slots ?? []) as { start: string; end: string; project: string }[];
+    if (slots.length > 0) {
+      const toMin = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+      const ns = toMin(shiftStart), ne = toMin(shiftEnd);
+      const overlapping = slots.filter((s) => ns < toMin(s.end) && ne > toMin(s.start));
+      if (overlapping.length > 0) {
+        const list = overlapping.map((s) => `• ${s.project} (${s.start}–${s.end})`).join("\n");
+        const ok = window.confirm(
+          `⚠️ ${emp?.name ?? "This employee"} is already assigned at this time:\n\n${list}\n\nAssigning again will double-book them. Continue?`
+        );
+        if (!ok) return;
+      }
+    }
     try {
       await addAssignment.mutateAsync({
         project_id: projectId,
@@ -198,6 +213,7 @@ export function DayAssignmentPanel({
       toast({ title: "Error", description: e.message, variant: "destructive" });
     }
   };
+
 
   const handleSaveTask = async () => {
     if (!editTaskId) return;
