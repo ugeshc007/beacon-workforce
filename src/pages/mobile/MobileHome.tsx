@@ -7,7 +7,7 @@ import { projectStepLabels, projectStepColors } from "@/lib/project-workflow-eng
 import { getGpsPosition, qualityColor, qualityLabel } from "@/lib/gps";
 import { initAutoSync } from "@/lib/offline-sync";
 import { HoldToConfirm } from "@/components/mobile/HoldToConfirm";
-import { MapPicker } from "@/components/mobile/MapPicker";
+
 import { DriverWorkflowCard } from "@/components/mobile/DriverWorkflowCard";
 import { Card } from "@/components/ui/card";
 import { Loader2, MapPin, Clock, Wifi, WifiOff, CheckCircle2, AlertTriangle, Crosshair, ChevronRight, PlayCircle, RotateCcw, Coffee, Building2, ClipboardList } from "lucide-react";
