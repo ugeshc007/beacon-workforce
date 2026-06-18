@@ -32,7 +32,7 @@ export function MapPicker({ open, onClose, onConfirm, initialLat = 25.2048, init
   const mapUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${lng - 0.005},${lat - 0.005},${lng + 0.005},${lat + 0.005}&layer=mapnik&marker=${lat},${lng}`;
 
   return (
-    <div className="fixed inset-0 z-50 bg-background/95 flex flex-col safe-area-inset">
+    <div className="fixed inset-0 z-[100] bg-background flex flex-col safe-area-inset">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border/50">
         <div className="flex items-center gap-2">
@@ -85,8 +85,11 @@ export function MapPicker({ open, onClose, onConfirm, initialLat = 25.2048, init
         </div>
       </div>
 
-      {/* Confirm button */}
-      <div className="p-4 pb-8">
+      {/* Confirm button — sticky above any nav, with safe-area padding */}
+      <div
+        className="sticky bottom-0 left-0 right-0 p-4 bg-background border-t border-border/50"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)" }}
+      >
         <Button
           className="w-full h-12 text-base font-bold rounded-xl"
           onClick={handleConfirm}

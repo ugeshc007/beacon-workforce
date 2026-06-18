@@ -10,7 +10,7 @@ import { HoldToConfirm } from "@/components/mobile/HoldToConfirm";
 import { MapPicker } from "@/components/mobile/MapPicker";
 import { DriverWorkflowCard } from "@/components/mobile/DriverWorkflowCard";
 import { Card } from "@/components/ui/card";
-import { Loader2, MapPin, Clock, Wifi, WifiOff, CheckCircle2, AlertTriangle, Crosshair, ChevronRight, PlayCircle, RotateCcw, Coffee, Building2 } from "lucide-react";
+import { Loader2, MapPin, Clock, Wifi, WifiOff, CheckCircle2, AlertTriangle, Crosshair, ChevronRight, PlayCircle, RotateCcw, Coffee, Building2, ClipboardList } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -149,17 +149,16 @@ export default function MobileHome() {
       {/* Greeting */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-foreground">
+          <h1 className="text-lg font-bold text-foreground leading-tight">
             Hello, {employee?.name?.split(" ")[0] || "Worker"}
           </h1>
-          <p className="text-sm text-muted-foreground">{employee?.employeeCode}</p>
+          <p className="text-xs text-muted-foreground">{employee?.employeeCode}</p>
         </div>
         <div className="text-right">
-          <p className="text-2xl font-mono font-bold text-foreground">{timeStr}</p>
-          <div className="flex items-center gap-1 justify-end">
-            {isOnline ? <Wifi className="h-3.5 w-3.5 text-green-400" /> : <WifiOff className="h-3.5 w-3.5 text-red-400" />}
-            <span className="text-xs text-muted-foreground">{isOnline ? "Online" : "Offline"}</span>
-          </div>
+          <p className="text-xl font-mono font-bold text-foreground leading-none">{timeStr}</p>
+          <p className="text-[10px] text-muted-foreground mt-1">
+            {new Date().toLocaleDateString("en-AE", { weekday: "short", day: "2-digit", month: "short", timeZone: "Asia/Dubai" })}
+          </p>
         </div>
       </div>
 
@@ -188,6 +187,38 @@ export default function MobileHome() {
         </div>
       </Card>
 
+      {/* Today's assignment preview — visible on idle so the screen isn't empty */}
+      {step === "idle" && !projectsLoading && !!todayProjects?.length && (
+        <Card className="p-4 border-brand/30 bg-brand/5">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-brand mb-2">Today's assignment</p>
+          {todayProjects.slice(0, 2).map((p) => (
+            <div key={p.assignmentId} className="flex items-start gap-2 mb-2 last:mb-0">
+              <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-foreground truncate">{p.projectName}</p>
+                {p.siteAddress && <p className="text-[11px] text-muted-foreground truncate">{p.siteAddress}</p>}
+                {p.shiftStart && p.shiftEnd && (
+                  <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                    <Clock className="h-3 w-3" />
+                    {p.shiftStart.slice(0, 5)}–{p.shiftEnd.slice(0, 5)}
+                  </p>
+                )}
+              </div>
+            </div>
+          ))}
+          {todayProjects.length > 2 && (
+            <p className="text-[10px] text-muted-foreground mt-1">+ {todayProjects.length - 2} more after punch-in</p>
+          )}
+        </Card>
+      )}
+
+      {step === "idle" && !projectsLoading && !todayProjects?.length && (
+        <Card className="p-4 border-border/50 bg-card">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Today</p>
+          <p className="text-sm text-foreground">No site project assigned. You'll work in-house today.</p>
+        </Card>
+      )}
+
       {/* Punch In (idle) */}
       {step === "idle" && officeAction === "punch_in" && (
         <HoldToConfirm
@@ -199,6 +230,24 @@ export default function MobileHome() {
           <CheckCircle2 className="h-6 w-6" />
           {actionLabels.punch_in}
         </HoldToConfirm>
+      )}
+
+      {/* Quick links — visible on idle */}
+      {step === "idle" && (
+        <div className="grid grid-cols-3 gap-2 mt-1">
+          <button onClick={() => navigate("/m/site-visits")} className="rounded-xl border border-border/50 bg-card p-3 text-center hover:border-brand/40 transition-colors">
+            <MapPin className="h-4 w-4 text-brand mx-auto mb-1" />
+            <span className="text-[11px] font-medium text-foreground">Visits</span>
+          </button>
+          <button onClick={() => navigate("/m/daily-log")} className="rounded-xl border border-border/50 bg-card p-3 text-center hover:border-brand/40 transition-colors">
+            <ClipboardList className="h-4 w-4 text-brand mx-auto mb-1" />
+            <span className="text-[11px] font-medium text-foreground">Daily Log</span>
+          </button>
+          <button onClick={() => navigate("/m/timesheet")} className="rounded-xl border border-border/50 bg-card p-3 text-center hover:border-brand/40 transition-colors">
+            <Clock className="h-4 w-4 text-brand mx-auto mb-1" />
+            <span className="text-[11px] font-medium text-foreground">Timesheet</span>
+          </button>
+        </div>
       )}
 
       {/* Resume in-progress project */}

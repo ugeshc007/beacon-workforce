@@ -38,7 +38,7 @@ export default function MobileProfile() {
 
   return (
     <div className="flex flex-col gap-4 p-4 pb-24 safe-area-inset">
-      <h1 className="text-xl font-bold text-foreground">Profile</h1>
+      <h1 className="text-base font-bold text-foreground">Profile</h1>
 
       {/* Avatar + name */}
       <Card className="p-4 border-border/50 bg-card">

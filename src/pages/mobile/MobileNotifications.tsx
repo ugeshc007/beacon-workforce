@@ -83,7 +83,7 @@ export default function MobileNotifications() {
 
   return (
     <div className="flex flex-col gap-3 p-4 pb-24 safe-area-inset">
-      <h1 className="text-xl font-bold text-foreground">Notifications</h1>
+      <h1 className="text-base font-bold text-foreground">Notifications</h1>
 
       {notifications.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-[40vh] text-muted-foreground">
