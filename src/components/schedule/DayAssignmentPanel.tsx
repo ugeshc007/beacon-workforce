@@ -354,12 +354,14 @@ export function DayAssignmentPanel({
   /** Check if selected shift overlaps with any existing slot */
   const hasOverlap = (slots: { start: string; end: string; project: string }[]) => {
     if (!slots.length) return false;
-    const toMin = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
-    const newStart = toMin(shiftStart);
-    const newEnd = toMin(shiftEnd);
+    const toMin = (t: string) => { const [h, m] = t.split(":").map(Number); return (h || 0) * 60 + (m || 0); };
+    let newStart = toMin(shiftStart);
+    let newEnd = toMin(shiftEnd);
+    if (newEnd <= newStart) newEnd += 24 * 60; // crosses midnight
     return slots.some((s) => {
-      const sStart = toMin(s.start);
-      const sEnd = toMin(s.end);
+      let sStart = toMin(s.start);
+      let sEnd = toMin(s.end);
+      if (sEnd <= sStart) sEnd += 24 * 60;
       return newStart < sEnd && newEnd > sStart;
     });
   };
