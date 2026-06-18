@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useMyPermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/hooks/useAuth";
+import { useTenant } from "@/hooks/useTenant";
 
 const mainNav = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, module: "dashboard" },
@@ -61,6 +62,7 @@ export function AppSidebar() {
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + "/");
   const { permissions } = useMyPermissions();
   const { isAdmin, isEmployee, isSuperAdmin } = useAuth();
+  const { tenant } = useTenant();
 
   const canView = (module: string) => {
     if (isAdmin) return true;
@@ -76,7 +78,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
-          <img src="/bebright-logo.png" alt="BeBright" className="h-9 w-auto shrink-0" />
+          <img src={tenant?.logo_url || "/bebright-logo.png"} alt={tenant?.name || "BeBright"} className="h-9 w-auto shrink-0" />
           {!collapsed && (
             <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">Planner</span>
           )}

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useTenant } from "@/hooks/useTenant";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +15,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { signIn } = useAuth();
+  const { tenant } = useTenant();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -42,7 +44,7 @@ export default function Login() {
       <div className="w-full max-w-md space-y-8">
         {/* Logo */}
         <div className="flex flex-col items-center gap-3">
-          <img src="/bebright-logo.png" alt="BeBright" className="h-12 w-auto" />
+          <img src={tenant?.logo_url || "/bebright-logo.png"} alt={tenant?.name || "BeBright"} className="h-12 w-auto" />
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gradient-brand">Planner</h1>
             <p className="text-sm text-muted-foreground mt-1">
