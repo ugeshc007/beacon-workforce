@@ -13,6 +13,7 @@ import SuperAdminLayout from "./pages/admin/SuperAdminLayout";
 import SuperAdminOverview from "./pages/admin/SuperAdminOverview";
 import CompaniesPage from "./pages/admin/CompaniesPage";
 import AdminComingSoon from "./pages/admin/ComingSoon";
+import AdminUsersPage from "./pages/admin/AdminUsersPage";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
@@ -95,7 +96,7 @@ const App = () => (
           >
             <Route path="/admin" element={<SuperAdminOverview />} />
             <Route path="/admin/companies" element={<CompaniesPage />} />
-            <Route path="/admin/users" element={<AdminComingSoon title="Users" />} />
+            <Route path="/admin/users" element={<AdminUsersPage />} />
             <Route path="/admin/activity" element={<AdminComingSoon title="Platform Activity" />} />
           </Route>
 
