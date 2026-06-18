@@ -187,6 +187,38 @@ export default function MobileHome() {
         </div>
       </Card>
 
+      {/* Today's assignment preview — visible on idle so the screen isn't empty */}
+      {step === "idle" && !projectsLoading && !!todayProjects?.length && (
+        <Card className="p-4 border-brand/30 bg-brand/5">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-brand mb-2">Today's assignment</p>
+          {todayProjects.slice(0, 2).map((p) => (
+            <div key={p.assignmentId} className="flex items-start gap-2 mb-2 last:mb-0">
+              <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-foreground truncate">{p.projectName}</p>
+                {p.siteAddress && <p className="text-[11px] text-muted-foreground truncate">{p.siteAddress}</p>}
+                {p.shiftStart && p.shiftEnd && (
+                  <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                    <Clock className="h-3 w-3" />
+                    {p.shiftStart.slice(0, 5)}–{p.shiftEnd.slice(0, 5)}
+                  </p>
+                )}
+              </div>
+            </div>
+          ))}
+          {todayProjects.length > 2 && (
+            <p className="text-[10px] text-muted-foreground mt-1">+ {todayProjects.length - 2} more after punch-in</p>
+          )}
+        </Card>
+      )}
+
+      {step === "idle" && !projectsLoading && !todayProjects?.length && (
+        <Card className="p-4 border-border/50 bg-card">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Today</p>
+          <p className="text-sm text-foreground">No site project assigned. You'll work in-house today.</p>
+        </Card>
+      )}
+
       {/* Punch In (idle) */}
       {step === "idle" && officeAction === "punch_in" && (
         <HoldToConfirm
@@ -198,6 +230,24 @@ export default function MobileHome() {
           <CheckCircle2 className="h-6 w-6" />
           {actionLabels.punch_in}
         </HoldToConfirm>
+      )}
+
+      {/* Quick links — visible on idle */}
+      {step === "idle" && (
+        <div className="grid grid-cols-3 gap-2 mt-1">
+          <button onClick={() => navigate("/m/site-visits")} className="rounded-xl border border-border/50 bg-card p-3 text-center hover:border-brand/40 transition-colors">
+            <MapPin className="h-4 w-4 text-brand mx-auto mb-1" />
+            <span className="text-[11px] font-medium text-foreground">Visits</span>
+          </button>
+          <button onClick={() => navigate("/m/daily-log")} className="rounded-xl border border-border/50 bg-card p-3 text-center hover:border-brand/40 transition-colors">
+            <ClipboardList className="h-4 w-4 text-brand mx-auto mb-1" />
+            <span className="text-[11px] font-medium text-foreground">Daily Log</span>
+          </button>
+          <button onClick={() => navigate("/m/timesheet")} className="rounded-xl border border-border/50 bg-card p-3 text-center hover:border-brand/40 transition-colors">
+            <Clock className="h-4 w-4 text-brand mx-auto mb-1" />
+            <span className="text-[11px] font-medium text-foreground">Timesheet</span>
+          </button>
+        </div>
       )}
 
       {/* Resume in-progress project */}
