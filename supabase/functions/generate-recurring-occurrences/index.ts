@@ -95,39 +95,24 @@ Deno.serve(async (req) => {
           .from("projects")
           .insert({
             name: projName,
+            client_name: job.client_name,
             company_id: job.company_id,
             branch_id: job.branch_id,
             status: "in_progress",
             site_address: job.address,
-            site_lat: job.lat,
-            site_lng: job.lng,
-            color: job.color,
-            is_recurring: true,
-          } as Record<string, unknown>)
+            site_latitude: job.lat,
+            site_longitude: job.lng,
+          })
           .select("id")
           .single();
         if (pErr) {
-          // retry without optional columns that may not exist
-          const { data: fallback, error: fErr } = await supabase
-            .from("projects")
-            .insert({
-              name: projName,
-              company_id: job.company_id,
-              branch_id: job.branch_id,
-              status: "in_progress",
-            })
-            .select("id")
-            .single();
-          if (fErr) {
-            console.error("project create failed for job", job.id, fErr);
-            continue;
-          }
-          projectId = fallback!.id;
-        } else {
-          projectId = newProj!.id;
+          console.error("project create failed for job", job.id, pErr);
+          continue;
         }
+        projectId = newProj!.id;
         await supabase.from("recurring_jobs").update({ project_id: projectId }).eq("id", job.id);
       }
+
 
       // Default crew
       const { data: crew } = await supabase
