@@ -30,6 +30,7 @@ import {
 import { useRolePermissions, useUpdatePermission, useSkillPermissions, useUpdateSkillPermission } from "@/hooks/usePermissions";
 import { useCustomSkills } from "@/hooks/useCustomSkills";
 import { useAuth } from "@/hooks/useAuth";
+import { useTenant } from "@/hooks/useTenant";
 import { DateInput } from "@/components/ui/date-input";
 import { downloadCsv } from "@/lib/csv-export";
 import LocationPickerMap from "@/components/settings/LocationPickerMap";
