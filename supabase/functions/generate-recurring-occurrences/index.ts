@@ -114,6 +114,7 @@ Deno.serve(async (req) => {
             company_id: job.company_id,
             branch_id: branchId,
             status: "in_progress",
+            start_date: job.start_date,
             site_address: job.address,
             site_latitude: job.lat,
             site_longitude: job.lng,
