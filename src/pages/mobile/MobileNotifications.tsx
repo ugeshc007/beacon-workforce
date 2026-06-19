@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
 import { Card } from "@/components/ui/card";
-import { Bell, Check, Loader2, ChevronRight } from "lucide-react";
+import { Bell, Check, Loader2, ChevronRight, Repeat } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface Notification {
@@ -18,29 +18,90 @@ interface Notification {
   reference_type: string | null;
 }
 
+interface RecurringItem {
+  id: string;
+  project_id: string;
+  project_name: string;
+  date: string;
+  shift_start: string | null;
+  shift_end: string | null;
+}
+
+const fmtTime = (t: string | null) => {
+  if (!t) return "";
+  const [h, m] = t.split(":");
+  const hr = parseInt(h, 10);
+  const period = hr >= 12 ? "PM" : "AM";
+  const display = hr === 0 ? 12 : hr > 12 ? hr - 12 : hr;
+  return `${display}:${m} ${period}`;
+};
+
+const fmtDate = (d: string) => {
+  const dt = new Date(d + "T00:00:00");
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  if (dt.getTime() === today.getTime()) return "Today";
+  if (dt.getTime() === tomorrow.getTime()) return "Tomorrow";
+  return dt.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+};
+
 export default function MobileNotifications() {
   const { employee } = useMobileAuth();
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [recurring, setRecurring] = useState<RecurringItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!employee) return;
 
-    const fetchNotifications = async () => {
-      const { data } = await supabase
-        .from("employee_notifications")
-        .select("*")
-        .eq("employee_id", employee.id)
-        .order("created_at", { ascending: false })
-        .limit(50);
-      setNotifications((data as Notification[]) || []);
+    const fetchAll = async () => {
+      const today = new Date();
+      const start = today.toISOString().slice(0, 10);
+      const endDate = new Date(today);
+      endDate.setDate(endDate.getDate() + 14);
+      const end = endDate.toISOString().slice(0, 10);
+
+      const [notifRes, recJobs, assignRes] = await Promise.all([
+        supabase
+          .from("employee_notifications")
+          .select("*")
+          .eq("employee_id", employee.id)
+          .order("created_at", { ascending: false })
+          .limit(50),
+        supabase.from("recurring_jobs").select("project_id").not("project_id", "is", null),
+        supabase
+          .from("project_assignments")
+          .select("id, project_id, date, shift_start, shift_end, projects(name)")
+          .eq("employee_id", employee.id)
+          .gte("date", start)
+          .lte("date", end)
+          .order("date", { ascending: true }),
+      ]);
+
+      setNotifications((notifRes.data as Notification[]) || []);
+
+      const recurringProjectIds = new Set(
+        (recJobs.data || []).map((r: any) => r.project_id).filter(Boolean),
+      );
+      const recItems: RecurringItem[] = ((assignRes.data as any[]) || [])
+        .filter((a) => recurringProjectIds.has(a.project_id))
+        .map((a) => ({
+          id: a.id,
+          project_id: a.project_id,
+          project_name: a.projects?.name ?? "Recurring task",
+          date: a.date,
+          shift_start: a.shift_start,
+          shift_end: a.shift_end,
+        }));
+      setRecurring(recItems);
       setLoading(false);
     };
 
-    fetchNotifications();
+    fetchAll();
 
-    // Realtime subscription
     const channel = supabase
       .channel("emp-notifications")
       .on("postgres_changes", {
@@ -81,59 +142,108 @@ export default function MobileNotifications() {
     );
   }
 
+  const isEmpty = notifications.length === 0 && recurring.length === 0;
+
   return (
     <div className="flex flex-col gap-3 p-4 pb-24 safe-area-inset">
       <h1 className="text-base font-bold text-foreground">Notifications</h1>
 
-      {notifications.length === 0 ? (
+      {isEmpty ? (
         <div className="flex flex-col items-center justify-center h-[40vh] text-muted-foreground">
           <Bell className="h-10 w-10 mb-3 opacity-30" />
           <p className="text-sm">No notifications yet</p>
         </div>
       ) : (
-        notifications.map((n) => {
-          const isProjectLink = n.reference_type === "project" && !!n.reference_id;
-          return (
-            <Card
-              key={n.id}
-              onClick={() => handleClick(n)}
-              className={`p-4 border-border/50 transition-colors ${
-                n.is_read ? "bg-card opacity-60" : "bg-card"
-              } ${isProjectLink ? "cursor-pointer hover:bg-card/80 hover:border-brand/40" : ""}`}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <p className={`text-sm font-semibold ${n.is_read ? "text-muted-foreground" : "text-foreground"}`}>
-                    {n.title}
-                  </p>
-                  {n.message && (
-                    <p className="text-xs text-muted-foreground mt-0.5">{n.message}</p>
-                  )}
-                  <p className="text-[10px] text-muted-foreground mt-1.5">
-                    {new Date(n.created_at).toLocaleString("en-AE", { timeZone: "Asia/Dubai" })}
-                  </p>
-                  {isProjectLink && (
-                    <p className="text-[10px] text-brand mt-1 font-medium">
-                      Tap to open project →
-                    </p>
-                  )}
-                </div>
-                {!n.is_read ? (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 shrink-0"
-                    onClick={(e) => { e.stopPropagation(); markRead(n.id); }}
+        <>
+          {recurring.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold px-1">
+                Recurring tasks · next 14 days
+              </p>
+              {recurring.map((r) => (
+                <Card
+                  key={`rec-${r.id}`}
+                  onClick={() => navigate(`/m/project/${r.project_id}`)}
+                  className="p-4 border-brand/30 bg-brand/5 cursor-pointer hover:bg-brand/10 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <Repeat className="h-3.5 w-3.5 text-brand shrink-0" />
+                        <p className="text-sm font-semibold text-foreground truncate">
+                          {r.project_name}
+                        </p>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {fmtDate(r.date)}
+                        {r.shift_start && r.shift_end && (
+                          <span> · {fmtTime(r.shift_start)} – {fmtTime(r.shift_end)}</span>
+                        )}
+                      </p>
+                      <p className="text-[10px] text-brand mt-1 font-medium">
+                        Tap to open project →
+                      </p>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {notifications.length > 0 && (
+            <div className="flex flex-col gap-2">
+              {recurring.length > 0 && (
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold px-1 mt-2">
+                  Alerts
+                </p>
+              )}
+              {notifications.map((n) => {
+                const isProjectLink = n.reference_type === "project" && !!n.reference_id;
+                return (
+                  <Card
+                    key={n.id}
+                    onClick={() => handleClick(n)}
+                    className={`p-4 border-border/50 transition-colors ${
+                      n.is_read ? "bg-card opacity-60" : "bg-card"
+                    } ${isProjectLink ? "cursor-pointer hover:bg-card/80 hover:border-brand/40" : ""}`}
                   >
-                    <Check className="h-4 w-4" />
-                  </Button>
-                ) : isProjectLink ? (
-                  <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
-                ) : null}
-              </div>
-            </Card>
-          );
-        })
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className={`text-sm font-semibold ${n.is_read ? "text-muted-foreground" : "text-foreground"}`}>
+                          {n.title}
+                        </p>
+                        {n.message && (
+                          <p className="text-xs text-muted-foreground mt-0.5">{n.message}</p>
+                        )}
+                        <p className="text-[10px] text-muted-foreground mt-1.5">
+                          {new Date(n.created_at).toLocaleString("en-AE", { timeZone: "Asia/Dubai" })}
+                        </p>
+                        {isProjectLink && (
+                          <p className="text-[10px] text-brand mt-1 font-medium">
+                            Tap to open project →
+                          </p>
+                        )}
+                      </div>
+                      {!n.is_read ? (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 shrink-0"
+                          onClick={(e) => { e.stopPropagation(); markRead(n.id); }}
+                        >
+                          <Check className="h-4 w-4" />
+                        </Button>
+                      ) : isProjectLink ? (
+                        <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
+                      ) : null}
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
