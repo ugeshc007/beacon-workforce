@@ -377,19 +377,31 @@ export default function SettingsPage() {
         {/* ── GPS / Location ──────────────── */}
         <TabsContent value="gps">
           <SectionCard icon={MapPin} title="GPS & Location Settings" desc="Control geofence radii, accuracy requirements, GPS mode, and spoof detection."
-            onSave={() => saveSection(["gps_office_radius", "gps_site_radius", "gps_accuracy_threshold", "gps_spoof_detection", "gps_mode"])} saving={save.isPending}>
+            onSave={() => saveSection(["gps_office_radius", "gps_site_radius", "gps_accuracy_threshold", "gps_spoof_detection", "gps_mode", "gps_required_on_punch"])} saving={save.isPending}>
+            <div className="mb-4 flex items-center justify-between rounded-lg border border-border/50 bg-card/50 p-3">
+              <div>
+                <p className="text-xs font-medium text-foreground">Require GPS on Punch-In</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  When OFF, employees can punch in even if they deny location permission. Distance / geofence checks are skipped company-wide.
+                </p>
+              </div>
+              <Switch
+                checked={(form.gps_required_on_punch ?? "true") !== "false"}
+                onCheckedChange={(v) => set("gps_required_on_punch", v ? "true" : "false")}
+              />
+            </div>
             <div className="grid sm:grid-cols-2 gap-4">
               <Field label="Office Geofence Radius (m)" hint="Default radius around the office for punch-in validation.">
-                <Input type="number" value={form.gps_office_radius ?? "100"} onChange={(e) => set("gps_office_radius", e.target.value)} />
+                <Input type="number" value={form.gps_office_radius || "100"} onChange={(e) => set("gps_office_radius", e.target.value)} />
               </Field>
               <Field label="Site Geofence Radius (m)" hint="Default radius around project sites for arrival validation.">
-                <Input type="number" value={form.gps_site_radius ?? "150"} onChange={(e) => set("gps_site_radius", e.target.value)} />
+                <Input type="number" value={form.gps_site_radius || "150"} onChange={(e) => set("gps_site_radius", e.target.value)} />
               </Field>
               <Field label="Accuracy Threshold (m)" hint="GPS readings less accurate than this are flagged.">
-                <Input type="number" value={form.gps_accuracy_threshold ?? "50"} onChange={(e) => set("gps_accuracy_threshold", e.target.value)} />
+                <Input type="number" value={form.gps_accuracy_threshold || "50"} onChange={(e) => set("gps_accuracy_threshold", e.target.value)} />
               </Field>
               <Field label="GPS Mode" hint="Strict: reject invalid GPS. Smart: flag but allow. Allow Map: let user confirm on map.">
-                <Select value={form.gps_mode ?? "strict"} onValueChange={(v) => set("gps_mode", v)}>
+                <Select value={form.gps_mode || "strict"} onValueChange={(v) => set("gps_mode", v)}>
                   <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="strict">Strict</SelectItem>

@@ -17,6 +17,7 @@ const SETTING_KEYS = [
   "gps_accuracy_threshold",
   "gps_spoof_detection",
   "gps_mode",
+  "gps_required_on_punch",
   "google_maps_api_key",
   "google_maps_enabled",
   "standard_work_hours",
