@@ -54,7 +54,7 @@ export default function MobileLayout() {
         <Outlet />
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border/50 safe-area-bottom z-40">
+      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border/50 safe-area-bottom z-50 pointer-events-auto">
         <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
           <MobileNavItem to="/m" icon={Home} label="Home" end />
           <MobileNavItem to="/m/site-visits" icon={MapPin} label="Visits" end />

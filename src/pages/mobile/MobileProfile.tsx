@@ -37,7 +37,7 @@ export default function MobileProfile() {
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4 pb-24 safe-area-inset">
+    <div className="flex flex-col gap-4 p-4 pb-32 safe-area-inset relative z-0">
       <h1 className="text-base font-bold text-foreground">Profile</h1>
 
       {/* Avatar + name */}
@@ -104,7 +104,7 @@ export default function MobileProfile() {
       </Card>
 
       {/* Sign out */}
-      <div className="mt-auto pt-4">
+      <div className="pt-2">
         <Button variant="destructive" className="w-full h-12" onClick={handleSignOut}>
           <LogOut className="mr-2 h-5 w-5" />
           Sign Out
