@@ -279,6 +279,7 @@ function BranchOfficeList({ branchId }: { branchId: string }) {
 }
 
 export default function SettingsPage() {
+  const { tenant } = useTenant();
   const { isAdmin } = useAuth();
   const { data: settings, isLoading } = useSettings();
   const save = useSaveSettings();
