@@ -15,6 +15,8 @@ import { Loader2, MapPin, Clock, Wifi, WifiOff, CheckCircle2, AlertTriangle, Cro
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 const GPS_ACTIONS: WorkflowAction[] = ["punch_in", "punch_out", "start_return_travel", "arrive_office"];
 
@@ -72,12 +74,31 @@ export default function MobileHome() {
     }
   }, [todayProjects]);
 
+  // Read company-wide GPS-required toggle. Default = true (require GPS).
+  const { data: gpsRequired = true } = useQuery({
+    queryKey: ["setting", "gps_required_on_punch"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("settings")
+        .select("value")
+        .eq("key", "gps_required_on_punch")
+        .maybeSingle();
+      return (data?.value ?? "true") !== "false";
+    },
+    staleTime: 60_000,
+  });
+
   const handleOfficeAction = async (action: WorkflowAction) => {
     let payload: Record<string, unknown> = {};
     if (GPS_ACTIONS.includes(action)) {
       const gps = await getGpsPosition();
       setGpsQuality(gps.quality);
       if (!gps.reading) {
+        if (!gpsRequired) {
+          // GPS validation is disabled company-wide — let the punch proceed without coords.
+          await submitAction(action, {});
+          return;
+        }
         toast({
           title: "Location unavailable",
           description: gps.error || "Please enable location permission and try again.",
