@@ -30,6 +30,7 @@ import {
 import { useRolePermissions, useUpdatePermission, useSkillPermissions, useUpdateSkillPermission } from "@/hooks/usePermissions";
 import { useCustomSkills } from "@/hooks/useCustomSkills";
 import { useAuth } from "@/hooks/useAuth";
+import { useTenant } from "@/hooks/useTenant";
 import { DateInput } from "@/components/ui/date-input";
 import { downloadCsv } from "@/lib/csv-export";
 import LocationPickerMap from "@/components/settings/LocationPickerMap";
@@ -278,6 +279,7 @@ function BranchOfficeList({ branchId }: { branchId: string }) {
 }
 
 export default function SettingsPage() {
+  const { tenant } = useTenant();
   const { isAdmin } = useAuth();
   const { data: settings, isLoading } = useSettings();
   const save = useSaveSettings();
@@ -649,7 +651,7 @@ export default function SettingsPage() {
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
                   <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Platform</p>
-                  <p className="text-sm font-medium text-foreground mt-0.5">BeBright Planner v2.0</p>
+                  <p className="text-sm font-medium text-foreground mt-0.5">{tenant?.name || "BeBright"} Planner v2.0</p>
                 </div>
                 <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
                   <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Backend</p>
