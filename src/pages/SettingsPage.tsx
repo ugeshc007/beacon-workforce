@@ -342,7 +342,7 @@ export default function SettingsPage() {
               <Field label="Phone"><Input value={form.company_phone ?? ""} onChange={(e) => set("company_phone", e.target.value)} placeholder="+971 …" /></Field>
               <Field label="Currency"><Input value={form.currency ?? "AED"} onChange={(e) => set("currency", e.target.value)} /></Field>
               <Field label="Timezone" hint="IANA timezone identifier">
-                <Input value={form.timezone ?? "Asia/Dubai"} onChange={(e) => set("timezone", e.target.value)} />
+                <Input value={form.timezone || "Asia/Dubai"} onChange={(e) => set("timezone", e.target.value)} />
               </Field>
             </div>
           </SectionCard>
