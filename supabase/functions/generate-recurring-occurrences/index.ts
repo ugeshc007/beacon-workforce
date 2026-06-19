@@ -90,6 +90,21 @@ Deno.serve(async (req) => {
       // Ensure shadow project exists
       let projectId = job.project_id;
       if (!projectId) {
+        // Resolve branch_id (fallback to first branch of company)
+        let branchId = job.branch_id;
+        if (!branchId) {
+          const { data: br } = await supabase
+            .from("branches")
+            .select("id")
+            .eq("company_id", job.company_id)
+            .limit(1)
+            .maybeSingle();
+          branchId = br?.id ?? null;
+        }
+        if (!branchId) {
+          console.error("no branch available for job", job.id);
+          continue;
+        }
         const projName = `[Recurring] ${job.client_name}${job.site_name ? ` – ${job.site_name}` : ""}`;
         const { data: newProj, error: pErr } = await supabase
           .from("projects")
@@ -97,7 +112,7 @@ Deno.serve(async (req) => {
             name: projName,
             client_name: job.client_name,
             company_id: job.company_id,
-            branch_id: job.branch_id,
+            branch_id: branchId,
             status: "in_progress",
             site_address: job.address,
             site_latitude: job.lat,
@@ -110,7 +125,7 @@ Deno.serve(async (req) => {
           continue;
         }
         projectId = newProj!.id;
-        await supabase.from("recurring_jobs").update({ project_id: projectId }).eq("id", job.id);
+        await supabase.from("recurring_jobs").update({ project_id: projectId, branch_id: branchId }).eq("id", job.id);
       }
 
 
