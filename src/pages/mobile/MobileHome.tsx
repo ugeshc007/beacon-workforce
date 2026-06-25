@@ -7,6 +7,7 @@ import { actionLabels, stepLabels, stepColors, WorkflowAction } from "@/lib/work
 import { projectStepLabels, projectStepColors } from "@/lib/project-workflow-engine";
 import { getGpsPosition, qualityColor, qualityLabel } from "@/lib/gps";
 import { initAutoSync } from "@/lib/offline-sync";
+import { getCachedData } from "@/lib/offline-queue";
 import { HoldToConfirm } from "@/components/mobile/HoldToConfirm";
 
 import { DriverWorkflowCard } from "@/components/mobile/DriverWorkflowCard";
