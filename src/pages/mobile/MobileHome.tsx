@@ -32,6 +32,7 @@ export default function MobileHome() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [gpsQuality, setGpsQuality] = useState<"high" | "medium" | "low" | "none">("none");
+  const [lastSyncAt, setLastSyncAt] = useState<Date | null>(null);
   const autoSyncCleanup = useRef<(() => void) | null>(null);
   useEffect(() => {
     const t = setInterval(() => setCurrentTime(new Date()), 1000);
