@@ -105,8 +105,9 @@ export default function MobileHome() {
       const gps = await getGpsPosition();
       setGpsQuality(gps.quality);
       if (!gps.reading) {
-        if (!gpsRequired) {
-          // GPS validation is disabled company-wide — let the punch proceed without coords.
+        // Skip GPS gate when offline OR when admin has disabled the requirement.
+        // The action will be queued and validated server-side when it syncs.
+        if (!gpsRequired || !navigator.onLine) {
           await submitAction(action, {});
           return;
         }
