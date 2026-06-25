@@ -7,6 +7,7 @@ import { actionLabels, stepLabels, stepColors, WorkflowAction } from "@/lib/work
 import { projectStepLabels, projectStepColors } from "@/lib/project-workflow-engine";
 import { getGpsPosition, qualityColor, qualityLabel } from "@/lib/gps";
 import { initAutoSync } from "@/lib/offline-sync";
+import { getCachedData } from "@/lib/offline-queue";
 import { HoldToConfirm } from "@/components/mobile/HoldToConfirm";
 
 import { DriverWorkflowCard } from "@/components/mobile/DriverWorkflowCard";
@@ -31,6 +32,7 @@ export default function MobileHome() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [gpsQuality, setGpsQuality] = useState<"high" | "medium" | "low" | "none">("none");
+  const [lastSyncAt, setLastSyncAt] = useState<Date | null>(null);
   const autoSyncCleanup = useRef<(() => void) | null>(null);
   useEffect(() => {
     const t = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -52,6 +54,15 @@ export default function MobileHome() {
     autoSyncCleanup.current = initAutoSync();
     return () => autoSyncCleanup.current?.();
   }, []);
+
+  // Read the cached snapshot timestamp so we can show "last sync at ..." offline
+  useEffect(() => {
+    if (!employee) return;
+    const today = new Date().toISOString().slice(0, 10);
+    getCachedData<unknown>(`today_projects_${employee.id}_${today}`).then((c) => {
+      if (c?.cachedAt) setLastSyncAt(new Date(c.cachedAt));
+    });
+  }, [employee, todayProjects]);
 
   // Keep GPS background tracking running while any project session is in travel
   const hasActiveTravel = (todayProjects ?? []).some((p) => p.step === "traveling");
@@ -94,8 +105,9 @@ export default function MobileHome() {
       const gps = await getGpsPosition();
       setGpsQuality(gps.quality);
       if (!gps.reading) {
-        if (!gpsRequired) {
-          // GPS validation is disabled company-wide — let the punch proceed without coords.
+        // Skip GPS gate when offline OR when admin has disabled the requirement.
+        // The action will be queued and validated server-side when it syncs.
+        if (!gpsRequired || !navigator.onLine) {
           await submitAction(action, {});
           return;
         }
@@ -161,6 +173,22 @@ export default function MobileHome() {
 
   return (
     <div className="flex flex-col gap-4 px-4 pb-24 safe-area-inset" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 3rem)' }}>
+      {/* Offline banner — shown when device has no network */}
+      {!isOnline && (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 flex items-start gap-2">
+          <WifiOff className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">You're offline</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              {lastSyncAt
+                ? `Showing last sync from ${lastSyncAt.toLocaleTimeString("en-AE", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Dubai" })}. `
+                : "Showing cached data. "}
+              Actions will sync when you reconnect.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Greeting */}
       <div className="flex items-center justify-between">
         <div>

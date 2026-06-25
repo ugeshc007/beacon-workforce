@@ -4,6 +4,7 @@ import { useMobileAuth } from "@/hooks/useMobileAuth";
 import { Home, ClipboardList, Bell, User, Loader2, Users, FileText, MapPin } from "lucide-react";
 import { initAutoSync } from "@/lib/offline-sync";
 import { initDailyLogAutoSync } from "@/lib/offline-daily-logs";
+import { initSessionMirror } from "@/lib/mobile-session-persist";
 import { SyncStatusBadge } from "@/components/mobile/SyncStatusBadge";
 
 export default function MobileLayout() {
@@ -12,7 +13,8 @@ export default function MobileLayout() {
   useEffect(() => {
     const cleanupActions = initAutoSync();
     const cleanupLogs = initDailyLogAutoSync();
-    return () => { cleanupActions(); cleanupLogs(); };
+    const cleanupMirror = initSessionMirror();
+    return () => { cleanupActions(); cleanupLogs(); cleanupMirror(); };
   }, []);
 
   if (loading) {
