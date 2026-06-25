@@ -173,6 +173,22 @@ export default function MobileHome() {
 
   return (
     <div className="flex flex-col gap-4 px-4 pb-24 safe-area-inset" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 3rem)' }}>
+      {/* Offline banner — shown when device has no network */}
+      {!isOnline && (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 flex items-start gap-2">
+          <WifiOff className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">You're offline</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              {lastSyncAt
+                ? `Showing last sync from ${lastSyncAt.toLocaleTimeString("en-AE", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Dubai" })}. `
+                : "Showing cached data. "}
+              Actions will sync when you reconnect.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Greeting */}
       <div className="flex items-center justify-between">
         <div>
