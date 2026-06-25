@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
 import { toLocalDateStr } from "@/lib/utils";
+import { cacheData, getCachedData } from "@/lib/offline-queue";
 
 export interface UpcomingProject {
   assignmentId: string;
