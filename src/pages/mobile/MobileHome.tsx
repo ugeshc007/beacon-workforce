@@ -55,6 +55,15 @@ export default function MobileHome() {
     return () => autoSyncCleanup.current?.();
   }, []);
 
+  // Read the cached snapshot timestamp so we can show "last sync at ..." offline
+  useEffect(() => {
+    if (!employee) return;
+    const today = new Date().toISOString().slice(0, 10);
+    getCachedData<unknown>(`today_projects_${employee.id}_${today}`).then((c) => {
+      if (c?.cachedAt) setLastSyncAt(new Date(c.cachedAt));
+    });
+  }, [employee, todayProjects]);
+
   // Keep GPS background tracking running while any project session is in travel
   const hasActiveTravel = (todayProjects ?? []).some((p) => p.step === "traveling");
   useEffect(() => {
