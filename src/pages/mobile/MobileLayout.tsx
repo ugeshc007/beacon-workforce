@@ -1,14 +1,16 @@
-import { Outlet, NavLink, Navigate } from "react-router-dom";
+import { Outlet, NavLink, Navigate, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
-import { Home, ClipboardList, Bell, User, Loader2, Users, FileText, MapPin } from "lucide-react";
+import { Home, ClipboardList, Bell, User, Loader2, Users, MapPin, LogOut } from "lucide-react";
 import { initAutoSync } from "@/lib/offline-sync";
 import { initDailyLogAutoSync } from "@/lib/offline-daily-logs";
 import { initSessionMirror } from "@/lib/mobile-session-persist";
 import { SyncStatusBadge } from "@/components/mobile/SyncStatusBadge";
+import { Button } from "@/components/ui/button";
 
 export default function MobileLayout() {
-  const { session, employee, loading } = useMobileAuth();
+  const { session, employee, loading, signOut } = useMobileAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const cleanupActions = initAutoSync();
@@ -31,16 +33,25 @@ export default function MobileLayout() {
 
   if (!employee) {
     const offline = typeof navigator !== "undefined" && navigator.onLine === false;
+    const handleUseDifferentAccount = async () => {
+      await signOut();
+      navigate("/m/login", { replace: true });
+    };
+
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6 text-center gap-3">
-        <p className="text-base font-semibold text-foreground">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6 text-center gap-4 safe-area-inset">
+        <p className="text-lg font-semibold text-foreground">
           {offline ? "You're offline" : "No employee profile linked"}
         </p>
-        <p className="text-sm text-muted-foreground">
+        <p className="max-w-sm text-sm leading-6 text-muted-foreground">
           {offline
             ? "Connect to the internet once so we can load your profile, then you can keep working offline."
-            : "Your account isn't linked to an employee record. Please contact your supervisor."}
+            : "This login is not connected to a field employee profile. Sign out and use the correct employee account."}
         </p>
+        <Button onClick={handleUseDifferentAccount} className="mt-2 h-11 px-5 gap-2">
+          <LogOut className="h-4 w-4" />
+          Use different account
+        </Button>
       </div>
     );
   }

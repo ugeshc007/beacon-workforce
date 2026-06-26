@@ -129,7 +129,12 @@ export function MobileAuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     clearCachedEmployee();
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      // If the device is offline or the auth server is unreachable, still clear
+      // the in-app state so the worker can return to the login screen.
+    }
     setEmployee(null);
     setSession(null);
   };
