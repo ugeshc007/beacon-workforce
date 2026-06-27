@@ -109,10 +109,10 @@ Deno.serve(async (req) => {
         project_id: assignment?.project_id ?? null,
         date: today,
         office_punch_in: now,
-        office_punch_in_lat: lat,
-        office_punch_in_lng: lng,
+        office_punch_in_lat: lat ?? null,
+        office_punch_in_lng: lng ?? null,
         office_punch_in_valid: valid,
-        office_punch_in_distance_m: Math.round(distance),
+        office_punch_in_distance_m: lat != null && lng != null ? Math.round(distance) : null,
         office_punch_in_accuracy: accuracy ?? null,
         office_punch_in_spoofed: is_spoofed ?? false,
       })
