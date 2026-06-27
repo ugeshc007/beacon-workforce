@@ -450,7 +450,19 @@ export default function SettingsPage() {
                 </div>
                 <Switch
                   checked={(form.gps_required_on_punch ?? "true") !== "false"}
-                  onCheckedChange={(v) => set("gps_required_on_punch", v ? "true" : "false")}
+                  onCheckedChange={(v) => {
+                    set("gps_required_on_punch", v ? "true" : "false");
+                    if (v) {
+                      // Auto-fill sensible defaults when enabling, only for empty / zero values
+                      const isBlank = (x: any) => x === undefined || x === null || x === "" || x === "0" || x === 0;
+                      if (isBlank(form.gps_office_radius)) set("gps_office_radius", "100");
+                      if (isBlank(form.gps_site_radius)) set("gps_site_radius", "150");
+                      if (isBlank(form.gps_accuracy_threshold)) set("gps_accuracy_threshold", "50");
+                      if (!form.gps_mode) set("gps_mode", "smart");
+                      if (form.gps_spoof_detection === undefined || form.gps_spoof_detection === null || form.gps_spoof_detection === "")
+                        set("gps_spoof_detection", "true");
+                    }
+                  }}
                 />
               </div>
 
