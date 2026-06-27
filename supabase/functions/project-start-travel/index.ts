@@ -21,13 +21,16 @@ Deno.serve(async (req) => {
       .from("settings").select("value").eq("key", "office_punch_in_mandatory").maybeSingle();
     const officeMandatory = (mandatorySetting?.value ?? "") === "true";
 
-    // Get or create today's attendance log
-    let { data: log } = await supabase
+    // Find ANY existing log for today (open preferred), to avoid violating
+    // the partial unique index attendance_logs_one_open_per_day.
+    const { data: logs } = await supabase
       .from("attendance_logs")
-      .select("id, office_punch_in")
+      .select("id, office_punch_in, office_punch_out")
       .eq("employee_id", employee_id)
       .eq("date", today)
-      .maybeSingle();
+      .order("office_punch_out", { ascending: true, nullsFirst: true })
+      .limit(1);
+    let log = logs?.[0] ?? null;
 
     if (!log) {
       if (officeMandatory) return errorResponse("Must punch in at office first", 400);
