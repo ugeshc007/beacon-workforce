@@ -20,14 +20,26 @@ Deno.serve(async (req) => {
     const dup = await checkIdempotency(supabase, idempotency_key, employee_id, "start-travel");
     if (dup) return dup;
 
-    const log = await findOpenAttendanceLog(
+    const { data: mandatorySetting } = await supabase
+      .from("settings").select("value").eq("key", "office_punch_in_mandatory").maybeSingle();
+    const officeMandatory = (mandatorySetting?.value ?? "") === "true";
+
+    let log = await findOpenAttendanceLog(
       supabase,
       employee_id,
       "id, date, office_punch_in, travel_start_time, work_end_time, office_punch_out"
     );
 
-    if (!log) return errorResponse("Must punch in at office first", 400);
-    if (!log.office_punch_in) return errorResponse("Must punch in at office first", 400);
+    if (!log) {
+      if (officeMandatory) return errorResponse("Must punch in at office first", 400);
+      const { data: created, error: createErr } = await supabase
+        .from("attendance_logs").insert({ employee_id, date: today })
+        .select("id, date, office_punch_in, travel_start_time, work_end_time, office_punch_out").single();
+      if (createErr) return errorResponse(createErr.message, 500);
+      log = created as typeof log;
+    } else if (officeMandatory && !log.office_punch_in) {
+      return errorResponse("Must punch in at office first", 400);
+    }
     if (log.office_punch_out) return errorResponse("Already punched out for the day", 400);
     if (log.travel_start_time) return errorResponse("Travel already started", 400);
 
