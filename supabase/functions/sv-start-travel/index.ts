@@ -19,12 +19,14 @@ Deno.serve(async (req) => {
       .from("settings").select("value").eq("key", "office_punch_in_mandatory").maybeSingle();
     const officeMandatory = (mandatorySetting?.value ?? "") === "true";
 
-    let { data: log } = await supabase
+    const { data: logs } = await supabase
       .from("attendance_logs")
-      .select("id, office_punch_in")
+      .select("id, office_punch_in, office_punch_out")
       .eq("employee_id", employee_id)
       .eq("date", today)
-      .maybeSingle();
+      .order("office_punch_out", { ascending: true, nullsFirst: true })
+      .limit(1);
+    let log = logs?.[0] ?? null;
     if (!log) {
       if (officeMandatory) return errorResponse("Must punch in at office first", 400);
       const { data: created, error: createErr } = await supabase
