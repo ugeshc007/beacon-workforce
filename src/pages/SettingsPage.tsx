@@ -375,56 +375,16 @@ export default function SettingsPage() {
           </SectionCard>
         </TabsContent>
 
-        {/* ── GPS / Location ──────────────── */}
-        <TabsContent value="gps">
-          <SectionCard icon={MapPin} title="GPS & Location Settings" desc="Control geofence radii, accuracy requirements, GPS mode, and spoof detection."
-            onSave={() => saveSection(["gps_office_radius", "gps_site_radius", "gps_accuracy_threshold", "gps_spoof_detection", "gps_mode", "gps_required_on_punch"])} saving={save.isPending}>
-            <div className="mb-4 flex items-center justify-between rounded-lg border border-border/50 bg-card/50 p-3">
-              <div>
-                <p className="text-xs font-medium text-foreground">Require GPS on Punch-In</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  When OFF, employees can punch in even if they deny location permission. Distance / geofence checks are skipped company-wide.
-                </p>
-              </div>
-              <Switch
-                checked={(form.gps_required_on_punch ?? "true") !== "false"}
-                onCheckedChange={(v) => set("gps_required_on_punch", v ? "true" : "false")}
-              />
-            </div>
-            <div className="grid sm:grid-cols-2 gap-4">
-              <Field label="Office Geofence Radius (m)" hint="Default radius around the office for punch-in validation.">
-                <Input type="number" value={form.gps_office_radius || "100"} onChange={(e) => set("gps_office_radius", e.target.value)} />
-              </Field>
-              <Field label="Site Geofence Radius (m)" hint="Default radius around project sites for arrival validation.">
-                <Input type="number" value={form.gps_site_radius || "150"} onChange={(e) => set("gps_site_radius", e.target.value)} />
-              </Field>
-              <Field label="Accuracy Threshold (m)" hint="GPS readings less accurate than this are flagged.">
-                <Input type="number" value={form.gps_accuracy_threshold || "50"} onChange={(e) => set("gps_accuracy_threshold", e.target.value)} />
-              </Field>
-              <Field label="GPS Mode" hint="Strict: reject invalid GPS. Smart: flag but allow. Allow Map: let user confirm on map.">
-                <Select value={form.gps_mode || "strict"} onValueChange={(v) => set("gps_mode", v)}>
-                  <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="strict">Strict</SelectItem>
-                    <SelectItem value="smart">Smart</SelectItem>
-                    <SelectItem value="allow_map">Allow Map Confirmation</SelectItem>
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field label="Spoof Detection">
-                <div className="flex items-center gap-2 pt-1">
-                  <Switch checked={isOn("gps_spoof_detection")} onCheckedChange={() => toggle("gps_spoof_detection")} />
-                  <span className="text-xs text-muted-foreground">{isOn("gps_spoof_detection") ? "Enabled" : "Disabled"}</span>
-                </div>
-              </Field>
-            </div>
-          </SectionCard>
-        </TabsContent>
-
-        {/* ── Attendance Rules ────────────── */}
+        {/* ── Attendance Rules (includes GPS / Location) ────────────── */}
         <TabsContent value="attendance">
-          <SectionCard icon={Clock} title="Attendance & Overtime Rules" desc="Define working hours, OT, break, travel, and approval rules."
-            onSave={() => saveSection(["standard_work_hours", "weekly_off_day", "friday_off", "late_threshold_minutes", "late_work_start_threshold_minutes", "break_duration_minutes", "travel_time_paid", "travel_delay_threshold_minutes", "office_punch_in_mandatory", "expense_approval_threshold"])} saving={save.isPending}>
+          <SectionCard icon={Clock} title="Attendance & Overtime Rules" desc="Define working hours, OT, break, travel, GPS, and approval rules."
+            onSave={() => saveSection([
+              "standard_work_hours", "weekly_off_day", "friday_off", "late_threshold_minutes",
+              "late_work_start_threshold_minutes", "break_duration_minutes", "travel_time_paid",
+              "travel_delay_threshold_minutes", "office_punch_in_mandatory", "expense_approval_threshold",
+              "gps_office_radius", "gps_site_radius", "gps_accuracy_threshold", "gps_spoof_detection",
+              "gps_mode", "gps_required_on_punch",
+            ])} saving={save.isPending}>
             <div className="grid sm:grid-cols-2 gap-4">
               <Field label="Standard Work Hours / Day">
                 <Input type="number" value={form.standard_work_hours ?? "8"} onChange={(e) => set("standard_work_hours", e.target.value)} />
@@ -472,6 +432,55 @@ export default function SettingsPage() {
               <Field label="Expense Approval Threshold (AED)" hint="Expenses above this amount require manager approval.">
                 <Input type="number" value={form.expense_approval_threshold ?? "500"} onChange={(e) => set("expense_approval_threshold", e.target.value)} />
               </Field>
+            </div>
+
+            {/* ── GPS / Location sub-section ───────────────── */}
+            <div className="mt-8 pt-6 border-t border-border/50">
+              <div className="mb-4 flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-primary" />
+                <h3 className="text-sm font-semibold text-foreground">GPS & Location</h3>
+              </div>
+
+              <div className="mb-4 flex items-center justify-between rounded-lg border border-border/50 bg-card/50 p-3">
+                <div>
+                  <p className="text-xs font-medium text-foreground">Require GPS on Punch-In</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    When OFF, employees can punch in even if they deny location permission. Distance / geofence checks are skipped company-wide.
+                  </p>
+                </div>
+                <Switch
+                  checked={(form.gps_required_on_punch ?? "true") !== "false"}
+                  onCheckedChange={(v) => set("gps_required_on_punch", v ? "true" : "false")}
+                />
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-4">
+                <Field label="Office Geofence Radius (m)" hint="Default radius around the office for punch-in validation.">
+                  <Input type="number" value={form.gps_office_radius || "100"} onChange={(e) => set("gps_office_radius", e.target.value)} />
+                </Field>
+                <Field label="Site Geofence Radius (m)" hint="Default radius around project sites for arrival validation.">
+                  <Input type="number" value={form.gps_site_radius || "150"} onChange={(e) => set("gps_site_radius", e.target.value)} />
+                </Field>
+                <Field label="Accuracy Threshold (m)" hint="GPS readings less accurate than this are flagged.">
+                  <Input type="number" value={form.gps_accuracy_threshold || "50"} onChange={(e) => set("gps_accuracy_threshold", e.target.value)} />
+                </Field>
+                <Field label="GPS Mode" hint="Strict: reject invalid GPS. Smart: flag but allow. Allow Map: let user confirm on map.">
+                  <Select value={form.gps_mode || "strict"} onValueChange={(v) => set("gps_mode", v)}>
+                    <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="strict">Strict</SelectItem>
+                      <SelectItem value="smart">Smart</SelectItem>
+                      <SelectItem value="allow_map">Allow Map Confirmation</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Spoof Detection">
+                  <div className="flex items-center gap-2 pt-1">
+                    <Switch checked={isOn("gps_spoof_detection")} onCheckedChange={() => toggle("gps_spoof_detection")} />
+                    <span className="text-xs text-muted-foreground">{isOn("gps_spoof_detection") ? "Enabled" : "Disabled"}</span>
+                  </div>
+                </Field>
+              </div>
             </div>
           </SectionCard>
         </TabsContent>
