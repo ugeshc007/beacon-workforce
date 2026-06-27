@@ -6,8 +6,8 @@ Deno.serve(async (req) => {
   try {
     const { employee_id, client_timestamp, idempotency_key, lat, lng, accuracy, is_spoofed } = await req.json();
 
-    if (!employee_id || lat == null || lng == null) {
-      return errorResponse("employee_id, lat, and lng are required");
+    if (!employee_id) {
+      return errorResponse("employee_id is required");
     }
 
     const supabase = createSupabaseAdmin();
@@ -18,6 +18,18 @@ Deno.serve(async (req) => {
 
     const today = todayDate();
 
+    // Read company-wide GPS toggle. When OFF → bypass geofence checks entirely.
+    const { data: gpsSetting } = await supabase
+      .from("settings")
+      .select("value")
+      .eq("key", "gps_required_on_punch")
+      .maybeSingle();
+    const gpsRequired = (gpsSetting?.value ?? "true") !== "false";
+
+    if (gpsRequired && (lat == null || lng == null)) {
+      return errorResponse("lat and lng are required when GPS validation is enabled");
+    }
+
     // Get employee branch + office + name
     const { data: emp } = await supabase
       .from("employees")
@@ -27,39 +39,42 @@ Deno.serve(async (req) => {
 
     if (!emp) return errorResponse("Employee not found", 404);
 
-    // Fetch ALL offices/warehouses for this branch. Employee can punch in
-    // from any of them — we pick the nearest matching one.
-    const { data: offices } = await supabase
-      .from("offices")
-      .select("id, name, latitude, longitude, gps_radius_meters, gps_validation_enabled")
-      .eq("branch_id", emp.branch_id);
+    let distance = 0;
+    let valid = true; // Default true when GPS check is bypassed
 
-    const validOffices = (offices ?? []).filter(
-      (o) => o.latitude != null && o.longitude != null
-    );
+    if (lat != null && lng != null) {
+      // Fetch ALL offices/warehouses for this branch. Employee can punch in
+      // from any of them — we pick the nearest matching one.
+      const { data: offices } = await supabase
+        .from("offices")
+        .select("id, name, latitude, longitude, gps_radius_meters, gps_validation_enabled")
+        .eq("branch_id", emp.branch_id);
 
-    if (validOffices.length === 0) {
-      return errorResponse("No office configured for branch", 400);
+      const validOffices = (offices ?? []).filter(
+        (o) => o.latitude != null && o.longitude != null
+      );
+
+      if (validOffices.length > 0) {
+        const scored = validOffices.map((o) => ({
+          office: o,
+          distance: haversineDistance(lat, lng, Number(o.latitude), Number(o.longitude)),
+        }));
+        scored.sort((a, b) => a.distance - b.distance);
+        const nearest = scored[0];
+        distance = nearest.distance;
+
+        const gpsValidationEnabled = nearest.office.gps_validation_enabled !== false;
+        valid =
+          scored.some(
+            (s) =>
+              s.office.gps_validation_enabled === false ||
+              s.distance <= (s.office.gps_radius_meters ?? 100)
+          ) || !gpsValidationEnabled;
+      } else if (gpsRequired) {
+        return errorResponse("No office configured for branch", 400);
+      }
     }
 
-    // Compute distance to each office and pick the nearest one.
-    const scored = validOffices.map((o) => ({
-      office: o,
-      distance: haversineDistance(lat, lng, Number(o.latitude), Number(o.longitude)),
-    }));
-    scored.sort((a, b) => a.distance - b.distance);
-    const nearest = scored[0];
-    const office = nearest.office;
-    const distance = nearest.distance;
-
-    // Valid if ANY office accepts this punch (GPS disabled on it OR within radius).
-    const gpsValidationEnabled = office.gps_validation_enabled !== false;
-    const valid =
-      scored.some(
-        (s) =>
-          s.office.gps_validation_enabled === false ||
-          s.distance <= (s.office.gps_radius_meters ?? 100)
-      ) || !gpsValidationEnabled;
 
 
     // Get today's assignment for project_id and shift_start
@@ -94,10 +109,10 @@ Deno.serve(async (req) => {
         project_id: assignment?.project_id ?? null,
         date: today,
         office_punch_in: now,
-        office_punch_in_lat: lat,
-        office_punch_in_lng: lng,
+        office_punch_in_lat: lat ?? null,
+        office_punch_in_lng: lng ?? null,
         office_punch_in_valid: valid,
-        office_punch_in_distance_m: Math.round(distance),
+        office_punch_in_distance_m: lat != null && lng != null ? Math.round(distance) : null,
         office_punch_in_accuracy: accuracy ?? null,
         office_punch_in_spoofed: is_spoofed ?? false,
       })
