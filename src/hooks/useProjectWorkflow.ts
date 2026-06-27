@@ -188,7 +188,32 @@ export function useProjectWorkflow(projectId: string | null) {
       // In-house mode: no session exists yet — server creates one from project_id.
       body.project_id = projectId;
     } else {
-      body.session_id = session?.id;
+      // For follow-up actions we need a real session_id. If the optimistic
+      // session hasn't been replaced by a server row yet (e.g. user taps
+      // "Take Break" right after starting work in-house), fetch it now so we
+      // don't send an empty string and trigger "session_id required".
+      let sid = session?.id;
+      if (!sid && employee && projectId && navigator.onLine) {
+        try {
+          const { data: row } = await supabase
+            .from("project_work_sessions")
+            .select("id")
+            .eq("employee_id", employee.id)
+            .eq("project_id", projectId)
+            .eq("date", today)
+            .is("work_end_time", null)
+            .maybeSingle();
+          sid = row?.id ?? undefined;
+          if (sid) setSession((prev) => prev ? { ...prev, id: sid! } : prev);
+        } catch { /* ignore */ }
+      }
+      if (!sid) {
+        setActionLoading(false);
+        setStep(previousStep);
+        setSession(previousSession);
+        return { success: false, error: "Session not ready yet. Please try again in a moment." };
+      }
+      body.session_id = sid;
     }
 
 
@@ -213,6 +238,12 @@ export function useProjectWorkflow(projectId: string | null) {
 
     try {
       const data = await invokeEdge(fnMap[action], body);
+      // Capture the server-issued session_id immediately (in-house start_work)
+      // so the next action has a valid id without waiting on fetchSession.
+      const newSid = (data as { session_id?: string } | undefined)?.session_id;
+      if (newSid) {
+        setSession((prev) => prev ? { ...prev, id: newSid } : prev);
+      }
       fetchSession();
       return { success: true, data };
     } catch (e) {
