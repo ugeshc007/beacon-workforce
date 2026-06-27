@@ -324,7 +324,6 @@ export default function SettingsPage() {
         <TabsList className="bg-muted/50 border border-border flex-wrap h-auto gap-1 p-1">
           <TabsTrigger value="company">Company</TabsTrigger>
           <TabsTrigger value="maps">Maps</TabsTrigger>
-          <TabsTrigger value="gps">Location</TabsTrigger>
           <TabsTrigger value="attendance">Attendance Rules</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="branches">Branches</TabsTrigger>
