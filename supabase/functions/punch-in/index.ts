@@ -27,22 +27,40 @@ Deno.serve(async (req) => {
 
     if (!emp) return errorResponse("Employee not found", 404);
 
-    const { data: office } = await supabase
+    // Fetch ALL offices/warehouses for this branch. Employee can punch in
+    // from any of them — we pick the nearest matching one.
+    const { data: offices } = await supabase
       .from("offices")
-      .select("latitude, longitude, gps_radius_meters, gps_validation_enabled")
-      .eq("branch_id", emp.branch_id)
-      .limit(1)
-      .single();
+      .select("id, name, latitude, longitude, gps_radius_meters, gps_validation_enabled")
+      .eq("branch_id", emp.branch_id);
 
-    if (!office?.latitude || !office?.longitude) {
+    const validOffices = (offices ?? []).filter(
+      (o) => o.latitude != null && o.longitude != null
+    );
+
+    if (validOffices.length === 0) {
       return errorResponse("No office configured for branch", 400);
     }
 
-    const distance = haversineDistance(lat, lng, Number(office.latitude), Number(office.longitude));
-    // If the office has GPS validation turned off, always accept the punch-in
-    // regardless of distance from the configured coordinates.
+    // Compute distance to each office and pick the nearest one.
+    const scored = validOffices.map((o) => ({
+      office: o,
+      distance: haversineDistance(lat, lng, Number(o.latitude), Number(o.longitude)),
+    }));
+    scored.sort((a, b) => a.distance - b.distance);
+    const nearest = scored[0];
+    const office = nearest.office;
+    const distance = nearest.distance;
+
+    // Valid if ANY office accepts this punch (GPS disabled on it OR within radius).
     const gpsValidationEnabled = office.gps_validation_enabled !== false;
-    const valid = !gpsValidationEnabled || distance <= office.gps_radius_meters;
+    const valid =
+      scored.some(
+        (s) =>
+          s.office.gps_validation_enabled === false ||
+          s.distance <= (s.office.gps_radius_meters ?? 100)
+      ) || !gpsValidationEnabled;
+
 
     // Get today's assignment for project_id and shift_start
     const { data: assignment } = await supabase
