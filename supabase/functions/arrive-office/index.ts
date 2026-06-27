@@ -40,16 +40,22 @@ Deno.serve(async (req) => {
     let distance = 0;
 
     if (emp?.branch_id) {
-      const { data: office } = await supabase
+      const { data: offices } = await supabase
         .from("offices")
         .select("latitude, longitude, gps_radius_meters")
-        .eq("branch_id", emp.branch_id)
-        .limit(1)
-        .maybeSingle();
+        .eq("branch_id", emp.branch_id);
 
-      if (office?.latitude && office?.longitude) {
-        distance = haversineDistance(lat, lng, Number(office.latitude), Number(office.longitude));
-        valid = distance <= office.gps_radius_meters;
+      const candidates = (offices ?? [])
+        .filter((o) => o.latitude != null && o.longitude != null)
+        .map((o) => ({
+          distance: haversineDistance(lat, lng, Number(o.latitude), Number(o.longitude)),
+          radius: o.gps_radius_meters ?? 100,
+        }));
+
+      if (candidates.length > 0) {
+        candidates.sort((a, b) => a.distance - b.distance);
+        distance = candidates[0].distance;
+        valid = candidates.some((c) => c.distance <= c.radius);
       }
     }
 
