@@ -15,14 +15,26 @@ Deno.serve(async (req) => {
     const today = todayDate();
     const now = nowTimestamp();
 
-    // Must be punched in
-    const { data: log } = await supabase
+    const { data: mandatorySetting } = await supabase
+      .from("settings").select("value").eq("key", "office_punch_in_mandatory").maybeSingle();
+    const officeMandatory = (mandatorySetting?.value ?? "") === "true";
+
+    let { data: log } = await supabase
       .from("attendance_logs")
       .select("id, office_punch_in")
       .eq("employee_id", employee_id)
       .eq("date", today)
       .maybeSingle();
-    if (!log?.office_punch_in) return errorResponse("Must punch in at office first", 400);
+    if (!log) {
+      if (officeMandatory) return errorResponse("Must punch in at office first", 400);
+      const { data: created, error: createErr } = await supabase
+        .from("attendance_logs").insert({ employee_id, date: today })
+        .select("id, office_punch_in").single();
+      if (createErr) return errorResponse(createErr.message, 500);
+      log = created;
+    } else if (officeMandatory && !log.office_punch_in) {
+      return errorResponse("Must punch in at office first", 400);
+    }
 
     // Sequential rule: no other open site-visit session
     const { data: activeSv } = await supabase
