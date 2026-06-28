@@ -139,7 +139,8 @@ export default function MobileHome() {
     queryKey: ["stale-project-session", employee?.id, attendanceLog?.id],
     enabled: !!employee && !!attendanceLog && isStaleShift,
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Try by attendance_log_id first
+      let { data } = await supabase
         .from("project_work_sessions")
         .select("project_id, projects(name)")
         .eq("attendance_log_id", attendanceLog!.id)
@@ -147,7 +148,19 @@ export default function MobileHome() {
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      if (error) return null;
+      // Fallback: find any open session for this employee on the stale date
+      if (!data && employee && attendanceLog?.date) {
+        const res = await supabase
+          .from("project_work_sessions")
+          .select("project_id, projects(name)")
+          .eq("employee_id", employee.id)
+          .eq("date", attendanceLog.date)
+          .is("work_end_time", null)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        data = res.data;
+      }
       return data as { project_id: string; projects: { name: string } | null } | null;
     },
   });
@@ -234,39 +247,22 @@ export default function MobileHome() {
           )}
 
           <div className="grid grid-cols-1 gap-2">
-            {availableActions.includes("start_return_travel") && (
-              <HoldToConfirm
-                onConfirm={() => handleOfficeAction("start_return_travel")}
-                disabled={actionLoading}
-                loading={actionLoading}
-                variant="secondary"
-              >
-                <RotateCcw className="h-4 w-4" />
-                {actionLabels.start_return_travel}
-              </HoldToConfirm>
-            )}
-            {availableActions.includes("arrive_office") && (
-              <HoldToConfirm
-                onConfirm={() => handleOfficeAction("arrive_office")}
-                disabled={actionLoading}
-                loading={actionLoading}
-                variant="secondary"
-              >
-                <Building2 className="h-4 w-4" />
-                {actionLabels.arrive_office}
-              </HoldToConfirm>
-            )}
-            {availableActions.includes("punch_out") && (
-              <HoldToConfirm
-                onConfirm={() => handleOfficeAction("punch_out")}
-                disabled={actionLoading}
-                loading={actionLoading}
-                variant="primary"
-              >
-                <CheckCircle2 className="h-4 w-4" />
-                {actionLabels.punch_out}
-              </HoldToConfirm>
-            )}
+            {availableActions
+              .filter((a) => a !== "punch_in")
+              .map((a) => (
+                <HoldToConfirm
+                  key={a}
+                  onConfirm={() => handleOfficeAction(a)}
+                  disabled={actionLoading}
+                  loading={actionLoading}
+                  variant={a === "punch_out" ? "primary" : "secondary"}
+                >
+                  {a === "start_return_travel" && <RotateCcw className="h-4 w-4" />}
+                  {a === "arrive_office" && <Building2 className="h-4 w-4" />}
+                  {a === "punch_out" && <CheckCircle2 className="h-4 w-4" />}
+                  {actionLabels[a]}
+                </HoldToConfirm>
+              ))}
           </div>
         </div>
       )}
