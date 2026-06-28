@@ -30,6 +30,7 @@ export default function MobileProjectWorkflow() {
   const { employee } = useMobileAuth();
   const { data: todayProjects } = useTodayProjects();
   const { session, step, workLocation, availableActions, loading, actionLoading, executeAction } = useProjectWorkflow(projectId ?? null, dateOverride);
+  const office = useMobileWorkflow();
   const { toast } = useToast();
 
 
