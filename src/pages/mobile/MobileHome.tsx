@@ -142,9 +142,8 @@ export default function MobileHome() {
       // Try by attendance_log_id first
       let { data } = await supabase
         .from("project_work_sessions")
-        .select("project_id, projects(name)")
+        .select("id, project_id, work_end_time, projects(name)")
         .eq("attendance_log_id", attendanceLog!.id)
-        .is("work_end_time", null)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -152,18 +151,25 @@ export default function MobileHome() {
       if (!data && employee && attendanceLog?.date) {
         const res = await supabase
           .from("project_work_sessions")
-          .select("project_id, projects(name)")
+          .select("id, project_id, work_end_time, projects(name)")
           .eq("employee_id", employee.id)
           .eq("date", attendanceLog.date)
-          .is("work_end_time", null)
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
         data = res.data;
       }
-      return data as { project_id: string; projects: { name: string } | null } | null;
+      return data as { id: string; project_id: string; work_end_time: string | null; projects: { name: string } | null } | null;
     },
   });
+
+  const openStaleShift = () => {
+    if (staleProjectSession?.project_id && attendanceLog?.date) {
+      navigate(`/m/project/${staleProjectSession.project_id}?date=${attendanceLog.date}`);
+      return;
+    }
+    navigate("/m/timesheet");
+  };
 
   if (loading) {
     return (
@@ -221,7 +227,11 @@ export default function MobileHome() {
       {/* Stale shift banner — open attendance log from a previous day (night shift crossed midnight) */}
       {isStaleShift && (
         <div className="rounded-lg border border-orange-500/50 bg-orange-500/10 px-3 py-3 space-y-2">
-          <div className="flex items-start gap-2">
+          <button
+            type="button"
+            onClick={openStaleShift}
+            className="w-full text-left flex items-start gap-2 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500/60"
+          >
             <AlertTriangle className="h-4 w-4 text-orange-500 mt-0.5 shrink-0" />
             <div className="min-w-0 flex-1">
               <p className="text-xs font-semibold text-orange-600 dark:text-orange-400">
@@ -231,20 +241,22 @@ export default function MobileHome() {
                 You're still punched in from a previous day. Finish the workflow below to close it.
               </p>
             </div>
-          </div>
+            <ChevronRight className="h-4 w-4 text-orange-500 mt-1 shrink-0" />
+          </button>
 
-          {staleProjectSession && (
-            <button
-              onClick={() => navigate(`/m/project/${staleProjectSession.project_id}?date=${attendanceLog!.date}`)}
-              className="w-full rounded-lg border border-orange-500/40 bg-card/60 px-3 py-2 text-left flex items-center gap-2 hover:bg-card transition-colors"
-            >
-              <PlayCircle className="h-4 w-4 text-orange-500 shrink-0" />
-              <span className="text-[12px] font-medium text-foreground flex-1 truncate">
-                Finish project: {staleProjectSession.projects?.name ?? "Open project"}
-              </span>
-              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={openStaleShift}
+            className="w-full rounded-lg border border-orange-500/40 bg-card/60 px-3 py-2 text-left flex items-center gap-2 hover:bg-card transition-colors"
+          >
+            <PlayCircle className="h-4 w-4 text-orange-500 shrink-0" />
+            <span className="text-[12px] font-medium text-foreground flex-1 truncate">
+              {staleProjectSession
+                ? `${staleProjectSession.work_end_time ? "Review" : "Finish"} project: ${staleProjectSession.projects?.name ?? "Open project"}`
+                : "Open unfinished shift"}
+            </span>
+            <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+          </button>
 
           <div className="grid grid-cols-1 gap-2">
             {availableActions
