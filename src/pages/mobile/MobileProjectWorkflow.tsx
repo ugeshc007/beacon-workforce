@@ -22,11 +22,14 @@ const GPS_ACTIONS: ProjectAction[] = ["start_travel", "arrive_site"];
 
 export default function MobileProjectWorkflow() {
   const { projectId } = useParams<{ projectId: string }>();
+  const [searchParams] = useSearchParams();
+  const dateOverride = searchParams.get("date");
   const navigate = useNavigate();
   const { employee } = useMobileAuth();
   const { data: todayProjects } = useTodayProjects();
-  const { session, step, workLocation, availableActions, loading, actionLoading, executeAction } = useProjectWorkflow(projectId ?? null);
+  const { session, step, workLocation, availableActions, loading, actionLoading, executeAction } = useProjectWorkflow(projectId ?? null, dateOverride);
   const { toast } = useToast();
+
 
   const [gpsQuality, setGpsQuality] = useState<"high" | "medium" | "low" | "none">("none");
   const [showMapPicker, setShowMapPicker] = useState(false);
