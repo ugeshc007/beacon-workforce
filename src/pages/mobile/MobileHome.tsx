@@ -139,7 +139,8 @@ export default function MobileHome() {
     queryKey: ["stale-project-session", employee?.id, attendanceLog?.id],
     enabled: !!employee && !!attendanceLog && isStaleShift,
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Try by attendance_log_id first
+      let { data } = await supabase
         .from("project_work_sessions")
         .select("project_id, projects(name)")
         .eq("attendance_log_id", attendanceLog!.id)
@@ -147,7 +148,19 @@ export default function MobileHome() {
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      if (error) return null;
+      // Fallback: find any open session for this employee on the stale date
+      if (!data && employee && attendanceLog?.date) {
+        const res = await supabase
+          .from("project_work_sessions")
+          .select("project_id, projects(name)")
+          .eq("employee_id", employee.id)
+          .eq("date", attendanceLog.date)
+          .is("work_end_time", null)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        data = res.data;
+      }
       return data as { project_id: string; projects: { name: string } | null } | null;
     },
   });
