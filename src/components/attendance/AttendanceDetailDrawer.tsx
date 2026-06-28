@@ -134,7 +134,7 @@ export function AttendanceDetailDrawer({ log, open, onOpenChange }: Props) {
   const totalHours = log.total_work_minutes != null ? (log.total_work_minutes / 60).toFixed(1) : "—";
   const otHours = log.overtime_minutes != null ? (log.overtime_minutes / 60).toFixed(1) : "0";
   const breakMin = log.break_minutes ?? 0;
-  const cost = Number(log.regular_cost ?? 0) + Number(log.overtime_cost ?? 0);
+  
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -147,7 +147,7 @@ export function AttendanceDetailDrawer({ log, open, onOpenChange }: Props) {
         </SheetHeader>
 
         {/* Summary */}
-        <div className="grid grid-cols-2 gap-3 mt-6">
+        <div className="grid grid-cols-3 gap-3 mt-6">
           <div className="rounded-lg border border-border p-3">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Total Hours</p>
             <p className="text-lg font-bold text-foreground">{totalHours}h</p>
@@ -159,10 +159,6 @@ export function AttendanceDetailDrawer({ log, open, onOpenChange }: Props) {
           <div className="rounded-lg border border-border p-3">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Break</p>
             <p className="text-lg font-bold text-foreground">{breakMin}m</p>
-          </div>
-          <div className="rounded-lg border border-border p-3">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Cost</p>
-            <p className="text-lg font-bold text-foreground">AED {Math.round(cost)}</p>
           </div>
         </div>
 
