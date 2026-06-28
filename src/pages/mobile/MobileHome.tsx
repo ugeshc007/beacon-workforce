@@ -564,8 +564,7 @@ export default function MobileHome() {
             );
           })}
 
-            );
-          })}
+
 
           {singleProject && !singleProject.sessionId && (
             <p className="text-[11px] text-muted-foreground text-center mt-1">
