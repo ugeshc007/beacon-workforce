@@ -27,6 +27,7 @@ interface TodayAssignment {
 
 interface AttendanceLog {
   id: string;
+  date: string;
   office_punch_in: string | null;
   travel_start_time: string | null;
   site_arrival_time: string | null;
