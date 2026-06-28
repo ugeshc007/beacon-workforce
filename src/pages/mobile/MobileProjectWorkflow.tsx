@@ -244,10 +244,47 @@ export default function MobileProjectWorkflow() {
       )}
 
       {step === "completed" && (
-        <Card className="p-6 border-green-500/30 bg-green-500/5 text-center">
-          <CheckCircle2 className="h-10 w-10 text-green-400 mx-auto mb-2" />
-          <p className="font-semibold text-green-400">Project Complete!</p>
-          <p className="text-xs text-muted-foreground mt-1">Returning to project list…</p>
+        <Card className="p-6 border-green-500/30 bg-green-500/5">
+          <div className="text-center">
+            <CheckCircle2 className="h-10 w-10 text-green-400 mx-auto mb-2" />
+            <p className="font-semibold text-green-400">Project Complete!</p>
+            {office.step === "punched_out" ? (
+              <p className="text-xs text-muted-foreground mt-1">Returning to project list…</p>
+            ) : (
+              <p className="text-xs text-muted-foreground mt-1">
+                Finish your shift below or go back for other projects.
+              </p>
+            )}
+          </div>
+
+          {office.step !== "punched_out" && (
+            <div className="mt-4 space-y-2">
+              {office.availableActions
+                .filter((a) => a !== "punch_in")
+                .map((a) => (
+                  <HoldToConfirm
+                    key={a}
+                    onConfirm={async () => {
+                      const r = await office.executeAction(a);
+                      if (!r?.success) {
+                        toast({ title: "Failed", description: r?.error || "Try again.", variant: "destructive" });
+                      }
+                    }}
+                    disabled={office.actionLoading}
+                    loading={office.actionLoading}
+                    variant={a === "punch_out" ? "primary" : "secondary"}
+                  >
+                    {a === "start_return_travel" && <RotateCcw className="h-4 w-4" />}
+                    {a === "arrive_office" && <Building2 className="h-4 w-4" />}
+                    {a === "punch_out" && <CheckCircle2 className="h-4 w-4" />}
+                    {officeActionLabels[a]}
+                  </HoldToConfirm>
+                ))}
+              <Button variant="outline" className="w-full" onClick={() => navigate("/m")}>
+                <ArrowLeft className="h-4 w-4 mr-2" /> Back to Home
+              </Button>
+            </div>
+          )}
         </Card>
       )}
 
