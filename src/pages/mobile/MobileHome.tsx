@@ -222,7 +222,7 @@ export default function MobileHome() {
 
           {staleProjectSession && (
             <button
-              onClick={() => navigate(`/m/project/${staleProjectSession.project_id}`)}
+              onClick={() => navigate(`/m/project/${staleProjectSession.project_id}?date=${attendanceLog!.date}`)}
               className="w-full rounded-lg border border-orange-500/40 bg-card/60 px-3 py-2 text-left flex items-center gap-2 hover:bg-card transition-colors"
             >
               <PlayCircle className="h-4 w-4 text-orange-500 shrink-0" />
