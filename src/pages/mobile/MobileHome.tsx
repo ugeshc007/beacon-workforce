@@ -207,6 +207,72 @@ export default function MobileHome() {
         </div>
       )}
 
+      {/* Stale shift banner — open attendance log from a previous day (night shift crossed midnight) */}
+      {isStaleShift && (
+        <div className="rounded-lg border border-orange-500/50 bg-orange-500/10 px-3 py-3 space-y-2">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 text-orange-500 mt-0.5 shrink-0" />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold text-orange-600 dark:text-orange-400">
+                Unfinished shift from {staleShiftLabel}
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                You're still punched in from a previous day. Finish the workflow below to close it.
+              </p>
+            </div>
+          </div>
+
+          {staleProjectSession && (
+            <button
+              onClick={() => navigate(`/m/project/${staleProjectSession.project_id}`)}
+              className="w-full rounded-lg border border-orange-500/40 bg-card/60 px-3 py-2 text-left flex items-center gap-2 hover:bg-card transition-colors"
+            >
+              <PlayCircle className="h-4 w-4 text-orange-500 shrink-0" />
+              <span className="text-[12px] font-medium text-foreground flex-1 truncate">
+                Finish project: {staleProjectSession.projects?.name ?? "Open project"}
+              </span>
+              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+            </button>
+          )}
+
+          <div className="grid grid-cols-1 gap-2">
+            {availableActions.includes("start_return_travel") && (
+              <HoldToConfirm
+                onConfirm={() => handleOfficeAction("start_return_travel")}
+                disabled={actionLoading}
+                loading={actionLoading}
+                variant="secondary"
+              >
+                <RotateCcw className="h-4 w-4" />
+                {actionLabels.start_return_travel}
+              </HoldToConfirm>
+            )}
+            {availableActions.includes("arrive_office") && (
+              <HoldToConfirm
+                onConfirm={() => handleOfficeAction("arrive_office")}
+                disabled={actionLoading}
+                loading={actionLoading}
+                variant="secondary"
+              >
+                <Building2 className="h-4 w-4" />
+                {actionLabels.arrive_office}
+              </HoldToConfirm>
+            )}
+            {availableActions.includes("punch_out") && (
+              <HoldToConfirm
+                onConfirm={() => handleOfficeAction("punch_out")}
+                disabled={actionLoading}
+                loading={actionLoading}
+                variant="primary"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                {actionLabels.punch_out}
+              </HoldToConfirm>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Greeting */}
       <div className="flex items-center justify-between">
         <div>
