@@ -68,12 +68,14 @@ export default function MobileProjectWorkflow() {
   const isResumed = !loading && !!session && step !== "idle" && step !== "completed";
 
   useEffect(() => {
-    if (step === "completed") {
-      // Auto-return to home after a moment so they can pick the next project
+    // Auto-return to home ONLY when the office shift is already wrapped up
+    // (punched out). Otherwise we keep the user here so they can use the
+    // post-project office actions (Return Travel / Arrive Office / Punch Out).
+    if (step === "completed" && office.step === "punched_out") {
       const t = setTimeout(() => navigate("/m"), 1500);
       return () => clearTimeout(t);
     }
-  }, [step, navigate]);
+  }, [step, office.step, navigate]);
 
   if (loading || !employee) {
     return (
