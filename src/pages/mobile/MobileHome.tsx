@@ -104,26 +104,16 @@ export default function MobileHome() {
     if (GPS_ACTIONS.includes(action)) {
       const gps = await getGpsPosition();
       setGpsQuality(gps.quality);
-      if (!gps.reading) {
-        // Skip GPS gate when offline OR when admin has disabled the requirement.
-        // The action will be queued and validated server-side when it syncs.
-        if (!gpsRequired || !navigator.onLine) {
-          await submitAction(action, {});
-          return;
-        }
-        toast({
-          title: "Location unavailable",
-          description: gps.error || "Please enable location permission and try again.",
-          variant: "destructive",
-        });
-        return;
+      if (gps.reading) {
+        payload = {
+          lat: gps.reading.lat,
+          lng: gps.reading.lng,
+          accuracy: gps.reading.accuracy,
+          is_spoofed: gps.reading.isMock,
+        };
       }
-      payload = {
-        lat: gps.reading.lat,
-        lng: gps.reading.lng,
-        accuracy: gps.reading.accuracy,
-        is_spoofed: gps.reading.isMock,
-      };
+      // GPS is best-effort: when it fails (timeout, denied, etc.) the action still
+      // proceeds without coordinates. Server-side validation can enforce if needed.
     }
     await submitAction(action, payload);
   };
