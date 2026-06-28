@@ -126,6 +126,32 @@ export default function MobileHome() {
     }
   };
 
+  // Detect a stale shift: the open attendance log's date is before today.
+  // Keep this query before any early return so React hook order stays stable.
+  const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Dubai" });
+  const isStaleShift = !!attendanceLog?.date && attendanceLog.date < todayStr && !attendanceLog.office_punch_out;
+  const staleShiftLabel = attendanceLog?.date
+    ? new Date(attendanceLog.date + "T00:00:00").toLocaleDateString("en-AE", { weekday: "short", day: "2-digit", month: "short" })
+    : "";
+
+  // Find an open project session tied to the stale shift so the user can finish it.
+  const { data: staleProjectSession } = useQuery({
+    queryKey: ["stale-project-session", employee?.id, attendanceLog?.id],
+    enabled: !!employee && !!attendanceLog && isStaleShift,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("project_work_sessions")
+        .select("project_id, projects(name)")
+        .eq("attendance_log_id", attendanceLog!.id)
+        .is("work_end_time", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) return null;
+      return data as { project_id: string; projects: { name: string } | null } | null;
+    },
+  });
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
@@ -160,34 +186,6 @@ export default function MobileHome() {
   // If every project assigned today is in-house, the employee never left the office,
   // so we skip the "Start Return Travel" → "Arrive Office" steps and offer Punch Out directly.
   const allInHouseDay = !!todayProjects?.length && todayProjects.every((p) => p.workLocation === "in_house");
-
-  // Detect a stale shift: the open attendance log's date is before today.
-  // Happens when an employee works a late shift that crosses midnight and
-  // hasn't punched out yet. We surface a banner so they can complete the
-  // workflow (return travel → arrive office → punch out) for that old log.
-  const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Dubai" });
-  const isStaleShift = !!attendanceLog?.date && attendanceLog.date < todayStr && !attendanceLog.office_punch_out;
-  const staleShiftLabel = attendanceLog?.date
-    ? new Date(attendanceLog.date + "T00:00:00").toLocaleDateString("en-AE", { weekday: "short", day: "2-digit", month: "short" })
-    : "";
-
-  // Find an open project session tied to the stale shift so the user can finish it.
-  const { data: staleProjectSession } = useQuery({
-    queryKey: ["stale-project-session", employee?.id, attendanceLog?.id],
-    enabled: !!employee && !!attendanceLog && isStaleShift,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("project_work_sessions")
-        .select("project_id, projects(name)")
-        .eq("attendance_log_id", attendanceLog!.id)
-        .is("work_end_time", null)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      return data as { project_id: string; projects: { name: string } | null } | null;
-    },
-  });
-
 
   return (
     <div className="flex flex-col gap-4 px-4 pb-24 safe-area-inset" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 3rem)' }}>
