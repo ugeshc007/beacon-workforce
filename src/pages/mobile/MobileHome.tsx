@@ -477,17 +477,28 @@ export default function MobileHome() {
         </Card>
       )}
 
-      {/* Post-projects: pick another OR return-to-office flow */}
-      {step !== "idle" && step !== "punched_out" && (allProjectsDone || (isDriverDay && step === "returning")) && step !== "at_office" && (
+      {/* Post-projects: pick another OR return-to-office flow.
+          Also rendered whenever the global workflow itself needs a return-travel
+          / arrive-office step (e.g. user visited a site earlier today) — even if
+          a per-project session is still open — so users are never stuck without
+          these actions before punch-out. */}
+      {step !== "idle" && step !== "punched_out" && step !== "at_office" && (
+        allProjectsDone
+        || (isDriverDay && step === "returning")
+        || step === "work_done"
+        || step === "returning"
+      ) && (
         <div className="flex flex-col gap-3">
           <Card className="p-4 border-green-500/30 bg-green-500/5">
-            <p className="text-sm text-foreground font-medium">All assigned projects done!</p>
+            <p className="text-sm text-foreground font-medium">
+              {allProjectsDone ? "All assigned projects done!" : "Heading back to office"}
+            </p>
             <p className="text-xs text-muted-foreground mt-1">
               {allInHouseDay
                 ? "In-house work complete. Punch out when you're ready to end the day."
                 : step === "returning"
                   ? "Tap below when you reach the office — or pick up another project."
-                  : "Pick up another project to keep working, or head back to the office."}
+                  : "You visited a site today — start return travel and arrive at office before punching out."}
             </p>
           </Card>
 
