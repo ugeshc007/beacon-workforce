@@ -188,6 +188,7 @@ export function useMobileWorkflow() {
     const optimisticLog: AttendanceLog = {
       ...(attendanceLog ?? {
         id: "",
+        date: today,
         office_punch_in: null, travel_start_time: null, site_arrival_time: null,
         work_start_time: null, break_start_time: null, break_end_time: null,
         work_end_time: null, return_travel_start_time: null,
