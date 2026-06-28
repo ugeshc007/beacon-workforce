@@ -3,19 +3,21 @@ import { useEffect, useRef, useState } from "react";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
 import { useProjectWorkflow } from "@/hooks/useProjectWorkflow";
 import { useTodayProjects } from "@/hooks/useTodayProjects";
+import { useMobileWorkflow } from "@/hooks/useMobileWorkflow";
 import {
   ProjectAction,
   projectActionLabels,
   projectStepLabels,
   projectStepColors,
 } from "@/lib/project-workflow-engine";
+import { actionLabels as officeActionLabels } from "@/lib/workflow-engine";
 import { getGpsPosition, qualityColor, qualityLabel } from "@/lib/gps";
 import { HoldToConfirm } from "@/components/mobile/HoldToConfirm";
 import { MapPicker } from "@/components/mobile/MapPicker";
 import { ProjectStepTimeline } from "@/components/mobile/ProjectStepTimeline";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Loader2, MapPin, Clock, ArrowLeft, CheckCircle2, Crosshair, ArrowRight, RotateCcw, X } from "lucide-react";
+import { Loader2, MapPin, Clock, ArrowLeft, CheckCircle2, Crosshair, ArrowRight, RotateCcw, X, Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const GPS_ACTIONS: ProjectAction[] = ["start_travel", "arrive_site"];
@@ -28,6 +30,7 @@ export default function MobileProjectWorkflow() {
   const { employee } = useMobileAuth();
   const { data: todayProjects } = useTodayProjects();
   const { session, step, workLocation, availableActions, loading, actionLoading, executeAction } = useProjectWorkflow(projectId ?? null, dateOverride);
+  const office = useMobileWorkflow();
   const { toast } = useToast();
 
 
@@ -65,12 +68,14 @@ export default function MobileProjectWorkflow() {
   const isResumed = !loading && !!session && step !== "idle" && step !== "completed";
 
   useEffect(() => {
-    if (step === "completed") {
-      // Auto-return to home after a moment so they can pick the next project
+    // Auto-return to home ONLY when the office shift is already wrapped up
+    // (punched out). Otherwise we keep the user here so they can use the
+    // post-project office actions (Return Travel / Arrive Office / Punch Out).
+    if (step === "completed" && office.step === "punched_out") {
       const t = setTimeout(() => navigate("/m"), 1500);
       return () => clearTimeout(t);
     }
-  }, [step, navigate]);
+  }, [step, office.step, navigate]);
 
   if (loading || !employee) {
     return (
@@ -239,10 +244,47 @@ export default function MobileProjectWorkflow() {
       )}
 
       {step === "completed" && (
-        <Card className="p-6 border-green-500/30 bg-green-500/5 text-center">
-          <CheckCircle2 className="h-10 w-10 text-green-400 mx-auto mb-2" />
-          <p className="font-semibold text-green-400">Project Complete!</p>
-          <p className="text-xs text-muted-foreground mt-1">Returning to project list…</p>
+        <Card className="p-6 border-green-500/30 bg-green-500/5">
+          <div className="text-center">
+            <CheckCircle2 className="h-10 w-10 text-green-400 mx-auto mb-2" />
+            <p className="font-semibold text-green-400">Project Complete!</p>
+            {office.step === "punched_out" ? (
+              <p className="text-xs text-muted-foreground mt-1">Returning to project list…</p>
+            ) : (
+              <p className="text-xs text-muted-foreground mt-1">
+                Finish your shift below or go back for other projects.
+              </p>
+            )}
+          </div>
+
+          {office.step !== "punched_out" && (
+            <div className="mt-4 space-y-2">
+              {office.availableActions
+                .filter((a) => a !== "punch_in")
+                .map((a) => (
+                  <HoldToConfirm
+                    key={a}
+                    onConfirm={async () => {
+                      const r = await office.executeAction(a);
+                      if (!r?.success) {
+                        toast({ title: "Failed", description: r?.error || "Try again.", variant: "destructive" });
+                      }
+                    }}
+                    disabled={office.actionLoading}
+                    loading={office.actionLoading}
+                    variant={a === "punch_out" ? "primary" : "secondary"}
+                  >
+                    {a === "start_return_travel" && <RotateCcw className="h-4 w-4" />}
+                    {a === "arrive_office" && <Building2 className="h-4 w-4" />}
+                    {a === "punch_out" && <CheckCircle2 className="h-4 w-4" />}
+                    {officeActionLabels[a]}
+                  </HoldToConfirm>
+                ))}
+              <Button variant="outline" className="w-full" onClick={() => navigate("/m")}>
+                <ArrowLeft className="h-4 w-4 mr-2" /> Back to Home
+              </Button>
+            </div>
+          )}
         </Card>
       )}
 
