@@ -3,19 +3,21 @@ import { useEffect, useRef, useState } from "react";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
 import { useProjectWorkflow } from "@/hooks/useProjectWorkflow";
 import { useTodayProjects } from "@/hooks/useTodayProjects";
+import { useMobileWorkflow } from "@/hooks/useMobileWorkflow";
 import {
   ProjectAction,
   projectActionLabels,
   projectStepLabels,
   projectStepColors,
 } from "@/lib/project-workflow-engine";
+import { actionLabels as officeActionLabels } from "@/lib/workflow-engine";
 import { getGpsPosition, qualityColor, qualityLabel } from "@/lib/gps";
 import { HoldToConfirm } from "@/components/mobile/HoldToConfirm";
 import { MapPicker } from "@/components/mobile/MapPicker";
 import { ProjectStepTimeline } from "@/components/mobile/ProjectStepTimeline";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Loader2, MapPin, Clock, ArrowLeft, CheckCircle2, Crosshair, ArrowRight, RotateCcw, X } from "lucide-react";
+import { Loader2, MapPin, Clock, ArrowLeft, CheckCircle2, Crosshair, ArrowRight, RotateCcw, X, Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const GPS_ACTIONS: ProjectAction[] = ["start_travel", "arrive_site"];
