@@ -122,7 +122,7 @@ export function useMobileWorkflow() {
       if (!log) {
         const { data: logs } = await supabase
           .from("attendance_logs")
-          .select("id, office_punch_in, travel_start_time, site_arrival_time, work_start_time, break_start_time, break_end_time, work_end_time, return_travel_start_time, office_arrival_time, office_punch_out")
+          .select("id, date, office_punch_in, travel_start_time, site_arrival_time, work_start_time, break_start_time, break_end_time, work_end_time, return_travel_start_time, office_arrival_time, office_punch_out")
           .eq("employee_id", employee.id)
           .eq("date", today)
           .order("office_punch_in", { ascending: false, nullsFirst: false })
