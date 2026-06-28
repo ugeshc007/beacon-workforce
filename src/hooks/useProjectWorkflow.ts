@@ -27,7 +27,7 @@ interface SessionRow {
   total_work_minutes: number | null;
 }
 
-export function useProjectWorkflow(projectId: string | null) {
+export function useProjectWorkflow(projectId: string | null, dateOverride?: string | null) {
   const { employee } = useMobileAuth();
   const [session, setSession] = useState<SessionRow | null>(null);
   const [step, setStep] = useState<ProjectStep>("idle");
@@ -36,9 +36,10 @@ export function useProjectWorkflow(projectId: string | null) {
   const [actionLoading, setActionLoading] = useState(false);
   const [assignmentLocation, setAssignmentLocation] = useState<"in_house" | "site" | null>(null);
 
-  const today = toLocalDateStr(new Date());
+  const today = dateOverride || toLocalDateStr(new Date());
   const { data: dayWorkLocation, isLoading: dayWorkLocationLoading } = useDayWorkLocation(projectId ?? "", today);
   const workLocCacheKey = employee && projectId ? `pwl_${employee.id}_${projectId}_${today}` : null;
+
 
   // Per-employee per-day work location set on the schedule page takes priority
   // over the project-wide day location. Cache it so offline reloads keep the
