@@ -12,7 +12,7 @@ import { HoldToConfirm } from "@/components/mobile/HoldToConfirm";
 
 import { DriverWorkflowCard } from "@/components/mobile/DriverWorkflowCard";
 import { Card } from "@/components/ui/card";
-import { Loader2, MapPin, Clock, Wifi, WifiOff, CheckCircle2, AlertTriangle, Crosshair, ChevronRight, PlayCircle, RotateCcw, Coffee, Building2, ClipboardList } from "lucide-react";
+import { Loader2, MapPin, Clock, Wifi, WifiOff, CheckCircle2, AlertTriangle, Crosshair, ChevronRight, PlayCircle, RotateCcw, Coffee, Building2, ClipboardList, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -545,12 +545,26 @@ export default function MobileHome() {
                         </span>
                       )}
                     </div>
+                    {!isDone && (
+                      <p className="text-[11px] font-semibold text-brand mt-2 flex items-center gap-1">
+                        <ArrowRight className="h-3 w-3" />
+                        Tap to {p.step === "idle"
+                          ? (p.workLocation === "in_house" ? "Start Work" : "Start Travel")
+                          : p.step === "traveling" ? "mark Arrived at Site"
+                          : p.step === "at_site" ? "Start Work"
+                          : p.step === "working" ? "End Work or take Break"
+                          : p.step === "on_break" ? "End Break"
+                          : "continue"}
+                      </p>
+                    )}
                   </div>
                   {!isDone && <ChevronRight className="h-4 w-4 text-muted-foreground mt-0.5" />}
                 </div>
               </button>
             );
           })}
+
+
 
           {singleProject && !singleProject.sessionId && (
             <p className="text-[11px] text-muted-foreground text-center mt-1">
