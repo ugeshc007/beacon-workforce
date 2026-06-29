@@ -1,13 +1,17 @@
 import { useEffect, useState } from "react";
-import { Wifi, WifiOff, RefreshCw, CloudUpload } from "lucide-react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { useNavigate } from "react-router-dom";
+import { Wifi, WifiOff, RefreshCw, CloudUpload, ExternalLink } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { getQueue, type QueuedAction } from "@/lib/offline-queue";
 import { getDailyLogQueue, type QueuedDailyLog, syncPendingDailyLogs } from "@/lib/offline-daily-logs";
 import { syncPendingActions, onSyncChange } from "@/lib/offline-sync";
 import { useToast } from "@/hooks/use-toast";
 
+
 export function SyncStatusBadge() {
+  const navigate = useNavigate();
+
   const [online, setOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
   const [pending, setPending] = useState(0);
   const [logs, setLogs] = useState(0);
@@ -90,6 +94,19 @@ export function SyncStatusBadge() {
               <RefreshCw className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} /> Retry now
             </Button>
           </div>
+
+          <SheetClose asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-between gap-1.5 text-brand"
+              onClick={() => navigate("/m/sync")}
+            >
+              Open full sync status
+              <ExternalLink className="h-3.5 w-3.5" />
+            </Button>
+          </SheetClose>
+
 
           {total === 0 && (
             <div className="text-center py-8 text-sm text-muted-foreground">

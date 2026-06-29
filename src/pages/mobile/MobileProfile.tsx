@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { useNavigate } from "react-router-dom";
-import { LogOut, User, Shield, Building2, Moon, Sun, Fingerprint } from "lucide-react";
+import { LogOut, User, Shield, Building2, Moon, Sun, Fingerprint, CloudUpload, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { APP_VERSION, APP_BUILD } from "@/lib/app-version";
 
@@ -102,6 +102,24 @@ export default function MobileProfile() {
           />
         </div>
       </Card>
+
+      {/* Sync status shortcut */}
+      <button
+        onClick={() => navigate("/m/sync")}
+        className="w-full flex items-center justify-between rounded-xl border border-border/50 bg-card p-4 text-left hover:bg-card/80 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <CloudUpload className="h-5 w-5 text-brand" />
+          <div>
+            <p className="text-sm font-medium">Sync Status</p>
+            <p className="text-[11px] text-muted-foreground">
+              View pending, failed and synced actions
+            </p>
+          </div>
+        </div>
+        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+      </button>
+
 
       {/* Sign out */}
       <div className="pt-2">
