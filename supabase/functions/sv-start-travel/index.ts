@@ -1,9 +1,9 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, todayDate, nowTimestamp, authenticateEmployee } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, todayDate, resolveTimestamp, checkIdempotency, recordIdempotencyResult, authenticateEmployee } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
   try {
-    const { employee_id, site_visit_id, lat, lng } = await req.json();
+    const { employee_id, site_visit_id, lat, lng, client_timestamp, idempotency_key } = await req.json();
     if (!employee_id || !site_visit_id || lat == null || lng == null) {
       return errorResponse("employee_id, site_visit_id, lat, lng required");
     }
@@ -12,8 +12,11 @@ Deno.serve(async (req) => {
     const auth = await authenticateEmployee(req, supabase, employee_id);
     if (auth.error) return auth.error;
 
+    const dup = await checkIdempotency(supabase, idempotency_key, employee_id, "sv-start-travel");
+    if (dup) return dup;
+
     const today = todayDate();
-    const now = nowTimestamp();
+    const now = resolveTimestamp(client_timestamp);
 
     const { data: mandatorySetting } = await supabase
       .from("settings").select("value").eq("key", "office_punch_in_mandatory").maybeSingle();
@@ -41,17 +44,18 @@ Deno.serve(async (req) => {
     // Sequential rule: no other open site-visit session
     const { data: activeSv } = await supabase
       .from("site_visit_work_sessions")
-      .select("id, site_visit_id")
+      .select("id, site_visit_id, travel_start_time")
       .eq("employee_id", employee_id)
       .is("work_end_time", null)
       .maybeSingle();
     if (activeSv) {
-      return errorResponse(
-        activeSv.site_visit_id === site_visit_id
-          ? "Session already started for this visit"
-          : "Finish your current site visit before starting another",
-        409
-      );
+      if (activeSv.site_visit_id === site_visit_id) {
+        // Treat replay as success
+        const out = { success: true, session_id: activeSv.id, timestamp: activeSv.travel_start_time, deduped: true };
+        await recordIdempotencyResult(supabase, idempotency_key, out);
+        return jsonResponse(out);
+      }
+      return errorResponse("Finish your current site visit before starting another", 409);
     }
 
     // Also block if a project session is open
@@ -63,7 +67,6 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (activeProj) return errorResponse("Finish your active project before starting a site visit", 409);
 
-    // Verify visit is assigned to this employee
     const { data: visit } = await supabase
       .from("site_visits")
       .select("id, assigned_employee_id, status")
@@ -91,10 +94,11 @@ Deno.serve(async (req) => {
       .single();
     if (error) return errorResponse(error.message, 500);
 
-    // Mark visit in-progress
     await supabase.from("site_visits").update({ status: "in_progress" }).eq("id", site_visit_id);
 
-    return jsonResponse({ success: true, session_id: inserted.id, timestamp: now });
+    const out = { success: true, session_id: inserted.id, timestamp: now };
+    await recordIdempotencyResult(supabase, idempotency_key, out);
+    return jsonResponse(out);
   } catch (err) {
     return errorResponse((err as Error).message, 500);
   }

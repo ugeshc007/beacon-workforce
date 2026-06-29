@@ -45,10 +45,17 @@ Deno.serve(async (req) => {
       if (!allDone) return errorResponse("Finish all projects before returning to office", 400);
 
       const sum = (k: string) => sess.reduce((a: number, s: any) => a + Number(s[k] ?? 0), 0);
+      // Use latest project work_end_time as office work_end_time so it doesn't
+      // collapse to "now" and erase the gap between End Work and Start Return Travel.
+      const latestSessionEnd = sess
+        .map((s: any) => s.work_end_time)
+        .filter(Boolean)
+        .sort()
+        .pop() as string | undefined;
       await supabase
         .from("attendance_logs")
         .update({
-          work_end_time: now,
+          work_end_time: latestSessionEnd ?? now,
           total_work_minutes: sum("total_work_minutes"),
           overtime_minutes: sum("overtime_minutes"),
           regular_cost: Math.round(sum("regular_cost") * 100) / 100,

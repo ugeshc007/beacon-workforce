@@ -1,9 +1,9 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, haversineDistance, nowTimestamp, authenticateEmployee } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, haversineDistance, resolveTimestamp, checkIdempotency, recordIdempotencyResult, authenticateEmployee } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
   try {
-    const { employee_id, session_id, lat, lng } = await req.json();
+    const { employee_id, session_id, lat, lng, client_timestamp, idempotency_key } = await req.json();
     if (!employee_id || !session_id || lat == null || lng == null) {
       return errorResponse("employee_id, session_id, lat, lng required");
     }
@@ -12,7 +12,8 @@ Deno.serve(async (req) => {
     const auth = await authenticateEmployee(req, supabase, employee_id);
     if (auth.error) return auth.error;
 
-    const now = nowTimestamp();
+    const dup = await checkIdempotency(supabase, idempotency_key, employee_id, "sv-arrive-site");
+    if (dup) return dup;
 
     const { data: session } = await supabase
       .from("site_visit_work_sessions")
@@ -23,7 +24,11 @@ Deno.serve(async (req) => {
     if (!session) return errorResponse("Session not found", 404);
     if (session.work_end_time) return errorResponse("Visit already ended", 400);
     if (!session.travel_start_time) return errorResponse("Must start travel before arriving at site", 400);
-    if (session.site_arrival_time) return errorResponse("Site arrival already recorded", 400);
+    if (session.site_arrival_time) {
+      const out = { success: true, timestamp: session.site_arrival_time, deduped: true };
+      await recordIdempotencyResult(supabase, idempotency_key, out);
+      return jsonResponse(out);
+    }
 
     const { data: visit } = await supabase
       .from("site_visits")
@@ -35,9 +40,14 @@ Deno.serve(async (req) => {
     let distance = 0;
     if (visit?.site_latitude && visit?.site_longitude) {
       distance = haversineDistance(lat, lng, Number(visit.site_latitude), Number(visit.site_longitude));
-      valid = distance <= 200; // 200m tolerance for site visits
+      valid = distance <= 200;
     } else {
-      valid = true; // No GPS configured for visit — accept
+      valid = true;
+    }
+
+    let now = resolveTimestamp(client_timestamp);
+    if (new Date(now).getTime() < new Date(session.travel_start_time).getTime()) {
+      now = session.travel_start_time;
     }
 
     const { error } = await supabase
@@ -52,7 +62,9 @@ Deno.serve(async (req) => {
       .eq("id", session_id);
     if (error) return errorResponse(error.message, 500);
 
-    return jsonResponse({ success: true, gps_valid: valid, distance_meters: Math.round(distance), timestamp: now });
+    const out = { success: true, gps_valid: valid, distance_meters: Math.round(distance), timestamp: now };
+    await recordIdempotencyResult(supabase, idempotency_key, out);
+    return jsonResponse(out);
   } catch (err) {
     return errorResponse((err as Error).message, 500);
   }
