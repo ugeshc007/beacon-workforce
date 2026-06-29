@@ -1,63 +1,52 @@
-# Retroactive Time Entry for Stale Shifts
+## Goal
+Make stale/overnight shifts behave correctly for **every** employee (not just Ugesh), and give app users a way to clean up a stuck shift themselves without admin help.
 
-## Problem
-When an employee forgets to close yesterday's (or older) shift and resumes the flow today, every action (Start Travel, Work Start, Work End, Return Travel, Arrive Office, Punch Out) gets stamped with **today's current time** — which is wrong. The real action happened yesterday.
+## Problem recap
+1. The "Project Complete!" card was driving buttons from the office state machine, which fails when project timestamps live on `project_work_sessions` instead of `attendance_logs`. (Already fixed in v13.1.2.)
+2. The "Worked 12:47 → 11:06 (862h 19m)" duration is wrong because work_start_time is from a previous day and the timeline subtracts raw timestamps without sanity capping.
+3. There is no in-app escape hatch when an employee gets stuck on a stale shift — they have to wait for admin.
 
-## Solution
-If the open shift is **stale** (date < today), prompt the employee for the **actual time** they did each step. For today's shift, keep the current behaviour (auto-capture `now()`).
+## Changes
 
-## User Flow
+### 1. Sanity-cap durations in `ProjectStepTimeline.tsx`
+- If `endStamp - stamp` is > 18h, render `(>18h — overnight)` in amber instead of the raw number.
+- Same guard in `MobileHome.tsx` "Worked" rollup and the stale-shift banner subtitle.
+- Add a tiny `formatSaneDuration(min)` helper in `src/lib/time-format.ts` so all three call sites share one rule.
 
-For each workflow action on a stale shift:
+### 2. Surface stale shifts globally on Home (already partially done — tighten)
+- `useMobileWorkflow.ts` already returns the **oldest** open log. Make the orange banner on `MobileHome.tsx` always visible whenever `attendanceLog.date < today`, with two clear chips: "Project: X" and "Close shift".
+- Banner CTA opens `MobileStaleShiftSheet` (new bottom sheet, see #3).
 
-1. Employee taps action (e.g. "Start Work")
-2. A small time-picker dialog appears:
-   - Title: "When did you start work?"
-   - Default value: a sensible guess (e.g. last action time + a small offset, or shift start)
-   - Date is locked to the stale shift's date
-   - Only HH:MM editable
-3. Employee confirms → action submits with the chosen timestamp
-4. Server records that timestamp instead of `now()`
+### 3. New `MobileStaleShiftSheet` — user self-serve close
+A new bottom sheet at `src/components/mobile/MobileStaleShiftSheet.tsx`:
 
-Today's shift: no dialog, instant action as today.
+- Shows the stale date and a summary of which steps are still open (e.g. "Work ended, return travel pending").
+- One button per remaining step using the existing `RetroTimeDialog` flow, so the user enters the actual time for each:
+  - Finish work (if project session still open)
+  - Start return travel
+  - Arrive office
+  - Punch out
+- Also a destructive "I forgot — close without travel back" option that calls a new edge function (see #4) to mark the shift closed with `office_punch_out = work_end_time` and a flag `auto_closed_by_user = true` for audit.
+- Sheet stays open and refreshes after each step so the user walks through the whole close-out in one place.
 
-## Implementation
+### 4. New edge function `close-stale-shift`
+- Input: `{ attendance_log_id, mode: "complete" | "forfeit", client_timestamp? }`.
+- Validates the log belongs to the caller and `date < today` (UAE).
+- `complete`: requires return_travel + arrive_office + punch_out timestamps already set; closes any still-open `project_work_sessions` with `work_end_time = office_punch_out`.
+- `forfeit`: sets `office_punch_out = COALESCE(work_end_time, office_arrival_time, return_travel_start_time, office_punch_in)`, closes any open project sessions, sets `auto_closed_by_user = true` and `notes = 'Self-closed stale shift'`.
+- Always idempotent (no-op if already punched out).
 
-### 1. New component
-`src/components/mobile/RetroTimeDialog.tsx`
-- Props: `open`, `shiftDate`, `actionLabel`, `defaultTime`, `minTime`, `onConfirm(isoTimestamp)`, `onCancel`
-- HH:MM input + Confirm / Cancel
-- Builds ISO timestamp from `shiftDate + chosen time` in Asia/Dubai zone
+### 5. Schema
+Add two columns to `attendance_logs` (nullable, default false):
+- `auto_closed_by_user boolean default false`
+- `notes text` (only add if not already present — confirm in migration)
 
-### 2. Hook changes — `src/hooks/useMobileWorkflow.ts`
-- Detect stale: `isStale = attendanceLog.date < todayStr`
-- `executeAction(action, payload)` accepts optional `overrideTimestamp`
-- When `isStale` and no override passed: return a signal to caller to open the dialog instead of submitting
-- When override present: include `client_timestamp` (or per-field key, e.g. `work_start_time`) in payload
+### 6. Version
+Bump to **v13.1.3 (build 26)**. Mobile app needs rebuild for the new sheet and home banner wiring; edge function and DB take effect immediately.
 
-### 3. Edge function changes
-Update the relevant functions to honour an optional `client_timestamp` from payload **only when the caller is the assigned employee and the log is stale**:
-- `punch-in`, `punch-out`
-- `project-start-travel`, `project-arrive-site`
-- `project-start-work`, `project-end-work`
-- `start-return-travel`, `arrive-office`
+## Technical notes
+- The 862h figure comes from a `work_start_time` that's likely days old on a recurring job session — capping display is the safe fix; the close-stale-shift function will rewrite that session's `work_end_time` so the bad number disappears after close.
+- All changes scoped to mobile + 1 edge function + 1 small migration. Web admin attendance views are untouched.
+- No change to the existing retro-time edge function logic; we reuse it for the per-step buttons in the new sheet.
 
-Each writes `client_timestamp` (validated to be within the shift date + not in future) to its respective column instead of `now()`.
-
-### 4. UI wiring
-- `MobileHome.tsx`: when stale, intercept office actions → open dialog → on confirm call `executeAction` with override
-- `MobileProjectWorkflow.tsx`: same for site actions
-- Default time logic: latest existing timestamp on the log + 1 minute (so order stays chronological)
-
-## Validation Rules (server side)
-- `client_timestamp` must be on the same calendar date as `attendance_logs.date`
-- Must be ≥ previous step's timestamp
-- Must be ≤ `now()`
-- If invalid → fall back to `now()` and return a warning
-
-## Out of Scope
-- Editing already-completed timestamps (separate feature)
-- Manager approval for retroactive entries (could be a follow-up if needed)
-
-## Version
-Bump to **v13.0.7 / build 20** after implementation.
+Confirm and I'll implement.
