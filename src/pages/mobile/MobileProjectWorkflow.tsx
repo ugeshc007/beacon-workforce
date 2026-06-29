@@ -291,11 +291,16 @@ export default function MobileProjectWorkflow() {
                   <HoldToConfirm
                     key={a}
                     onConfirm={async () => {
+                      if (isStale) {
+                        setRetroOfficeAction(a);
+                        return;
+                      }
                       const r = await office.executeAction(a);
                       if (!r?.success) {
                         toast({ title: "Failed", description: r?.error || "Try again.", variant: "destructive" });
                       }
                     }}
+
                     disabled={office.actionLoading}
                     loading={office.actionLoading}
                     variant={a === "punch_out" ? "primary" : "secondary"}
