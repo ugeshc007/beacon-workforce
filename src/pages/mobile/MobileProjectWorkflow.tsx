@@ -41,12 +41,14 @@ export default function MobileProjectWorkflow() {
   const [gpsQuality, setGpsQuality] = useState<"high" | "medium" | "low" | "none">("none");
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [pendingAction, setPendingAction] = useState<ProjectAction | null>(null);
+  const [pendingOfficeAction, setPendingOfficeAction] = useState<WorkflowAction | null>(null);
   const [resumeDismissed, setResumeDismissed] = useState(false);
   const [pulse, setPulse] = useState(false);
   // Declared BEFORE early return so hooks order stays stable (prevents black screen).
   const [retroProjectAction, setRetroProjectAction] = useState<ProjectAction | null>(null);
   const [retroOfficeAction, setRetroOfficeAction] = useState<WorkflowAction | null>(null);
   const [retroPayload, setRetroPayload] = useState<Record<string, unknown>>({});
+  const [retroOfficePayload, setRetroOfficePayload] = useState<Record<string, unknown>>({});
   const primaryRef = useRef<HTMLDivElement | null>(null);
   const primaryButtonRef = useRef<HTMLButtonElement | null>(null);
   const prevStepRef = useRef(step);
