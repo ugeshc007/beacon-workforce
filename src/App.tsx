@@ -85,6 +85,8 @@ const App = () => (
             <Route path="site-visits/:id" element={<MobileSiteVisitDetail />} />
             <Route path="project/:projectId" element={<MobileProjectWorkflow />} />
             <Route path="profile" element={<MobileProfile />} />
+            <Route path="sync" element={<MobileSyncStatus />} />
+
           </Route>
 
           {/* ── Super Admin Console ── */}
