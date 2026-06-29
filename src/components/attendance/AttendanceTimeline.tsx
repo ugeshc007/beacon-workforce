@@ -2,6 +2,7 @@ import type { AttendanceLog } from "@/hooks/useAttendance";
 
 interface Props {
   log: AttendanceLog;
+  workLocation?: "in_house" | "site" | null;
 }
 
 const fmt = (ts: string | null) => {
