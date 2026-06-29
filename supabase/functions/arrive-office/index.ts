@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     let valid = false;
     let distance = 0;
 
-    if (emp?.branch_id) {
+    if (hasGps && emp?.branch_id) {
       const { data: offices } = await supabase
         .from("offices")
         .select("latitude, longitude, gps_radius_meters")
