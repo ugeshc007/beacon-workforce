@@ -217,9 +217,13 @@ export function useMobileWorkflow() {
 
     const fnName = edgeFunctionMap[action];
     const clientTimestamp = nowIso;
-    const body = {
+    const body: Record<string, unknown> = {
       employee_id: employee.id,
       client_timestamp: clientTimestamp,
+      // Send the current open log's id so server-side resolution targets the
+      // SAME shift the client UI is showing (critical for stale/previous-day
+      // shifts the default today/yesterday lookup would miss).
+      ...(attendanceLog?.id ? { attendance_log_id: attendanceLog.id } : {}),
       ...payload,
     };
 

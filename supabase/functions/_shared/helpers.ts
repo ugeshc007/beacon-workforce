@@ -118,6 +118,32 @@ export async function findOpenAttendanceLog(
 }
 
 /**
+ * Resolve which attendance log an action should target.
+ * If the client passes an explicit `attendance_log_id` (e.g. user is closing
+ * a stale shift from a previous day via the unfinished-shift banner), honor
+ * that log as long as it belongs to the employee and is still open.
+ * Otherwise fall back to findOpenAttendanceLog (today/yesterday).
+ */
+export async function resolveAttendanceLog(
+  supabase: ReturnType<typeof createSupabaseAdmin>,
+  employeeId: string,
+  explicitLogId: string | undefined | null,
+  columns: string
+) {
+  if (explicitLogId) {
+    const { data } = await supabase
+      .from("attendance_logs")
+      .select(columns)
+      .eq("id", explicitLogId)
+      .eq("employee_id", employeeId)
+      .is("office_punch_out", null)
+      .maybeSingle();
+    if (data) return data;
+  }
+  return findOpenAttendanceLog(supabase, employeeId, columns);
+}
+
+/**
  * Idempotency check for replayed offline actions.
  * Returns a cached success response if the key was already processed,
  * otherwise reserves the key and returns null (caller should proceed

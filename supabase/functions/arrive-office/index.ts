@@ -1,10 +1,10 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, haversineDistance, todayDate, nowTimestamp, resolveTimestamp, checkIdempotency, authenticateEmployee, findOpenAttendanceLog } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, haversineDistance, todayDate, nowTimestamp, resolveTimestamp, checkIdempotency, authenticateEmployee, findOpenAttendanceLog, resolveAttendanceLog } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
 
   try {
-    const { employee_id, client_timestamp, idempotency_key, lat, lng, accuracy } = await req.json();
+    const { employee_id, client_timestamp, idempotency_key, lat, lng, accuracy, attendance_log_id } = await req.json();
 
     if (!employee_id || lat == null || lng == null) {
       return errorResponse("employee_id, lat, and lng are required");
@@ -20,9 +20,10 @@ Deno.serve(async (req) => {
     const dup = await checkIdempotency(supabase, idempotency_key, employee_id, "arrive-office");
     if (dup) return dup;
 
-    const log = await findOpenAttendanceLog(
+    const log = await resolveAttendanceLog(
       supabase,
       employee_id,
+      attendance_log_id,
       "id, date, return_travel_start_time"
     );
 
