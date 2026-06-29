@@ -8,7 +8,10 @@ export interface QueuedAction {
   sync_status: "pending" | "synced" | "error";
   error_message?: string;
   idempotency_key: string;
+  attempts?: number;
+  last_attempt_at?: string;
 }
+
 
 const QUEUE_KEY = "bebright_sync_queue";
 const CACHE_PREFIX = "bebright_cache_";
