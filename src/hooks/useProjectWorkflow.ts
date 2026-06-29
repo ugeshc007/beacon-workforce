@@ -129,6 +129,7 @@ export function useProjectWorkflow(projectId: string | null, dateOverride?: stri
   }, [fetchSession]);
 
   const executeAction = async (action: ProjectAction, payload?: Record<string, unknown>) => {
+
     if (!employee || !projectId) return { success: false, error: "Not ready" };
     setActionLoading(true);
 
