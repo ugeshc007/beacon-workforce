@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { useNavigate } from "react-router-dom";
-import { LogOut, User, Shield, Building2, Moon, Sun, Fingerprint } from "lucide-react";
+import { LogOut, User, Shield, Building2, Moon, Sun, Fingerprint, CloudUpload, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { APP_VERSION, APP_BUILD } from "@/lib/app-version";
 
