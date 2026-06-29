@@ -163,11 +163,34 @@ export async function syncPendingDailyLogs(): Promise<{ synced: number; failed: 
  */
 export function initDailyLogAutoSync(): () => void {
   const handler = () => {
-    if (navigator.onLine) {
-      syncPendingDailyLogs().catch(console.error);
-    }
+    syncPendingDailyLogs().catch(console.error);
   };
-  window.addEventListener("online", handler);
-  if (navigator.onLine) syncPendingDailyLogs().catch(console.error);
-  return () => window.removeEventListener("online", handler);
+  const onlineHandler = () => { if (navigator.onLine) handler(); };
+
+  window.addEventListener("online", onlineHandler);
+  document.addEventListener("visibilitychange", onlineHandler);
+
+  let removeNativeListener: (() => void) | null = null;
+  (async () => {
+    try {
+      const { Network } = await import("@capacitor/network");
+      const sub = await Network.addListener("networkStatusChange", (s) => {
+        if (s.connected) handler();
+      });
+      removeNativeListener = () => sub.remove();
+      const status = await Network.getStatus();
+      if (status.connected) handler();
+    } catch {
+      if (navigator.onLine) handler();
+    }
+  })();
+
+  const poll = setInterval(() => { if (navigator.onLine) handler(); }, 30000);
+
+  return () => {
+    window.removeEventListener("online", onlineHandler);
+    document.removeEventListener("visibilitychange", onlineHandler);
+    clearInterval(poll);
+    removeNativeListener?.();
+  };
 }
