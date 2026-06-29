@@ -320,6 +320,16 @@ export default function MobileHome() {
                 </HoldToConfirm>
               ))}
           </div>
+
+          {/* Self-serve escape hatch */}
+          <button
+            type="button"
+            onClick={handleForfeitClose}
+            disabled={forfeiting}
+            className="w-full text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground disabled:opacity-50 pt-1"
+          >
+            {forfeiting ? "Closing…" : "Can't remember? Close shift without travel-back"}
+          </button>
         </div>
       )}
 
