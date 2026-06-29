@@ -6,8 +6,8 @@ Deno.serve(async (req) => {
   try {
     const { employee_id, client_timestamp, idempotency_key, lat, lng } = await req.json();
 
-    if (!employee_id || lat == null || lng == null) {
-      return errorResponse("employee_id, lat, and lng are required");
+    if (!employee_id) {
+      return errorResponse("employee_id is required");
     }
 
     const supabase = createSupabaseAdmin();
@@ -47,8 +47,7 @@ Deno.serve(async (req) => {
       .from("attendance_logs")
       .update({
         travel_start_time: now,
-        travel_start_lat: lat,
-        travel_start_lng: lng,
+        ...(lat != null && lng != null ? { travel_start_lat: lat, travel_start_lng: lng } : {}),
       })
       .eq("id", log.id);
 

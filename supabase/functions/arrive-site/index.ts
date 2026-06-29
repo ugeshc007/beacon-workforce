@@ -6,9 +6,10 @@ Deno.serve(async (req) => {
   try {
     const { employee_id, client_timestamp, idempotency_key, lat, lng } = await req.json();
 
-    if (!employee_id || lat == null || lng == null) {
-      return errorResponse("employee_id, lat, and lng are required");
+    if (!employee_id) {
+      return errorResponse("employee_id is required");
     }
+    const hasGps = lat != null && lng != null;
 
     const supabase = createSupabaseAdmin();
 
@@ -41,7 +42,7 @@ Deno.serve(async (req) => {
         .eq("id", log.project_id)
         .single();
 
-      if (project?.site_latitude && project?.site_longitude) {
+      if (hasGps && project?.site_latitude && project?.site_longitude) {
         distance = haversineDistance(lat, lng, Number(project.site_latitude), Number(project.site_longitude));
         valid = distance <= project.site_gps_radius;
       }
@@ -51,8 +52,7 @@ Deno.serve(async (req) => {
       .from("attendance_logs")
       .update({
         site_arrival_time: now,
-        site_arrival_lat: lat,
-        site_arrival_lng: lng,
+        ...(hasGps ? { site_arrival_lat: lat, site_arrival_lng: lng } : {}),
         site_arrival_distance_m: Math.round(distance),
         site_arrival_valid: valid,
       })

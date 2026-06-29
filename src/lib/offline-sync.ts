@@ -42,6 +42,8 @@ const edgeFunctionMap: Record<string, string> = {
   start_break: "start-break",
   end_break: "end-break",
   end_work: "end-work",
+  start_return_travel: "start-return-travel",
+  arrive_office: "arrive-office",
   punch_out: "punch-out",
   // Project-scoped workflow actions
   project_start_travel: "project-start-travel",

@@ -6,9 +6,10 @@ Deno.serve(async (req) => {
   try {
     const { employee_id, client_timestamp, idempotency_key, lat, lng, accuracy, attendance_log_id } = await req.json();
 
-    if (!employee_id || lat == null || lng == null) {
-      return errorResponse("employee_id, lat, and lng are required");
+    if (!employee_id) {
+      return errorResponse("employee_id is required");
     }
+    const hasGps = lat != null && lng != null;
 
     const supabase = createSupabaseAdmin();
 
@@ -40,7 +41,7 @@ Deno.serve(async (req) => {
     let valid = false;
     let distance = 0;
 
-    if (emp?.branch_id) {
+    if (hasGps && emp?.branch_id) {
       const { data: offices } = await supabase
         .from("offices")
         .select("latitude, longitude, gps_radius_meters")
@@ -64,8 +65,7 @@ Deno.serve(async (req) => {
       .from("attendance_logs")
       .update({
         office_arrival_time: now,
-        office_arrival_lat: lat,
-        office_arrival_lng: lng,
+        ...(hasGps ? { office_arrival_lat: lat, office_arrival_lng: lng } : {}),
         office_arrival_accuracy: accuracy ?? null,
         office_arrival_distance_m: Math.round(distance),
         office_arrival_valid: valid,
