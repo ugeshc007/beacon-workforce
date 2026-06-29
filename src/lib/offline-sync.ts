@@ -107,6 +107,14 @@ export async function syncPendingActions(): Promise<{ synced: number; failed: nu
           success = true;
         } catch (e: any) {
           attempt++;
+          // Persist attempt counter so the user can see retry history.
+          const cur = await getQueue();
+          const idx = cur.findIndex((q) => q.local_id === item.local_id);
+          if (idx >= 0) {
+            cur[idx].attempts = (cur[idx].attempts || 0) + 1;
+            cur[idx].last_attempt_at = new Date().toISOString();
+            await saveQueue(cur);
+          }
           if (attempt < MAX_RETRIES) {
             await delay(BASE_DELAY_MS * Math.pow(2, attempt - 1));
           } else {
@@ -115,6 +123,7 @@ export async function syncPendingActions(): Promise<{ synced: number; failed: nu
           }
         }
       }
+
     }
 
     // Clean up synced items
