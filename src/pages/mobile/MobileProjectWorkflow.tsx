@@ -15,6 +15,10 @@ import { getGpsPosition, qualityColor, qualityLabel } from "@/lib/gps";
 import { HoldToConfirm } from "@/components/mobile/HoldToConfirm";
 import { MapPicker } from "@/components/mobile/MapPicker";
 import { ProjectStepTimeline } from "@/components/mobile/ProjectStepTimeline";
+import { RetroTimeDialog } from "@/components/mobile/RetroTimeDialog";
+import { projectActionTimeHints, officeActionTimeHints } from "@/lib/retro-time";
+import { WorkflowAction } from "@/lib/workflow-engine";
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Loader2, MapPin, Clock, ArrowLeft, CheckCircle2, Crosshair, ArrowRight, RotateCcw, X, Building2 } from "lucide-react";
