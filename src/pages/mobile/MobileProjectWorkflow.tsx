@@ -98,10 +98,7 @@ export default function MobileProjectWorkflow() {
   const shiftDate = dateOverride || todayStr;
   const isStale = shiftDate < todayStr;
 
-  // Retro-time dialog state — used for stale (previous-day) actions.
-  const [retroProjectAction, setRetroProjectAction] = useState<ProjectAction | null>(null);
-  const [retroOfficeAction, setRetroOfficeAction] = useState<WorkflowAction | null>(null);
-  const [retroPayload, setRetroPayload] = useState<Record<string, unknown>>({});
+  // Retro-time dialog state is hoisted above the early-return (see top of function).
 
   const handleAction = async (action: ProjectAction) => {
     let payload: Record<string, unknown> = {};
