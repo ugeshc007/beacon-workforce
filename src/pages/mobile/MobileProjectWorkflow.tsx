@@ -43,6 +43,10 @@ export default function MobileProjectWorkflow() {
   const [pendingAction, setPendingAction] = useState<ProjectAction | null>(null);
   const [resumeDismissed, setResumeDismissed] = useState(false);
   const [pulse, setPulse] = useState(false);
+  // Declared BEFORE early return so hooks order stays stable (prevents black screen).
+  const [retroProjectAction, setRetroProjectAction] = useState<ProjectAction | null>(null);
+  const [retroOfficeAction, setRetroOfficeAction] = useState<WorkflowAction | null>(null);
+  const [retroPayload, setRetroPayload] = useState<Record<string, unknown>>({});
   const primaryRef = useRef<HTMLDivElement | null>(null);
   const primaryButtonRef = useRef<HTMLButtonElement | null>(null);
   const prevStepRef = useRef(step);
@@ -94,24 +98,23 @@ export default function MobileProjectWorkflow() {
   const shiftDate = dateOverride || todayStr;
   const isStale = shiftDate < todayStr;
 
-  // Retro-time dialog state — used for stale (previous-day) actions.
-  const [retroProjectAction, setRetroProjectAction] = useState<ProjectAction | null>(null);
-  const [retroOfficeAction, setRetroOfficeAction] = useState<WorkflowAction | null>(null);
-  const [retroPayload, setRetroPayload] = useState<Record<string, unknown>>({});
+  // Retro-time dialog state is hoisted above the early-return (see top of function).
 
   const handleAction = async (action: ProjectAction) => {
     let payload: Record<string, unknown> = {};
     if (GPS_ACTIONS.includes(action)) {
       const gps = await getGpsPosition();
       setGpsQuality(gps.quality);
-      if (gps.needsMapFallback && !gps.reading) {
+      // Server REQUIRES lat/lng for travel/arrival. If GPS didn't return a
+      // reading (denied, timeout, low accuracy), fall back to the map picker
+      // instead of submitting an empty payload (which causes "Employee id,
+      // Lat & lng required" 400 errors).
+      if (!gps.reading) {
         setPendingAction(action);
         setShowMapPicker(true);
         return;
       }
-      if (gps.reading) {
-        payload = { lat: gps.reading.lat, lng: gps.reading.lng };
-      }
+      payload = { lat: gps.reading.lat, lng: gps.reading.lng };
     }
     if (isStale) {
       setRetroPayload(payload);
