@@ -26,7 +26,7 @@ const sessionColors = [
   "bg-pink-400",
 ];
 
-export function AttendanceTimeline({ log }: Props) {
+export function AttendanceTimeline({ log, workLocation }: Props) {
   const sessions = (log.sessions ?? []).filter((s) => s.work_start_time || s.break_start_time || s.break_end_time || s.work_end_time);
   // When the employee has exactly one active project session for the day, that
   // session is the source of truth for work/break times — the attendance_log
