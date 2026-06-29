@@ -19,7 +19,9 @@ Deno.serve(async (req) => {
     if (!session) return errorResponse("Session not found", 404);
     if (session.work_end_time) return errorResponse("Session already ended", 400);
     if (!session.work_start_time) return errorResponse("Must start work before taking a break", 400);
-    if (session.break_start_time && !session.break_end_time) return errorResponse("Break already in progress", 400);
+    if (session.break_start_time && !session.break_end_time) {
+      return jsonResponse({ success: true, timestamp: session.break_start_time, deduped: true });
+    }
 
     const now = resolveTimestamp(client_timestamp);
     const { error } = await supabase
