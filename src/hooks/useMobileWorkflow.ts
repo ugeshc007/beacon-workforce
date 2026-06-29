@@ -99,23 +99,25 @@ export function useMobileWorkflow() {
       setAssignment(assignmentValue);
       cacheData(cacheKeyAssignment, assignmentValue).catch(() => {});
 
-      // Fetch the LATEST OPEN attendance log across today + yesterday.
-      // Night shifts started before midnight roll into the next UAE day, so
-      // restricting to today would lose the active session and force a re-punch-in.
-      // Employees can also have multiple shifts/day (day + night), so we order by
-      // date desc then punch-in desc and take the most recent open log.
-      const yesterday = toLocalDateStr(new Date(Date.now() - 86_400_000));
+      // Fetch ALL open attendance logs for this employee (no date filter).
+      // Priority: oldest STALE open log (date < today) is surfaced first so
+      // the employee can finish/close it. This prevents a blank today-row
+      // from masking an unfinished shift from a previous day (which would
+      // also block fresh punch-ins server-side).
       const { data: openLogs } = await supabase
         .from("attendance_logs")
         .select("id, date, office_punch_in, travel_start_time, site_arrival_time, work_start_time, break_start_time, break_end_time, work_end_time, return_travel_start_time, office_arrival_time, office_punch_out")
         .eq("employee_id", employee.id)
-        .in("date", [today, yesterday])
         .is("office_punch_out", null)
-        .order("date", { ascending: false })
-        .order("office_punch_in", { ascending: false, nullsFirst: false })
-        .limit(1);
+        .order("date", { ascending: true })
+        .order("office_punch_in", { ascending: true, nullsFirst: true });
 
-      let log = openLogs?.[0] || null;
+      let log: AttendanceLog | null = null;
+      if (openLogs && openLogs.length > 0) {
+        // Prefer the oldest stale (pre-today) open log
+        const stale = openLogs.find((l) => l.date && l.date < today);
+        log = stale || openLogs[openLogs.length - 1]; // else most recent open
+      }
 
       // No open log? Fall back to today's most recent (possibly closed) log so
       // a fresh punch-in screen renders cleanly after the previous shift ended.
@@ -129,6 +131,7 @@ export function useMobileWorkflow() {
           .limit(1);
         log = logs?.[0] || null;
       }
+
       setAttendanceLog(log);
       setStep(deriveStepFromLog(log));
       cacheData(cacheKeyLog, log).catch(() => {});
