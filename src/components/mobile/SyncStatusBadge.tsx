@@ -95,6 +95,19 @@ export function SyncStatusBadge() {
             </Button>
           </div>
 
+          <SheetClose asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-between gap-1.5 text-brand"
+              onClick={() => navigate("/m/sync")}
+            >
+              Open full sync status
+              <ExternalLink className="h-3.5 w-3.5" />
+            </Button>
+          </SheetClose>
+
+
           {total === 0 && (
             <div className="text-center py-8 text-sm text-muted-foreground">
               Everything is synced ✓
