@@ -41,12 +41,14 @@ export default function MobileProjectWorkflow() {
   const [gpsQuality, setGpsQuality] = useState<"high" | "medium" | "low" | "none">("none");
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [pendingAction, setPendingAction] = useState<ProjectAction | null>(null);
+  const [pendingOfficeAction, setPendingOfficeAction] = useState<WorkflowAction | null>(null);
   const [resumeDismissed, setResumeDismissed] = useState(false);
   const [pulse, setPulse] = useState(false);
   // Declared BEFORE early return so hooks order stays stable (prevents black screen).
   const [retroProjectAction, setRetroProjectAction] = useState<ProjectAction | null>(null);
   const [retroOfficeAction, setRetroOfficeAction] = useState<WorkflowAction | null>(null);
   const [retroPayload, setRetroPayload] = useState<Record<string, unknown>>({});
+  const [retroOfficePayload, setRetroOfficePayload] = useState<Record<string, unknown>>({});
   const primaryRef = useRef<HTMLDivElement | null>(null);
   const primaryButtonRef = useRef<HTMLButtonElement | null>(null);
   const prevStepRef = useRef(step);
@@ -124,8 +126,50 @@ export default function MobileProjectWorkflow() {
     await submitAction(action, payload);
   };
 
+  // Office actions that the server requires lat/lng for.
+  const OFFICE_GPS_ACTIONS: WorkflowAction[] = ["start_return_travel", "arrive_office", "punch_out"];
+
+  const handleOfficeActionTap = async (action: WorkflowAction) => {
+    let payload: Record<string, unknown> = {};
+    if (OFFICE_GPS_ACTIONS.includes(action)) {
+      const gps = await getGpsPosition();
+      setGpsQuality(gps.quality);
+      if (!gps.reading) {
+        // Fall back to map picker so we never submit an empty lat/lng to the server.
+        setPendingOfficeAction(action);
+        setShowMapPicker(true);
+        return;
+      }
+      payload = { lat: gps.reading.lat, lng: gps.reading.lng, accuracy: gps.reading.accuracy };
+    }
+    if (isStale) {
+      setRetroOfficePayload(payload);
+      setRetroOfficeAction(action);
+      return;
+    }
+    const r = await office.executeAction(action, payload);
+    if (!r?.success) {
+      toast({ title: "Failed", description: r?.error || "Try again.", variant: "destructive" });
+    }
+  };
+
   const handleMapConfirm = async (lat: number, lng: number) => {
     setShowMapPicker(false);
+    if (pendingOfficeAction) {
+      const action = pendingOfficeAction;
+      setPendingOfficeAction(null);
+      const payload = { lat, lng };
+      if (isStale) {
+        setRetroOfficePayload(payload);
+        setRetroOfficeAction(action);
+        return;
+      }
+      const r = await office.executeAction(action, payload);
+      if (!r?.success) {
+        toast({ title: "Failed", description: r?.error || "Try again.", variant: "destructive" });
+      }
+      return;
+    }
     if (!pendingAction) return;
     if (isStale) {
       setRetroPayload({ lat, lng });
@@ -293,16 +337,7 @@ export default function MobileProjectWorkflow() {
                 .map((a) => (
                   <HoldToConfirm
                     key={a}
-                    onConfirm={async () => {
-                      if (isStale) {
-                        setRetroOfficeAction(a);
-                        return;
-                      }
-                      const r = await office.executeAction(a);
-                      if (!r?.success) {
-                        toast({ title: "Failed", description: r?.error || "Try again.", variant: "destructive" });
-                      }
-                    }}
+                    onConfirm={() => handleOfficeActionTap(a)}
 
                     disabled={office.actionLoading}
                     loading={office.actionLoading}
@@ -324,7 +359,7 @@ export default function MobileProjectWorkflow() {
 
       <MapPicker
         open={showMapPicker}
-        onClose={() => { setShowMapPicker(false); setPendingAction(null); }}
+        onClose={() => { setShowMapPicker(false); setPendingAction(null); setPendingOfficeAction(null); }}
         onConfirm={handleMapConfirm}
         initialLat={project?.siteLat || 25.2048}
         initialLng={project?.siteLng || 55.2708}
@@ -360,11 +395,13 @@ export default function MobileProjectWorkflow() {
             actionLabel={officeActionLabels[retroOfficeAction]}
             minTime={minTime}
             defaultTime={defaultTime}
-            onCancel={() => setRetroOfficeAction(null)}
+            onCancel={() => { setRetroOfficeAction(null); setRetroOfficePayload({}); }}
             onConfirm={async (iso) => {
               const action = retroOfficeAction;
+              const payload = { ...retroOfficePayload, client_timestamp: iso };
               setRetroOfficeAction(null);
-              const r = await office.executeAction(action, { client_timestamp: iso });
+              setRetroOfficePayload({});
+              const r = await office.executeAction(action, payload);
               if (!r?.success) {
                 toast({ title: "Failed", description: r?.error || "Try again.", variant: "destructive" });
               }
