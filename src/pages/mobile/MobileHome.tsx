@@ -737,6 +737,27 @@ export default function MobileHome() {
         );
       })()}
 
+      {retroAction && attendanceLog?.date && (() => {
+        const { minTime, defaultTime } = officeActionTimeHints(attendanceLog, retroAction);
+        return (
+          <RetroTimeDialog
+            open={!!retroAction}
+            shiftDate={attendanceLog.date}
+            actionLabel={actionLabels[retroAction]}
+            minTime={minTime}
+            defaultTime={defaultTime}
+            onCancel={() => setRetroAction(null)}
+            onConfirm={async (iso) => {
+              const action = retroAction;
+              const payload = { ...retroPayload, client_timestamp: iso };
+              setRetroAction(null);
+              setRetroPayload({});
+              await submitAction(action, payload);
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }
+
