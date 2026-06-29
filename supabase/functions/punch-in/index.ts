@@ -86,25 +86,36 @@ Deno.serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
-    // Allow multiple shifts per day. Only block if there's an OPEN log
-    // (employee already punched in but hasn't punched out yet).
-    const { data: openLogs } = await supabase
-      .from("attendance_logs")
-      .select("id, office_punch_out")
-      .eq("employee_id", employee_id)
-      .eq("date", today)
-      .is("office_punch_out", null);
-
-    if (openLogs && openLogs.length > 0) {
-      return errorResponse("You are already punched in. Please punch out before starting a new shift.");
-    }
-
     const now = resolveTimestamp(client_timestamp);
     const dup = await checkIdempotency(supabase, idempotency_key, employee_id, "punch-in");
     if (dup) return dup;
-    const { data: log, error } = await supabase
+
+    // Allow multiple shifts per day, but make punch-in idempotent:
+    // - A queued/offline duplicate punch-in should return success, not fail.
+    // - A blank open log created by a travel/work action should be reused.
+    const { data: openLogs } = await supabase
       .from("attendance_logs")
-      .insert({
+      .select("id, office_punch_in, office_punch_out")
+      .eq("employee_id", employee_id)
+      .eq("date", today)
+      .is("office_punch_out", null)
+      .order("office_punch_in", { ascending: false, nullsFirst: false });
+
+    const punchedInOpenLog = openLogs?.find((l) => l.office_punch_in);
+    if (punchedInOpenLog) {
+      return jsonResponse({
+        success: true,
+        attendance_id: punchedInOpenLog.id,
+        gps_valid: valid,
+        distance_meters: Math.round(distance),
+        timestamp: punchedInOpenLog.office_punch_in,
+        deduped: true,
+        already_punched_in: true,
+      });
+    }
+
+    const blankOpenLog = openLogs?.[0];
+    const punchPayload = {
         employee_id,
         project_id: assignment?.project_id ?? null,
         date: today,
@@ -115,9 +126,20 @@ Deno.serve(async (req) => {
         office_punch_in_distance_m: lat != null && lng != null ? Math.round(distance) : null,
         office_punch_in_accuracy: accuracy ?? null,
         office_punch_in_spoofed: is_spoofed ?? false,
-      })
-      .select("id")
-      .single();
+      };
+
+    const { data: log, error } = blankOpenLog
+      ? await supabase
+          .from("attendance_logs")
+          .update(punchPayload)
+          .eq("id", blankOpenLog.id)
+          .select("id")
+          .single()
+      : await supabase
+          .from("attendance_logs")
+          .insert(punchPayload)
+          .select("id")
+          .single();
 
     if (error) {
       // Unique-index race: a parallel request already created an open log
