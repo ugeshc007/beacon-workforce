@@ -67,6 +67,7 @@ export type Database = {
       }
       attendance_logs: {
         Row: {
+          auto_closed_by_user: boolean
           break_end_time: string | null
           break_minutes: number | null
           break_start_time: string | null
@@ -124,6 +125,7 @@ export type Database = {
           work_start_time: string | null
         }
         Insert: {
+          auto_closed_by_user?: boolean
           break_end_time?: string | null
           break_minutes?: number | null
           break_start_time?: string | null
@@ -181,6 +183,7 @@ export type Database = {
           work_start_time?: string | null
         }
         Update: {
+          auto_closed_by_user?: boolean
           break_end_time?: string | null
           break_minutes?: number | null
           break_start_time?: string | null
