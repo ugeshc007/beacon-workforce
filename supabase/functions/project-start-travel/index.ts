@@ -1,4 +1,4 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, todayDate, nowTimestamp, authenticateEmployee } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, todayDate, nowTimestamp, resolveTimestamp, authenticateEmployee } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
     if (auth.error) return auth.error;
 
     const today = todayDate();
-    const now = nowTimestamp();
+    const now = resolveTimestamp(client_timestamp);
 
     // Check whether office punch-in is mandatory before travel
     const { data: mandatorySetting } = await supabase

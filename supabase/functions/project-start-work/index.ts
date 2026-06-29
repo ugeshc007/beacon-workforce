@@ -1,4 +1,4 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, nowTimestamp, todayDate, authenticateEmployee } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, nowTimestamp, resolveTimestamp, todayDate, authenticateEmployee } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
     if (auth.error) return auth.error;
 
     const today = todayDate();
-    const now = nowTimestamp();
+    const now = resolveTimestamp(client_timestamp);
 
     // -------- IN-HOUSE PATH: no session yet, create one immediately at "working" state --------
     if (!session_id && project_id) {

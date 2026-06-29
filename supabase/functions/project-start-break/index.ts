@@ -1,4 +1,4 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, nowTimestamp, authenticateEmployee } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, nowTimestamp, resolveTimestamp, authenticateEmployee } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
     if (!session.work_start_time) return errorResponse("Must start work before taking a break", 400);
     if (session.break_start_time && !session.break_end_time) return errorResponse("Break already in progress", 400);
 
-    const now = nowTimestamp();
+    const now = resolveTimestamp(client_timestamp);
     const { error } = await supabase
       .from("project_work_sessions")
       .update({ break_start_time: now, break_end_time: null })
