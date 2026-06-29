@@ -55,14 +55,18 @@ export function AttendanceTimeline({ log, workLocation }: Props) {
   // sessions in the same day, replace the single Work Start / Work End dots
   // with per-session start+end pairs (color-coded) so the whole day fits on
   // ONE line.
-  // Always show travel + site arrival dots (pending when no data yet)
-  const isInHouse = false;
+  // In-house assignments skip travel + site arrival + return travel + office arrival dots.
+  const isInHouse = workLocation === "in_house";
 
   const head: Dot[] = [
     { key: "office_punch_in", label: "Punch In", color: "bg-brand", time: log.office_punch_in },
-    { key: "travel_start_time", label: "Travel", color: "bg-status-traveling", time: log.travel_start_time },
-    { key: "site_arrival_time", label: "On Site", color: "bg-status-present", time: log.site_arrival_time },
   ];
+  if (!isInHouse) {
+    head.push(
+      { key: "travel_start_time", label: "Travel", color: "bg-status-traveling", time: log.travel_start_time },
+      { key: "site_arrival_time", label: "On Site", color: "bg-status-present", time: log.site_arrival_time },
+    );
+  }
 
   // Middle dots — work/sessions + break — sorted chronologically so a second
   // project's start that happens AFTER break end shows up after the break dots.
