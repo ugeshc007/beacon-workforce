@@ -7,8 +7,8 @@ android {
         applicationId "com.bebright.planner"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-      versionCode 20
-      versionName "13.0.7"
+     versionCode 21
+     versionName "13.0.8"
 
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
