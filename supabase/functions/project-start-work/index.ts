@@ -120,7 +120,9 @@ Deno.serve(async (req) => {
     if (!session) return errorResponse("Session not found", 404);
     if (session.work_end_time) return errorResponse("Session already ended", 400);
     if (!session.site_arrival_time) return errorResponse("Must arrive at site before starting work", 400);
-    if (session.work_start_time) return errorResponse("Work already started", 400);
+    if (session.work_start_time) {
+      return jsonResponse({ success: true, timestamp: session.work_start_time, deduped: true });
+    }
 
     const { error } = await supabase
       .from("project_work_sessions")
