@@ -10,6 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 
 
 export function SyncStatusBadge() {
+  const navigate = useNavigate();
+
   const [online, setOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
   const [pending, setPending] = useState(0);
   const [logs, setLogs] = useState(0);
