@@ -103,6 +103,13 @@ export default function MobileHome() {
     staleTime: 60_000,
   });
 
+  // Detect a stale shift: the open attendance log's date is before today.
+  const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Dubai" });
+  const isStaleShift = !!attendanceLog?.date && attendanceLog.date < todayStr && !attendanceLog.office_punch_out;
+  const staleShiftLabel = attendanceLog?.date
+    ? new Date(attendanceLog.date + "T00:00:00").toLocaleDateString("en-AE", { weekday: "short", day: "2-digit", month: "short" })
+    : "";
+
   // Retro-time dialog state for stale shifts
   const [retroAction, setRetroAction] = useState<WorkflowAction | null>(null);
   const [retroPayload, setRetroPayload] = useState<Record<string, unknown>>({});
@@ -126,7 +133,7 @@ export default function MobileHome() {
 
     // If this is a stale (previous-day) shift, ask the employee for the actual time
     // they did this step instead of stamping it as "now".
-    if (isStaleShiftRef.current) {
+    if (isStaleShift && attendanceLog?.date) {
       setRetroPayload(payload);
       setRetroAction(action);
       return;
@@ -143,14 +150,6 @@ export default function MobileHome() {
     }
   };
 
-
-  // Detect a stale shift: the open attendance log's date is before today.
-  // Keep this query before any early return so React hook order stays stable.
-  const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Dubai" });
-  const isStaleShift = !!attendanceLog?.date && attendanceLog.date < todayStr && !attendanceLog.office_punch_out;
-  const staleShiftLabel = attendanceLog?.date
-    ? new Date(attendanceLog.date + "T00:00:00").toLocaleDateString("en-AE", { weekday: "short", day: "2-digit", month: "short" })
-    : "";
 
   // Find an open project session tied to the stale shift so the user can finish it.
   const { data: staleProjectSession } = useQuery({
