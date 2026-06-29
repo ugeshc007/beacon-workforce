@@ -337,16 +337,7 @@ export default function MobileProjectWorkflow() {
                 .map((a) => (
                   <HoldToConfirm
                     key={a}
-                    onConfirm={async () => {
-                      if (isStale) {
-                        setRetroOfficeAction(a);
-                        return;
-                      }
-                      const r = await office.executeAction(a);
-                      if (!r?.success) {
-                        toast({ title: "Failed", description: r?.error || "Try again.", variant: "destructive" });
-                      }
-                    }}
+                    onConfirm={() => handleOfficeActionTap(a)}
 
                     disabled={office.actionLoading}
                     loading={office.actionLoading}
