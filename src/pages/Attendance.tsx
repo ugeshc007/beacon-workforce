@@ -248,7 +248,7 @@ export default function Attendance() {
                         </td>
                         <td className="py-2.5 font-mono text-xs text-muted-foreground">{fmt(log.office_punch_out)}</td>
                         <td className="py-2.5 pb-6">
-                          <AttendanceTimeline log={log} />
+                          <AttendanceTimeline log={log} workLocation={resolvedLoc} />
                         </td>
                         <td className="py-2.5 text-right font-mono text-xs text-muted-foreground">{totalDisplay}</td>
                         <td className="py-2.5 text-right font-mono text-xs">
