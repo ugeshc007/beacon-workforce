@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
         .eq("id", log.project_id)
         .single();
 
-      if (project?.site_latitude && project?.site_longitude) {
+      if (hasGps && project?.site_latitude && project?.site_longitude) {
         distance = haversineDistance(lat, lng, Number(project.site_latitude), Number(project.site_longitude));
         valid = distance <= project.site_gps_radius;
       }
