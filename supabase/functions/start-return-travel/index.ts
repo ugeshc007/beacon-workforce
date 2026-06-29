@@ -70,8 +70,7 @@ Deno.serve(async (req) => {
       .from("attendance_logs")
       .update({
         return_travel_start_time: now,
-        return_travel_start_lat: lat,
-        return_travel_start_lng: lng,
+        ...(hasGps ? { return_travel_start_lat: lat, return_travel_start_lng: lng } : {}),
         return_travel_start_accuracy: accuracy ?? null,
       })
       .eq("id", log.id);
