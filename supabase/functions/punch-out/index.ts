@@ -4,7 +4,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
 
   try {
-    const { employee_id, client_timestamp, idempotency_key, lat, lng, accuracy } = await req.json();
+    const { employee_id, client_timestamp, idempotency_key, lat, lng, accuracy, attendance_log_id } = await req.json();
     if (!employee_id) return errorResponse("employee_id is required");
     if (lat == null || lng == null) return errorResponse("lat and lng are required for punch out");
 
@@ -18,9 +18,10 @@ Deno.serve(async (req) => {
     const dup = await checkIdempotency(supabase, idempotency_key, employee_id, "punch-out");
     if (dup) return dup;
 
-    const log = await findOpenAttendanceLog(
+    const log = await resolveAttendanceLog(
       supabase,
       employee_id,
+      attendance_log_id,
       "id, date, office_arrival_time, office_punch_out, travel_start_time, site_arrival_time"
     );
 
