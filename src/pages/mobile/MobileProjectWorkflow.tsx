@@ -126,8 +126,50 @@ export default function MobileProjectWorkflow() {
     await submitAction(action, payload);
   };
 
+  // Office actions that the server requires lat/lng for.
+  const OFFICE_GPS_ACTIONS: WorkflowAction[] = ["start_return_travel", "arrive_office", "punch_out"];
+
+  const handleOfficeActionTap = async (action: WorkflowAction) => {
+    let payload: Record<string, unknown> = {};
+    if (OFFICE_GPS_ACTIONS.includes(action)) {
+      const gps = await getGpsPosition();
+      setGpsQuality(gps.quality);
+      if (!gps.reading) {
+        // Fall back to map picker so we never submit an empty lat/lng to the server.
+        setPendingOfficeAction(action);
+        setShowMapPicker(true);
+        return;
+      }
+      payload = { lat: gps.reading.lat, lng: gps.reading.lng, accuracy: gps.reading.accuracy };
+    }
+    if (isStale) {
+      setRetroOfficePayload(payload);
+      setRetroOfficeAction(action);
+      return;
+    }
+    const r = await office.executeAction(action, payload);
+    if (!r?.success) {
+      toast({ title: "Failed", description: r?.error || "Try again.", variant: "destructive" });
+    }
+  };
+
   const handleMapConfirm = async (lat: number, lng: number) => {
     setShowMapPicker(false);
+    if (pendingOfficeAction) {
+      const action = pendingOfficeAction;
+      setPendingOfficeAction(null);
+      const payload = { lat, lng };
+      if (isStale) {
+        setRetroOfficePayload(payload);
+        setRetroOfficeAction(action);
+        return;
+      }
+      const r = await office.executeAction(action, payload);
+      if (!r?.success) {
+        toast({ title: "Failed", description: r?.error || "Try again.", variant: "destructive" });
+      }
+      return;
+    }
     if (!pendingAction) return;
     if (isStale) {
       setRetroPayload({ lat, lng });
