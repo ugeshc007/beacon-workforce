@@ -52,8 +52,7 @@ Deno.serve(async (req) => {
       .from("attendance_logs")
       .update({
         site_arrival_time: now,
-        site_arrival_lat: lat,
-        site_arrival_lng: lng,
+        ...(hasGps ? { site_arrival_lat: lat, site_arrival_lng: lng } : {}),
         site_arrival_distance_m: Math.round(distance),
         site_arrival_valid: valid,
       })
