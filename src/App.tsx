@@ -55,6 +55,8 @@ import MobileHome from "./pages/mobile/MobileHome";
 import MobileTimesheet from "./pages/mobile/MobileTimesheet";
 import MobileNotifications from "./pages/mobile/MobileNotifications";
 import MobileProfile from "./pages/mobile/MobileProfile";
+import MobileSyncStatus from "./pages/mobile/MobileSyncStatus";
+
 import MobileTeamStatus from "./pages/mobile/MobileTeamStatus";
 import MobileDailyLog from "./pages/mobile/MobileDailyLog";
 import MobileSiteVisits from "./pages/mobile/MobileSiteVisits";
