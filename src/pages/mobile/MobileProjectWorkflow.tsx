@@ -105,14 +105,16 @@ export default function MobileProjectWorkflow() {
     if (GPS_ACTIONS.includes(action)) {
       const gps = await getGpsPosition();
       setGpsQuality(gps.quality);
-      if (gps.needsMapFallback && !gps.reading) {
+      // Server REQUIRES lat/lng for travel/arrival. If GPS didn't return a
+      // reading (denied, timeout, low accuracy), fall back to the map picker
+      // instead of submitting an empty payload (which causes "Employee id,
+      // Lat & lng required" 400 errors).
+      if (!gps.reading) {
         setPendingAction(action);
         setShowMapPicker(true);
         return;
       }
-      if (gps.reading) {
-        payload = { lat: gps.reading.lat, lng: gps.reading.lng };
-      }
+      payload = { lat: gps.reading.lat, lng: gps.reading.lng };
     }
     if (isStale) {
       setRetroPayload(payload);
