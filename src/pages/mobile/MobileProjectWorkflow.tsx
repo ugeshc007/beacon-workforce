@@ -395,11 +395,13 @@ export default function MobileProjectWorkflow() {
             actionLabel={officeActionLabels[retroOfficeAction]}
             minTime={minTime}
             defaultTime={defaultTime}
-            onCancel={() => setRetroOfficeAction(null)}
+            onCancel={() => { setRetroOfficeAction(null); setRetroOfficePayload({}); }}
             onConfirm={async (iso) => {
               const action = retroOfficeAction;
+              const payload = { ...retroOfficePayload, client_timestamp: iso };
               setRetroOfficeAction(null);
-              const r = await office.executeAction(action, { client_timestamp: iso });
+              setRetroOfficePayload({});
+              const r = await office.executeAction(action, payload);
               if (!r?.success) {
                 toast({ title: "Failed", description: r?.error || "Try again.", variant: "destructive" });
               }
