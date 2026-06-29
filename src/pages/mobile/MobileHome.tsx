@@ -188,6 +188,33 @@ export default function MobileHome() {
     navigate("/m/timesheet");
   };
 
+  // Self-serve "I forgot" close — calls close-stale-shift in forfeit mode.
+  const [forfeiting, setForfeiting] = useState(false);
+  const handleForfeitClose = async () => {
+    if (!attendanceLog?.id) return;
+    const ok = window.confirm(
+      "Close this shift without travel-back times?\n\nUse this only if you cannot remember when you returned to office. Your supervisor will see this was self-closed."
+    );
+    if (!ok) return;
+    setForfeiting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("close-stale-shift", {
+        body: { attendance_log_id: attendanceLog.id, mode: "forfeit" },
+      });
+      if (error || (data && (data as { error?: string }).error)) {
+        toast({
+          title: "Could not close shift",
+          description: (data as { error?: string })?.error || error?.message || "Try again.",
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: "Shift closed", description: "Your supervisor has been notified." });
+      }
+    } finally {
+      setForfeiting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
@@ -293,6 +320,16 @@ export default function MobileHome() {
                 </HoldToConfirm>
               ))}
           </div>
+
+          {/* Self-serve escape hatch */}
+          <button
+            type="button"
+            onClick={handleForfeitClose}
+            disabled={forfeiting}
+            className="w-full text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground disabled:opacity-50 pt-1"
+          >
+            {forfeiting ? "Closing…" : "Can't remember? Close shift without travel-back"}
+          </button>
         </div>
       )}
 

@@ -107,6 +107,9 @@ export function ProjectStepTimeline({
           if (!stamp || !endStamp) return null;
           return Math.max(0, Math.round((new Date(endStamp).getTime() - new Date(stamp).getTime()) / 60000));
         })();
+        // Cap absurd durations from stale/overnight shifts (e.g. work_start yesterday vs end today)
+        const SANE_MAX_MIN = 18 * 60;
+        const insaneDuration = durationMin != null && durationMin > SANE_MAX_MIN;
 
         return (
           <div
@@ -137,10 +140,12 @@ export function ProjectStepTimeline({
                   {fmtTime(stamp)}
                   {endStamp && <> → {fmtTime(endStamp)}</>}
                   {durationMin != null && (
-                    <span className="ml-2 text-foreground/80">
-                      ({durationMin >= 60
-                        ? `${Math.floor(durationMin / 60)}h ${durationMin % 60}m`
-                        : `${durationMin}m`})
+                    <span className={`ml-2 ${insaneDuration ? "text-amber-400" : "text-foreground/80"}`}>
+                      ({insaneDuration
+                        ? ">18h • overnight"
+                        : durationMin >= 60
+                          ? `${Math.floor(durationMin / 60)}h ${durationMin % 60}m`
+                          : `${durationMin}m`})
                     </span>
                   )}
                 </p>

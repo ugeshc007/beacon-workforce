@@ -1,0 +1,1 @@
+ALTER TABLE public.attendance_logs ADD COLUMN IF NOT EXISTS auto_closed_by_user boolean NOT NULL DEFAULT false;
