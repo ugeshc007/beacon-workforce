@@ -133,19 +133,45 @@ export async function syncPendingActions(): Promise<{ synced: number; failed: nu
  */
 export function initAutoSync(): () => void {
   const handler = () => {
-    if (navigator.onLine) {
-      syncPendingActions().catch(console.error);
-    }
+    syncPendingActions().catch(console.error);
+  };
+  const onlineHandler = () => {
+    if (navigator.onLine) handler();
   };
 
-  window.addEventListener("online", handler);
+  // Browser fallback (web/PWA)
+  window.addEventListener("online", onlineHandler);
+  document.addEventListener("visibilitychange", onlineHandler);
 
-  // Also try syncing on init if online
-  if (navigator.onLine) {
-    syncPendingActions().catch(console.error);
-  }
+  // Capacitor native: browser 'online' event is unreliable on Android.
+  // Use the Network plugin so the queue actually flushes when connectivity returns.
+  let removeNativeListener: (() => void) | null = null;
+  (async () => {
+    try {
+      const { Network } = await import("@capacitor/network");
+      const sub = await Network.addListener("networkStatusChange", (status) => {
+        if (status.connected) handler();
+      });
+      removeNativeListener = () => sub.remove();
+      const status = await Network.getStatus();
+      if (status.connected) handler();
+    } catch {
+      // Plugin unavailable (pure web) — browser listener above covers it.
+      if (navigator.onLine) handler();
+    }
+  })();
 
-  return () => window.removeEventListener("online", handler);
+  // Safety net: poll every 30s while pending items exist
+  const poll = setInterval(() => {
+    if (navigator.onLine) handler();
+  }, 30000);
+
+  return () => {
+    window.removeEventListener("online", onlineHandler);
+    document.removeEventListener("visibilitychange", onlineHandler);
+    clearInterval(poll);
+    removeNativeListener?.();
+  };
 }
 
 function delay(ms: number): Promise<void> {
