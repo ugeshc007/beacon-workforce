@@ -330,15 +330,22 @@ export default function MobileProjectWorkflow() {
             )}
           </div>
 
-          {office.step !== "punched_out" && (
-            <div className="mt-4 space-y-2">
-              {office.availableActions
-                .filter((a) => a !== "punch_in")
-                .map((a) => (
+          {office.step !== "punched_out" && (() => {
+            // Drive post-project office buttons from actual log timestamps,
+            // not from the office state machine (which may still think the
+            // employee is just "punched_in" on a stale log without site timestamps).
+            const log = office.attendanceLog;
+            const postProjectActions: ("start_return_travel" | "arrive_office" | "punch_out")[] = [];
+            if (!log?.return_travel_start_time) postProjectActions.push("start_return_travel");
+            else if (!log?.office_arrival_time) postProjectActions.push("arrive_office");
+            if (!log?.office_punch_out) postProjectActions.push("punch_out");
+
+            return (
+              <div className="mt-4 space-y-2">
+                {postProjectActions.map((a) => (
                   <HoldToConfirm
                     key={a}
                     onConfirm={() => handleOfficeActionTap(a)}
-
                     disabled={office.actionLoading}
                     loading={office.actionLoading}
                     variant={a === "punch_out" ? "primary" : "secondary"}
@@ -349,11 +356,12 @@ export default function MobileProjectWorkflow() {
                     {officeActionLabels[a]}
                   </HoldToConfirm>
                 ))}
-              <Button variant="outline" className="w-full" onClick={() => navigate("/m")}>
-                <ArrowLeft className="h-4 w-4 mr-2" /> Back to Home
-              </Button>
-            </div>
-          )}
+                <Button variant="outline" className="w-full" onClick={() => navigate("/m")}>
+                  <ArrowLeft className="h-4 w-4 mr-2" /> Back to Home
+                </Button>
+              </div>
+            );
+          })()}
         </Card>
       )}
 
