@@ -89,6 +89,16 @@ export default function MobileProjectWorkflow() {
     );
   }
 
+  // Stale shift detection — dateOverride is set when opened from the unfinished-shift banner.
+  const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Dubai" });
+  const shiftDate = dateOverride || todayStr;
+  const isStale = shiftDate < todayStr;
+
+  // Retro-time dialog state — used for stale (previous-day) actions.
+  const [retroProjectAction, setRetroProjectAction] = useState<ProjectAction | null>(null);
+  const [retroOfficeAction, setRetroOfficeAction] = useState<WorkflowAction | null>(null);
+  const [retroPayload, setRetroPayload] = useState<Record<string, unknown>>({});
+
   const handleAction = async (action: ProjectAction) => {
     let payload: Record<string, unknown> = {};
     if (GPS_ACTIONS.includes(action)) {
@@ -103,12 +113,23 @@ export default function MobileProjectWorkflow() {
         payload = { lat: gps.reading.lat, lng: gps.reading.lng };
       }
     }
+    if (isStale) {
+      setRetroPayload(payload);
+      setRetroProjectAction(action);
+      return;
+    }
     await submitAction(action, payload);
   };
 
   const handleMapConfirm = async (lat: number, lng: number) => {
     setShowMapPicker(false);
     if (!pendingAction) return;
+    if (isStale) {
+      setRetroPayload({ lat, lng });
+      setRetroProjectAction(pendingAction);
+      setPendingAction(null);
+      return;
+    }
     await submitAction(pendingAction, { lat, lng });
     setPendingAction(null);
   };
@@ -124,6 +145,7 @@ export default function MobileProjectWorkflow() {
       });
     }
   };
+
 
   const primary = availableActions[0];
   const secondary = availableActions.slice(1);
