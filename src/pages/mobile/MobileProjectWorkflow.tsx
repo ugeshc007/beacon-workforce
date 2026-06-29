@@ -326,6 +326,50 @@ export default function MobileProjectWorkflow() {
         initialLat={project?.siteLat || 25.2048}
         initialLng={project?.siteLng || 55.2708}
       />
+
+      {retroProjectAction && (() => {
+        const { minTime, defaultTime } = projectActionTimeHints(session, retroProjectAction);
+        return (
+          <RetroTimeDialog
+            open={!!retroProjectAction}
+            shiftDate={shiftDate}
+            actionLabel={projectActionLabels[retroProjectAction]}
+            minTime={minTime}
+            defaultTime={defaultTime}
+            onCancel={() => setRetroProjectAction(null)}
+            onConfirm={async (iso) => {
+              const action = retroProjectAction;
+              const payload = { ...retroPayload, client_timestamp: iso, client_event_time: iso };
+              setRetroProjectAction(null);
+              setRetroPayload({});
+              await submitAction(action, payload);
+            }}
+          />
+        );
+      })()}
+
+      {retroOfficeAction && office.attendanceLog?.date && (() => {
+        const { minTime, defaultTime } = officeActionTimeHints(office.attendanceLog, retroOfficeAction);
+        return (
+          <RetroTimeDialog
+            open={!!retroOfficeAction}
+            shiftDate={office.attendanceLog.date}
+            actionLabel={officeActionLabels[retroOfficeAction]}
+            minTime={minTime}
+            defaultTime={defaultTime}
+            onCancel={() => setRetroOfficeAction(null)}
+            onConfirm={async (iso) => {
+              const action = retroOfficeAction;
+              setRetroOfficeAction(null);
+              const r = await office.executeAction(action, { client_timestamp: iso });
+              if (!r?.success) {
+                toast({ title: "Failed", description: r?.error || "Try again.", variant: "destructive" });
+              }
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }
+
