@@ -47,8 +47,7 @@ Deno.serve(async (req) => {
       .from("attendance_logs")
       .update({
         travel_start_time: now,
-        travel_start_lat: lat,
-        travel_start_lng: lng,
+        ...(lat != null && lng != null ? { travel_start_lat: lat, travel_start_lng: lng } : {}),
       })
       .eq("id", log.id);
 
