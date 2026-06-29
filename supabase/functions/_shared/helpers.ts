@@ -78,9 +78,12 @@ export function resolveTimestamp(clientTimestamp?: string | null): string {
   if (Number.isNaN(t)) return nowTimestamp();
   const now = Date.now();
   if (t > now + 60_000) return nowTimestamp();
-  if (now - t > 24 * 60 * 60 * 1000) return nowTimestamp();
+  // Allow retroactive entries up to 30 days back (covers forgotten stale shifts
+  // where employee finishes yesterday/last-week flow today and back-dates each step).
+  if (now - t > 30 * 24 * 60 * 60 * 1000) return nowTimestamp();
   return new Date(t).toISOString();
 }
+
 
 /**
  * Find the currently active (open) attendance log for an employee.

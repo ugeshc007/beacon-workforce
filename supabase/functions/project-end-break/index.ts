@@ -1,16 +1,16 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, nowTimestamp, authenticateEmployee } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, nowTimestamp, resolveTimestamp, authenticateEmployee } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
   try {
-    const { employee_id, session_id } = await req.json();
+    const { employee_id, session_id , client_timestamp } = await req.json();
     if (!employee_id || !session_id) return errorResponse("employee_id, session_id required");
 
     const supabase = createSupabaseAdmin();
     const auth = await authenticateEmployee(req, supabase, employee_id);
     if (auth.error) return auth.error;
 
-    const now = nowTimestamp();
+    const now = resolveTimestamp(client_timestamp);
 
     const { data: session } = await supabase
       .from("project_work_sessions")

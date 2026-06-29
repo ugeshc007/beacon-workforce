@@ -9,6 +9,10 @@ import { getGpsPosition, qualityColor, qualityLabel } from "@/lib/gps";
 import { initAutoSync } from "@/lib/offline-sync";
 import { getCachedData } from "@/lib/offline-queue";
 import { HoldToConfirm } from "@/components/mobile/HoldToConfirm";
+import { RetroTimeDialog } from "@/components/mobile/RetroTimeDialog";
+import { officeActionTimeHints } from "@/lib/retro-time";
+
+
 
 import { DriverWorkflowCard } from "@/components/mobile/DriverWorkflowCard";
 import { Card } from "@/components/ui/card";
@@ -99,6 +103,17 @@ export default function MobileHome() {
     staleTime: 60_000,
   });
 
+  // Detect a stale shift: the open attendance log's date is before today.
+  const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Dubai" });
+  const isStaleShift = !!attendanceLog?.date && attendanceLog.date < todayStr && !attendanceLog.office_punch_out;
+  const staleShiftLabel = attendanceLog?.date
+    ? new Date(attendanceLog.date + "T00:00:00").toLocaleDateString("en-AE", { weekday: "short", day: "2-digit", month: "short" })
+    : "";
+
+  // Retro-time dialog state for stale shifts
+  const [retroAction, setRetroAction] = useState<WorkflowAction | null>(null);
+  const [retroPayload, setRetroPayload] = useState<Record<string, unknown>>({});
+
   const handleOfficeAction = async (action: WorkflowAction) => {
     let payload: Record<string, unknown> = {};
     if (GPS_ACTIONS.includes(action)) {
@@ -115,6 +130,15 @@ export default function MobileHome() {
       // GPS is best-effort: when it fails (timeout, denied, etc.) the action still
       // proceeds without coordinates. Server-side validation can enforce if needed.
     }
+
+    // If this is a stale (previous-day) shift, ask the employee for the actual time
+    // they did this step instead of stamping it as "now".
+    if (isStaleShift && attendanceLog?.date) {
+      setRetroPayload(payload);
+      setRetroAction(action);
+      return;
+    }
+
     await submitAction(action, payload);
   };
 
@@ -126,13 +150,6 @@ export default function MobileHome() {
     }
   };
 
-  // Detect a stale shift: the open attendance log's date is before today.
-  // Keep this query before any early return so React hook order stays stable.
-  const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Dubai" });
-  const isStaleShift = !!attendanceLog?.date && attendanceLog.date < todayStr && !attendanceLog.office_punch_out;
-  const staleShiftLabel = attendanceLog?.date
-    ? new Date(attendanceLog.date + "T00:00:00").toLocaleDateString("en-AE", { weekday: "short", day: "2-digit", month: "short" })
-    : "";
 
   // Find an open project session tied to the stale shift so the user can finish it.
   const { data: staleProjectSession } = useQuery({
@@ -720,6 +737,27 @@ export default function MobileHome() {
         );
       })()}
 
+      {retroAction && attendanceLog?.date && (() => {
+        const { minTime, defaultTime } = officeActionTimeHints(attendanceLog, retroAction);
+        return (
+          <RetroTimeDialog
+            open={!!retroAction}
+            shiftDate={attendanceLog.date}
+            actionLabel={actionLabels[retroAction]}
+            minTime={minTime}
+            defaultTime={defaultTime}
+            onCancel={() => setRetroAction(null)}
+            onConfirm={async (iso) => {
+              const action = retroAction;
+              const payload = { ...retroPayload, client_timestamp: iso };
+              setRetroAction(null);
+              setRetroPayload({});
+              await submitAction(action, payload);
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }
+

@@ -15,6 +15,10 @@ import { getGpsPosition, qualityColor, qualityLabel } from "@/lib/gps";
 import { HoldToConfirm } from "@/components/mobile/HoldToConfirm";
 import { MapPicker } from "@/components/mobile/MapPicker";
 import { ProjectStepTimeline } from "@/components/mobile/ProjectStepTimeline";
+import { RetroTimeDialog } from "@/components/mobile/RetroTimeDialog";
+import { projectActionTimeHints, officeActionTimeHints } from "@/lib/retro-time";
+import { WorkflowAction } from "@/lib/workflow-engine";
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Loader2, MapPin, Clock, ArrowLeft, CheckCircle2, Crosshair, ArrowRight, RotateCcw, X, Building2 } from "lucide-react";
@@ -85,6 +89,16 @@ export default function MobileProjectWorkflow() {
     );
   }
 
+  // Stale shift detection — dateOverride is set when opened from the unfinished-shift banner.
+  const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Dubai" });
+  const shiftDate = dateOverride || todayStr;
+  const isStale = shiftDate < todayStr;
+
+  // Retro-time dialog state — used for stale (previous-day) actions.
+  const [retroProjectAction, setRetroProjectAction] = useState<ProjectAction | null>(null);
+  const [retroOfficeAction, setRetroOfficeAction] = useState<WorkflowAction | null>(null);
+  const [retroPayload, setRetroPayload] = useState<Record<string, unknown>>({});
+
   const handleAction = async (action: ProjectAction) => {
     let payload: Record<string, unknown> = {};
     if (GPS_ACTIONS.includes(action)) {
@@ -99,12 +113,23 @@ export default function MobileProjectWorkflow() {
         payload = { lat: gps.reading.lat, lng: gps.reading.lng };
       }
     }
+    if (isStale) {
+      setRetroPayload(payload);
+      setRetroProjectAction(action);
+      return;
+    }
     await submitAction(action, payload);
   };
 
   const handleMapConfirm = async (lat: number, lng: number) => {
     setShowMapPicker(false);
     if (!pendingAction) return;
+    if (isStale) {
+      setRetroPayload({ lat, lng });
+      setRetroProjectAction(pendingAction);
+      setPendingAction(null);
+      return;
+    }
     await submitAction(pendingAction, { lat, lng });
     setPendingAction(null);
   };
@@ -120,6 +145,7 @@ export default function MobileProjectWorkflow() {
       });
     }
   };
+
 
   const primary = availableActions[0];
   const secondary = availableActions.slice(1);
@@ -265,11 +291,16 @@ export default function MobileProjectWorkflow() {
                   <HoldToConfirm
                     key={a}
                     onConfirm={async () => {
+                      if (isStale) {
+                        setRetroOfficeAction(a);
+                        return;
+                      }
                       const r = await office.executeAction(a);
                       if (!r?.success) {
                         toast({ title: "Failed", description: r?.error || "Try again.", variant: "destructive" });
                       }
                     }}
+
                     disabled={office.actionLoading}
                     loading={office.actionLoading}
                     variant={a === "punch_out" ? "primary" : "secondary"}
@@ -295,6 +326,50 @@ export default function MobileProjectWorkflow() {
         initialLat={project?.siteLat || 25.2048}
         initialLng={project?.siteLng || 55.2708}
       />
+
+      {retroProjectAction && (() => {
+        const { minTime, defaultTime } = projectActionTimeHints(session, retroProjectAction);
+        return (
+          <RetroTimeDialog
+            open={!!retroProjectAction}
+            shiftDate={shiftDate}
+            actionLabel={projectActionLabels[retroProjectAction]}
+            minTime={minTime}
+            defaultTime={defaultTime}
+            onCancel={() => setRetroProjectAction(null)}
+            onConfirm={async (iso) => {
+              const action = retroProjectAction;
+              const payload = { ...retroPayload, client_timestamp: iso, client_event_time: iso };
+              setRetroProjectAction(null);
+              setRetroPayload({});
+              await submitAction(action, payload);
+            }}
+          />
+        );
+      })()}
+
+      {retroOfficeAction && office.attendanceLog?.date && (() => {
+        const { minTime, defaultTime } = officeActionTimeHints(office.attendanceLog, retroOfficeAction);
+        return (
+          <RetroTimeDialog
+            open={!!retroOfficeAction}
+            shiftDate={office.attendanceLog.date}
+            actionLabel={officeActionLabels[retroOfficeAction]}
+            minTime={minTime}
+            defaultTime={defaultTime}
+            onCancel={() => setRetroOfficeAction(null)}
+            onConfirm={async (iso) => {
+              const action = retroOfficeAction;
+              setRetroOfficeAction(null);
+              const r = await office.executeAction(action, { client_timestamp: iso });
+              if (!r?.success) {
+                toast({ title: "Failed", description: r?.error || "Try again.", variant: "destructive" });
+              }
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }
+
