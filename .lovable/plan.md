@@ -1,62 +1,63 @@
-## Goal
-Let Everfresh (cleaning company) define **recurring cleaning jobs** (daily / weekly / monthly / custom) per client/site, and have the system auto-generate the actual day-by-day assignments that show up in Schedule, Attendance, and Timesheets — exactly like one-off projects do today.
+# Retroactive Time Entry for Stale Shifts
 
-## How it fits the current system
-Today: `projects` + `project_assignments` are one-shot. A manager assigns employees per day via `DayAssignmentPanel`.
-New: a **recurrence template** that spawns those rows automatically on a schedule, with the same overlap/double-booking guard already in place.
+## Problem
+When an employee forgets to close yesterday's (or older) shift and resumes the flow today, every action (Start Travel, Work Start, Work End, Return Travel, Arrive Office, Punch Out) gets stamped with **today's current time** — which is wrong. The real action happened yesterday.
 
-## Plan
+## Solution
+If the open shift is **stale** (date < today), prompt the employee for the **actual time** they did each step. For today's shift, keep the current behaviour (auto-capture `now()`).
 
-### 1. Data model (new tables)
-- `recurring_jobs`
-  - id, company_id, branch_id, client_name, site_name, address, lat, lng
-  - frequency: `daily | weekly | monthly | custom`
-  - days_of_week (int[]) — e.g. [1,3,5] for Mon/Wed/Fri
-  - day_of_month (int, nullable) — for monthly
-  - start_date, end_date (nullable = open-ended)
-  - start_time, end_time, break_minutes
-  - required_skills, headcount, notes, color
-  - status: `active | paused | ended`
-  - created_by, timestamps
-- `recurring_job_employees` — default crew (employee_id, role)
-- `recurring_job_occurrences` — generated rows (recurring_job_id, date, project_assignment_id, status: scheduled/skipped/done)
+## User Flow
 
-All with company-scoped RLS + GRANTs (matches existing pattern).
+For each workflow action on a stale shift:
 
-### 2. Generation logic
-- Edge function `generate-recurring-occurrences` runs **nightly via pg_cron** (e.g. 01:00 UAE).
-  - Looks ahead 14 days for every active recurring job.
-  - For each matching date with no existing occurrence: creates a `project_assignment` row (or a lightweight "recurring task" record reusing the schedule grid) for each default crew member.
-  - Skips public holidays and employee leave automatically.
-  - Respects the same overlap check used in `DayAssignmentPanel` — conflicts are logged, not silently overwritten.
-- Manual "Generate now" button in UI for ad-hoc backfill.
+1. Employee taps action (e.g. "Start Work")
+2. A small time-picker dialog appears:
+   - Title: "When did you start work?"
+   - Default value: a sensible guess (e.g. last action time + a small offset, or shift start)
+   - Date is locked to the stale shift's date
+   - Only HH:MM editable
+3. Employee confirms → action submits with the chosen timestamp
+4. Server records that timestamp instead of `now()`
 
-### 3. UI (web portal)
-- New module: **Recurring Jobs** (sidebar entry, admin/manager only).
-  - List view: client, site, frequency summary ("Mon/Wed/Fri 08:00–12:00"), crew, next occurrence, status.
-  - Create/Edit modal with frequency builder (daily, weekly w/ day picker, monthly, custom RRULE-lite).
-  - "Pause", "End today", "Skip this date", "Replace employee for this date" actions.
-- **Schedule grid**: recurring-generated assignments show with a small 🔁 badge so managers can tell them apart from one-off projects.
+Today's shift: no dialog, instant action as today.
 
-### 4. Android side (no new collection)
-- The mobile app already reads `project_assignments`, so generated occurrences appear automatically for the assigned cleaner — punch in/out, GPS, photos all work as-is.
+## Implementation
 
-### 5. Edge cases handled
-- Holiday → auto-skip (configurable per job).
-- Employee on leave → swap to backup from crew, else flag for manager.
-- Recurring job paused → stop future generation, keep history.
-- Editing a recurring job → only affects **future** occurrences; past stays intact.
+### 1. New component
+`src/components/mobile/RetroTimeDialog.tsx`
+- Props: `open`, `shiftDate`, `actionLabel`, `defaultTime`, `minTime`, `onConfirm(isoTimestamp)`, `onCancel`
+- HH:MM input + Confirm / Cancel
+- Builds ISO timestamp from `shiftDate + chosen time` in Asia/Dubai zone
 
-### 6. Rollout order
-1. Migration: 3 new tables + RLS + grants.
-2. Edge function + cron schedule.
-3. Recurring Jobs list + create form.
-4. Schedule grid badge + "skip/replace this date" actions.
-5. Reports: hours/cost rolled up per recurring job (per client billing).
+### 2. Hook changes — `src/hooks/useMobileWorkflow.ts`
+- Detect stale: `isStale = attendanceLog.date < todayStr`
+- `executeAction(action, payload)` accepts optional `overrideTimestamp`
+- When `isStale` and no override passed: return a signal to caller to open the dialog instead of submitting
+- When override present: include `client_timestamp` (or per-field key, e.g. `work_start_time`) in payload
 
-### Technical notes
-- Reuse existing `project_assignments` so Schedule/Attendance/Timesheets need zero changes.
-- Conflict guard reuses the `toMin()` overlap helper already added in `DayAssignmentPanel`.
-- Cron via existing pattern (`update_absent_check_cron` style helper).
+### 3. Edge function changes
+Update the relevant functions to honour an optional `client_timestamp` from payload **only when the caller is the assigned employee and the log is stale**:
+- `punch-in`, `punch-out`
+- `project-start-travel`, `project-arrive-site`
+- `project-start-work`, `project-end-work`
+- `start-return-travel`, `arrive-office`
 
-Approve and I'll start with step 1 (migration) and step 2 (generator function).
+Each writes `client_timestamp` (validated to be within the shift date + not in future) to its respective column instead of `now()`.
+
+### 4. UI wiring
+- `MobileHome.tsx`: when stale, intercept office actions → open dialog → on confirm call `executeAction` with override
+- `MobileProjectWorkflow.tsx`: same for site actions
+- Default time logic: latest existing timestamp on the log + 1 minute (so order stays chronological)
+
+## Validation Rules (server side)
+- `client_timestamp` must be on the same calendar date as `attendance_logs.date`
+- Must be ≥ previous step's timestamp
+- Must be ≤ `now()`
+- If invalid → fall back to `now()` and return a warning
+
+## Out of Scope
+- Editing already-completed timestamps (separate feature)
+- Manager approval for retroactive entries (could be a follow-up if needed)
+
+## Version
+Bump to **v13.0.7 / build 20** after implementation.
