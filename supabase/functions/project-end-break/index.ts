@@ -21,7 +21,9 @@ Deno.serve(async (req) => {
     if (!session) return errorResponse("Session not found", 404);
     if (session.work_end_time) return errorResponse("Session already ended", 400);
     if (!session.break_start_time) return errorResponse("Break was never started", 400);
-    if (session.break_end_time) return errorResponse("Break already ended", 400);
+    if (session.break_end_time) {
+      return jsonResponse({ success: true, timestamp: session.break_end_time, deduped: true });
+    }
 
     const addBreak = Math.max(0, Math.round((new Date(now).getTime() - new Date(session.break_start_time).getTime()) / 60000));
 
