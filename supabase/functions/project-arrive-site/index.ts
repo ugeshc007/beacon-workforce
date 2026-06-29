@@ -4,7 +4,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
 
   try {
-    const { employee_id, session_id, lat, lng } = await req.json();
+    const { employee_id, session_id, lat, lng , client_timestamp } = await req.json();
     if (!employee_id || !session_id || lat == null || lng == null) {
       return errorResponse("employee_id, session_id, lat, lng required");
     }

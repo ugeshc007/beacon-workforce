@@ -3,7 +3,7 @@ import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, nowTime
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
   try {
-    const { employee_id, session_id } = await req.json();
+    const { employee_id, session_id , client_timestamp } = await req.json();
     if (!employee_id || !session_id) return errorResponse("employee_id, session_id required");
 
     const supabase = createSupabaseAdmin();
