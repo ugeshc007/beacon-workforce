@@ -67,6 +67,27 @@ export async function clearSynced(): Promise<void> {
   await saveQueue(queue.filter((q) => q.sync_status !== "synced"));
 }
 
+export async function removeAction(localId: string): Promise<void> {
+  const queue = await getQueue();
+  await saveQueue(queue.filter((q) => q.local_id !== localId));
+}
+
+export async function retryAction(localId: string): Promise<void> {
+  const queue = await getQueue();
+  const idx = queue.findIndex((q) => q.local_id === localId);
+  if (idx >= 0) {
+    queue[idx].sync_status = "pending";
+    queue[idx].error_message = undefined;
+    await saveQueue(queue);
+  }
+}
+
+export async function clearErrored(): Promise<void> {
+  const queue = await getQueue();
+  await saveQueue(queue.filter((q) => q.sync_status !== "error"));
+}
+
+
 // Simple cache for assignments, settings, etc.
 export async function cacheData(key: string, data: unknown): Promise<void> {
   await Preferences.set({
