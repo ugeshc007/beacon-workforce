@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
-import { Wifi, WifiOff, RefreshCw, CloudUpload } from "lucide-react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { useNavigate } from "react-router-dom";
+import { Wifi, WifiOff, RefreshCw, CloudUpload, ExternalLink } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { getQueue, type QueuedAction } from "@/lib/offline-queue";
 import { getDailyLogQueue, type QueuedDailyLog, syncPendingDailyLogs } from "@/lib/offline-daily-logs";
 import { syncPendingActions, onSyncChange } from "@/lib/offline-sync";
 import { useToast } from "@/hooks/use-toast";
+
 
 export function SyncStatusBadge() {
   const [online, setOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
