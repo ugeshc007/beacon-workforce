@@ -14,12 +14,15 @@ Deno.serve(async (req) => {
 
     const { data: session } = await supabase
       .from("project_work_sessions")
-      .select("work_start_time, break_start_time, break_end_time, break_minutes, employee_id")
+      .select("work_start_time, work_end_time, break_start_time, break_end_time, break_minutes, employee_id")
       .eq("id", session_id)
       .eq("employee_id", employee_id)
       .maybeSingle();
     if (!session) return errorResponse("Session not found", 404);
     if (!session.work_start_time) return errorResponse("Work was never started", 400);
+    if (session.work_end_time) {
+      return jsonResponse({ success: true, timestamp: session.work_end_time, deduped: true });
+    }
 
     // Auto-close any open break
     let breakMinutes = session.break_minutes ?? 0;
