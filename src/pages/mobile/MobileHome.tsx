@@ -103,6 +103,10 @@ export default function MobileHome() {
     staleTime: 60_000,
   });
 
+  // Retro-time dialog state for stale shifts
+  const [retroAction, setRetroAction] = useState<WorkflowAction | null>(null);
+  const [retroPayload, setRetroPayload] = useState<Record<string, unknown>>({});
+
   const handleOfficeAction = async (action: WorkflowAction) => {
     let payload: Record<string, unknown> = {};
     if (GPS_ACTIONS.includes(action)) {
@@ -119,6 +123,15 @@ export default function MobileHome() {
       // GPS is best-effort: when it fails (timeout, denied, etc.) the action still
       // proceeds without coordinates. Server-side validation can enforce if needed.
     }
+
+    // If this is a stale (previous-day) shift, ask the employee for the actual time
+    // they did this step instead of stamping it as "now".
+    if (isStaleShiftRef.current) {
+      setRetroPayload(payload);
+      setRetroAction(action);
+      return;
+    }
+
     await submitAction(action, payload);
   };
 
@@ -129,6 +142,7 @@ export default function MobileHome() {
       toast({ title: "Failed", description: result?.error || "Something went wrong.", variant: "destructive" });
     }
   };
+
 
   // Detect a stale shift: the open attendance log's date is before today.
   // Keep this query before any early return so React hook order stays stable.
