@@ -359,7 +359,7 @@ export default function MobileProjectWorkflow() {
 
       <MapPicker
         open={showMapPicker}
-        onClose={() => { setShowMapPicker(false); setPendingAction(null); }}
+        onClose={() => { setShowMapPicker(false); setPendingAction(null); setPendingOfficeAction(null); }}
         onConfirm={handleMapConfirm}
         initialLat={project?.siteLat || 25.2048}
         initialLng={project?.siteLng || 55.2708}
