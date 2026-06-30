@@ -162,15 +162,14 @@ export async function syncPendingDailyLogs(): Promise<{ synced: number; failed: 
  * Auto-sync daily logs when network returns. Call once at app startup.
  */
 export function initDailyLogAutoSync(): () => void {
-  const handler = () => {
-    syncPendingDailyLogs().catch(console.error);
-  };
-  const onlineHandler = () => { if (navigator.onLine) handler(); };
+  const handler = () => { syncPendingDailyLogs().catch(console.error); };
+  const onlineHandler = () => { handler(); };
 
   window.addEventListener("online", onlineHandler);
   document.addEventListener("visibilitychange", onlineHandler);
 
   let removeNativeListener: (() => void) | null = null;
+  let removeResumeListener: (() => void) | null = null;
   (async () => {
     try {
       const { Network } = await import("@capacitor/network");
@@ -181,16 +180,33 @@ export function initDailyLogAutoSync(): () => void {
       const status = await Network.getStatus();
       if (status.connected) handler();
     } catch {
-      if (navigator.onLine) handler();
+      handler();
     }
+    try {
+      const { App } = await import("@capacitor/app");
+      const sub = await App.addListener("appStateChange", (state) => {
+        if (state.isActive) handler();
+      });
+      removeResumeListener = () => sub.remove();
+    } catch { /* ignore */ }
   })();
 
-  const poll = setInterval(() => { if (navigator.onLine) handler(); }, 30000);
+  // Poll every 30s using the Network plugin (navigator.onLine is unreliable on Android).
+  const poll = setInterval(async () => {
+    try {
+      const { Network } = await import("@capacitor/network");
+      const status = await Network.getStatus();
+      if (status.connected) handler();
+    } catch {
+      if (navigator.onLine) handler();
+    }
+  }, 30000);
 
   return () => {
     window.removeEventListener("online", onlineHandler);
     document.removeEventListener("visibilitychange", onlineHandler);
     clearInterval(poll);
     removeNativeListener?.();
+    removeResumeListener?.();
   };
 }
