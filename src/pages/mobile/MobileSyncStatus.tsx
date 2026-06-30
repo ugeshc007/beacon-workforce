@@ -27,7 +27,7 @@ import {
   type QueuedDailyLog,
   syncPendingDailyLogs,
 } from "@/lib/offline-daily-logs";
-import { syncPendingActions, onSyncChange } from "@/lib/offline-sync";
+import { syncPendingActions, onSyncChange, getSyncDiagnostics, type SyncDiagnostics } from "@/lib/offline-sync";
 import { useToast } from "@/hooks/use-toast";
 
 type Tab = "pending" | "failed" | "synced";
