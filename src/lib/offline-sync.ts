@@ -91,12 +91,14 @@ const edgeFunctionMap: Record<string, string> = {
  * Process all pending items in the queue, oldest first.
  * Uses idempotency keys so duplicate sends are safe.
  */
-export async function syncPendingActions(): Promise<{ synced: number; failed: number }> {
+export async function syncPendingActions(trigger: string = "manual"): Promise<{ synced: number; failed: number }> {
   if (isSyncing) return { synced: 0, failed: 0 };
   isSyncing = true;
+  diagnostics.last_sync_trigger = trigger;
 
   let synced = 0;
   let failed = 0;
+  let lastErr: string | null = null;
 
   try {
     const queue = await getQueue();
@@ -108,6 +110,7 @@ export async function syncPendingActions(): Promise<{ synced: number; failed: nu
       if (!fnName) {
         await markError(item.local_id, `Unknown action: ${item.action_type}`);
         failed++;
+        lastErr = `Unknown action: ${item.action_type}`;
         continue;
       }
 
@@ -126,7 +129,7 @@ export async function syncPendingActions(): Promise<{ synced: number; failed: nu
           success = true;
         } catch (e: any) {
           attempt++;
-          // Persist attempt counter so the user can see retry history.
+          lastErr = e?.message || "Sync failed";
           const cur = await getQueue();
           const idx = cur.findIndex((q) => q.local_id === item.local_id);
           if (idx >= 0) {
@@ -142,13 +145,14 @@ export async function syncPendingActions(): Promise<{ synced: number; failed: nu
           }
         }
       }
-
     }
 
-    // Clean up synced items
     await clearSynced();
   } finally {
     isSyncing = false;
+    diagnostics.last_sync_at = new Date().toISOString();
+    diagnostics.last_sync_result = { synced, failed };
+    diagnostics.last_error = failed > 0 ? lastErr : null;
     const remaining = await getQueue();
     const pendingCount = remaining.filter((q) => q.sync_status === "pending").length;
     notifyListeners(pendingCount, false);
@@ -156,6 +160,7 @@ export async function syncPendingActions(): Promise<{ synced: number; failed: nu
 
   return { synced, failed };
 }
+
 
 /**
  * Set up auto-sync on network reconnect.
