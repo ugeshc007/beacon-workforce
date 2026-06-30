@@ -42,19 +42,41 @@ export default function MobileSyncStatus() {
   const [actions, setActions] = useState<QueuedAction[]>([]);
   const [dailyLogs, setDailyLogs] = useState<QueuedDailyLog[]>([]);
   const [tab, setTab] = useState<Tab>("pending");
+  const [diag, setDiag] = useState<SyncDiagnostics>(() => getSyncDiagnostics());
+  const [netInfo, setNetInfo] = useState<{ connected: boolean; type: string } | null>(null);
+  const [appActive, setAppActive] = useState(true);
+  const [platform, setPlatform] = useState<string>("web");
 
   const refresh = async () => {
     const [q, dl] = await Promise.all([getQueue(), getDailyLogQueue()]);
     setActions(q);
     setDailyLogs(dl);
+    setDiag(getSyncDiagnostics());
+    try {
+      const { Network } = await import("@capacitor/network");
+      const s = await Network.getStatus();
+      setNetInfo({ connected: s.connected, type: s.connectionType });
+      setOnline(s.connected);
+    } catch {
+      setNetInfo({ connected: navigator.onLine, type: "browser" });
+    }
   };
 
   useEffect(() => {
     refresh();
-    const on = () => {
-      setOnline(true);
-      refresh();
-    };
+    let removeAppSub: (() => void) | null = null;
+    (async () => {
+      try {
+        const { Capacitor } = await import("@capacitor/core");
+        setPlatform(Capacitor.getPlatform());
+      } catch {}
+      try {
+        const { App } = await import("@capacitor/app");
+        const sub = await App.addListener("appStateChange", (s) => setAppActive(s.isActive));
+        removeAppSub = () => sub.remove();
+      } catch {}
+    })();
+    const on = () => { setOnline(true); refresh(); };
     const off = () => setOnline(false);
     window.addEventListener("online", on);
     window.addEventListener("offline", off);
@@ -68,8 +90,10 @@ export default function MobileSyncStatus() {
       window.removeEventListener("offline", off);
       unsub();
       clearInterval(interval);
+      removeAppSub?.();
     };
   }, []);
+
 
   const pendingActions = actions.filter((a) => a.sync_status === "pending");
   const failedActions = actions.filter((a) => a.sync_status === "error");
