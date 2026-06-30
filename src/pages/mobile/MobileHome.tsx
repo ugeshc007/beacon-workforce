@@ -519,16 +519,41 @@ export default function MobileHome() {
             </div>
           </Card>
 
-          {/* Punch out — always available in-house */}
-          <HoldToConfirm
-            onConfirm={() => handleOfficeAction("punch_out")}
-            disabled={actionLoading}
-            loading={actionLoading}
-            variant="secondary"
-          >
-            <CheckCircle2 className="h-5 w-5" />
-            {actionLabels.punch_out}
-          </HoldToConfirm>
+          {/* Break controls — in-house */}
+          {step === "on_break" ? (
+            <HoldToConfirm
+              onConfirm={() => executeAction("end_break")}
+              disabled={actionLoading}
+              loading={actionLoading}
+              variant="primary"
+            >
+              <Coffee className="h-5 w-5" />
+              {actionLabels.end_break}
+            </HoldToConfirm>
+          ) : (
+            <HoldToConfirm
+              onConfirm={() => executeAction("start_break")}
+              disabled={actionLoading}
+              loading={actionLoading}
+              variant="secondary"
+            >
+              <Coffee className="h-5 w-5" />
+              {actionLabels.start_break}
+            </HoldToConfirm>
+          )}
+
+          {/* Punch out — only when not on break */}
+          {step !== "on_break" && (
+            <HoldToConfirm
+              onConfirm={() => handleOfficeAction("punch_out")}
+              disabled={actionLoading}
+              loading={actionLoading}
+              variant="secondary"
+            >
+              <CheckCircle2 className="h-5 w-5" />
+              {actionLabels.punch_out}
+            </HoldToConfirm>
+          )}
         </div>
       )}
 
