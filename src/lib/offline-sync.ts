@@ -167,65 +167,61 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
  * Call once at app startup.
  */
 export function initAutoSync(): () => void {
-  const handler = () => {
-    syncPendingActions().catch(console.error);
-    // Daily logs share the same "online" trigger — flush them too.
+  const handler = (trigger: string) => {
+    syncPendingActions(trigger).catch(console.error);
     import("@/lib/offline-daily-logs")
       .then((m) => m.syncPendingDailyLogs().catch(console.error))
       .catch(() => { /* ignore */ });
   };
-  const onlineHandler = () => { handler(); };
 
-  // Browser fallback (web/PWA)
+  const onlineHandler = () => handler("browser:online");
+  const visHandler = () => { if (document.visibilityState === "visible") handler("visibilitychange"); };
+
   window.addEventListener("online", onlineHandler);
-  document.addEventListener("visibilitychange", onlineHandler);
+  document.addEventListener("visibilitychange", visHandler);
 
-  // Capacitor native: browser 'online' event is unreliable on Android.
   let removeNativeListener: (() => void) | null = null;
   let removeResumeListener: (() => void) | null = null;
   (async () => {
     try {
       const { Network } = await import("@capacitor/network");
       const sub = await Network.addListener("networkStatusChange", (status) => {
-        if (status.connected) handler();
+        if (status.connected) handler("native:network");
       });
       removeNativeListener = () => sub.remove();
       const status = await Network.getStatus();
-      if (status.connected) handler();
+      if (status.connected) handler("startup");
     } catch {
-      handler();
+      handler("startup");
     }
-    // Flush whenever the app returns to foreground — covers the case where the
-    // OS suspended JS in background and 'online' never fired on resume.
     try {
       const { App } = await import("@capacitor/app");
       const sub = await App.addListener("appStateChange", (state) => {
-        if (state.isActive) handler();
+        if (state.isActive) handler("native:resume");
       });
       removeResumeListener = () => sub.remove();
     } catch { /* ignore on web */ }
   })();
 
-  // Safety net: poll every 30s. Use the Network plugin (navigator.onLine
-  // can stay false on Android even with a real connection).
   const poll = setInterval(async () => {
     try {
       const { Network } = await import("@capacitor/network");
       const status = await Network.getStatus();
-      if (status.connected) handler();
+      if (status.connected) handler("poll");
     } catch {
-      if (navigator.onLine) handler();
+      if (navigator.onLine) handler("poll");
     }
   }, 30000);
 
   return () => {
     window.removeEventListener("online", onlineHandler);
-    document.removeEventListener("visibilitychange", onlineHandler);
+    document.removeEventListener("visibilitychange", visHandler);
     clearInterval(poll);
     removeNativeListener?.();
     removeResumeListener?.();
   };
 }
+
 
 function delay(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
