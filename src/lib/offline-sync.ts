@@ -22,6 +22,24 @@ const listeners = new Set<SyncListener>();
 
 let isSyncing = false;
 
+export interface SyncDiagnostics {
+  last_sync_at: string | null;
+  last_sync_result: { synced: number; failed: number } | null;
+  last_sync_trigger: string | null;
+  last_error: string | null;
+}
+
+const diagnostics: SyncDiagnostics = {
+  last_sync_at: null,
+  last_sync_result: null,
+  last_sync_trigger: null,
+  last_error: null,
+};
+
+export function getSyncDiagnostics(): SyncDiagnostics {
+  return { ...diagnostics };
+}
+
 export function onSyncChange(fn: SyncListener): () => void {
   listeners.add(fn);
   return () => listeners.delete(fn);
@@ -30,6 +48,7 @@ export function onSyncChange(fn: SyncListener): () => void {
 function notifyListeners(pending: number, syncing: boolean) {
   listeners.forEach((fn) => fn(pending, syncing));
 }
+
 
 /**
  * Edge function name mapping (same as useMobileWorkflow)
@@ -72,12 +91,14 @@ const edgeFunctionMap: Record<string, string> = {
  * Process all pending items in the queue, oldest first.
  * Uses idempotency keys so duplicate sends are safe.
  */
-export async function syncPendingActions(): Promise<{ synced: number; failed: number }> {
+export async function syncPendingActions(trigger: string = "manual"): Promise<{ synced: number; failed: number }> {
   if (isSyncing) return { synced: 0, failed: 0 };
   isSyncing = true;
+  diagnostics.last_sync_trigger = trigger;
 
   let synced = 0;
   let failed = 0;
+  let lastErr: string | null = null;
 
   try {
     const queue = await getQueue();
@@ -89,6 +110,7 @@ export async function syncPendingActions(): Promise<{ synced: number; failed: nu
       if (!fnName) {
         await markError(item.local_id, `Unknown action: ${item.action_type}`);
         failed++;
+        lastErr = `Unknown action: ${item.action_type}`;
         continue;
       }
 
@@ -107,7 +129,7 @@ export async function syncPendingActions(): Promise<{ synced: number; failed: nu
           success = true;
         } catch (e: any) {
           attempt++;
-          // Persist attempt counter so the user can see retry history.
+          lastErr = e?.message || "Sync failed";
           const cur = await getQueue();
           const idx = cur.findIndex((q) => q.local_id === item.local_id);
           if (idx >= 0) {
@@ -123,13 +145,14 @@ export async function syncPendingActions(): Promise<{ synced: number; failed: nu
           }
         }
       }
-
     }
 
-    // Clean up synced items
     await clearSynced();
   } finally {
     isSyncing = false;
+    diagnostics.last_sync_at = new Date().toISOString();
+    diagnostics.last_sync_result = { synced, failed };
+    diagnostics.last_error = failed > 0 ? lastErr : null;
     const remaining = await getQueue();
     const pendingCount = remaining.filter((q) => q.sync_status === "pending").length;
     notifyListeners(pendingCount, false);
@@ -138,70 +161,67 @@ export async function syncPendingActions(): Promise<{ synced: number; failed: nu
   return { synced, failed };
 }
 
+
 /**
  * Set up auto-sync on network reconnect.
  * Call once at app startup.
  */
 export function initAutoSync(): () => void {
-  const handler = () => {
-    syncPendingActions().catch(console.error);
-    // Daily logs share the same "online" trigger — flush them too.
+  const handler = (trigger: string) => {
+    syncPendingActions(trigger).catch(console.error);
     import("@/lib/offline-daily-logs")
       .then((m) => m.syncPendingDailyLogs().catch(console.error))
       .catch(() => { /* ignore */ });
   };
-  const onlineHandler = () => { handler(); };
 
-  // Browser fallback (web/PWA)
+  const onlineHandler = () => handler("browser:online");
+  const visHandler = () => { if (document.visibilityState === "visible") handler("visibilitychange"); };
+
   window.addEventListener("online", onlineHandler);
-  document.addEventListener("visibilitychange", onlineHandler);
+  document.addEventListener("visibilitychange", visHandler);
 
-  // Capacitor native: browser 'online' event is unreliable on Android.
   let removeNativeListener: (() => void) | null = null;
   let removeResumeListener: (() => void) | null = null;
   (async () => {
     try {
       const { Network } = await import("@capacitor/network");
       const sub = await Network.addListener("networkStatusChange", (status) => {
-        if (status.connected) handler();
+        if (status.connected) handler("native:network");
       });
       removeNativeListener = () => sub.remove();
       const status = await Network.getStatus();
-      if (status.connected) handler();
+      if (status.connected) handler("startup");
     } catch {
-      handler();
+      handler("startup");
     }
-    // Flush whenever the app returns to foreground — covers the case where the
-    // OS suspended JS in background and 'online' never fired on resume.
     try {
       const { App } = await import("@capacitor/app");
       const sub = await App.addListener("appStateChange", (state) => {
-        if (state.isActive) handler();
+        if (state.isActive) handler("native:resume");
       });
       removeResumeListener = () => sub.remove();
     } catch { /* ignore on web */ }
   })();
 
-  // Safety net: poll every 30s. Use the Network plugin (navigator.onLine
-  // can stay false on Android even with a real connection).
   const poll = setInterval(async () => {
     try {
       const { Network } = await import("@capacitor/network");
       const status = await Network.getStatus();
-      if (status.connected) handler();
+      if (status.connected) handler("poll");
     } catch {
-      if (navigator.onLine) handler();
+      if (navigator.onLine) handler("poll");
     }
   }, 30000);
 
   return () => {
     window.removeEventListener("online", onlineHandler);
-    document.removeEventListener("visibilitychange", onlineHandler);
+    document.removeEventListener("visibilitychange", visHandler);
     clearInterval(poll);
     removeNativeListener?.();
     removeResumeListener?.();
   };
 }
+
 
 function delay(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));

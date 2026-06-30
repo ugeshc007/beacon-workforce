@@ -27,7 +27,7 @@ import {
   type QueuedDailyLog,
   syncPendingDailyLogs,
 } from "@/lib/offline-daily-logs";
-import { syncPendingActions, onSyncChange } from "@/lib/offline-sync";
+import { syncPendingActions, onSyncChange, getSyncDiagnostics, type SyncDiagnostics } from "@/lib/offline-sync";
 import { useToast } from "@/hooks/use-toast";
 
 type Tab = "pending" | "failed" | "synced";
@@ -42,19 +42,41 @@ export default function MobileSyncStatus() {
   const [actions, setActions] = useState<QueuedAction[]>([]);
   const [dailyLogs, setDailyLogs] = useState<QueuedDailyLog[]>([]);
   const [tab, setTab] = useState<Tab>("pending");
+  const [diag, setDiag] = useState<SyncDiagnostics>(() => getSyncDiagnostics());
+  const [netInfo, setNetInfo] = useState<{ connected: boolean; type: string } | null>(null);
+  const [appActive, setAppActive] = useState(true);
+  const [platform, setPlatform] = useState<string>("web");
 
   const refresh = async () => {
     const [q, dl] = await Promise.all([getQueue(), getDailyLogQueue()]);
     setActions(q);
     setDailyLogs(dl);
+    setDiag(getSyncDiagnostics());
+    try {
+      const { Network } = await import("@capacitor/network");
+      const s = await Network.getStatus();
+      setNetInfo({ connected: s.connected, type: s.connectionType });
+      setOnline(s.connected);
+    } catch {
+      setNetInfo({ connected: navigator.onLine, type: "browser" });
+    }
   };
 
   useEffect(() => {
     refresh();
-    const on = () => {
-      setOnline(true);
-      refresh();
-    };
+    let removeAppSub: (() => void) | null = null;
+    (async () => {
+      try {
+        const { Capacitor } = await import("@capacitor/core");
+        setPlatform(Capacitor.getPlatform());
+      } catch {}
+      try {
+        const { App } = await import("@capacitor/app");
+        const sub = await App.addListener("appStateChange", (s) => setAppActive(s.isActive));
+        removeAppSub = () => sub.remove();
+      } catch {}
+    })();
+    const on = () => { setOnline(true); refresh(); };
     const off = () => setOnline(false);
     window.addEventListener("online", on);
     window.addEventListener("offline", off);
@@ -68,8 +90,10 @@ export default function MobileSyncStatus() {
       window.removeEventListener("offline", off);
       unsub();
       clearInterval(interval);
+      removeAppSub?.();
     };
   }, []);
+
 
   const pendingActions = actions.filter((a) => a.sync_status === "pending");
   const failedActions = actions.filter((a) => a.sync_status === "error");
@@ -215,6 +239,64 @@ export default function MobileSyncStatus() {
           onClick={() => setTab("synced")}
         />
       </div>
+
+      {/* Diagnostics */}
+      <div className="px-3 mt-3">
+        <Card className="p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Diagnostics
+            </p>
+            <span className="text-[10px] text-muted-foreground">{platform}</span>
+          </div>
+          <DiagRow
+            label="Network"
+            value={
+              netInfo
+                ? `${netInfo.connected ? "Connected" : "Disconnected"} · ${netInfo.type}`
+                : online ? "Connected" : "Disconnected"
+            }
+            tone={netInfo?.connected ?? online ? "green" : "red"}
+          />
+          <DiagRow
+            label="App state"
+            value={appActive ? "Foreground" : "Background"}
+            tone={appActive ? "green" : "amber"}
+          />
+          <DiagRow
+            label="Sync engine"
+            value={syncing ? "Running…" : "Idle"}
+            tone={syncing ? "sky" : "muted"}
+          />
+          <DiagRow
+            label="Last sync"
+            value={
+              diag.last_sync_at
+                ? `${new Date(diag.last_sync_at).toLocaleTimeString()} (${diag.last_sync_trigger ?? "?"})`
+                : "Never"
+            }
+            tone="muted"
+          />
+          <DiagRow
+            label="Last result"
+            value={
+              diag.last_sync_result
+                ? `${diag.last_sync_result.synced} sent · ${diag.last_sync_result.failed} failed`
+                : "—"
+            }
+            tone={
+              diag.last_sync_result && diag.last_sync_result.failed > 0 ? "red" : "muted"
+            }
+          />
+          {diag.last_error && (
+            <p className="text-[11px] text-red-400 break-words pt-1 border-t border-border/40">
+              {diag.last_error}
+            </p>
+          )}
+        </Card>
+      </div>
+
+
 
       {/* Bulk actions */}
       {tab === "failed" && counts.failed > 0 && (
@@ -397,3 +479,28 @@ function ActionRow({
     </Card>
   );
 }
+
+function DiagRow({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone: "green" | "red" | "amber" | "sky" | "muted";
+}) {
+  const toneClass = {
+    green: "text-emerald-400",
+    red: "text-red-400",
+    amber: "text-amber-400",
+    sky: "text-sky-400",
+    muted: "text-foreground/80",
+  }[tone];
+  return (
+    <div className="flex items-center justify-between text-[12px]">
+      <span className="text-muted-foreground">{label}</span>
+      <span className={`font-medium ${toneClass} text-right`}>{value}</span>
+    </div>
+  );
+}
+
