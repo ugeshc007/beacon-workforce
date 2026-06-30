@@ -240,6 +240,20 @@ export default function MobileSyncStatus() {
         />
       </div>
 
+      {/* Blocker banner — why isn't the queue flushing? */}
+      <BlockerBanner
+        pending={counts.pending}
+        failed={counts.failed}
+        connected={netInfo?.connected ?? online}
+        appActive={appActive}
+        syncing={syncing}
+        lastError={diag.last_error}
+        lastSyncAt={diag.last_sync_at}
+        onRetry={handleSyncAll}
+      />
+
+
+
       {/* Diagnostics */}
       <div className="px-3 mt-3">
         <Card className="p-3 space-y-2">
