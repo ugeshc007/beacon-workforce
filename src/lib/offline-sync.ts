@@ -145,18 +145,20 @@ export async function syncPendingActions(): Promise<{ synced: number; failed: nu
 export function initAutoSync(): () => void {
   const handler = () => {
     syncPendingActions().catch(console.error);
+    // Daily logs share the same "online" trigger — flush them too.
+    import("@/lib/offline-daily-logs")
+      .then((m) => m.syncPendingDailyLogs().catch(console.error))
+      .catch(() => { /* ignore */ });
   };
-  const onlineHandler = () => {
-    if (navigator.onLine) handler();
-  };
+  const onlineHandler = () => { handler(); };
 
   // Browser fallback (web/PWA)
   window.addEventListener("online", onlineHandler);
   document.addEventListener("visibilitychange", onlineHandler);
 
   // Capacitor native: browser 'online' event is unreliable on Android.
-  // Use the Network plugin so the queue actually flushes when connectivity returns.
   let removeNativeListener: (() => void) | null = null;
+  let removeResumeListener: (() => void) | null = null;
   (async () => {
     try {
       const { Network } = await import("@capacitor/network");
@@ -167,14 +169,29 @@ export function initAutoSync(): () => void {
       const status = await Network.getStatus();
       if (status.connected) handler();
     } catch {
-      // Plugin unavailable (pure web) — browser listener above covers it.
-      if (navigator.onLine) handler();
+      handler();
     }
+    // Flush whenever the app returns to foreground — covers the case where the
+    // OS suspended JS in background and 'online' never fired on resume.
+    try {
+      const { App } = await import("@capacitor/app");
+      const sub = await App.addListener("appStateChange", (state) => {
+        if (state.isActive) handler();
+      });
+      removeResumeListener = () => sub.remove();
+    } catch { /* ignore on web */ }
   })();
 
-  // Safety net: poll every 30s while pending items exist
-  const poll = setInterval(() => {
-    if (navigator.onLine) handler();
+  // Safety net: poll every 30s. Use the Network plugin (navigator.onLine
+  // can stay false on Android even with a real connection).
+  const poll = setInterval(async () => {
+    try {
+      const { Network } = await import("@capacitor/network");
+      const status = await Network.getStatus();
+      if (status.connected) handler();
+    } catch {
+      if (navigator.onLine) handler();
+    }
   }, 30000);
 
   return () => {
@@ -182,6 +199,7 @@ export function initAutoSync(): () => void {
     document.removeEventListener("visibilitychange", onlineHandler);
     clearInterval(poll);
     removeNativeListener?.();
+    removeResumeListener?.();
   };
 }
 
