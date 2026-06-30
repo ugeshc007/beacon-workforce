@@ -240,6 +240,64 @@ export default function MobileSyncStatus() {
         />
       </div>
 
+      {/* Diagnostics */}
+      <div className="px-3 mt-3">
+        <Card className="p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Diagnostics
+            </p>
+            <span className="text-[10px] text-muted-foreground">{platform}</span>
+          </div>
+          <DiagRow
+            label="Network"
+            value={
+              netInfo
+                ? `${netInfo.connected ? "Connected" : "Disconnected"} · ${netInfo.type}`
+                : online ? "Connected" : "Disconnected"
+            }
+            tone={netInfo?.connected ?? online ? "green" : "red"}
+          />
+          <DiagRow
+            label="App state"
+            value={appActive ? "Foreground" : "Background"}
+            tone={appActive ? "green" : "amber"}
+          />
+          <DiagRow
+            label="Sync engine"
+            value={syncing ? "Running…" : "Idle"}
+            tone={syncing ? "sky" : "muted"}
+          />
+          <DiagRow
+            label="Last sync"
+            value={
+              diag.last_sync_at
+                ? `${new Date(diag.last_sync_at).toLocaleTimeString()} (${diag.last_sync_trigger ?? "?"})`
+                : "Never"
+            }
+            tone="muted"
+          />
+          <DiagRow
+            label="Last result"
+            value={
+              diag.last_sync_result
+                ? `${diag.last_sync_result.synced} sent · ${diag.last_sync_result.failed} failed`
+                : "—"
+            }
+            tone={
+              diag.last_sync_result && diag.last_sync_result.failed > 0 ? "red" : "muted"
+            }
+          />
+          {diag.last_error && (
+            <p className="text-[11px] text-red-400 break-words pt-1 border-t border-border/40">
+              {diag.last_error}
+            </p>
+          )}
+        </Card>
+      </div>
+
+
+
       {/* Bulk actions */}
       {tab === "failed" && counts.failed > 0 && (
         <div className="px-3 mt-3">
