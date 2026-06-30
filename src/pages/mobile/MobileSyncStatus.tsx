@@ -479,3 +479,28 @@ function ActionRow({
     </Card>
   );
 }
+
+function DiagRow({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone: "green" | "red" | "amber" | "sky" | "muted";
+}) {
+  const toneClass = {
+    green: "text-emerald-400",
+    red: "text-red-400",
+    amber: "text-amber-400",
+    sky: "text-sky-400",
+    muted: "text-foreground/80",
+  }[tone];
+  return (
+    <div className="flex items-center justify-between text-[12px]">
+      <span className="text-muted-foreground">{label}</span>
+      <span className={`font-medium ${toneClass} text-right`}>{value}</span>
+    </div>
+  );
+}
+
