@@ -209,13 +209,21 @@ export function useProjectWorkflow(projectId: string | null, dateOverride?: stri
           if (sid) setSession((prev) => prev ? { ...prev, id: sid! } : prev);
         } catch { /* ignore */ }
       }
-      if (!sid) {
+      if (sid) {
+        body.session_id = sid;
+      } else if (!navigator.onLine) {
+        // Offline and the prior start_travel (or start_work) is still in the
+        // queue — the server session doesn't exist yet. Queue this follow-up
+        // with project_id + date so the sync engine can resolve session_id
+        // after the prior queued action creates the row.
+        body.project_id = projectId;
+        body.date = today;
+      } else {
         setActionLoading(false);
         setStep(previousStep);
         setSession(previousSession);
         return { success: false, error: "Session not ready yet. Please try again in a moment." };
       }
-      body.session_id = sid;
     }
 
 

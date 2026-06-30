@@ -117,10 +117,42 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
       let attempt = 0;
       let success = false;
 
+      // Resolve a missing session_id for project follow-up actions whose
+      // creating action (project_start_travel / project_start_work) was also
+      // queued offline. We look up the open session by (employee, project, date).
+      let payloadToSend: Record<string, unknown> = item.payload;
+      const needsSessionId = [
+        "project_arrive_site",
+        "project_start_work",
+        "project_start_break",
+        "project_end_break",
+        "project_end_work",
+      ].includes(item.action_type);
+      if (needsSessionId && !payloadToSend.session_id) {
+        const projectId = payloadToSend.project_id as string | undefined;
+        const employeeId = payloadToSend.employee_id as string | undefined;
+        const date = payloadToSend.date as string | undefined;
+        if (projectId && employeeId && date) {
+          try {
+            const { supabase } = await import("@/integrations/supabase/client");
+            const { data: row } = await supabase
+              .from("project_work_sessions")
+              .select("id")
+              .eq("employee_id", employeeId)
+              .eq("project_id", projectId)
+              .eq("date", date)
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            if (row?.id) payloadToSend = { ...payloadToSend, session_id: row.id };
+          } catch { /* will fail below if still missing */ }
+        }
+      }
+
       while (attempt < MAX_RETRIES && !success) {
         try {
           await invokeEdge(fnName, {
-            ...item.payload,
+            ...payloadToSend,
             idempotency_key: item.idempotency_key,
           });
 
