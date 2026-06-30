@@ -518,3 +518,103 @@ function DiagRow({
   );
 }
 
+function BlockerBanner({
+  pending,
+  failed,
+  connected,
+  appActive,
+  syncing,
+  lastError,
+  lastSyncAt,
+  onRetry,
+}: {
+  pending: number;
+  failed: number;
+  connected: boolean;
+  appActive: boolean;
+  syncing: boolean;
+  lastError: string | null;
+  lastSyncAt: string | null;
+  onRetry: () => void;
+}) {
+  const queueSize = pending + failed;
+
+  // Compute the reason
+  let tone: "green" | "red" | "amber" | "sky" = "green";
+  let title = "All caught up";
+  let detail = "Nothing waiting to sync.";
+  let icon: React.ElementType = CheckCircle2;
+  let showRetry = false;
+
+  if (queueSize === 0) {
+    tone = "green";
+    title = "All caught up";
+    detail = lastSyncAt
+      ? `Last checked ${new Date(lastSyncAt).toLocaleTimeString()}.`
+      : "Nothing waiting to sync.";
+  } else if (syncing) {
+    tone = "sky";
+    icon = RefreshCw;
+    title = "Sync in progress…";
+    detail = `${queueSize} item${queueSize === 1 ? "" : "s"} being sent now.`;
+  } else if (!connected) {
+    tone = "red";
+    icon = WifiOff;
+    title = "Device is offline";
+    detail = `${queueSize} item${queueSize === 1 ? "" : "s"} will sync automatically once internet is back.`;
+  } else if (!appActive) {
+    tone = "amber";
+    icon = Clock;
+    title = "App was in background";
+    detail = "Some Android devices pause sync in background. Tap Sync now to flush.";
+    showRetry = true;
+  } else if (failed > 0 && lastError) {
+    tone = "red";
+    icon = AlertTriangle;
+    title = "Last attempt failed";
+    detail = lastError;
+    showRetry = true;
+  } else if (pending > 0) {
+    tone = "amber";
+    icon = Clock;
+    title = "Waiting to sync";
+    detail = `${pending} item${pending === 1 ? "" : "s"} ready. Tap Sync now to send immediately.`;
+    showRetry = true;
+  }
+
+  const toneClasses = {
+    green: "border-emerald-500/40 bg-emerald-500/10 text-emerald-400",
+    red: "border-red-500/40 bg-red-500/10 text-red-400",
+    amber: "border-amber-500/40 bg-amber-500/10 text-amber-400",
+    sky: "border-sky-500/40 bg-sky-500/10 text-sky-400",
+  }[tone];
+
+  const Icon = icon;
+
+  return (
+    <div className="px-3 mt-3">
+      <Card className={`p-3 border ${toneClasses}`}>
+        <div className="flex items-start gap-2.5">
+          <Icon className={`h-5 w-5 mt-0.5 shrink-0 ${syncing ? "animate-spin" : ""}`} />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold">{title}</p>
+            <p className="text-[12px] text-foreground/80 mt-0.5 break-words">{detail}</p>
+            {showRetry && (
+              <Button
+                size="sm"
+                className="mt-2 h-8 gap-1.5"
+                onClick={onRetry}
+                disabled={!connected || syncing}
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
+                Sync now
+              </Button>
+            )}
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+
