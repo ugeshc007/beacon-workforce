@@ -22,6 +22,24 @@ const listeners = new Set<SyncListener>();
 
 let isSyncing = false;
 
+export interface SyncDiagnostics {
+  last_sync_at: string | null;
+  last_sync_result: { synced: number; failed: number } | null;
+  last_sync_trigger: string | null;
+  last_error: string | null;
+}
+
+const diagnostics: SyncDiagnostics = {
+  last_sync_at: null,
+  last_sync_result: null,
+  last_sync_trigger: null,
+  last_error: null,
+};
+
+export function getSyncDiagnostics(): SyncDiagnostics {
+  return { ...diagnostics };
+}
+
 export function onSyncChange(fn: SyncListener): () => void {
   listeners.add(fn);
   return () => listeners.delete(fn);
@@ -30,6 +48,7 @@ export function onSyncChange(fn: SyncListener): () => void {
 function notifyListeners(pending: number, syncing: boolean) {
   listeners.forEach((fn) => fn(pending, syncing));
 }
+
 
 /**
  * Edge function name mapping (same as useMobileWorkflow)
