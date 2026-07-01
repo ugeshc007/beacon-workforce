@@ -87,8 +87,8 @@ Deno.serve(async (req) => {
         date: today,
         attendance_log_id: log.id,
         travel_start_time: now,
-        travel_start_lat: lat,
-        travel_start_lng: lng,
+        travel_start_lat: hasGps ? lat : null,
+        travel_start_lng: hasGps ? lng : null,
         status: "in_progress",
       })
       .select("id")
