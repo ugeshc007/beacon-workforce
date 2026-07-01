@@ -86,6 +86,30 @@ const edgeFunctionMap: Record<string, string> = {
 };
 
 
+/**
+ * Recognize server errors that mean "state has already moved past this action".
+ * These happen when an offline-queued step is replayed after the user has
+ * completed the flow online, or when a later action already superseded it.
+ * We treat them as success so the sync screen doesn't show scary red pills.
+ */
+const BENIGN_ERROR_PATTERNS: RegExp[] = [
+  /already recorded/i,
+  /already ended/i,
+  /already punched (in|out)/i,
+  /session already/i,
+  /no active attendance/i,
+  /no attendance record/i,
+  /must punch in/i,
+  /must return to office/i,
+  /start travel first/i,
+  /duplicate key/i,
+  /deduped/i,
+  /already exists/i,
+];
+
+function isBenignSyncError(msg: string): boolean {
+  return BENIGN_ERROR_PATTERNS.some((re) => re.test(msg));
+}
 
 /**
  * Process all pending items in the queue, oldest first.
