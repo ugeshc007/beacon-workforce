@@ -160,8 +160,19 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
           synced++;
           success = true;
         } catch (e: any) {
+          const msg: string = e?.message || "Sync failed";
+          // Benign errors: server state has already moved past this queued
+          // action (user completed the flow via another path, or a later
+          // action superseded this one). Treat as success so users don't
+          // see scary "error" pills for stale offline replays.
+          if (isBenignSyncError(msg)) {
+            await markSynced(item.local_id);
+            synced++;
+            success = true;
+            break;
+          }
           attempt++;
-          lastErr = e?.message || "Sync failed";
+          lastErr = msg;
           const cur = await getQueue();
           const idx = cur.findIndex((q) => q.local_id === item.local_id);
           if (idx >= 0) {
@@ -172,7 +183,7 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
           if (attempt < MAX_RETRIES) {
             await delay(BASE_DELAY_MS * Math.pow(2, attempt - 1));
           } else {
-            await markError(item.local_id, e?.message || "Sync failed after retries");
+            await markError(item.local_id, msg);
             failed++;
           }
         }
