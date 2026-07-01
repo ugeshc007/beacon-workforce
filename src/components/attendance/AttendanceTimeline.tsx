@@ -75,21 +75,35 @@ export function AttendanceTimeline({ log, workLocation }: Props) {
     sessions.forEach((s, idx) => {
       const color = sessionColors[idx % sessionColors.length];
       const name = s.project_name ?? `Project ${idx + 1}`;
-      middle.push(
-        { key: `s-${s.id}-start`, label: `${name} — Start`, color, time: s.work_start_time },
-        { key: `s-${s.id}-end`, label: `${name} — End`, color, time: s.work_end_time },
-      );
+      // Only emit dots for timestamps that actually exist. Offline-synced
+      // sessions may have partial data (e.g. only break_start) — rendering
+      // empty start/end dots for those creates confusing blank circles.
+      if (s.work_start_time) {
+        middle.push({ key: `s-${s.id}-start`, label: `${name} — Start`, color, time: s.work_start_time });
+      }
+      if (s.work_end_time) {
+        middle.push({ key: `s-${s.id}-end`, label: `${name} — End`, color, time: s.work_end_time });
+      }
     });
   } else {
-    middle.push(
-      { key: "work_start_time", label: "Working", color: "bg-status-present", time: workStartTime },
-      { key: "work_end_time", label: "Work End", color: "bg-status-overtime", time: workEndTime },
-    );
+    if (workStartTime) {
+      middle.push({ key: "work_start_time", label: "Working", color: "bg-status-present", time: workStartTime });
+    }
+    // Work End dot: show as pending only if we already have a start (so the
+    // employee sees "next step"). Never render a fully-blank pair.
+    if (workStartTime || workEndTime) {
+      middle.push({ key: "work_end_time", label: "Work End", color: "bg-status-overtime", time: workEndTime });
+    }
   }
-  middle.push(
-    { key: "break_start_time", label: "Break Start", color: "bg-orange-400", time: breakStartTime },
-    { key: "break_end_time", label: "Break End", color: "bg-orange-300", time: breakEndTime },
-  );
+  if (breakStartTime) {
+    middle.push({ key: "break_start_time", label: "Break Start", color: "bg-orange-400", time: breakStartTime });
+  }
+  if (breakStartTime || breakEndTime) {
+    // Only show Break End if a break actually started.
+    if (breakStartTime) {
+      middle.push({ key: "break_end_time", label: "Break End", color: "bg-orange-300", time: breakEndTime });
+    }
+  }
 
   // Chronological sort: timestamped dots ordered by time; pending dots after.
   middle.sort((a, b) => {
