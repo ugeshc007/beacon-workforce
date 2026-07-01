@@ -6,7 +6,7 @@ Deno.serve(async (req) => {
   try {
     const { employee_id, client_timestamp, idempotency_key, lat, lng, accuracy, attendance_log_id } = await req.json();
     if (!employee_id) return errorResponse("employee_id is required");
-    if (lat == null || lng == null) return errorResponse("lat and lng are required for punch out");
+    const hasGps = lat != null && lng != null;
 
     const supabase = createSupabaseAdmin();
 
