@@ -39,8 +39,8 @@ Deno.serve(async (req) => {
       .from("site_visit_work_sessions")
       .update({
         return_travel_start_time: now,
-        return_travel_start_lat: lat,
-        return_travel_start_lng: lng,
+        return_travel_start_lat: hasGps ? lat : null,
+        return_travel_start_lng: hasGps ? lng : null,
         return_travel_start_accuracy: accuracy ?? null,
       })
       .eq("id", session_id);
