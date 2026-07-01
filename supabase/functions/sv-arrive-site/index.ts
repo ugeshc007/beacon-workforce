@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
 
     let valid = false;
     let distance = 0;
-    if (visit?.site_latitude && visit?.site_longitude) {
+    if (hasGps && visit?.site_latitude && visit?.site_longitude) {
       distance = haversineDistance(lat, lng, Number(visit.site_latitude), Number(visit.site_longitude));
       valid = distance <= 200;
     } else {
@@ -55,10 +55,10 @@ Deno.serve(async (req) => {
       .from("site_visit_work_sessions")
       .update({
         site_arrival_time: now,
-        site_arrival_lat: lat,
-        site_arrival_lng: lng,
-        site_arrival_distance_m: Math.round(distance),
-        site_arrival_valid: valid,
+        site_arrival_lat: hasGps ? lat : null,
+        site_arrival_lng: hasGps ? lng : null,
+        site_arrival_distance_m: hasGps ? Math.round(distance) : null,
+        site_arrival_valid: hasGps ? valid : null,
       })
       .eq("id", session_id);
     if (error) return errorResponse(error.message, 500);
