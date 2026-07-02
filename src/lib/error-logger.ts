@@ -52,7 +52,7 @@ export async function logMobileError(input: LogErrorInput): Promise<void> {
     const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : null;
     const route = typeof window !== "undefined" ? window.location.pathname : null;
 
-    await supabase.from("error_logs").insert({
+    await (supabase.from("error_logs") as any).insert({
       source: "mobile",
       severity: input.severity ?? "error",
       category: input.category,
