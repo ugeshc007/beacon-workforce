@@ -136,7 +136,9 @@ Deno.serve(async (req) => {
       .eq("employee_id", employee_id);
 
     if (error) return errorResponse(error.message, 500);
-    return jsonResponse({ success: true, timestamp: now });
+    const outSite = { success: true, timestamp: now };
+    await recordIdempotencyResult(supabase, idempotency_key, outSite);
+    return jsonResponse(outSite);
   } catch (err) {
     return errorResponse((err as Error).message, 500);
   }
