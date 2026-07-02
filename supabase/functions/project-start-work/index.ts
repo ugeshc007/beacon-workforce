@@ -110,7 +110,9 @@ Deno.serve(async (req) => {
         .select("id")
         .single();
       if (insertErr) return errorResponse(insertErr.message, 500);
-      return jsonResponse({ success: true, session_id: inserted.id, timestamp: now });
+      const outIH = { success: true, session_id: inserted.id, timestamp: now };
+      await recordIdempotencyResult(supabase, idempotency_key, outIH);
+      return jsonResponse(outIH);
     }
 
     // -------- NORMAL SITE PATH: requires existing session with site_arrival_time --------
