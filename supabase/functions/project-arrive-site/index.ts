@@ -1,10 +1,10 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, haversineDistance, nowTimestamp, resolveTimestamp, authenticateEmployee } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, haversineDistance, nowTimestamp, resolveTimestamp, authenticateEmployee, checkIdempotency, recordIdempotencyResult } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
 
   try {
-    const { employee_id, session_id, lat, lng , client_timestamp } = await req.json();
+    const { employee_id, session_id, lat, lng, client_timestamp, idempotency_key } = await req.json();
     if (!employee_id || !session_id) {
       return errorResponse("employee_id, session_id required");
     }
@@ -13,6 +13,9 @@ Deno.serve(async (req) => {
     const supabase = createSupabaseAdmin();
     const auth = await authenticateEmployee(req, supabase, employee_id);
     if (auth.error) return auth.error;
+
+    const dup = await checkIdempotency(supabase, idempotency_key, employee_id, "project-arrive-site");
+    if (dup) return dup;
 
     const now = resolveTimestamp(client_timestamp);
 
@@ -55,7 +58,9 @@ Deno.serve(async (req) => {
       .eq("id", session_id);
 
     if (error) return errorResponse(error.message, 500);
-    return jsonResponse({ success: true, gps_valid: valid, distance_meters: Math.round(distance), timestamp: now });
+    const out = { success: true, gps_valid: valid, distance_meters: Math.round(distance), timestamp: now };
+    await recordIdempotencyResult(supabase, idempotency_key, out);
+    return jsonResponse(out);
   } catch (err) {
     return errorResponse((err as Error).message, 500);
   }

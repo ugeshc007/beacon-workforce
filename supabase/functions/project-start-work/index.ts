@@ -1,15 +1,18 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, nowTimestamp, resolveTimestamp, todayDate, authenticateEmployee } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, nowTimestamp, resolveTimestamp, todayDate, authenticateEmployee, checkIdempotency, recordIdempotencyResult } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
   try {
-    const { employee_id, session_id, project_id , client_timestamp } = await req.json();
+    const { employee_id, session_id, project_id, client_timestamp, idempotency_key } = await req.json();
     if (!employee_id) return errorResponse("employee_id required");
     if (!session_id && !project_id) return errorResponse("session_id or project_id required");
 
     const supabase = createSupabaseAdmin();
     const auth = await authenticateEmployee(req, supabase, employee_id);
     if (auth.error) return auth.error;
+
+    const dup = await checkIdempotency(supabase, idempotency_key, employee_id, "project-start-work");
+    if (dup) return dup;
 
     const today = todayDate();
     const now = resolveTimestamp(client_timestamp);
@@ -107,7 +110,9 @@ Deno.serve(async (req) => {
         .select("id")
         .single();
       if (insertErr) return errorResponse(insertErr.message, 500);
-      return jsonResponse({ success: true, session_id: inserted.id, timestamp: now });
+      const outIH = { success: true, session_id: inserted.id, timestamp: now };
+      await recordIdempotencyResult(supabase, idempotency_key, outIH);
+      return jsonResponse(outIH);
     }
 
     // -------- NORMAL SITE PATH: requires existing session with site_arrival_time --------
@@ -131,7 +136,9 @@ Deno.serve(async (req) => {
       .eq("employee_id", employee_id);
 
     if (error) return errorResponse(error.message, 500);
-    return jsonResponse({ success: true, timestamp: now });
+    const outSite = { success: true, timestamp: now };
+    await recordIdempotencyResult(supabase, idempotency_key, outSite);
+    return jsonResponse(outSite);
   } catch (err) {
     return errorResponse((err as Error).message, 500);
   }

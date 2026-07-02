@@ -1,14 +1,17 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, nowTimestamp, resolveTimestamp, authenticateEmployee } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, nowTimestamp, resolveTimestamp, authenticateEmployee, checkIdempotency, recordIdempotencyResult } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
   try {
-    const { employee_id, session_id , client_timestamp } = await req.json();
+    const { employee_id, session_id, client_timestamp, idempotency_key } = await req.json();
     if (!employee_id || !session_id) return errorResponse("employee_id, session_id required");
 
     const supabase = createSupabaseAdmin();
     const auth = await authenticateEmployee(req, supabase, employee_id);
     if (auth.error) return auth.error;
+
+    const dup = await checkIdempotency(supabase, idempotency_key, employee_id, "project-end-work");
+    if (dup) return dup;
 
     const now = resolveTimestamp(client_timestamp);
 
@@ -63,7 +66,9 @@ Deno.serve(async (req) => {
       .eq("id", session_id);
 
     if (error) return errorResponse(error.message, 500);
-    return jsonResponse({ success: true, timestamp: now, total_work_minutes: totalWorkMinutes });
+    const out = { success: true, timestamp: now, total_work_minutes: totalWorkMinutes };
+    await recordIdempotencyResult(supabase, idempotency_key, out);
+    return jsonResponse(out);
   } catch (err) {
     return errorResponse((err as Error).message, 500);
   }
