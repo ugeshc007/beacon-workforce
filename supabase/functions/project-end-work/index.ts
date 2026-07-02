@@ -66,7 +66,9 @@ Deno.serve(async (req) => {
       .eq("id", session_id);
 
     if (error) return errorResponse(error.message, 500);
-    return jsonResponse({ success: true, timestamp: now, total_work_minutes: totalWorkMinutes });
+    const out = { success: true, timestamp: now, total_work_minutes: totalWorkMinutes };
+    await recordIdempotencyResult(supabase, idempotency_key, out);
+    return jsonResponse(out);
   } catch (err) {
     return errorResponse((err as Error).message, 500);
   }
