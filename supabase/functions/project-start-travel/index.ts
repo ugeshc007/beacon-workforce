@@ -5,9 +5,11 @@ Deno.serve(async (req) => {
 
   try {
     const { employee_id, project_id, lat, lng , client_timestamp } = await req.json();
-    if (!employee_id || !project_id || lat == null || lng == null) {
-      return errorResponse("employee_id, project_id, lat, lng required");
+    if (!employee_id || !project_id) {
+      return errorResponse("employee_id, project_id required");
     }
+    const hasGps = lat != null && lng != null;
+
 
     const supabase = createSupabaseAdmin();
     const auth = await authenticateEmployee(req, supabase, employee_id);
@@ -102,8 +104,8 @@ Deno.serve(async (req) => {
         date: today,
         attendance_log_id: log.id,
         travel_start_time: now,
-        travel_start_lat: lat,
-        travel_start_lng: lng,
+        travel_start_lat: hasGps ? lat : null,
+        travel_start_lng: hasGps ? lng : null,
         status: "in_progress",
       })
       .select("id")
