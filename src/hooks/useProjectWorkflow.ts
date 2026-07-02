@@ -81,7 +81,27 @@ export function useProjectWorkflow(projectId: string | null, dateOverride?: stri
     return () => { cancelled = true; };
   }, [employee, projectId, today, workLocCacheKey]);
 
-  const workLocation = assignmentLocation ?? dayWorkLocation ?? null;
+  // Fallback: if no explicit location is set for the assignment or day,
+  // check the project itself — no site coords means in-house (no travel flow).
+  const [projectHasCoords, setProjectHasCoords] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!projectId || !navigator.onLine) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("projects")
+        .select("site_latitude, site_longitude")
+        .eq("id", projectId)
+        .maybeSingle();
+      if (!cancelled) {
+        setProjectHasCoords(data?.site_latitude != null && data?.site_longitude != null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [projectId]);
+  const inferredLocation: "in_house" | "site" | null =
+    projectHasCoords === null ? null : (projectHasCoords ? "site" : "in_house");
+  const workLocation = assignmentLocation ?? dayWorkLocation ?? inferredLocation ?? null;
 
 
 
