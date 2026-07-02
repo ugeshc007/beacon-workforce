@@ -150,6 +150,9 @@ export default function MobileProjectWorkflow() {
     const r = await office.executeAction(action, payload);
     if (!r?.success) {
       toast({ title: "Failed", description: r?.error || "Try again.", variant: "destructive" });
+      import("@/lib/error-logger").then(({ logMobileError }) =>
+        logMobileError({ category: "workflow", action: `office:${action}`, message: r?.error || "Office action failed", context: { payload } })
+      );
     }
   };
 
@@ -167,6 +170,9 @@ export default function MobileProjectWorkflow() {
       const r = await office.executeAction(action, payload);
       if (!r?.success) {
         toast({ title: "Failed", description: r?.error || "Try again.", variant: "destructive" });
+        import("@/lib/error-logger").then(({ logMobileError }) =>
+          logMobileError({ category: "workflow", action: `office:${action}`, message: r?.error || "Office action failed", context: { payload } })
+        );
       }
       return;
     }
@@ -185,6 +191,9 @@ export default function MobileProjectWorkflow() {
     const result = (await executeAction(action, payload)) as { success: boolean; error?: string; queued?: boolean };
     if (!result?.success) {
       toast({ title: "Failed", description: result?.error || "Something went wrong.", variant: "destructive" });
+      import("@/lib/error-logger").then(({ logMobileError }) =>
+        logMobileError({ category: "workflow", action, message: result?.error || "Project action failed", context: { payload } })
+      );
     } else if (result.queued) {
       toast({
         title: "Saved offline",

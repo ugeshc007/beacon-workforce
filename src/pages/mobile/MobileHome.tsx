@@ -147,6 +147,14 @@ export default function MobileHome() {
     const result = await executeAction(action, payload);
     if (!result?.success) {
       toast({ title: "Failed", description: result?.error || "Something went wrong.", variant: "destructive" });
+      import("@/lib/error-logger").then(({ logMobileError }) =>
+        logMobileError({
+          category: action === "punch_in" || action === "punch_out" ? "punch" : "workflow",
+          action,
+          message: result?.error || "Action failed",
+          context: { payload },
+        })
+      );
     }
   };
 
