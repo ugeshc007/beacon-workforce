@@ -140,12 +140,15 @@ export function useTodayProjects() {
         // first time while offline (otherwise it defaults to site/travel flow).
         try {
           result.forEach((r) => {
-            if (r.workLocation) {
-              localStorage.setItem(
-                `pwl_${employee.id}_${r.projectId}_${today}`,
-                JSON.stringify(r.workLocation),
-              );
-            }
+            // Always seed the cache so offline never falls back to the site
+            // travel flow by accident. If no explicit work_location is set,
+            // infer from the project: no site coords → in-house; otherwise site.
+            const inferred = r.workLocation
+              ?? (r.siteLat == null && r.siteLng == null ? "in_house" : "site");
+            localStorage.setItem(
+              `pwl_${employee.id}_${r.projectId}_${today}`,
+              JSON.stringify(inferred),
+            );
           });
         } catch { /* ignore */ }
         return result;
