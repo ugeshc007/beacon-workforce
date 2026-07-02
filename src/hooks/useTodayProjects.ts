@@ -115,6 +115,12 @@ export function useTodayProjects() {
         const result: TodayProject[] = filteredAssignments.map((a) => {
           const project = a.projects as { name?: string; site_address?: string | null; site_latitude?: number | null; site_longitude?: number | null; site_gps_radius?: number | null } | null;
           const session = sessionByProject.get(a.project_id);
+          const explicitLoc = (a.work_location as "in_house" | "site" | null) ?? dayLocByProject.get(a.project_id) ?? null;
+          // Fallback inference: no site coords → in-house; otherwise site.
+          // Prevents the travel flow from ever appearing for pure in-house jobs
+          // where the scheduler never set work_location explicitly.
+          const hasCoords = project?.site_latitude != null && project?.site_longitude != null;
+          const workLocation: "in_house" | "site" = explicitLoc ?? (hasCoords ? "site" : "in_house");
           return {
             assignmentId: a.id,
             projectId: a.project_id,
@@ -129,7 +135,7 @@ export function useTodayProjects() {
             step: deriveProjectStep(session ?? null),
             totalWorkMinutes: session?.total_work_minutes ?? null,
             assignedRole: a.assigned_role ?? "team_member",
-            workLocation: (a.work_location as "in_house" | "site" | null) ?? dayLocByProject.get(a.project_id) ?? null,
+            workLocation,
             task: (a as any).task ?? null,
           };
         });
