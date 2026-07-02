@@ -47,6 +47,7 @@ import MaintenanceDetail from "./pages/MaintenanceDetail";
 import SiteVisits from "./pages/SiteVisits";
 import SiteVisitDetail from "./pages/SiteVisitDetail";
 import RecurringJobs from "./pages/RecurringJobs";
+import ErrorAudit from "./pages/ErrorAudit";
 
 // Mobile screens
 import MobileLogin from "./pages/mobile/MobileLogin";
@@ -146,6 +147,7 @@ const App = () => (
             <Route path="/reports/schedule" element={<ModuleGuard module="reports"><ScheduleReport /></ModuleGuard>} />
             <Route path="/reports/site-visits" element={<ModuleGuard module="reports"><SiteVisitsReport /></ModuleGuard>} />
             <Route path="/help" element={<HelpCenter />} />
+            <Route path="/audit" element={<ModuleGuard module="settings"><ErrorAudit /></ModuleGuard>} />
             <Route path="/settings" element={<ModuleGuard module="settings"><SettingsPage /></ModuleGuard>} />
           </Route>
           <Route path="*" element={<NotFound />} />

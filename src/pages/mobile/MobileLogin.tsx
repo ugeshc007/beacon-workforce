@@ -36,6 +36,9 @@ export default function MobileLogin() {
         description: error.message,
         variant: "destructive",
       });
+      import("@/lib/error-logger").then(({ logMobileError }) =>
+        logMobileError({ category: "auth", action: "sign-in", message: error.message, context: { email } })
+      );
       setIsLoading(false);
       return;
     }

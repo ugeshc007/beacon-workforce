@@ -13,6 +13,7 @@ import {
   HelpCircle,
   Shield,
   Repeat,
+  AlertTriangle,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -194,19 +195,34 @@ export function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
           {showSettings && (
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={isActive("/settings")}>
-                <NavLink
-                  to="/settings"
-                  end
-                  className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-                  activeClassName="bg-sidebar-accent text-brand font-medium"
-                >
-                  <Settings className="h-4 w-4 shrink-0" />
-                  {!collapsed && <span>Settings</span>}
-                </NavLink>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+            <>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/audit")}>
+                  <NavLink
+                    to="/audit"
+                    end
+                    className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                    activeClassName="bg-sidebar-accent text-brand font-medium"
+                  >
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    {!collapsed && <span>Audit</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/settings")}>
+                  <NavLink
+                    to="/settings"
+                    end
+                    className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                    activeClassName="bg-sidebar-accent text-brand font-medium"
+                  >
+                    <Settings className="h-4 w-4 shrink-0" />
+                    {!collapsed && <span>Settings</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </>
           )}
         </SidebarMenu>
       </SidebarFooter>

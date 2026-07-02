@@ -135,6 +135,16 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
         await markError(item.local_id, `Unknown action: ${item.action_type}`);
         failed++;
         lastErr = `Unknown action: ${item.action_type}`;
+        try {
+          const { logMobileError } = await import("@/lib/error-logger");
+          logMobileError({
+            category: "sync",
+            action: item.action_type,
+            message: `Unknown action: ${item.action_type}`,
+            error_code: "unknown_action",
+            context: { local_id: item.local_id },
+          });
+        } catch { /* noop */ }
         continue;
       }
 
@@ -209,6 +219,20 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
           } else {
             await markError(item.local_id, msg);
             failed++;
+            try {
+              const { logMobileError } = await import("@/lib/error-logger");
+              logMobileError({
+                category: "sync",
+                action: item.action_type,
+                message: msg,
+                error_code: "sync_failed_after_retries",
+                context: {
+                  local_id: item.local_id,
+                  attempts: MAX_RETRIES,
+                  payload: payloadToSend,
+                },
+              });
+            } catch { /* noop */ }
           }
         }
       }

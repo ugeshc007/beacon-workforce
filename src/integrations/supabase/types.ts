@@ -841,6 +841,107 @@ export type Database = {
           },
         ]
       }
+      error_logs: {
+        Row: {
+          action: string | null
+          app_version: string | null
+          build_number: string | null
+          category: string | null
+          company_id: string | null
+          context: Json | null
+          created_at: string
+          employee_id: string | null
+          error_code: string | null
+          id: string
+          message: string
+          network_state: string | null
+          platform: string | null
+          reviewed: boolean
+          reviewed_at: string | null
+          reviewed_by: string | null
+          route: string | null
+          severity: string
+          source: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action?: string | null
+          app_version?: string | null
+          build_number?: string | null
+          category?: string | null
+          company_id?: string | null
+          context?: Json | null
+          created_at?: string
+          employee_id?: string | null
+          error_code?: string | null
+          id?: string
+          message: string
+          network_state?: string | null
+          platform?: string | null
+          reviewed?: boolean
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          route?: string | null
+          severity?: string
+          source?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string | null
+          app_version?: string | null
+          build_number?: string | null
+          category?: string | null
+          company_id?: string | null
+          context?: Json | null
+          created_at?: string
+          employee_id?: string | null
+          error_code?: string | null
+          id?: string
+          message?: string
+          network_state?: string | null
+          platform?: string | null
+          reviewed?: boolean
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          route?: string | null
+          severity?: string
+          source?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "error_logs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "error_logs_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "error_logs_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "error_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       idempotency_keys: {
         Row: {
           action: string | null
