@@ -58,7 +58,9 @@ Deno.serve(async (req) => {
       .eq("id", session_id);
 
     if (error) return errorResponse(error.message, 500);
-    return jsonResponse({ success: true, gps_valid: valid, distance_meters: Math.round(distance), timestamp: now });
+    const out = { success: true, gps_valid: valid, distance_meters: Math.round(distance), timestamp: now };
+    await recordIdempotencyResult(supabase, idempotency_key, out);
+    return jsonResponse(out);
   } catch (err) {
     return errorResponse((err as Error).message, 500);
   }
