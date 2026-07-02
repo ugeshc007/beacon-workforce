@@ -11,6 +11,7 @@ import {
   siteVisitStepLabels,
 } from "@/lib/site-visit-workflow-engine";
 import { getGpsPosition } from "@/lib/gps";
+import { logMobileError } from "@/lib/error-logger";
 
 interface Props {
   siteVisitId: string;
@@ -66,6 +67,7 @@ export function SiteVisitWorkflowCard({ siteVisitId }: Props) {
       const gps = await getGpsPosition(15000);
       if (!gps.reading) {
         toast({ title: "GPS unavailable", description: "Enable location and try again.", variant: "destructive" });
+        logMobileError({ category: "gps", action, message: "GPS unavailable during site-visit action", context: { site_visit_id: siteVisitId, action } });
         return;
       }
       payload = { lat: gps.reading.lat, lng: gps.reading.lng, accuracy: gps.reading.accuracy };
@@ -73,6 +75,7 @@ export function SiteVisitWorkflowCard({ siteVisitId }: Props) {
     const res = await executeAction(action, payload);
     if (!res.success) {
       toast({ title: "Action failed", description: res.error, variant: "destructive" });
+      logMobileError({ category: "site_visit", action, message: res.error || "Site-visit action failed", context: { site_visit_id: siteVisitId, step, action } });
     } else if (res.queued) {
       toast({ title: "Saved offline — will sync when online" });
     }

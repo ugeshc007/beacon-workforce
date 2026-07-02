@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSiteVisit, useSiteVisitPhotos, useUpdateSiteVisit, useUploadSiteVisitPhoto, useDeleteSiteVisitPhoto, getSiteVisitPhotoUrl } from "@/hooks/useSiteVisits";
 import { useToast } from "@/hooks/use-toast";
 import { SiteVisitWorkflowCard } from "@/components/mobile/SiteVisitWorkflowCard";
+import { logMobileError } from "@/lib/error-logger";
 
 const statusColors: Record<string, string> = {
   pending: "bg-amber-500/15 text-amber-400",
@@ -81,6 +82,7 @@ export default function MobileSiteVisitDetail() {
       toast({ title: "Draft saved" });
     } catch (e: any) {
       toast({ title: "Save failed", description: e.message, variant: "destructive" });
+      logMobileError({ category: "site_visit", action: "save_draft", message: e?.message || "Save draft failed", context: { site_visit_id: visit.id } });
     }
   };
 
@@ -101,6 +103,7 @@ export default function MobileSiteVisitDetail() {
       navigate("/m/site-visits");
     } catch (e: any) {
       toast({ title: "Submit failed", description: e.message, variant: "destructive" });
+      logMobileError({ category: "site_visit", action: "submit_report", message: e?.message || "Submit report failed", context: { site_visit_id: visit.id } });
     }
   };
 
@@ -112,6 +115,7 @@ export default function MobileSiteVisitDetail() {
       toast({ title: "Photo uploaded" });
     } catch (err: any) {
       toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+      logMobileError({ category: "site_visit", action: "upload_photo", message: err?.message || "Photo upload failed", context: { site_visit_id: visit.id, file_name: file.name, file_size: file.size } });
     } finally {
       if (fileRef.current) fileRef.current.value = "";
     }

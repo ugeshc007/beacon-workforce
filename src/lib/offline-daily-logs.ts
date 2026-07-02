@@ -6,6 +6,7 @@
 
 import { Preferences } from "@capacitor/preferences";
 import { supabase } from "@/integrations/supabase/client";
+import { logMobileError } from "@/lib/error-logger";
 
 const QUEUE_KEY = "bebright_daily_log_queue";
 
@@ -149,6 +150,18 @@ export async function syncPendingDailyLogs(): Promise<{ synced: number; failed: 
           updated[idx].error_message = e?.message || "Sync failed";
           await saveDailyLogQueue(updated);
         }
+        logMobileError({
+          category: "sync",
+          action: "sync_daily_log",
+          severity: "warning",
+          message: e?.message || "Daily log sync failed",
+          context: {
+            local_id: item.local_id,
+            project_id: item.project_id,
+            queued_at: item.queued_at,
+            photo_count: item.photos.length,
+          },
+        });
       }
     }
   } finally {
