@@ -19,6 +19,7 @@ import {
   Plus, Send, Camera, AlertTriangle, TrendingUp, ImageIcon, X, User, FileText,
   CheckCircle2, Clock, Loader2, CalendarRange,
 } from "lucide-react";
+import { logMobileError } from "@/lib/error-logger";
 
 function SignedPhoto({ path, index }: { path: string; index: number }) {
   const [src, setSrc] = useState(path);
@@ -141,6 +142,7 @@ export default function MobileDailyLog() {
       }
     } catch (err: any) {
       toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+      logMobileError({ category: "daily_log", action: "upload_photo", message: err?.message || "Photo upload failed", context: { project_id: projectId, file_count: files.length } });
     } finally {
       setUploading(false);
     }
@@ -187,6 +189,7 @@ export default function MobileDailyLog() {
         resetForm();
       } catch (err: any) {
         toast({ title: "Queue failed", description: err.message, variant: "destructive" });
+        logMobileError({ category: "daily_log", action: "enqueue_offline", severity: "warning", message: err?.message || "Failed to queue daily log offline", context: { project_id: projectId } });
       }
       return;
     }
@@ -218,6 +221,7 @@ export default function MobileDailyLog() {
       resetForm();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
+      logMobileError({ category: "daily_log", action: "post_update", message: err?.message || "Daily log submit failed", context: { project_id: projectId, status, has_photos: photos.length > 0 } });
     } finally {
       setUploading(false);
     }
@@ -241,6 +245,7 @@ export default function MobileDailyLog() {
       toast({ title: "Status updated" });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
+      logMobileError({ category: "daily_log", action: "update_status", message: err?.message || "Daily log status update failed", context: { log_id: logId, project_id: projectId, new_status: newStatus } });
     }
   };
 
