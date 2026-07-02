@@ -135,6 +135,19 @@ export function useTodayProjects() {
         });
 
         if (cacheKey) await cacheData(cacheKey, result);
+        // Seed per-project work-location cache so useProjectWorkflow knows
+        // in_house vs site even if the user opens the project card for the
+        // first time while offline (otherwise it defaults to site/travel flow).
+        try {
+          result.forEach((r) => {
+            if (r.workLocation) {
+              localStorage.setItem(
+                `pwl_${employee.id}_${r.projectId}_${today}`,
+                JSON.stringify(r.workLocation),
+              );
+            }
+          });
+        } catch { /* ignore */ }
         return result;
       } catch (err) {
         // Network/auth failure → fall back to cached snapshot if we have one
