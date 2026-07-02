@@ -95,7 +95,29 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (!assignment) return errorResponse("No assignment for this project today", 403);
 
-    if (assignment.work_location === "in_house") {
+    // In-house guard: per-assignment override OR project-day location OR
+    // project without site coords → don't allow the travel flow.
+    let isInHouse = assignment.work_location === "in_house";
+    if (!isInHouse) {
+      const { data: dayLoc } = await supabase
+        .from("project_day_work_locations")
+        .select("location")
+        .eq("project_id", project_id)
+        .eq("date", today)
+        .maybeSingle();
+      if (dayLoc?.location === "in_house") isInHouse = true;
+    }
+    if (!isInHouse) {
+      const { data: proj } = await supabase
+        .from("projects")
+        .select("site_latitude, site_longitude")
+        .eq("id", project_id)
+        .maybeSingle();
+      if (proj && (proj.site_latitude == null || proj.site_longitude == null)) {
+        isInHouse = true;
+      }
+    }
+    if (isInHouse) {
       return errorResponse("This project is scheduled in-house today. Start work directly from the project screen.", 400);
     }
 
@@ -115,7 +137,9 @@ Deno.serve(async (req) => {
       .single();
 
     if (error) return errorResponse(error.message, 500);
-    return jsonResponse({ success: true, session_id: inserted.id, timestamp: now });
+    const out = { success: true, session_id: inserted.id, timestamp: now };
+    await recordIdempotencyResult(supabase, idempotency_key, out);
+    return jsonResponse(out);
   } catch (err) {
     return errorResponse((err as Error).message, 500);
   }
