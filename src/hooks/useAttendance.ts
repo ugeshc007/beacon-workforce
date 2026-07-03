@@ -124,7 +124,23 @@ export function useAttendanceLogs(filters: {
           .eq("date", filters.date)
           .in("project_id", projectIds);
         locMap = new Map((locs ?? []).map((l: any) => [l.project_id, l.location]));
+
+        // Fallback: use the day's project_assignments.work_location when no override row exists.
+        const missing = projectIds.filter((pid) => !locMap.has(pid));
+        if (missing.length > 0) {
+          const { data: assigns } = await supabase
+            .from("project_assignments")
+            .select("project_id, work_location")
+            .eq("date", filters.date)
+            .in("project_id", missing);
+          for (const a of assigns ?? []) {
+            if (a.work_location && !locMap.has(a.project_id)) {
+              locMap.set(a.project_id, a.work_location as "in_house" | "site");
+            }
+          }
+        }
       }
+
       results = results.map((r) => ({
         ...r,
         work_location: r.project_id ? (locMap.get(r.project_id) ?? null) : null,
