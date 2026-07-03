@@ -51,8 +51,20 @@ export function AttendanceDetailDrawer({ log, open, onOpenChange }: Props) {
   const effectivePunchOut = log.office_punch_out ?? latestSessionEnd;
   const effectiveWorkEnd = log.work_end_time ?? latestSessionEnd;
 
+  // Fallback: if travel/site-arrival aren't on the attendance log (per-project flow),
+  // use the earliest session's values so the top timeline reflects them.
+  const sessionsByTravel = [...sessions]
+    .filter((s) => !!s.travel_start_time)
+    .sort((a, b) => (a.travel_start_time! < b.travel_start_time! ? -1 : 1));
+  const sessionsByArrival = [...sessions]
+    .filter((s) => !!s.site_arrival_time)
+    .sort((a, b) => (a.site_arrival_time! < b.site_arrival_time! ? -1 : 1));
+  const firstTravel = sessionsByTravel[0];
+  const firstArrival = sessionsByArrival[0];
+
   // In-House = no project assigned and no project sessions. Hide site/travel rows.
   const isInHouse = !log.project_id && sessions.length === 0;
+
 
   const allSteps: TimelineStep[] = [
     {
@@ -69,22 +81,23 @@ export function AttendanceDetailDrawer({ log, open, onOpenChange }: Props) {
     },
     {
       label: "Travel Start",
-      time: log.travel_start_time,
-      lat: log.travel_start_lat != null ? Number(log.travel_start_lat) : null,
-      lng: log.travel_start_lng != null ? Number(log.travel_start_lng) : null,
+      time: log.travel_start_time ?? firstTravel?.travel_start_time ?? null,
+      lat: log.travel_start_lat != null ? Number(log.travel_start_lat) : (firstTravel?.travel_start_lat != null ? Number(firstTravel.travel_start_lat) : null),
+      lng: log.travel_start_lng != null ? Number(log.travel_start_lng) : (firstTravel?.travel_start_lng != null ? Number(firstTravel.travel_start_lng) : null),
       color: "text-status-traveling",
       icon: <Clock className="h-4 w-4" />,
     },
     {
       label: "Site Arrival",
-      time: log.site_arrival_time,
-      lat: log.site_arrival_lat != null ? Number(log.site_arrival_lat) : null,
-      lng: log.site_arrival_lng != null ? Number(log.site_arrival_lng) : null,
-      distance: log.site_arrival_distance_m != null ? Number(log.site_arrival_distance_m) : null,
-      valid: log.site_arrival_valid,
+      time: log.site_arrival_time ?? firstArrival?.site_arrival_time ?? null,
+      lat: log.site_arrival_lat != null ? Number(log.site_arrival_lat) : (firstArrival?.site_arrival_lat != null ? Number(firstArrival.site_arrival_lat) : null),
+      lng: log.site_arrival_lng != null ? Number(log.site_arrival_lng) : (firstArrival?.site_arrival_lng != null ? Number(firstArrival.site_arrival_lng) : null),
+      distance: log.site_arrival_distance_m != null ? Number(log.site_arrival_distance_m) : (firstArrival?.site_arrival_distance_m != null ? Number(firstArrival.site_arrival_distance_m) : null),
+      valid: log.site_arrival_valid ?? firstArrival?.site_arrival_valid ?? null,
       color: "text-status-present",
       icon: <MapPin className="h-4 w-4" />,
     },
+
     {
       label: "Work Start",
       time: (sessions.length === 1 ? sessions[0].work_start_time : null) ?? log.work_start_time,
