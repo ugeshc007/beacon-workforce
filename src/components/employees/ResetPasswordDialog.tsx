@@ -46,6 +46,8 @@ export function ResetPasswordDialog({ open, onOpenChange, employee }: Props) {
       .catch(() => setEmailInfo(null))
       .finally(() => setLoadingEmail(false));
   }, [open, employee]);
+
+  const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { new_password: "", confirm_password: "" },
   });
