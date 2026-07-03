@@ -763,6 +763,10 @@ export type Database = {
           id: string
           is_active: boolean
           join_date: string | null
+          last_app_build: number | null
+          last_app_version: string | null
+          last_login_at: string | null
+          last_platform: string | null
           name: string
           notes: string | null
           overtime_rate: number
@@ -786,6 +790,10 @@ export type Database = {
           id?: string
           is_active?: boolean
           join_date?: string | null
+          last_app_build?: number | null
+          last_app_version?: string | null
+          last_login_at?: string | null
+          last_platform?: string | null
           name: string
           notes?: string | null
           overtime_rate?: number
@@ -809,6 +817,10 @@ export type Database = {
           id?: string
           is_active?: boolean
           join_date?: string | null
+          last_app_build?: number | null
+          last_app_version?: string | null
+          last_login_at?: string | null
+          last_platform?: string | null
           name?: string
           notes?: string | null
           overtime_rate?: number
