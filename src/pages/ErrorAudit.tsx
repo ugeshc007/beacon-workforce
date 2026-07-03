@@ -60,6 +60,41 @@ export default function ErrorAudit() {
     },
   });
 
+  // Look up all referenced projects so we can label In-House vs Site.
+  const projectIds = useMemo(() => {
+    const s = new Set<string>();
+    for (const r of rows) {
+      const pid = (r.context as any)?.project_id;
+      if (typeof pid === "string") s.add(pid);
+    }
+    return Array.from(s);
+  }, [rows]);
+
+  const { data: projectMap = {} } = useQuery({
+    queryKey: ["error-log-projects", projectIds.sort().join(",")],
+    enabled: projectIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("id, name, site_address, site_latitude, site_longitude")
+        .in("id", projectIds);
+      if (error) throw error;
+      const map: Record<string, { name: string; workType: "In-House" | "Site" }> = {};
+      for (const p of data ?? []) {
+        const isSite = !!(p.site_address || (p.site_latitude && p.site_longitude));
+        map[p.id] = { name: p.name, workType: isSite ? "Site" : "In-House" };
+      }
+      return map;
+    },
+  });
+
+  const projectFor = (r: ErrorRow) => {
+    const pid = (r.context as any)?.project_id;
+    if (typeof pid !== "string") return null;
+    return projectMap[pid] ?? null;
+  };
+
+
   const filtered = useMemo(() => {
     if (!search.trim()) return rows;
     const s = search.toLowerCase();
