@@ -21,8 +21,7 @@ Deno.serve(async (req) => {
     if (!callerRole) return errorResponse("Only admin/manager", 403);
     const isSuperAdmin = callerRole.role === "super_admin";
 
-    const url = new URL(req.url);
-    const employee_id = url.searchParams.get("employee_id");
+    const { employee_id } = await req.json();
     if (!employee_id) return errorResponse("employee_id required");
 
     const { data: emp } = await supabase
