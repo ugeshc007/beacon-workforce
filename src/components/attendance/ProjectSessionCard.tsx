@@ -2,9 +2,25 @@ import { Badge } from "@/components/ui/badge";
 import { MapPinOff } from "lucide-react";
 import type { ProjectWorkSession } from "@/hooks/useProjectSessions";
 
-export function ProjectSessionCard({ session, index }: { session: ProjectWorkSession; index: number }) {
+export function ProjectSessionCard({
+  session,
+  index,
+  fallbackReturnTravelTime,
+  fallbackOfficeArrivalTime,
+  fallbackOfficeArrivalDistance,
+  fallbackOfficeArrivalValid,
+}: {
+  session: ProjectWorkSession;
+  index: number;
+  fallbackReturnTravelTime?: string | null;
+  fallbackOfficeArrivalTime?: string | null;
+  fallbackOfficeArrivalDistance?: number | null;
+  fallbackOfficeArrivalValid?: boolean | null;
+}) {
+  const returnTravel = session.return_travel_start_time ?? fallbackReturnTravelTime ?? null;
+  const officeArrival = fallbackOfficeArrivalTime ?? null;
   // In-house sessions never travel — detect when work started without any travel/arrival timestamp.
-  const isInHouse = !session.travel_start_time && !session.site_arrival_time && !session.return_travel_start_time;
+  const isInHouse = !session.travel_start_time && !session.site_arrival_time && !returnTravel;
   const allSteps: { label: string; time: string | null; distance?: number | null; valid?: boolean | null }[] = [
     { label: "Travel Start", time: session.travel_start_time },
     { label: "Site Arrival", time: session.site_arrival_time, distance: session.site_arrival_distance_m, valid: session.site_arrival_valid },
@@ -12,10 +28,12 @@ export function ProjectSessionCard({ session, index }: { session: ProjectWorkSes
     { label: "Break Start", time: session.break_start_time },
     { label: "Break End", time: session.break_end_time },
     { label: "Work End", time: session.work_end_time },
-    { label: "Return Travel", time: session.return_travel_start_time },
+    { label: "Return Travel", time: returnTravel },
+    { label: "At Office", time: officeArrival, distance: fallbackOfficeArrivalDistance ?? null, valid: fallbackOfficeArrivalValid ?? null },
   ];
-  const hiddenInHouse = new Set(["Travel Start", "Site Arrival", "Return Travel"]);
+  const hiddenInHouse = new Set(["Travel Start", "Site Arrival", "Return Travel", "At Office"]);
   const steps = isInHouse ? allSteps.filter((s) => !hiddenInHouse.has(s.label)) : allSteps;
+
 
   const totalH = session.total_work_minutes != null ? (session.total_work_minutes / 60).toFixed(1) : "—";
   const otH = session.overtime_minutes != null ? (session.overtime_minutes / 60).toFixed(1) : "0";
