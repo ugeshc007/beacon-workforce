@@ -57,6 +57,7 @@ import MobileTimesheet from "./pages/mobile/MobileTimesheet";
 import MobileNotifications from "./pages/mobile/MobileNotifications";
 import MobileProfile from "./pages/mobile/MobileProfile";
 import MobileSyncStatus from "./pages/mobile/MobileSyncStatus";
+import MobileAbout from "./pages/mobile/MobileAbout";
 
 import MobileTeamStatus from "./pages/mobile/MobileTeamStatus";
 import MobileDailyLog from "./pages/mobile/MobileDailyLog";
@@ -87,6 +88,7 @@ const App = () => (
             <Route path="project/:projectId" element={<MobileProjectWorkflow />} />
             <Route path="profile" element={<MobileProfile />} />
             <Route path="sync" element={<MobileSyncStatus />} />
+            <Route path="about" element={<MobileAbout />} />
 
           </Route>
 
