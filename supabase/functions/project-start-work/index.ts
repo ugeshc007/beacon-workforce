@@ -52,19 +52,28 @@ Deno.serve(async (req) => {
         .maybeSingle();
       if (!assignment) return errorResponse("No assignment for this project today", 403);
 
-      // In-house if EITHER the per-employee assignment.work_location is 'in_house'
-      // OR the project-wide day location is 'in_house'. The per-assignment value
-      // takes priority because the schedule page sets it per employee.
-      let isInHouse = assignment.work_location === "in_house";
-      if (!isInHouse) {
-        const { data: dayLoc } = await supabase
-          .from("project_day_work_locations")
-          .select("location")
-          .eq("project_id", project_id)
-          .eq("date", today)
-          .maybeSingle();
-        isInHouse = dayLoc?.location === "in_house";
-      }
+      // Match mobile/admin priority exactly:
+      // assignment.work_location → project-day override → project GPS inference.
+      // If the schedule explicitly says "site", do not allow the direct
+      // in-house Start Work path just because project GPS coords are missing.
+      const { data: dayLoc } = await supabase
+        .from("project_day_work_locations")
+        .select("location")
+        .eq("project_id", project_id)
+        .eq("date", today)
+        .maybeSingle();
+
+      const { data: proj } = await supabase
+        .from("projects")
+        .select("site_latitude, site_longitude")
+        .eq("id", project_id)
+        .maybeSingle();
+
+      const inferredLocation = proj && (proj.site_latitude == null || proj.site_longitude == null)
+        ? "in_house"
+        : "site";
+      const effectiveLocation = assignment.work_location ?? dayLoc?.location ?? inferredLocation;
+      const isInHouse = effectiveLocation === "in_house";
       if (!isInHouse) {
         return errorResponse(
           "This project is scheduled at site today. Start travel first, then arrive at site before starting work.",

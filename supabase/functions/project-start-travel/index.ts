@@ -95,28 +95,28 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (!assignment) return errorResponse("No assignment for this project today", 403);
 
-    // In-house guard: per-assignment override OR project-day location OR
-    // project without site coords → don't allow the travel flow.
-    let isInHouse = assignment.work_location === "in_house";
-    if (!isInHouse) {
-      const { data: dayLoc } = await supabase
-        .from("project_day_work_locations")
-        .select("location")
-        .eq("project_id", project_id)
-        .eq("date", today)
-        .maybeSingle();
-      if (dayLoc?.location === "in_house") isInHouse = true;
-    }
-    if (!isInHouse) {
-      const { data: proj } = await supabase
-        .from("projects")
-        .select("site_latitude, site_longitude")
-        .eq("id", project_id)
-        .maybeSingle();
-      if (proj && (proj.site_latitude == null || proj.site_longitude == null)) {
-        isInHouse = true;
-      }
-    }
+    // Match mobile/admin priority exactly:
+    // assignment.work_location → project-day override → project GPS inference.
+    // If the schedule explicitly says "site", missing project GPS coords must
+    // NOT convert the job back to in-house.
+    const { data: dayLoc } = await supabase
+      .from("project_day_work_locations")
+      .select("location")
+      .eq("project_id", project_id)
+      .eq("date", today)
+      .maybeSingle();
+
+    const { data: proj } = await supabase
+      .from("projects")
+      .select("site_latitude, site_longitude")
+      .eq("id", project_id)
+      .maybeSingle();
+
+    const inferredLocation = proj && (proj.site_latitude == null || proj.site_longitude == null)
+      ? "in_house"
+      : "site";
+    const effectiveLocation = assignment.work_location ?? dayLoc?.location ?? inferredLocation;
+    const isInHouse = effectiveLocation === "in_house";
     if (isInHouse) {
       return errorResponse("This project is scheduled in-house today. Start work directly from the project screen.", 400);
     }
