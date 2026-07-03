@@ -55,6 +55,22 @@ export default function MobileLogin() {
           .eq("auth_id", user.id)
           .maybeSingle();
         if (emp?.id) {
+          // Report app version / build / platform so the portal knows which
+          // devices are on which build. Best-effort — never blocks login.
+          try {
+            const { Capacitor } = await import("@capacitor/core");
+            const platform = Capacitor.getPlatform?.() ?? "web";
+            await supabase
+              .from("employees")
+              .update({
+                last_app_version: APP_VERSION,
+                last_app_build: APP_BUILD,
+                last_platform: platform,
+                last_login_at: new Date().toISOString(),
+              })
+              .eq("id", emp.id);
+          } catch { /* best-effort */ }
+
           const today = new Date().toISOString().slice(0, 10);
           const { data: assignments } = await supabase
             .from("project_assignments")
