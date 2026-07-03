@@ -51,8 +51,20 @@ export function AttendanceDetailDrawer({ log, open, onOpenChange }: Props) {
   const effectivePunchOut = log.office_punch_out ?? latestSessionEnd;
   const effectiveWorkEnd = log.work_end_time ?? latestSessionEnd;
 
+  // Fallback: if travel/site-arrival aren't on the attendance log (per-project flow),
+  // use the earliest session's values so the top timeline reflects them.
+  const sessionsByTravel = [...sessions]
+    .filter((s) => !!s.travel_start_time)
+    .sort((a, b) => (a.travel_start_time! < b.travel_start_time! ? -1 : 1));
+  const sessionsByArrival = [...sessions]
+    .filter((s) => !!s.site_arrival_time)
+    .sort((a, b) => (a.site_arrival_time! < b.site_arrival_time! ? -1 : 1));
+  const firstTravel = sessionsByTravel[0];
+  const firstArrival = sessionsByArrival[0];
+
   // In-House = no project assigned and no project sessions. Hide site/travel rows.
   const isInHouse = !log.project_id && sessions.length === 0;
+
 
   const allSteps: TimelineStep[] = [
     {
