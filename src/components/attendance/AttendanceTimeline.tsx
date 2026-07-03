@@ -33,22 +33,29 @@ export function AttendanceTimeline({ log, workLocation }: Props) {
   // row may contain stale values from an earlier (cancelled/superseded) flow.
   const singleSession = sessions.length === 1 ? sessions[0] : null;
 
+  // Ignore stale log.* timestamps left over from an earlier cancelled flow:
+  // if they occurred BEFORE this shift's punch-in, they don't belong to this shift.
+  const punchInMs = log.office_punch_in ? new Date(log.office_punch_in).getTime() : 0;
+  const notStale = (t: string | null | undefined) =>
+    t && (!punchInMs || new Date(t).getTime() >= punchInMs) ? t : null;
+
   // Prefer an active (open) session break so an ongoing break shows immediately.
   const openBreakSession = sessions.find((s) => s.break_start_time && !s.break_end_time);
   const anyBreakStartSession = sessions.find((s) => s.break_start_time);
   const anyBreakEndSession = sessions.find((s) => s.break_end_time);
   const breakStartTime = openBreakSession?.break_start_time
     ?? singleSession?.break_start_time
-    ?? log.break_start_time
+    ?? notStale(log.break_start_time)
     ?? anyBreakStartSession?.break_start_time
     ?? null;
   const breakEndTime = openBreakSession
     ? null
-    : (singleSession?.break_end_time ?? log.break_end_time ?? anyBreakEndSession?.break_end_time ?? null);
+    : (singleSession?.break_end_time ?? notStale(log.break_end_time) ?? anyBreakEndSession?.break_end_time ?? null);
 
   // For single-session days, use the session's work_start/end as authoritative.
-  const workStartTime = singleSession?.work_start_time ?? log.work_start_time ?? null;
-  const workEndTime = singleSession?.work_end_time ?? log.work_end_time ?? null;
+  const workStartTime = singleSession?.work_start_time ?? notStale(log.work_start_time) ?? null;
+  const workEndTime = singleSession?.work_end_time ?? notStale(log.work_end_time) ?? null;
+
 
 
   // Build a single ordered list of dots. When the employee has multiple project
