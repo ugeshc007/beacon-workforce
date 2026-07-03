@@ -32,8 +32,20 @@ export function ResetPasswordDialog({ open, onOpenChange, employee }: Props) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [showPw, setShowPw] = useState(false);
+  const [emailInfo, setEmailInfo] = useState<{ auth_email: string | null; employee_email: string | null; mismatch: boolean } | null>(null);
+  const [loadingEmail, setLoadingEmail] = useState(false);
 
-  const form = useForm<FormValues>({
+  useEffect(() => {
+    if (!open || !employee) { setEmailInfo(null); return; }
+    setLoadingEmail(true);
+    invokeEdge<{ auth_email: string | null; employee_email: string | null; mismatch: boolean }>(
+      "get-employee-login-email",
+      { employee_id: employee.id },
+    )
+      .then(setEmailInfo)
+      .catch(() => setEmailInfo(null))
+      .finally(() => setLoadingEmail(false));
+  }, [open, employee]);
     resolver: zodResolver(schema),
     defaultValues: { new_password: "", confirm_password: "" },
   });
