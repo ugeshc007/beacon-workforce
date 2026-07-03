@@ -8,6 +8,8 @@ export type AttendanceSessionSummary = {
   id: string;
   project_id: string | null;
   project_name: string | null;
+  travel_start_time: string | null;
+  site_arrival_time: string | null;
   work_start_time: string | null;
   break_start_time: string | null;
   break_end_time: string | null;
@@ -92,7 +94,7 @@ export function useAttendanceLogs(filters: {
       if (logIds.length > 0) {
         const { data: pws } = await supabase
           .from("project_work_sessions")
-          .select("id, attendance_log_id, project_id, work_start_time, break_start_time, break_end_time, work_end_time, projects(name)")
+          .select("id, attendance_log_id, project_id, travel_start_time, site_arrival_time, work_start_time, break_start_time, break_end_time, work_end_time, projects(name)")
           .in("attendance_log_id", logIds)
           .order("created_at", { ascending: true });
         for (const s of (pws ?? []) as any[]) {
@@ -101,6 +103,8 @@ export function useAttendanceLogs(filters: {
             id: s.id,
             project_id: s.project_id,
             project_name: s.projects?.name ?? null,
+            travel_start_time: s.travel_start_time,
+            site_arrival_time: s.site_arrival_time,
             work_start_time: s.work_start_time,
             break_start_time: s.break_start_time,
             break_end_time: s.break_end_time,

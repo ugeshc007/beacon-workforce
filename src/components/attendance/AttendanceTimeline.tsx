@@ -27,7 +27,8 @@ const sessionColors = [
 ];
 
 export function AttendanceTimeline({ log, workLocation }: Props) {
-  const sessions = (log.sessions ?? []).filter((s) => s.work_start_time || s.break_start_time || s.break_end_time || s.work_end_time);
+  const allSessions = log.sessions ?? [];
+  const sessions = allSessions.filter((s) => s.work_start_time || s.break_start_time || s.break_end_time || s.work_end_time);
   // When the employee has exactly one active project session for the day, that
   // session is the source of truth for work/break times — the attendance_log
   // row may contain stale values from an earlier (cancelled/superseded) flow.
@@ -56,6 +57,15 @@ export function AttendanceTimeline({ log, workLocation }: Props) {
   const workStartTime = singleSession?.work_start_time ?? notStale(log.work_start_time) ?? null;
   const workEndTime = singleSession?.work_end_time ?? notStale(log.work_end_time) ?? null;
 
+  const firstTravel = [...allSessions]
+    .filter((s) => !!s.travel_start_time)
+    .sort((a, b) => new Date(a.travel_start_time!).getTime() - new Date(b.travel_start_time!).getTime())[0];
+  const firstArrival = [...allSessions]
+    .filter((s) => !!s.site_arrival_time)
+    .sort((a, b) => new Date(a.site_arrival_time!).getTime() - new Date(b.site_arrival_time!).getTime())[0];
+  const travelStartTime = notStale(log.travel_start_time) ?? firstTravel?.travel_start_time ?? null;
+  const siteArrivalTime = notStale(log.site_arrival_time) ?? firstArrival?.site_arrival_time ?? null;
+
 
 
   // Build a single ordered list of dots. When the employee has multiple project
@@ -70,8 +80,8 @@ export function AttendanceTimeline({ log, workLocation }: Props) {
   ];
   if (!isInHouse) {
     head.push(
-      { key: "travel_start_time", label: "Travel", color: "bg-status-traveling", time: log.travel_start_time },
-      { key: "site_arrival_time", label: "On Site", color: "bg-status-present", time: log.site_arrival_time },
+      { key: "travel_start_time", label: "Travel", color: "bg-status-traveling", time: travelStartTime },
+      { key: "site_arrival_time", label: "On Site", color: "bg-status-present", time: siteArrivalTime },
     );
   }
 
