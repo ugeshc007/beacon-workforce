@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session } from "@supabase/supabase-js";
+import { clearCachedDataByPrefix } from "@/lib/offline-queue";
 
 interface EmployeeUser {
   id: string;          // employees.id
@@ -42,6 +43,15 @@ function writeCachedEmployee(emp: EmployeeUser) {
 
 function clearCachedEmployee() {
   try { localStorage.removeItem(EMP_CACHE_KEY); } catch { /* ignore */ }
+}
+
+async function clearMobileSnapshots() {
+  await clearCachedDataByPrefix();
+  try {
+    Object.keys(localStorage)
+      .filter((key) => key.startsWith("pwl_") || key.startsWith("pwl_v2_") || key.startsWith("pws_") || key.startsWith("driver_legs_"))
+      .forEach((key) => localStorage.removeItem(key));
+  } catch { /* ignore */ }
 }
 
 export function MobileAuthProvider({ children }: { children: ReactNode }) {
@@ -129,6 +139,7 @@ export function MobileAuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     clearCachedEmployee();
+    await clearMobileSnapshots().catch(() => {});
     try {
       await supabase.auth.signOut();
     } catch {

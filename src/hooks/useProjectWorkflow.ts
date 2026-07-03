@@ -38,7 +38,7 @@ export function useProjectWorkflow(projectId: string | null, dateOverride?: stri
 
   const today = dateOverride || toLocalDateStr(new Date());
   const { data: dayWorkLocation, isLoading: dayWorkLocationLoading } = useDayWorkLocation(projectId ?? "", today);
-  const workLocCacheKey = employee && projectId ? `pwl_${employee.id}_${projectId}_${today}` : null;
+  const workLocCacheKey = employee && projectId ? `pwl_v2_${employee.id}_${projectId}_${today}` : null;
 
 
   // Per-employee per-day work location set on the schedule page takes priority

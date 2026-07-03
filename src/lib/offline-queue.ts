@@ -100,3 +100,12 @@ export async function getCachedData<T>(key: string): Promise<{ data: T; cachedAt
   const { value } = await Preferences.get({ key: CACHE_PREFIX + key });
   return value ? JSON.parse(value) : null;
 }
+
+export async function clearCachedDataByPrefix(prefix = ""): Promise<void> {
+  const { keys } = await Preferences.keys();
+  await Promise.all(
+    keys
+      .filter((key) => key.startsWith(CACHE_PREFIX + prefix))
+      .map((key) => Preferences.remove({ key })),
+  );
+}

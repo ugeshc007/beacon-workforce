@@ -5,7 +5,11 @@ Deno.serve(async (req) => {
 
   try {
     const url = new URL(req.url);
-    const employee_id = url.searchParams.get("employee_id");
+    let employee_id = url.searchParams.get("employee_id");
+    if (!employee_id && req.method !== "GET") {
+      const body = await req.json().catch(() => ({}));
+      employee_id = typeof body.employee_id === "string" ? body.employee_id : null;
+    }
 
     if (!employee_id) return errorResponse("employee_id query param is required");
 
