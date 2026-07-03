@@ -256,8 +256,17 @@ export function AttendanceDetailDrawer({ log, open, onOpenChange }: Props) {
             </h3>
             <div className="space-y-4">
               {sessions.map((s, idx) => (
-                <ProjectSessionCard key={s.id} session={s} index={idx + 1} />
+                <ProjectSessionCard
+                  key={s.id}
+                  session={s}
+                  index={idx + 1}
+                  fallbackReturnTravelTime={idx === sessions.length - 1 ? (log as any).return_travel_start_time ?? null : null}
+                  fallbackOfficeArrivalTime={idx === sessions.length - 1 ? (log as any).office_arrival_time ?? null : null}
+                  fallbackOfficeArrivalDistance={idx === sessions.length - 1 ? (log as any).office_arrival_distance_m ?? null : null}
+                  fallbackOfficeArrivalValid={idx === sessions.length - 1 ? (log as any).office_arrival_valid ?? null : null}
+                />
               ))}
+
             </div>
           </div>
         )}
