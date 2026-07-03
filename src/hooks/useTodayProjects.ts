@@ -5,6 +5,7 @@ import { useMobileAuth } from "@/hooks/useMobileAuth";
 import { toLocalDateStr } from "@/lib/utils";
 import { deriveProjectStep, ProjectStep } from "@/lib/project-workflow-engine";
 import { cacheData, getCachedData } from "@/lib/offline-queue";
+import { invokeEdge } from "@/lib/invoke-edge";
 
 
 export interface TodayProject {
@@ -31,7 +32,7 @@ export interface TodayProject {
 export function useTodayProjects() {
   const { employee } = useMobileAuth();
   const today = toLocalDateStr(new Date());
-  const cacheKey = employee ? `today_projects_${employee.id}_${today}` : null;
+  const cacheKey = employee ? `today_projects_v2_${employee.id}_${today}` : null;
   const qc = useQueryClient();
 
   // Realtime: instantly refresh when a new assignment is created/updated/deleted for this employee today
@@ -53,8 +54,11 @@ export function useTodayProjects() {
     enabled: !!employee,
     refetchInterval: 30000,
 
-    // Don't drop the cached value while offline retries spin
-    staleTime: 60_000,
+    // Always re-check the backend on mobile home; cached snapshots are only for offline/error fallback.
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnReconnect: "always",
+    refetchOnWindowFocus: true,
     queryFn: async (): Promise<TodayProject[]> => {
       if (!employee) return [];
 
@@ -112,7 +116,7 @@ export function useTodayProjects() {
           .in("project_id", projectIds);
         const dayLocByProject = new Map((dayLocs ?? []).map((d) => [d.project_id, d.location as "in_house" | "site"]));
 
-        const result: TodayProject[] = filteredAssignments.map((a) => {
+        let result: TodayProject[] = filteredAssignments.map((a) => {
           const project = a.projects as { name?: string; site_address?: string | null; site_latitude?: number | null; site_longitude?: number | null; site_gps_radius?: number | null } | null;
           const session = sessionByProject.get(a.project_id);
           const explicitLoc = (a.work_location as "in_house" | "site" | null) ?? dayLocByProject.get(a.project_id) ?? null;
@@ -140,6 +144,23 @@ export function useTodayProjects() {
           };
         });
 
+        // Authoritative mobile fallback: the backend function returns the same
+        // effective location used by workflow actions. This overwrites stale or
+        // RLS-missed client inference (BG002 case: schedule says Site, project
+        // has no GPS coords, old cache said In-House).
+        try {
+          const effective = await invokeEdge<{
+            assigned?: boolean;
+            work_location?: "in_house" | "site" | null;
+            project?: { id?: string | null } | null;
+          }>("today-assignment", { employee_id: employee.id });
+          if (effective?.assigned && effective.project?.id && effective.work_location) {
+            result = result.map((project) => project.projectId === effective.project?.id
+              ? { ...project, workLocation: effective.work_location ?? project.workLocation }
+              : project);
+          }
+        } catch { /* direct table result remains the fallback */ }
+
         if (cacheKey) await cacheData(cacheKey, result);
         // Seed per-project work-location cache so useProjectWorkflow knows
         // in_house vs site even if the user opens the project card for the
@@ -153,6 +174,10 @@ export function useTodayProjects() {
               ?? (r.siteLat == null && r.siteLng == null ? "in_house" : "site");
             localStorage.setItem(
               `pwl_${employee.id}_${r.projectId}_${today}`,
+              JSON.stringify(inferred),
+            );
+            localStorage.setItem(
+              `pwl_v2_${employee.id}_${r.projectId}_${today}`,
               JSON.stringify(inferred),
             );
           });
