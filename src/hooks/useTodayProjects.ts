@@ -35,18 +35,39 @@ export function useTodayProjects() {
   const cacheKey = employee ? `today_projects_v2_${employee.id}_${today}` : null;
   const qc = useQueryClient();
 
-  // Realtime: instantly refresh when a new assignment is created/updated/deleted for this employee today
+  // Realtime: instantly refresh when a new assignment is created/updated/deleted for this employee today.
+  // Skip when offline (the WebSocket connect would just spam channel errors) and re-subscribe on reconnect.
   useEffect(() => {
     if (!employee) return;
-    const channel = supabase
-      .channel(`today-assignments-${employee.id}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "project_assignments", filter: `employee_id=eq.${employee.id}` },
-        () => qc.invalidateQueries({ queryKey: ["today-projects", employee.id, today] }),
-      )
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    const subscribe = () => {
+      if (typeof navigator !== "undefined" && navigator.onLine === false) return;
+      if (channel) return;
+      channel = supabase
+        .channel(`today-assignments-${employee.id}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "project_assignments", filter: `employee_id=eq.${employee.id}` },
+          () => qc.invalidateQueries({ queryKey: ["today-projects", employee.id, today] }),
+        )
+        .subscribe();
+    };
+    const teardown = () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+        channel = null;
+      }
+    };
+    subscribe();
+    const onOnline = () => { subscribe(); qc.invalidateQueries({ queryKey: ["today-projects", employee.id, today] }); };
+    const onOffline = () => teardown();
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+      teardown();
+    };
   }, [employee, today, qc]);
 
   return useQuery({

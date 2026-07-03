@@ -43,6 +43,30 @@ export default function MobileLogin() {
       return;
     }
 
+    // Fire-and-forget prefetch so a first-launch-then-offline user still
+    // has today's assignment snapshot cached on device.
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: emp } = await supabase
+          .from("employees")
+          .select("id")
+          .eq("auth_id", user.id)
+          .maybeSingle();
+        if (emp?.id) {
+          const today = new Date().toISOString().slice(0, 10);
+          const { data: assignments } = await supabase
+            .from("project_assignments")
+            .select("id, project_id, shift_start, shift_end, assigned_role, work_location, task, projects(name, site_address, site_latitude, site_longitude, site_gps_radius)")
+            .eq("employee_id", emp.id)
+            .eq("date", today);
+          const { cacheData } = await import("@/lib/offline-queue");
+          await cacheData(`today_projects_v2_${emp.id}_${today}`, assignments ?? []);
+        }
+      }
+    } catch { /* best-effort */ }
+
     toast({ title: "Welcome!", description: "You're signed in." });
     // navigation handled by effect above once session propagates
   };

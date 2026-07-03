@@ -107,8 +107,15 @@ export function MobileAuthProvider({ children }: { children: ReactNode }) {
       if (mounted) setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return;
+      // If we're offline and supabase reports SIGNED_OUT, it's almost always
+      // a failed refresh call — not a real sign-out. Keep the cached employee
+      // in state so the worker stays inside the app until real network returns.
+      const offline = typeof navigator !== "undefined" && navigator.onLine === false;
+      if (event === "SIGNED_OUT" && offline) {
+        return;
+      }
       setSession(session);
       if (session?.user) {
         setLoading(true);
