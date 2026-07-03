@@ -79,6 +79,14 @@ export async function logMobileError(input: LogErrorInput): Promise<void> {
     const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : null;
     const route = typeof window !== "undefined" ? window.location.pathname : null;
 
+    // Enrich context with project_id derived from route so the audit UI can
+    // show which project (and whether it's in-house vs site) the error came from.
+    const ctx: Record<string, unknown> = { ...(input.context ?? {}) };
+    if (!ctx.project_id) {
+      const pid = extractProjectIdFromRoute(route);
+      if (pid) ctx.project_id = pid;
+    }
+
     await (supabase.from("error_logs") as any).insert({
       source: "mobile",
       severity: input.severity ?? "error",
@@ -86,7 +94,7 @@ export async function logMobileError(input: LogErrorInput): Promise<void> {
       action: input.action ?? null,
       error_code: input.error_code ?? null,
       message: (input.message ?? "Unknown error").slice(0, 2000),
-      context: input.context ?? {},
+      context: ctx,
       employee_id,
       route,
       app_version: APP_VERSION,
