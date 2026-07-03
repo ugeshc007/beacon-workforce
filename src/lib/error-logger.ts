@@ -28,14 +28,41 @@ export interface LogErrorInput {
 }
 
 async function getCachedEmployeeId(): Promise<string | null> {
+  // Primary: mobile auth context cache (localStorage)
+  try {
+    if (typeof localStorage !== "undefined") {
+      const raw = localStorage.getItem("bb_emp_profile_v1");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.id) return parsed.id as string;
+      }
+    }
+  } catch { /* ignore */ }
+  // Secondary: capacitor preferences (legacy key)
   try {
     const { value } = await Preferences.get({ key: "mobile_employee" });
-    if (!value) return null;
-    const parsed = JSON.parse(value);
-    return parsed?.id ?? null;
-  } catch {
-    return null;
-  }
+    if (value) {
+      const parsed = JSON.parse(value);
+      if (parsed?.id) return parsed.id as string;
+    }
+  } catch { /* ignore */ }
+  // Fallback: derive from live auth session
+  try {
+    const { data } = await supabase.auth.getUser();
+    const authId = data?.user?.id;
+    if (!authId) return null;
+    const { data: emp } = await (supabase.from("employees") as any)
+      .select("id")
+      .eq("auth_id", authId)
+      .maybeSingle();
+    return emp?.id ?? null;
+  } catch { return null; }
+}
+
+function extractProjectIdFromRoute(route: string | null): string | null {
+  if (!route) return null;
+  const m = route.match(/\/m\/project\/([0-9a-f-]{36})/i);
+  return m ? m[1] : null;
 }
 
 let netState: string | null = null;
