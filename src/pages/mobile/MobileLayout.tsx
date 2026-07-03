@@ -2,7 +2,7 @@ import { Outlet, NavLink, Navigate, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
 import { Home, ClipboardList, Bell, User, Loader2, Users, MapPin, LogOut } from "lucide-react";
-import { initAutoSync } from "@/lib/offline-sync";
+import { initAutoSync, flushQueueNow } from "@/lib/offline-sync";
 import { initDailyLogAutoSync } from "@/lib/offline-daily-logs";
 import { initSessionMirror } from "@/lib/mobile-session-persist";
 import { SyncStatusBadge } from "@/components/mobile/SyncStatusBadge";
@@ -16,6 +16,9 @@ export default function MobileLayout() {
     const cleanupActions = initAutoSync();
     const cleanupLogs = initDailyLogAutoSync();
     const cleanupMirror = initSessionMirror();
+    // Immediately drain any pending queue on mount so entering the app after
+    // a long offline stretch flushes without waiting for a reconnect event.
+    flushQueueNow("layout:mount");
     return () => { cleanupActions(); cleanupLogs(); cleanupMirror(); };
   }, []);
 

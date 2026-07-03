@@ -63,7 +63,8 @@ export default function MobileHome() {
   useEffect(() => {
     if (!employee) return;
     const today = new Date().toISOString().slice(0, 10);
-    getCachedData<unknown>(`today_projects_${employee.id}_${today}`).then((c) => {
+    // useTodayProjects writes the `_v2_` cache key — read the same one.
+    getCachedData<unknown>(`today_projects_v2_${employee.id}_${today}`).then((c) => {
       if (c?.cachedAt) setLastSyncAt(new Date(c.cachedAt));
     });
   }, [employee, todayProjects]);
