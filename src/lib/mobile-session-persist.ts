@@ -30,6 +30,10 @@ function getSupabaseStorageKeys(): string[] {
   return keys;
 }
 
+function isOffline(): boolean {
+  return typeof navigator !== "undefined" && navigator.onLine === false;
+}
+
 /**
  * Restore any mirrored session into localStorage BEFORE supabase-js boots.
  * Call once, as early as possible at app startup.
@@ -82,6 +86,10 @@ export function initSessionMirror(): () => void {
 
   const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
     if (event === "SIGNED_OUT") {
+      // If we're offline, a SIGNED_OUT typically means the refresh call failed
+      // due to no network — NOT that the user actually signed out. Keep the
+      // mirror so the next cold boot can still hydrate the session.
+      if (isOffline()) return;
       void clearAll();
     } else {
       void mirrorAll();

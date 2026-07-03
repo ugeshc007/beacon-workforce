@@ -85,6 +85,28 @@ const edgeFunctionMap: Record<string, string> = {
   driver_end_leg: "driver-end-leg",
 };
 
+/**
+ * Actions that create a session/log row. Everything else for the same
+ * (employee, project|site_visit) group depends on one of these existing on
+ * the server first. When the creator is still pending, we defer follow-ups
+ * so we don't burn retry attempts on "session_id required" errors.
+ */
+const CREATOR_ACTIONS = new Set([
+  "punch_in",
+  "project_start_travel",
+  "project_start_work",
+  "sv_start_travel",
+  "sv_start_survey",
+  "driver_start_trip",
+]);
+
+function groupKey(item: QueuedAction): string {
+  const p = item.payload as Record<string, unknown>;
+  const emp = (p.employee_id as string) || "";
+  const proj = (p.project_id as string) || (p.site_visit_id as string) || (p.trip_leg_id as string) || "";
+  return `${emp}::${proj}`;
+}
+
 
 /**
  * Recognize server errors that mean "state has already moved past this action".
@@ -114,6 +136,10 @@ function isBenignSyncError(msg: string): boolean {
 /**
  * Process all pending items in the queue, oldest first.
  * Uses idempotency keys so duplicate sends are safe.
+ *
+ * When trigger is a fresh connectivity event we reset the per-item retry
+ * counter so items that hit the 3-attempt ceiling during a bad network get
+ * a full retry budget again on the next reconnect.
  */
 export async function syncPendingActions(trigger: string = "manual"): Promise<{ synced: number; failed: number }> {
   if (isSyncing) return { synced: 0, failed: 0 };
@@ -124,12 +150,49 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
   let failed = 0;
   let lastErr: string | null = null;
 
+  const isReconnect = trigger === "browser:online"
+    || trigger === "native:network"
+    || trigger === "native:resume"
+    || trigger === "manual"
+    || trigger === "layout:mount";
+
   try {
+    // Reset attempts + error status on reconnect so we get a fresh budget.
+    if (isReconnect) {
+      const q0 = await getQueue();
+      let mutated = false;
+      for (const it of q0) {
+        if (it.sync_status === "error") {
+          it.sync_status = "pending";
+          it.error_message = undefined;
+          mutated = true;
+        }
+        if ((it.attempts ?? 0) > 0) {
+          it.attempts = 0;
+          mutated = true;
+        }
+      }
+      if (mutated) await saveQueue(q0);
+    }
+
     const queue = await getQueue();
-    const pending = queue.filter((q) => q.sync_status === "pending" || q.sync_status === "error");
+    const pending = queue
+      .filter((q) => q.sync_status === "pending" || q.sync_status === "error")
+      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
     notifyListeners(pending.length, true);
 
+    // Track which groups have a still-unsynced creator earlier in the pass.
+    // Follow-ups for that group are deferred to the next sync pass.
+    const blockedGroups = new Set<string>();
+
     for (const item of pending) {
+      const grp = groupKey(item);
+      const isCreator = CREATOR_ACTIONS.has(item.action_type);
+      if (!isCreator && blockedGroups.has(grp)) {
+        // Skip: prior creator for this group hasn't succeeded yet.
+        continue;
+      }
+
       const fnName = edgeFunctionMap[item.action_type];
       if (!fnName) {
         await markError(item.local_id, `Unknown action: ${item.action_type}`);
@@ -236,6 +299,11 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
           }
         }
       }
+
+      // If a creator action didn't succeed, block its follow-ups this pass.
+      if (isCreator && !success) {
+        blockedGroups.add(grp);
+      }
     }
 
     await clearSynced();
@@ -254,19 +322,31 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
 
 
 /**
+ * Fire both the action queue and the daily-log queue.
+ * Called from every reconnect signal so the two stay in lockstep.
+ */
+function flushAllQueues(trigger: string) {
+  syncPendingActions(trigger).catch(console.error);
+  import("@/lib/offline-daily-logs")
+    .then((m) => m.syncPendingDailyLogs().catch(console.error))
+    .catch(() => { /* ignore */ });
+}
+
+/**
+ * Explicit flush used by MobileLayout on mount so entering the mobile
+ * section after a long offline stretch drains the queue immediately.
+ */
+export function flushQueueNow(trigger: string = "layout:mount") {
+  flushAllQueues(trigger);
+}
+
+/**
  * Set up auto-sync on network reconnect.
  * Call once at app startup.
  */
 export function initAutoSync(): () => void {
-  const handler = (trigger: string) => {
-    syncPendingActions(trigger).catch(console.error);
-    import("@/lib/offline-daily-logs")
-      .then((m) => m.syncPendingDailyLogs().catch(console.error))
-      .catch(() => { /* ignore */ });
-  };
-
-  const onlineHandler = () => handler("browser:online");
-  const visHandler = () => { if (document.visibilityState === "visible") handler("visibilitychange"); };
+  const onlineHandler = () => flushAllQueues("browser:online");
+  const visHandler = () => { if (document.visibilityState === "visible") flushAllQueues("visibilitychange"); };
 
   window.addEventListener("online", onlineHandler);
   document.addEventListener("visibilitychange", visHandler);
@@ -277,18 +357,18 @@ export function initAutoSync(): () => void {
     try {
       const { Network } = await import("@capacitor/network");
       const sub = await Network.addListener("networkStatusChange", (status) => {
-        if (status.connected) handler("native:network");
+        if (status.connected) flushAllQueues("native:network");
       });
       removeNativeListener = () => sub.remove();
       const status = await Network.getStatus();
-      if (status.connected) handler("startup");
+      if (status.connected) flushAllQueues("startup");
     } catch {
-      handler("startup");
+      flushAllQueues("startup");
     }
     try {
       const { App } = await import("@capacitor/app");
       const sub = await App.addListener("appStateChange", (state) => {
-        if (state.isActive) handler("native:resume");
+        if (state.isActive) flushAllQueues("native:resume");
       });
       removeResumeListener = () => sub.remove();
     } catch { /* ignore on web */ }
@@ -298,9 +378,9 @@ export function initAutoSync(): () => void {
     try {
       const { Network } = await import("@capacitor/network");
       const status = await Network.getStatus();
-      if (status.connected) handler("poll");
+      if (status.connected) flushAllQueues("poll");
     } catch {
-      if (navigator.onLine) handler("poll");
+      if (navigator.onLine) flushAllQueues("poll");
     }
   }, 30000);
 
