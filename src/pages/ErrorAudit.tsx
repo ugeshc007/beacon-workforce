@@ -60,6 +60,41 @@ export default function ErrorAudit() {
     },
   });
 
+  // Look up all referenced projects so we can label In-House vs Site.
+  const projectIds = useMemo(() => {
+    const s = new Set<string>();
+    for (const r of rows) {
+      const pid = (r.context as any)?.project_id;
+      if (typeof pid === "string") s.add(pid);
+    }
+    return Array.from(s);
+  }, [rows]);
+
+  const { data: projectMap = {} } = useQuery({
+    queryKey: ["error-log-projects", projectIds.sort().join(",")],
+    enabled: projectIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("id, name, site_address, site_latitude, site_longitude")
+        .in("id", projectIds);
+      if (error) throw error;
+      const map: Record<string, { name: string; workType: "In-House" | "Site" }> = {};
+      for (const p of data ?? []) {
+        const isSite = !!(p.site_address || (p.site_latitude && p.site_longitude));
+        map[p.id] = { name: p.name, workType: isSite ? "Site" : "In-House" };
+      }
+      return map;
+    },
+  });
+
+  const projectFor = (r: ErrorRow) => {
+    const pid = (r.context as any)?.project_id;
+    if (typeof pid !== "string") return null;
+    return projectMap[pid] ?? null;
+  };
+
+
   const filtered = useMemo(() => {
     if (!search.trim()) return rows;
     const s = search.toLowerCase();
@@ -175,6 +210,7 @@ export default function ErrorAudit() {
             <TableRow>
               <TableHead>When</TableHead>
               <TableHead>Employee</TableHead>
+              <TableHead>Work</TableHead>
               <TableHead>Category</TableHead>
               <TableHead>Action</TableHead>
               <TableHead>Message</TableHead>
@@ -185,11 +221,13 @@ export default function ErrorAudit() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
             ) : filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No errors 🎉</TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No errors 🎉</TableCell></TableRow>
             ) : (
-              filtered.map((r) => (
+              filtered.map((r) => {
+                const proj = projectFor(r);
+                return (
                 <TableRow key={r.id} className="cursor-pointer" onClick={() => setSelected(r)}>
                   <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                     {format(new Date(r.created_at), "dd MMM HH:mm")}
@@ -202,6 +240,18 @@ export default function ErrorAudit() {
                       </div>
                     ) : (
                       <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-xs whitespace-nowrap">
+                    {proj ? (
+                      <div>
+                        <Badge variant={proj.workType === "Site" ? "default" : "secondary"} className="text-[10px]">
+                          {proj.workType}
+                        </Badge>
+                        <div className="text-[11px] text-muted-foreground mt-1 max-w-[140px] truncate">{proj.name}</div>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
                     )}
                   </TableCell>
                   <TableCell>
@@ -228,7 +278,8 @@ export default function ErrorAudit() {
                     )}
                   </TableCell>
                 </TableRow>
-              ))
+                );
+              })
             )}
           </TableBody>
         </Table>
