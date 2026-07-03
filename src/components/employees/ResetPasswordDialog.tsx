@@ -91,6 +91,30 @@ export function ResetPasswordDialog({ open, onOpenChange, employee }: Props) {
           </DialogDescription>
         </DialogHeader>
 
+        <div className="rounded-md border bg-muted/40 p-3 text-sm space-y-1">
+          <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
+            <Mail className="h-3.5 w-3.5" /> Login email
+          </div>
+          {loadingEmail ? (
+            <div className="text-muted-foreground text-xs flex items-center gap-2">
+              <Loader2 className="h-3 w-3 animate-spin" /> Loading…
+            </div>
+          ) : emailInfo?.auth_email ? (
+            <>
+              <div className="font-mono text-sm break-all">{emailInfo.auth_email}</div>
+              {emailInfo.mismatch && (
+                <div className="flex items-start gap-1.5 text-xs text-amber-600 dark:text-amber-500 mt-1">
+                  <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                  <span>Employee record has a different email ({emailInfo.employee_email}). User must log in with the address above.</span>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="text-muted-foreground text-xs">No login account found.</div>
+          )}
+        </div>
+
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
