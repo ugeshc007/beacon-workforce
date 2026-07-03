@@ -29,7 +29,7 @@ export default function MobileHome() {
   const { employee } = useMobileAuth();
   const navigate = useNavigate();
   const { step, attendanceLog, availableActions, loading, actionLoading, executeAction } = useMobileWorkflow();
-  const { data: todayProjects, isLoading: projectsLoading } = useTodayProjects();
+  const { data: todayProjects, isLoading: projectsLoading, isFetching: projectsFetching, refetch: refetchTodayProjects } = useTodayProjects();
   const { data: upcomingProjects } = useUpcomingProjects(7);
   const { startTracking, stopTracking } = useBackgroundTracking();
   const { toast } = useToast();
@@ -157,6 +157,21 @@ export default function MobileHome() {
         })
       );
     }
+  };
+
+  const handleRefreshToday = async () => {
+    if (!isOnline) {
+      toast({ title: "Offline", description: "Reconnect to refresh today's projects." });
+      return;
+    }
+
+    const result = await refetchTodayProjects();
+    if (result.error) {
+      toast({ title: "Refresh failed", description: "Could not reload today's projects. Try again.", variant: "destructive" });
+      return;
+    }
+
+    toast({ title: "Updated", description: "Today's projects refreshed." });
   };
 
 
@@ -350,11 +365,23 @@ export default function MobileHome() {
           </h1>
           <p className="text-xs text-muted-foreground">{employee?.employeeCode}</p>
         </div>
-        <div className="text-right">
-          <p className="text-xl font-mono font-bold text-foreground leading-none">{timeStr}</p>
-          <p className="text-[10px] text-muted-foreground mt-1">
-            {new Date().toLocaleDateString("en-AE", { weekday: "short", day: "2-digit", month: "short", timeZone: "Asia/Dubai" })}
-          </p>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleRefreshToday}
+            disabled={projectsFetching}
+            className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-border/60 bg-card px-3 text-xs font-semibold text-foreground transition-colors hover:border-brand/50 hover:bg-brand/10 disabled:opacity-60"
+            aria-label="Refresh today's projects"
+          >
+            <RotateCcw className={`h-3.5 w-3.5 ${projectsFetching ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
+          <div className="text-right">
+            <p className="text-xl font-mono font-bold text-foreground leading-none">{timeStr}</p>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              {new Date().toLocaleDateString("en-AE", { weekday: "short", day: "2-digit", month: "short", timeZone: "Asia/Dubai" })}
+            </p>
+          </div>
         </div>
       </div>
 
