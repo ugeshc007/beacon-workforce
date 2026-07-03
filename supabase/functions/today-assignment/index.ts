@@ -12,11 +12,12 @@ Deno.serve(async (req) => {
     const supabase = createSupabaseAdmin();
     const today = todayDate();
 
-    // Get today's assignment with project details
+    // Get today's assignment with project details. Include the schedule's
+    // per-employee work_location so mobile clients do not infer from GPS coords.
     const { data: assignment } = await supabase
       .from("project_assignments")
       .select(`
-        id, date, shift_start, shift_end,
+        id, date, shift_start, shift_end, work_location,
         projects (
           id, name, client_name, site_address,
           site_latitude, site_longitude, site_gps_radius, status
@@ -46,12 +47,26 @@ Deno.serve(async (req) => {
       .eq("project_id", project.id)
       .eq("date", today);
 
+    const { data: dayLocation } = await supabase
+      .from("project_day_work_locations")
+      .select("location")
+      .eq("project_id", project.id)
+      .eq("date", today)
+      .maybeSingle();
+
+    const hasCoords = project.site_latitude != null && project.site_longitude != null;
+    const inferredLocation = hasCoords ? "site" : "in_house";
+    const workLocation = assignment.work_location ?? dayLocation?.location ?? inferredLocation;
+
     return jsonResponse({
       assigned: true,
       assignment_id: assignment.id,
       date: assignment.date,
       shift_start: assignment.shift_start,
       shift_end: assignment.shift_end,
+      work_location: workLocation,
+      assignment_work_location: assignment.work_location,
+      day_work_location: dayLocation?.location ?? null,
       project: {
         id: project.id,
         name: project.name,
