@@ -67,7 +67,7 @@ export default function MobileDailyLog() {
   const [uploading, setUploading] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   // Local photos for offline mode (kept as base64 in queue, previewed via blob URL)
-  const [offlinePhotos, setOfflinePhotos] = useState<{ data: string; ext: string; previewUrl: string }[]>([]);
+  const [offlinePhotos, setOfflinePhotos] = useState<{ data?: string; path?: string; ext: string; previewUrl: string }[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Auto-sync queued daily logs on mount + network reconnect
@@ -182,7 +182,7 @@ export default function MobileDailyLog() {
           status,
           task_start_date: taskStartDate || null,
           task_end_date: taskEndDate || null,
-          photos: offlinePhotos.map(({ data, ext }) => ({ data, ext })),
+          photos: offlinePhotos.map(({ data, path, ext }) => ({ data, path, ext })),
         });
         toast({ title: "Saved Offline", description: "Will upload when back online." });
         getPendingDailyLogCount().then(setPendingCount);
