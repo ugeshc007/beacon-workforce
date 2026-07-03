@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -8,7 +8,7 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, RotateCcw, Eye, EyeOff } from "lucide-react";
+import { Loader2, RotateCcw, Eye, EyeOff, Mail, AlertTriangle } from "lucide-react";
 import { invokeEdge } from "@/lib/invoke-edge";
 import { useToast } from "@/hooks/use-toast";
 
