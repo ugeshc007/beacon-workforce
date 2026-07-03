@@ -120,6 +120,22 @@ export default function MobileProfile() {
         <ChevronRight className="h-4 w-4 text-muted-foreground" />
       </button>
 
+      {/* About */}
+      <button
+        onClick={() => navigate("/m/about")}
+        className="w-full flex items-center justify-between rounded-xl border border-border/50 bg-card p-4 text-left hover:bg-card/80 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <Info className="h-5 w-5 text-brand" />
+          <div>
+            <p className="text-sm font-medium">About</p>
+            <p className="text-[11px] text-muted-foreground">
+              App version and build information
+            </p>
+          </div>
+        </div>
+        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+      </button>
 
       {/* Sign out */}
       <div className="pt-2">
