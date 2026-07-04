@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { MapPin, X, Check } from "lucide-react";
+import { MapPin, X, Check, WifiOff } from "lucide-react";
 
 interface MapPickerProps {
   open: boolean;
@@ -12,9 +12,8 @@ interface MapPickerProps {
 }
 
 /**
- * Lightweight map fallback for when GPS is unavailable or inaccurate.
- * Opens an embedded OpenStreetMap iframe with a pin-drop UI.
- * User can drag the map and tap "Confirm Location" to set their position.
+ * Offline-safe location fallback for when GPS is unavailable or inaccurate.
+ * Avoids internet map embeds so workers can still confirm coordinates offline.
  */
 export function MapPicker({ open, onClose, onConfirm, initialLat = 25.2048, initialLng = 55.2708 }: MapPickerProps) {
   const [lat, setLat] = useState(initialLat);
@@ -27,9 +26,6 @@ export function MapPicker({ open, onClose, onConfirm, initialLat = 25.2048, init
   }, [lat, lng, onConfirm]);
 
   if (!open) return null;
-
-  // Use OpenStreetMap embed for the map view
-  const mapUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${lng - 0.005},${lat - 0.005},${lng + 0.005},${lat + 0.005}&layer=mapnik&marker=${lat},${lng}`;
 
   return (
     <div className="fixed inset-0 z-[100] bg-background flex flex-col safe-area-inset">
@@ -47,18 +43,23 @@ export function MapPicker({ open, onClose, onConfirm, initialLat = 25.2048, init
       {/* Info */}
       <Card className="mx-4 mt-3 p-3 border-amber-500/30 bg-amber-500/5">
         <p className="text-xs text-muted-foreground">
-          GPS signal is weak. Please manually position the marker on your current location by adjusting coordinates, then confirm.
+          GPS signal is weak. Confirm the captured coordinates below, or adjust them if needed. This works even when the phone is offline.
         </p>
       </Card>
 
-      {/* Map iframe */}
-      <div className="flex-1 mx-4 mt-3 rounded-xl overflow-hidden border border-border/50">
-        <iframe
-          src={mapUrl}
-          className="w-full h-full border-0"
-          title="Location picker"
-          loading="lazy"
-        />
+      {/* Offline-safe coordinate view */}
+      <div className="flex-1 mx-4 mt-3 rounded-xl overflow-hidden border border-border/50 bg-card flex flex-col items-center justify-center px-6 text-center">
+        <div className="relative mb-5 flex h-28 w-28 items-center justify-center rounded-full border border-brand/30 bg-brand/10">
+          <div className="absolute h-20 w-20 rounded-full border border-brand/20" />
+          <MapPin className="h-12 w-12 text-brand" />
+        </div>
+        <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2">
+          <WifiOff className="h-4 w-4 text-amber-500" />
+          <span className="text-xs font-medium text-foreground">Map unavailable offline</span>
+        </div>
+        <p className="mt-3 max-w-xs text-xs leading-relaxed text-muted-foreground">
+          We will save these coordinates with the work action and sync them when internet returns.
+        </p>
       </div>
 
       {/* Coordinate inputs */}
