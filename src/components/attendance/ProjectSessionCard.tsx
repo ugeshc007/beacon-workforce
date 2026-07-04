@@ -19,8 +19,10 @@ export function ProjectSessionCard({
 }) {
   const returnTravel = session.return_travel_start_time ?? fallbackReturnTravelTime ?? null;
   const officeArrival = fallbackOfficeArrivalTime ?? null;
-  // In-house sessions never travel — detect when work started without any travel/arrival timestamp.
-  const isInHouse = !session.travel_start_time && !session.site_arrival_time && !returnTravel;
+  // Schedule/session location is authoritative. Only fall back to timestamp
+  // inference for older rows where the location cannot be resolved.
+  const isInHouse = session.work_location === "in_house"
+    || (!session.work_location && !session.travel_start_time && !session.site_arrival_time && !returnTravel);
   const allSteps: { label: string; time: string | null; distance?: number | null; valid?: boolean | null }[] = [
     { label: "Travel Start", time: session.travel_start_time },
     { label: "Site Arrival", time: session.site_arrival_time, distance: session.site_arrival_distance_m, valid: session.site_arrival_valid },
@@ -46,6 +48,11 @@ export function ProjectSessionCard({
           <p className="text-sm font-semibold text-foreground">{session.projects?.name ?? "Project"}</p>
         </div>
         <div className="flex items-center gap-2">
+          {session.work_location && (
+            <Badge variant="outline" className="text-[10px]">
+              {session.work_location === "site" ? "Site" : "In-House"}
+            </Badge>
+          )}
           <Badge variant="outline" className="text-[10px]">{session.status ?? "—"}</Badge>
           <span className="text-[11px] font-mono text-muted-foreground">{totalH}h · OT {otH}h</span>
         </div>

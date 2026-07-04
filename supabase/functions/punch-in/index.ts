@@ -77,16 +77,36 @@ Deno.serve(async (req) => {
 
 
 
-    // Get today's assignment for project_id and shift_start
-    const { data: assignment } = await supabase
+    // Get today's assignments. With multiple shifts, choose the shift matching
+    // the punch time instead of relying on an unordered LIMIT 1.
+    const { data: assignments } = await supabase
       .from("project_assignments")
-      .select("project_id, shift_start")
+      .select("project_id, shift_start, shift_end")
       .eq("employee_id", employee_id)
       .eq("date", today)
-      .limit(1)
-      .maybeSingle();
+      .order("shift_start", { ascending: true, nullsFirst: false });
 
     const now = resolveTimestamp(client_timestamp);
+    const nowInUae = new Date(new Date(now).getTime() + 4 * 60 * 60 * 1000);
+    const nowMinutes = nowInUae.getUTCHours() * 60 + nowInUae.getUTCMinutes();
+    const toMinutes = (value: string | null | undefined) => {
+      if (!value) return null;
+      const [h, m] = value.split(":").map(Number);
+      if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
+      return h * 60 + m;
+    };
+    const assignment = (assignments ?? []).find((a) => {
+      const start = toMinutes(a.shift_start);
+      const end = toMinutes(a.shift_end);
+      if (start == null) return false;
+      if (end == null) return nowMinutes >= start;
+      return end < start
+        ? nowMinutes >= start || nowMinutes <= end
+        : nowMinutes >= start && nowMinutes <= end;
+    }) ?? (assignments ?? []).find((a) => {
+      const start = toMinutes(a.shift_start);
+      return start != null && start >= nowMinutes;
+    }) ?? (assignments ?? [])[0] ?? null;
     const dup = await checkIdempotency(supabase, idempotency_key, employee_id, "punch-in");
     if (dup) return dup;
 

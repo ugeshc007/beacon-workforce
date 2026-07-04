@@ -4,7 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 export interface ProjectWorkSession {
   id: string;
   attendance_log_id: string;
+  employee_id: string;
   project_id: string;
+  date: string;
   status: string | null;
   travel_start_time: string | null;
   travel_start_lat: number | null;
@@ -22,7 +24,12 @@ export interface ProjectWorkSession {
   return_travel_start_time: string | null;
   total_work_minutes: number | null;
   overtime_minutes: number | null;
-  projects?: { name: string | null } | null;
+  work_location?: "in_house" | "site" | null;
+  projects?: {
+    name: string | null;
+    site_latitude?: number | null;
+    site_longitude?: number | null;
+  } | null;
 }
 
 export function useProjectSessions(attendanceLogId: string | null | undefined) {
@@ -32,11 +39,49 @@ export function useProjectSessions(attendanceLogId: string | null | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("project_work_sessions")
-        .select("*, projects(name)")
+        .select("*, projects(name, site_latitude, site_longitude)")
         .eq("attendance_log_id", attendanceLogId!)
         .order("created_at", { ascending: true });
       if (error) throw error;
-      return (data ?? []) as unknown as ProjectWorkSession[];
+      const sessions = (data ?? []) as unknown as ProjectWorkSession[];
+      const projectIds = Array.from(new Set(sessions.map((s) => s.project_id).filter(Boolean)));
+      const employeeId = sessions[0]?.employee_id;
+      const sessionDate = sessions[0]?.date;
+      if (!employeeId || !sessionDate || projectIds.length === 0) return sessions;
+
+      const [{ data: assignments }, { data: dayLocs }] = await Promise.all([
+        supabase
+          .from("project_assignments")
+          .select("project_id, work_location")
+          .eq("employee_id", employeeId)
+          .eq("date", sessionDate)
+          .in("project_id", projectIds),
+        supabase
+          .from("project_day_work_locations")
+          .select("project_id, location")
+          .eq("date", sessionDate)
+          .in("project_id", projectIds),
+      ]);
+
+      const assignmentLocByProject = new Map<string, "in_house" | "site">();
+      for (const assignment of assignments ?? []) {
+        if (assignment.work_location && !assignmentLocByProject.has(assignment.project_id)) {
+          assignmentLocByProject.set(assignment.project_id, assignment.work_location as "in_house" | "site");
+        }
+      }
+      const dayLocByProject = new Map(
+        (dayLocs ?? []).map((d: any) => [d.project_id, d.location as "in_house" | "site"]),
+      );
+
+      return sessions.map((session) => {
+        const explicitLoc = assignmentLocByProject.get(session.project_id) ?? dayLocByProject.get(session.project_id) ?? null;
+        const project = session.projects;
+        const hasCoords = project?.site_latitude != null && project?.site_longitude != null;
+        return {
+          ...session,
+          work_location: explicitLoc ?? (hasCoords ? "site" : "in_house"),
+        };
+      });
     },
   });
 }

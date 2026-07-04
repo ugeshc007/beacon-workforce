@@ -196,9 +196,19 @@ export default function Attendance() {
                     const sl = statusLabel[status];
                     const breakMin = log.break_minutes ?? 0;
 
-                    // Resolve work location: explicit value, else infer from travel data.
-                    // Any travel/site arrival on log or sessions → site; otherwise in-house.
+                    // Resolve work location from schedule/session data first.
+                    // If there are project sessions, they are the source of truth
+                    // for multi-shift days; the daily attendance log project_id may
+                    // point at another shift.
                     const sessionsArr = (log as any).sessions as Array<any> | undefined;
+                    const sessionLocations = (sessionsArr ?? [])
+                      .map((s) => s.work_location)
+                      .filter((loc): loc is "in_house" | "site" => loc === "in_house" || loc === "site");
+                    const sessionResolvedLoc: "in_house" | "site" | null = sessionLocations.includes("site")
+                      ? "site"
+                      : sessionLocations.length > 0
+                      ? "in_house"
+                      : null;
                     const hasAnyTravel =
                       !!log.travel_start_time ||
                       !!log.site_arrival_time ||
@@ -211,7 +221,7 @@ export default function Attendance() {
                       !!sessionsArr?.some((s) => s.work_start_time);
                     const explicitLoc = (log as any).work_location as "in_house" | "site" | null | undefined;
                     const resolvedLoc: "in_house" | "site" | null =
-                      explicitLoc ?? (hasAnyTravel ? "site" : hasAnyWork ? "in_house" : null);
+                      sessionResolvedLoc ?? explicitLoc ?? (hasAnyTravel ? "site" : hasAnyWork ? "in_house" : null);
 
                     return (
                       <tr key={log.id} className="border-b border-border/50 last:border-0 hover:bg-accent/30 transition-colors cursor-pointer" onClick={() => setDetailLog(log)}>
