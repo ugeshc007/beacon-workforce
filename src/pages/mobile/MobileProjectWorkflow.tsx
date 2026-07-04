@@ -25,7 +25,10 @@ import { Card } from "@/components/ui/card";
 import { Loader2, MapPin, Clock, ArrowLeft, CheckCircle2, Crosshair, ArrowRight, RotateCcw, X, Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-const GPS_ACTIONS: ProjectAction[] = ["start_travel", "arrive_site"];
+// GPS is captured at start_travel only; arrive_site no longer requires a fresh fix
+// (the travel start already proved the phone had location, and the server accepts
+// arrive_site without lat/lng — distance validation just skips when missing).
+const GPS_ACTIONS: ProjectAction[] = ["start_travel"];
 
 export default function MobileProjectWorkflow() {
   const { projectId } = useParams<{ projectId: string }>();
