@@ -78,10 +78,6 @@ export function useAttendanceLogs(filters: {
         .eq("date", filters.date)
         .order("office_punch_in", { ascending: true, nullsFirst: false });
 
-      if (filters.projectId && filters.projectId !== "all") {
-        query = query.eq("project_id", filters.projectId);
-      }
-
       const { data, error } = await query;
       if (error) throw error;
 
@@ -121,6 +117,7 @@ export function useAttendanceLogs(filters: {
         ...sessionProjectIds,
       ]));
       let locMap = new Map<string, "in_house" | "site">();
+      let assignmentLocMap = new Map<string, "in_house" | "site">();
       if (projectIds.length > 0) {
         const { data: locs } = await supabase
           .from("project_day_work_locations")
@@ -129,17 +126,19 @@ export function useAttendanceLogs(filters: {
           .in("project_id", projectIds);
         locMap = new Map((locs ?? []).map((l: any) => [l.project_id, l.location]));
 
-        // Fallback: use the day's project_assignments.work_location when no override row exists.
-        const missing = projectIds.filter((pid) => !locMap.has(pid));
-        if (missing.length > 0) {
+        // Per-assignment location is employee-specific, so key by employee+project.
+        // A project-level day override remains the fallback for older/global schedules.
+        const employeeIds = Array.from(new Set(results.map((r) => r.employee_id).filter(Boolean) as string[]));
+        if (employeeIds.length > 0) {
           const { data: assigns } = await supabase
             .from("project_assignments")
-            .select("project_id, work_location")
+            .select("employee_id, project_id, work_location")
             .eq("date", filters.date)
-            .in("project_id", missing);
+            .in("project_id", projectIds)
+            .in("employee_id", employeeIds);
           for (const a of assigns ?? []) {
-            if (a.work_location && !locMap.has(a.project_id)) {
-              locMap.set(a.project_id, a.work_location as "in_house" | "site");
+            if (a.work_location) {
+              assignmentLocMap.set(`${a.employee_id}:${a.project_id}`, a.work_location as "in_house" | "site");
             }
           }
         }
@@ -148,7 +147,9 @@ export function useAttendanceLogs(filters: {
       results = results.map((r) => {
         const sessions = (sessionsByLog.get(r.id) ?? []).map((s) => ({
           ...s,
-          work_location: s.project_id ? (locMap.get(s.project_id) ?? null) : null,
+          work_location: s.project_id
+            ? (assignmentLocMap.get(`${r.employee_id}:${s.project_id}`) ?? locMap.get(s.project_id) ?? null)
+            : null,
         }));
         const sessionLocations = sessions
           .map((s) => s.work_location)
@@ -164,10 +165,19 @@ export function useAttendanceLogs(filters: {
           // Per-project sessions are the source of truth on multi-shift days.
           // attendance_logs.project_id is only a daily/open-punch hint and can
           // point at a different shift when the employee has multiple projects.
-          work_location: sessionResolvedLocation ?? (r.project_id ? (locMap.get(r.project_id) ?? null) : null),
+          work_location: sessionResolvedLocation ?? (r.project_id
+            ? (assignmentLocMap.get(`${r.employee_id}:${r.project_id}`) ?? locMap.get(r.project_id) ?? null)
+            : null),
           sessions,
         };
       });
+
+      if (filters.projectId && filters.projectId !== "all") {
+        results = results.filter((r) =>
+          r.project_id === filters.projectId ||
+          r.sessions?.some((s) => s.project_id === filters.projectId)
+        );
+      }
 
       if (filters.search) {
         const s = filters.search.toLowerCase();
