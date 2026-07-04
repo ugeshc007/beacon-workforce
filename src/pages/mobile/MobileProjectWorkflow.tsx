@@ -11,7 +11,8 @@ import {
   projectStepColors,
 } from "@/lib/project-workflow-engine";
 import { actionLabels as officeActionLabels } from "@/lib/workflow-engine";
-import { getGpsPosition, getLastKnownGpsReading, qualityColor, qualityLabel, GpsReading } from "@/lib/gps";
+import { getGpsPosition, getLastKnownGpsReading, qualityColor, qualityLabel } from "@/lib/gps";
+import type { GpsReading } from "@/lib/gps";
 import { HoldToConfirm } from "@/components/mobile/HoldToConfirm";
 import { MapPicker } from "@/components/mobile/MapPicker";
 import { ProjectStepTimeline } from "@/components/mobile/ProjectStepTimeline";
