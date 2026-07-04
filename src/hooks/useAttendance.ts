@@ -145,14 +145,29 @@ export function useAttendanceLogs(filters: {
         }
       }
 
-      results = results.map((r) => ({
-        ...r,
-        work_location: r.project_id ? (locMap.get(r.project_id) ?? null) : null,
-        sessions: (sessionsByLog.get(r.id) ?? []).map((s) => ({
+      results = results.map((r) => {
+        const sessions = (sessionsByLog.get(r.id) ?? []).map((s) => ({
           ...s,
           work_location: s.project_id ? (locMap.get(s.project_id) ?? null) : null,
-        })),
-      }));
+        }));
+        const sessionLocations = sessions
+          .map((s) => s.work_location)
+          .filter((loc): loc is "in_house" | "site" => loc === "in_house" || loc === "site");
+        const sessionResolvedLocation: "in_house" | "site" | null = sessionLocations.includes("site")
+          ? "site"
+          : sessionLocations.length > 0
+          ? "in_house"
+          : null;
+
+        return {
+          ...r,
+          // Per-project sessions are the source of truth on multi-shift days.
+          // attendance_logs.project_id is only a daily/open-punch hint and can
+          // point at a different shift when the employee has multiple projects.
+          work_location: sessionResolvedLocation ?? (r.project_id ? (locMap.get(r.project_id) ?? null) : null),
+          sessions,
+        };
+      });
 
       if (filters.search) {
         const s = filters.search.toLowerCase();

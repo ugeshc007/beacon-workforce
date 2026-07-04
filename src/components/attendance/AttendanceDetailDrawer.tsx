@@ -40,10 +40,15 @@ interface TimelineStep {
 export function AttendanceDetailDrawer({ log, open, onOpenChange }: Props) {
   const { data: sessions = [] } = useProjectSessions(log?.id);
   if (!log) return null;
+  const logSessionLocations = new Map((log.sessions ?? []).map((s) => [s.id, s.work_location ?? null]));
+  const resolvedSessions = sessions.map((s) => ({
+    ...s,
+    work_location: s.work_location ?? logSessionLocations.get(s.id) ?? null,
+  }));
 
   // Fallback: if office punch-out / work-end not recorded on the main log
   // (employee used the per-project flow), derive from the latest session.
-  const sessionTimes = sessions
+  const sessionTimes = resolvedSessions
     .map((s) => s.work_end_time)
     .filter((t): t is string => !!t)
     .sort();
@@ -53,17 +58,17 @@ export function AttendanceDetailDrawer({ log, open, onOpenChange }: Props) {
 
   // Fallback: if travel/site-arrival aren't on the attendance log (per-project flow),
   // use the earliest session's values so the top timeline reflects them.
-  const sessionsByTravel = [...sessions]
+  const sessionsByTravel = [...resolvedSessions]
     .filter((s) => !!s.travel_start_time)
     .sort((a, b) => (a.travel_start_time! < b.travel_start_time! ? -1 : 1));
-  const sessionsByArrival = [...sessions]
+  const sessionsByArrival = [...resolvedSessions]
     .filter((s) => !!s.site_arrival_time)
     .sort((a, b) => (a.site_arrival_time! < b.site_arrival_time! ? -1 : 1));
   const firstTravel = sessionsByTravel[0];
   const firstArrival = sessionsByArrival[0];
 
   // In-House = no project assigned and no project sessions. Hide site/travel rows.
-  const isInHouse = !log.project_id && sessions.length === 0;
+  const isInHouse = !log.project_id && resolvedSessions.length === 0;
 
 
   const allSteps: TimelineStep[] = [
@@ -100,25 +105,25 @@ export function AttendanceDetailDrawer({ log, open, onOpenChange }: Props) {
 
     {
       label: "Work Start",
-      time: (sessions.length === 1 ? sessions[0].work_start_time : null) ?? log.work_start_time,
+      time: (resolvedSessions.length === 1 ? resolvedSessions[0].work_start_time : null) ?? log.work_start_time,
       color: "text-status-present",
       icon: <CheckCircle2 className="h-4 w-4" />,
     },
     {
       label: "Break Start",
-      time: (sessions.length === 1 ? sessions[0].break_start_time : null) ?? log.break_start_time,
+      time: (resolvedSessions.length === 1 ? resolvedSessions[0].break_start_time : null) ?? log.break_start_time,
       color: "text-muted-foreground",
       icon: <Clock className="h-4 w-4" />,
     },
     {
       label: "Break End",
-      time: (sessions.length === 1 ? sessions[0].break_end_time : null) ?? log.break_end_time,
+      time: (resolvedSessions.length === 1 ? resolvedSessions[0].break_end_time : null) ?? log.break_end_time,
       color: "text-muted-foreground",
       icon: <Clock className="h-4 w-4" />,
     },
     {
       label: "Work End",
-      time: (sessions.length === 1 ? sessions[0].work_end_time : null) ?? effectiveWorkEnd,
+      time: (resolvedSessions.length === 1 ? resolvedSessions[0].work_end_time : null) ?? effectiveWorkEnd,
       color: "text-status-overtime",
       icon: <Clock className="h-4 w-4" />,
     },
@@ -140,7 +145,7 @@ export function AttendanceDetailDrawer({ log, open, onOpenChange }: Props) {
   // rows from the top timeline — they're already shown per session below.
   const hiddenWhenSessions = new Set(["Work Start", "Break Start", "Break End", "Work End"]);
   let steps = isInHouse ? allSteps.filter((s) => !hiddenInHouse.has(s.label)) : allSteps;
-  if (sessions.length > 0) {
+  if (resolvedSessions.length > 0) {
     steps = steps.filter((s) => !hiddenWhenSessions.has(s.label));
   }
 
@@ -249,21 +254,21 @@ export function AttendanceDetailDrawer({ log, open, onOpenChange }: Props) {
         </div>
 
         {/* Per-project sessions (when employee used Project flow) */}
-        {sessions.length > 0 && (
+        {resolvedSessions.length > 0 && (
           <div className="mt-6">
             <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-              <Briefcase className="h-4 w-4" /> Project Sessions ({sessions.length})
+              <Briefcase className="h-4 w-4" /> Project Sessions ({resolvedSessions.length})
             </h3>
             <div className="space-y-4">
-              {sessions.map((s, idx) => (
+              {resolvedSessions.map((s, idx) => (
                 <ProjectSessionCard
                   key={s.id}
                   session={s}
                   index={idx + 1}
-                  fallbackReturnTravelTime={idx === sessions.length - 1 ? (log as any).return_travel_start_time ?? null : null}
-                  fallbackOfficeArrivalTime={idx === sessions.length - 1 ? (log as any).office_arrival_time ?? null : null}
-                  fallbackOfficeArrivalDistance={idx === sessions.length - 1 ? (log as any).office_arrival_distance_m ?? null : null}
-                  fallbackOfficeArrivalValid={idx === sessions.length - 1 ? (log as any).office_arrival_valid ?? null : null}
+                  fallbackReturnTravelTime={idx === resolvedSessions.length - 1 ? (log as any).return_travel_start_time ?? null : null}
+                  fallbackOfficeArrivalTime={idx === resolvedSessions.length - 1 ? (log as any).office_arrival_time ?? null : null}
+                  fallbackOfficeArrivalDistance={idx === resolvedSessions.length - 1 ? (log as any).office_arrival_distance_m ?? null : null}
+                  fallbackOfficeArrivalValid={idx === resolvedSessions.length - 1 ? (log as any).office_arrival_valid ?? null : null}
                 />
               ))}
 
