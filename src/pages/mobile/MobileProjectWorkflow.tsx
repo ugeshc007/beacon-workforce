@@ -11,7 +11,8 @@ import {
   projectStepColors,
 } from "@/lib/project-workflow-engine";
 import { actionLabels as officeActionLabels } from "@/lib/workflow-engine";
-import { getGpsPosition, qualityColor, qualityLabel } from "@/lib/gps";
+import { getGpsPosition, getLastKnownGpsReading, qualityColor, qualityLabel } from "@/lib/gps";
+import type { GpsReading } from "@/lib/gps";
 import { HoldToConfirm } from "@/components/mobile/HoldToConfirm";
 import { MapPicker } from "@/components/mobile/MapPicker";
 import { ProjectStepTimeline } from "@/components/mobile/ProjectStepTimeline";
@@ -42,6 +43,7 @@ export default function MobileProjectWorkflow() {
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [pendingAction, setPendingAction] = useState<ProjectAction | null>(null);
   const [pendingOfficeAction, setPendingOfficeAction] = useState<WorkflowAction | null>(null);
+  const [mapInitialCoords, setMapInitialCoords] = useState({ lat: 25.2048, lng: 55.2708 });
   const [resumeDismissed, setResumeDismissed] = useState(false);
   const [pulse, setPulse] = useState(false);
   // Declared BEFORE early return so hooks order stays stable (prevents black screen).
@@ -73,6 +75,29 @@ export default function MobileProjectWorkflow() {
   }, [step, loading]);
 
   const project = todayProjects?.find((p) => p.projectId === projectId);
+
+  const getLocationFallbackCoords = (reading?: GpsReading | null) => {
+    if (reading) return { lat: reading.lat, lng: reading.lng };
+    const lastKnown = getLastKnownGpsReading();
+    if (lastKnown) return { lat: lastKnown.lat, lng: lastKnown.lng };
+    return { lat: project?.siteLat || 25.2048, lng: project?.siteLng || 55.2708 };
+  };
+
+  const requestManualLocation = (reading?: GpsReading | null) => {
+    setMapInitialCoords(getLocationFallbackCoords(reading));
+    setShowMapPicker(true);
+  };
+
+  const retryGpsForPicker = async () => {
+    const gps = await getGpsPosition();
+    setGpsQuality(gps.quality);
+    if (gps.reading) {
+      toast({ title: "GPS updated", description: `Accuracy: ${Math.round(gps.reading.accuracy)}m` });
+      return { lat: gps.reading.lat, lng: gps.reading.lng };
+    }
+    toast({ title: "GPS still unavailable", description: "Confirm the shown coordinates or try again outside." });
+    return null;
+  };
 
   // Detect if we restored an in-progress session (anything past idle and not finished)
   const isResumed = !loading && !!session && step !== "idle" && step !== "completed";
@@ -111,9 +136,9 @@ export default function MobileProjectWorkflow() {
       // reading (denied, timeout, low accuracy), fall back to the map picker
       // instead of submitting an empty payload (which causes "Employee id,
       // Lat & lng required" 400 errors).
-      if (!gps.reading) {
+      if (!gps.reading || gps.needsMapFallback) {
         setPendingAction(action);
-        setShowMapPicker(true);
+        requestManualLocation(gps.reading);
         return;
       }
       payload = { lat: gps.reading.lat, lng: gps.reading.lng };
@@ -134,10 +159,10 @@ export default function MobileProjectWorkflow() {
     if (OFFICE_GPS_ACTIONS.includes(action)) {
       const gps = await getGpsPosition();
       setGpsQuality(gps.quality);
-      if (!gps.reading) {
+      if (!gps.reading || gps.needsMapFallback) {
         // Fall back to map picker so we never submit an empty lat/lng to the server.
         setPendingOfficeAction(action);
-        setShowMapPicker(true);
+        requestManualLocation(gps.reading);
         return;
       }
       payload = { lat: gps.reading.lat, lng: gps.reading.lng, accuracy: gps.reading.accuracy };
@@ -378,8 +403,9 @@ export default function MobileProjectWorkflow() {
         open={showMapPicker}
         onClose={() => { setShowMapPicker(false); setPendingAction(null); setPendingOfficeAction(null); }}
         onConfirm={handleMapConfirm}
-        initialLat={project?.siteLat || 25.2048}
-        initialLng={project?.siteLng || 55.2708}
+        onRetry={retryGpsForPicker}
+        initialLat={mapInitialCoords.lat}
+        initialLng={mapInitialCoords.lng}
       />
 
       {retroProjectAction && (() => {

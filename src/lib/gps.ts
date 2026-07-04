@@ -21,11 +21,37 @@ export interface GpsResult {
 const HIGH_ACCURACY = 20;
 const MEDIUM_ACCURACY = 50;
 const MAP_FALLBACK_THRESHOLD = 100;
+const LAST_GPS_STORAGE_KEY = "bebright_last_gps_reading";
 
 function classifyAccuracy(accuracy: number): GpsResult["quality"] {
   if (accuracy <= HIGH_ACCURACY) return "high";
   if (accuracy <= MEDIUM_ACCURACY) return "medium";
   return "low";
+}
+
+function rememberGpsReading(reading: GpsReading) {
+  if (typeof localStorage === "undefined") return;
+  try {
+    localStorage.setItem(LAST_GPS_STORAGE_KEY, JSON.stringify(reading));
+  } catch {
+    // Best-effort cache only.
+  }
+}
+
+export function getLastKnownGpsReading(maxAgeMs = 24 * 60 * 60 * 1000): GpsReading | null {
+  if (typeof localStorage === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(LAST_GPS_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as GpsReading;
+    const hasValidCoords = Number.isFinite(parsed.lat) && Number.isFinite(parsed.lng);
+    const hasValidTimestamp = Number.isFinite(parsed.timestamp);
+    if (!hasValidCoords || !hasValidTimestamp) return null;
+    if (Date.now() - parsed.timestamp > maxAgeMs) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -62,6 +88,7 @@ export async function getGpsPosition(timeoutMs = 15000): Promise<GpsResult> {
         };
 
         const quality = classifyAccuracy(reading.accuracy);
+        rememberGpsReading(reading);
         return {
           reading,
           quality,
@@ -94,6 +121,7 @@ export async function getGpsPosition(timeoutMs = 15000): Promise<GpsResult> {
     };
 
     const quality = classifyAccuracy(reading.accuracy);
+    rememberGpsReading(reading);
     return {
       reading,
       quality,

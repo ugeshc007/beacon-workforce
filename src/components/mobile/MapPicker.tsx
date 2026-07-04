@@ -1,35 +1,51 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { MapPin, X, Check } from "lucide-react";
+import { MapPin, X, Check, WifiOff, RotateCcw } from "lucide-react";
 
 interface MapPickerProps {
   open: boolean;
   onClose: () => void;
   onConfirm: (lat: number, lng: number) => void;
+  onRetry?: () => Promise<{ lat: number; lng: number } | null>;
   initialLat?: number;
   initialLng?: number;
 }
 
 /**
- * Lightweight map fallback for when GPS is unavailable or inaccurate.
- * Opens an embedded OpenStreetMap iframe with a pin-drop UI.
- * User can drag the map and tap "Confirm Location" to set their position.
+ * Offline-safe location fallback for when GPS is unavailable or inaccurate.
+ * Avoids internet map embeds so workers can still confirm coordinates offline.
  */
-export function MapPicker({ open, onClose, onConfirm, initialLat = 25.2048, initialLng = 55.2708 }: MapPickerProps) {
+export function MapPicker({ open, onClose, onConfirm, onRetry, initialLat = 25.2048, initialLng = 55.2708 }: MapPickerProps) {
   const [lat, setLat] = useState(initialLat);
   const [lng, setLng] = useState(initialLng);
   const [confirmed, setConfirmed] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setLat(initialLat);
+    setLng(initialLng);
+    setConfirmed(false);
+  }, [initialLat, initialLng, open]);
 
   const handleConfirm = useCallback(() => {
     setConfirmed(true);
     onConfirm(lat, lng);
   }, [lat, lng, onConfirm]);
 
-  if (!open) return null;
+  const handleRetry = useCallback(async () => {
+    if (!onRetry) return;
+    setRetrying(true);
+    const reading = await onRetry();
+    if (reading) {
+      setLat(reading.lat);
+      setLng(reading.lng);
+    }
+    setRetrying(false);
+  }, [onRetry]);
 
-  // Use OpenStreetMap embed for the map view
-  const mapUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${lng - 0.005},${lat - 0.005},${lng + 0.005},${lat + 0.005}&layer=mapnik&marker=${lat},${lng}`;
+  if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-[100] bg-background flex flex-col safe-area-inset">
@@ -47,22 +63,40 @@ export function MapPicker({ open, onClose, onConfirm, initialLat = 25.2048, init
       {/* Info */}
       <Card className="mx-4 mt-3 p-3 border-amber-500/30 bg-amber-500/5">
         <p className="text-xs text-muted-foreground">
-          GPS signal is weak. Please manually position the marker on your current location by adjusting coordinates, then confirm.
+          GPS signal is weak. Confirm the captured coordinates below, or adjust them if needed. This works even when the phone is offline.
         </p>
       </Card>
 
-      {/* Map iframe */}
-      <div className="flex-1 mx-4 mt-3 rounded-xl overflow-hidden border border-border/50">
-        <iframe
-          src={mapUrl}
-          className="w-full h-full border-0"
-          title="Location picker"
-          loading="lazy"
-        />
+      {/* Offline-safe coordinate view */}
+      <div className="flex-1 mx-4 mt-3 rounded-xl overflow-hidden border border-border/50 bg-card flex flex-col items-center justify-center px-6 text-center">
+        <div className="relative mb-5 flex h-28 w-28 items-center justify-center rounded-full border border-brand/30 bg-brand/10">
+          <div className="absolute h-20 w-20 rounded-full border border-brand/20" />
+          <MapPin className="h-12 w-12 text-brand" />
+        </div>
+        <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2">
+          <WifiOff className="h-4 w-4 text-amber-500" />
+          <span className="text-xs font-medium text-foreground">Map unavailable offline</span>
+        </div>
+        <p className="mt-3 max-w-xs text-xs leading-relaxed text-muted-foreground">
+          We will save these coordinates with the work action and sync them when internet returns.
+        </p>
       </div>
 
       {/* Coordinate inputs */}
-      <div className="px-4 mt-3 flex gap-2">
+      <div className="px-4 mt-3 space-y-3">
+        {onRetry && (
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full h-10"
+            onClick={handleRetry}
+            disabled={retrying || confirmed}
+          >
+            <RotateCcw className={`mr-2 h-4 w-4 ${retrying ? "animate-spin" : ""}`} />
+            Retry GPS
+          </Button>
+        )}
+        <div className="flex gap-2">
         <div className="flex-1">
           <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Latitude</label>
           <input
@@ -82,6 +116,7 @@ export function MapPicker({ open, onClose, onConfirm, initialLat = 25.2048, init
             onChange={(e) => setLng(parseFloat(e.target.value) || 0)}
             className="w-full h-9 px-2 rounded-lg bg-card border border-border/50 text-sm text-foreground"
           />
+        </div>
         </div>
       </div>
 
