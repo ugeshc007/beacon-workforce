@@ -194,7 +194,26 @@ export default function Attendance() {
                     const otDisplay = otMin > 0 ? formatWorkedMinutes(otMin) : "0m";
                     const status = deriveStatus(log);
                     const sl = statusLabel[status];
-                    const breakMin = log.break_minutes ?? 0;
+
+                    // Fall back to project_work_sessions when the daily log's
+                    // site_arrival / break fields are empty (mobile flow writes
+                    // to sessions, not the parent log).
+                    const sessionsForDisplay = (log as any).sessions as Array<any> | undefined;
+                    const siteArrivalDisplay = log.site_arrival_time
+                      ?? sessionsForDisplay?.map((s) => s.site_arrival_time).filter(Boolean).sort()[0]
+                      ?? null;
+                    let breakMin = log.break_minutes ?? 0;
+                    if (!breakMin && sessionsForDisplay?.length) {
+                      let sum = 0;
+                      for (const s of sessionsForDisplay) {
+                        if (s.break_start_time && s.break_end_time) {
+                          sum += Math.max(0, Math.round(
+                            (new Date(s.break_end_time).getTime() - new Date(s.break_start_time).getTime()) / 60000
+                          ));
+                        }
+                      }
+                      breakMin = sum;
+                    }
 
                     // Resolve work location from schedule/session data first.
                     // If there are project sessions, they are the source of truth
@@ -248,7 +267,7 @@ export default function Attendance() {
 
 
                         <td className="py-2.5 font-mono text-xs text-muted-foreground">{fmt(log.office_punch_in)}</td>
-                        <td className="py-2.5 font-mono text-xs text-muted-foreground">{fmt(log.site_arrival_time)}</td>
+                        <td className="py-2.5 font-mono text-xs text-muted-foreground">{fmt(siteArrivalDisplay)}</td>
                         <td className="py-2.5 font-mono text-xs text-muted-foreground">
                           {fmt(log.work_start_time)}
                           {log.work_end_time && <span className="text-muted-foreground/50"> – {fmt(log.work_end_time)}</span>}
