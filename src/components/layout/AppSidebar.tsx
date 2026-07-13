@@ -51,6 +51,7 @@ const reportNav = [
   { title: "Schedule", url: "/reports/schedule", icon: BarChart3 },
   { title: "Utilization", url: "/reports/utilization", icon: BarChart3 },
   { title: "Cost Reports", url: "/reports/costs", icon: BarChart3 },
+  { title: "Idle Time", url: "/reports/idle-time", icon: BarChart3 },
   { title: "Executive", url: "/reports/executive", icon: BarChart3 },
   { title: "All Reports", url: "/reports", icon: BarChart3 },
 ];
