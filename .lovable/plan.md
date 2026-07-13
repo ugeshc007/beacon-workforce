@@ -1,36 +1,85 @@
-## Reason this keeps repeating
 
-The previous fix corrected the display logic, but the underlying data model is still inconsistent for multi-shift days:
+# Idle Time Report
 
-- `project_assignments` stores the correct schedule value: each shift can be `site` or `in_house`.
-- `attendance_logs` does not store `work_location` and has only one `project_id` for the whole day/open punch.
-- When an employee has multiple shifts on the same day, the attendance log can point to one project, while the actual `project_work_sessions` contain another project.
-- Today’s data shows exactly that: the employee has a site shift first and an in-house shift later; the attendance row points to the in-house project, while the session records include the site project.
-- The Attendance page currently uses the attendance log’s single `project_id` first, so the row can show `In-House` even though the actual session being worked was `Site`.
+A new report that measures **idle time** (unproductive minutes) inside every employee's paid shift, so managers can spot people who punched in but didn't actually work.
 
-So it is not permanently fixed because the app is still deriving the attendance location from a single daily attendance row, instead of using the actual per-shift/per-project session as the source of truth.
+## What counts as idle time
 
-## Permanent fix plan
+For each attendance log (one employee, one shift):
 
-1. Update Attendance listing logic
-   - If a log has project sessions, derive the Job badge from those sessions first.
-   - Show `Site` if any session for that attendance log is site.
-   - Show `In-House` only when all sessions are in-house.
-   - Only fall back to `attendance_logs.project_id` when there are no project sessions.
+```text
+Shift span   = office_punch_out - office_punch_in
+Productive   = sum of work minutes across their project_work_sessions
+                (work_start_time -> work_end_time, minus breaks)
+             + real travel minutes (site & return)
+Idle time    = Shift span - Productive - Break
+```
 
-2. Update Attendance detail drawer/session cards
-   - Pass each session’s resolved `work_location` into the detail UI.
-   - Stop treating “no travel timestamps” as automatically in-house when the schedule says site.
-   - This prevents a site shift from looking in-house before travel/site arrival is recorded.
+Special cases that make the WHOLE shift idle:
+- Punched in and out but **no project assignment** for that date.
+- Punched in and out but **no work_start_time** was ever recorded (didn't press "Start Work").
+- Long gaps (>30 min) between punch-in and travel start, or between site arrival and work start, are counted as idle.
 
-3. Harden backend source selection
-   - Review punch-in/project workflow functions so they do not overwrite or bias the daily attendance row toward the wrong project on multi-shift days.
-   - Where possible, keep the per-project session as the authoritative project/location record for Attendance.
+Currently-open shifts (no punch-out yet) are excluded from totals but shown as "In progress".
 
-4. Validate with today’s multi-shift example
-   - Confirm the same employee with `08:00–12:00 Site` and `12:18–18:00 In-House` shows correctly.
-   - Confirm Attendance no longer flips back when there are multiple shifts on one date.
+## Report page
 
-## Expected result
+Route: `/reports/idle-time` (new entry in the Reports sidebar).
 
-Attendance will reflect the actual scheduled/session location for each shift, instead of guessing from one daily attendance `project_id`. This should stop the recurring Site/In-House mismatch.
+**Filters (top bar)**
+- Date range (default: last 7 days)
+- Branch / Project / Skill type
+- Employee search
+- Min idle threshold (e.g. show only ≥ 60 min)
+
+**Section 1 — Summary cards**
+- Total idle hours (range)
+- Avg idle per employee per day
+- Employees with any idle time
+- Worst offender (name + hours)
+
+**Section 2 — Employee-wise table** (one row per employee for the range)
+| Employee | Days worked | Shift hrs | Productive hrs | Break hrs | **Idle hrs** | Idle % | Reason mix |
+|---|---|---|---|---|---|---|---|
+| Amin Ansari | 5 | 42.0 | 22.5 | 1.0 | **18.5** | 44% | No work start ×2, Gap ×3 |
+
+- Row click → opens the individual drill-down.
+- Sort by Idle hrs / Idle % / Employee.
+- CSV export button.
+
+**Section 3 — Individual drill-down (drawer)**
+Per selected employee, one card per day:
+- Timeline strip: Punch In → Travel → Site → Work → Break → Work End → Return → Punch Out, with **idle gaps highlighted in red** with their duration.
+- Reason chips: `No project assigned`, `No work started`, `Long pre-travel gap 3h 12m`, `Long site-idle gap 7h 10m` (Amin's case).
+- Totals for the day: Shift / Productive / Break / **Idle**.
+
+## Technical details
+
+**Data source** — read-only aggregation on the client from existing tables:
+- `attendance_logs` (punch in/out, break)
+- `project_work_sessions` (real work + travel windows) joined via `attendance_log_id`
+- `project_assignments` (to detect "no assignment on this date")
+- `employees` (name, code, skill_type, branch)
+
+No schema changes. No new tables.
+
+**New files**
+- `src/hooks/useIdleTimeReport.ts` — react-query hook that pulls the 4 tables for the range and computes idle per (employee, date) client-side. Groups results by employee for the summary.
+- `src/lib/idle-time.ts` — pure calculator: takes one attendance log + its sessions + assignments and returns `{ shiftMin, productiveMin, breakMin, idleMin, reasons[], gaps[] }`. Unit-testable.
+- `src/pages/reports/IdleTimeReport.tsx` — the page (cards + table + CSV export).
+- `src/components/reports/IdleEmployeeDrawer.tsx` — per-employee day-by-day drawer.
+- Add route in `src/App.tsx` and sidebar entry in `src/components/layout/AppSidebar.tsx` (under Reports).
+
+**Gap detection thresholds** (kept in `idle-time.ts` as constants so you can tune later):
+- `PRE_TRAVEL_IDLE_MIN = 30` — punch-in → travel-start gap over this = idle.
+- `SITE_IDLE_MIN = 30` — site-arrival → work-start gap over this = idle.
+- `POST_WORK_IDLE_MIN = 30` — work-end → return-travel gap over this = idle.
+- `RETURN_IDLE_MIN = 30` — at-office → punch-out gap over this = idle.
+
+**Permissions**
+- Guarded by existing `useCanAccess("reports", "can_view")` — same pattern as other reports pages, no new permission row needed.
+
+## Not in scope
+- No changes to punch/work edge functions.
+- No changes to how idle time affects payroll (this is a visibility report only).
+- No push notifications for high idle time — can be a follow-up.
