@@ -267,7 +267,7 @@ export default function Attendance() {
 
 
                         <td className="py-2.5 font-mono text-xs text-muted-foreground">{fmt(log.office_punch_in)}</td>
-                        <td className="py-2.5 font-mono text-xs text-muted-foreground">{fmt(log.site_arrival_time)}</td>
+                        <td className="py-2.5 font-mono text-xs text-muted-foreground">{fmt(siteArrivalDisplay)}</td>
                         <td className="py-2.5 font-mono text-xs text-muted-foreground">
                           {fmt(log.work_start_time)}
                           {log.work_end_time && <span className="text-muted-foreground/50"> – {fmt(log.work_end_time)}</span>}
