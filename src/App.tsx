@@ -40,6 +40,7 @@ import ManpowerReport from "./pages/reports/ManpowerReport";
 import AbsenteeReport from "./pages/reports/AbsenteeReport";
 import ScheduleReport from "./pages/reports/ScheduleReport";
 import SiteVisitsReport from "./pages/reports/SiteVisitsReport";
+import IdleTimeReport from "./pages/reports/IdleTimeReport";
 import SettingsPage from "./pages/SettingsPage";
 import HelpCenter from "./pages/HelpCenter";
 import Maintenance from "./pages/Maintenance";
