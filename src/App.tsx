@@ -40,6 +40,7 @@ import ManpowerReport from "./pages/reports/ManpowerReport";
 import AbsenteeReport from "./pages/reports/AbsenteeReport";
 import ScheduleReport from "./pages/reports/ScheduleReport";
 import SiteVisitsReport from "./pages/reports/SiteVisitsReport";
+import IdleTimeReport from "./pages/reports/IdleTimeReport";
 import SettingsPage from "./pages/SettingsPage";
 import HelpCenter from "./pages/HelpCenter";
 import Maintenance from "./pages/Maintenance";
@@ -148,6 +149,7 @@ const App = () => (
             <Route path="/reports/absentee" element={<ModuleGuard module="reports"><AbsenteeReport /></ModuleGuard>} />
             <Route path="/reports/schedule" element={<ModuleGuard module="reports"><ScheduleReport /></ModuleGuard>} />
             <Route path="/reports/site-visits" element={<ModuleGuard module="reports"><SiteVisitsReport /></ModuleGuard>} />
+            <Route path="/reports/idle-time" element={<ModuleGuard module="reports"><IdleTimeReport /></ModuleGuard>} />
             <Route path="/help" element={<HelpCenter />} />
             <Route path="/audit" element={<ModuleGuard module="settings"><ErrorAudit /></ModuleGuard>} />
             <Route path="/settings" element={<ModuleGuard module="settings"><SettingsPage /></ModuleGuard>} />

@@ -12,6 +12,7 @@ const reports = [
   { title: "Project Manpower", description: "Required vs assigned staff, fill rates, and skill distribution.", icon: Briefcase, path: "/reports/manpower", color: "text-brand bg-brand/10" },
   { title: "Absentee", description: "Absence frequency, leave tracking, unexcused absences, and day-of-week patterns.", icon: CalendarX, path: "/reports/absentee", color: "text-status-absent bg-status-absent/10" },
   { title: "Profitability", description: "Budget vs actual cost, gross margin analysis, and project-level P&L.", icon: TrendingUp, path: "/reports/profitability", color: "text-status-present bg-status-present/10" },
+  { title: "Idle Time", description: "Unproductive minutes inside paid shifts, per employee and per day.", icon: Clock, path: "/reports/idle-time", color: "text-status-absent bg-status-absent/10" },
   { title: "Executive Summary", description: "High-level KPIs, daily cost trend, and company-wide metrics.", icon: BarChart3, path: "/reports/executive", color: "text-status-overtime bg-status-overtime/10" },
 ];
 
