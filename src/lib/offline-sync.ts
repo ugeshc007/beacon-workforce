@@ -188,8 +188,9 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
     for (const item of pending) {
       const grp = groupKey(item);
       const isCreator = CREATOR_ACTIONS.has(item.action_type);
-      if (!isCreator && blockedGroups.has(grp)) {
-        // Skip: prior creator for this group hasn't succeeded yet.
+      if (blockedGroups.has(grp)) {
+        // Skip: an earlier action in this group hasn't succeeded yet.
+        // Preserves FIFO ordering within a session so timestamps replay in order.
         continue;
       }
 
@@ -300,8 +301,10 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
         }
       }
 
-      // If a creator action didn't succeed, block its follow-ups this pass.
-      if (isCreator && !success) {
+      // If this action didn't succeed, block ALL follow-ups in the same
+      // group for this pass — preserves FIFO so later steps don't land
+      // before earlier ones when a middle action failed.
+      if (!success) {
         blockedGroups.add(grp);
       }
     }
