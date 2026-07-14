@@ -16,6 +16,7 @@ import {
 interface SessionRow {
   id: string;
   site_visit_id: string;
+  attendance_log_id: string | null;
   travel_start_time: string | null;
   site_arrival_time: string | null;
   work_start_time: string | null;
@@ -23,6 +24,7 @@ interface SessionRow {
   break_end_time: string | null;
   work_end_time: string | null;
   return_travel_start_time: string | null;
+  office_arrival_time: string | null;
   total_work_minutes: number | null;
 }
 
