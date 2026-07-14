@@ -28,7 +28,10 @@ Deno.serve(async (req) => {
       return jsonResponse(out);
     }
 
-    const now = resolveTimestamp(client_timestamp);
+    let now = resolveTimestamp(client_timestamp);
+    if (new Date(now).getTime() < new Date(session.site_arrival_time).getTime()) {
+      now = session.site_arrival_time;
+    }
     const { error } = await supabase
       .from("site_visit_work_sessions")
       .update({ work_start_time: now })
