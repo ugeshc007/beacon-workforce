@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
 
     const { data: session } = await supabase
       .from("site_visit_work_sessions")
-      .select("id, work_end_time, return_travel_start_time")
+      .select("id, attendance_log_id, work_end_time, return_travel_start_time")
       .eq("id", session_id)
       .eq("employee_id", employee_id)
       .maybeSingle();
@@ -45,6 +45,24 @@ Deno.serve(async (req) => {
       })
       .eq("id", session_id);
     if (error) return errorResponse(error.message, 500);
+
+    // Also stamp parent attendance_log so arrive-office guard passes
+    if (session.attendance_log_id) {
+      const { data: log } = await supabase
+        .from("attendance_logs")
+        .select("return_travel_start_time")
+        .eq("id", session.attendance_log_id)
+        .maybeSingle();
+      if (log && !log.return_travel_start_time) {
+        await supabase
+          .from("attendance_logs")
+          .update({
+            return_travel_start_time: now,
+            ...(hasGps ? { return_travel_start_lat: lat, return_travel_start_lng: lng } : {}),
+          })
+          .eq("id", session.attendance_log_id);
+      }
+    }
 
     const out = { success: true, timestamp: now };
     await recordIdempotencyResult(supabase, idempotency_key, out);

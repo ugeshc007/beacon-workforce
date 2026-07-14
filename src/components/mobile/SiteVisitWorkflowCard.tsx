@@ -25,6 +25,7 @@ const stepIcons: Record<SiteVisitAction, React.ElementType> = {
   end_break: ClipboardList,
   end_visit: CheckCircle2,
   start_return_travel: Truck,
+  arrive_office: Building,
 };
 
 function fmtElapsed(start?: string | null, end?: string | null) {
