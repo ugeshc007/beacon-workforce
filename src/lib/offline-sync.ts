@@ -301,8 +301,10 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
         }
       }
 
-      // If a creator action didn't succeed, block its follow-ups this pass.
-      if (isCreator && !success) {
+      // If this action didn't succeed, block ALL follow-ups in the same
+      // group for this pass — preserves FIFO so later steps don't land
+      // before earlier ones when a middle action failed.
+      if (!success) {
         blockedGroups.add(grp);
       }
     }
