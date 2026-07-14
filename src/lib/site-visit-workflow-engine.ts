@@ -1,10 +1,11 @@
-// Per-site-visit workflow state machine (5 steps after office punch-in)
+// Per-site-visit workflow state machine
 export type SiteVisitStep =
   | "idle"
   | "traveling"
   | "at_site"
   | "surveying"
   | "on_break"
+  | "work_done"
   | "returning"
   | "completed";
 
@@ -15,7 +16,8 @@ export type SiteVisitAction =
   | "start_break"
   | "end_break"
   | "end_visit"
-  | "start_return_travel";
+  | "start_return_travel"
+  | "arrive_office";
 
 const transitions: Record<SiteVisitStep, SiteVisitAction[]> = {
   idle: ["start_travel"],
@@ -23,7 +25,8 @@ const transitions: Record<SiteVisitStep, SiteVisitAction[]> = {
   at_site: ["start_survey"],
   surveying: ["start_break", "end_visit"],
   on_break: ["end_break"],
-  returning: ["start_return_travel"],
+  work_done: ["start_return_travel"],
+  returning: ["arrive_office"],
   completed: [],
 };
 
@@ -39,8 +42,9 @@ export function getNextSiteVisitStep(current: SiteVisitStep, action: SiteVisitAc
     start_survey: "surveying",
     start_break: "on_break",
     end_break: "surveying",
-    end_visit: "returning",
-    start_return_travel: "completed",
+    end_visit: "work_done",
+    start_return_travel: "returning",
+    arrive_office: "completed",
   };
   return map[action];
 }
@@ -53,10 +57,12 @@ export function deriveSiteVisitStep(session: {
   break_end_time?: string | null;
   work_end_time?: string | null;
   return_travel_start_time?: string | null;
+  office_arrival_time?: string | null;
 } | null): SiteVisitStep {
   if (!session) return "idle";
-  if (session.return_travel_start_time) return "completed";
-  if (session.work_end_time) return "returning";
+  if (session.office_arrival_time) return "completed";
+  if (session.return_travel_start_time) return "returning";
+  if (session.work_end_time) return "work_done";
   if (session.break_start_time && !session.break_end_time) return "on_break";
   if (session.work_start_time) return "surveying";
   if (session.site_arrival_time) return "at_site";
@@ -72,6 +78,7 @@ export const siteVisitActionLabels: Record<SiteVisitAction, string> = {
   end_break: "End Break",
   end_visit: "Finish Site Visit",
   start_return_travel: "Start Return Travel",
+  arrive_office: "Arrived at Office",
 };
 
 export const siteVisitStepLabels: Record<SiteVisitStep, string> = {
@@ -80,7 +87,8 @@ export const siteVisitStepLabels: Record<SiteVisitStep, string> = {
   at_site: "At Site",
   surveying: "Surveying",
   on_break: "On Break",
-  returning: "Heading Back",
+  work_done: "Work Done",
+  returning: "Returning to Office",
   completed: "Completed",
 };
 
@@ -90,6 +98,7 @@ export const siteVisitStepColors: Record<SiteVisitStep, string> = {
   at_site: "text-cyan-400",
   surveying: "text-green-400",
   on_break: "text-orange-400",
+  work_done: "text-purple-400",
   returning: "text-amber-400",
-  completed: "text-purple-400",
+  completed: "text-blue-400",
 };
