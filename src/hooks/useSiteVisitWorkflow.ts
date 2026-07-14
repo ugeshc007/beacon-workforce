@@ -45,13 +45,24 @@ export function useSiteVisitWorkflow(siteVisitId: string | null) {
     setLoading(true);
     const { data } = await supabase
       .from("site_visit_work_sessions")
-      .select("id, site_visit_id, travel_start_time, site_arrival_time, work_start_time, break_start_time, break_end_time, work_end_time, return_travel_start_time, total_work_minutes")
+      .select("id, site_visit_id, attendance_log_id, travel_start_time, site_arrival_time, work_start_time, break_start_time, break_end_time, work_end_time, return_travel_start_time, total_work_minutes")
       .eq("employee_id", employee.id)
       .eq("site_visit_id", siteVisitId)
       .eq("date", today)
       .maybeSingle();
-    setSession(data ?? null);
-    setStep(deriveSiteVisitStep(data ?? null));
+
+    let officeArrival: string | null = null;
+    if (data?.attendance_log_id) {
+      const { data: log } = await supabase
+        .from("attendance_logs")
+        .select("office_arrival_time")
+        .eq("id", data.attendance_log_id)
+        .maybeSingle();
+      officeArrival = log?.office_arrival_time ?? null;
+    }
+    const merged: SessionRow | null = data ? { ...data, office_arrival_time: officeArrival } : null;
+    setSession(merged);
+    setStep(deriveSiteVisitStep(merged));
     setLoading(false);
   }, [employee, siteVisitId, today]);
 
