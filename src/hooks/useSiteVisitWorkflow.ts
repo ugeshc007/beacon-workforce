@@ -87,11 +87,12 @@ export function useSiteVisitWorkflow(siteVisitId: string | null) {
         case "end_break": return { break_end_time: nowIso };
         case "end_visit": return { work_end_time: nowIso };
         case "start_return_travel": return { return_travel_start_time: nowIso };
+        case "arrive_office": return { office_arrival_time: nowIso };
         default: return {};
       }
     })();
     setSession((prev) => ({
-      ...(prev ?? { id: "", site_visit_id: siteVisitId, travel_start_time: null, site_arrival_time: null, work_start_time: null, break_start_time: null, break_end_time: null, work_end_time: null, return_travel_start_time: null, total_work_minutes: null }),
+      ...(prev ?? { id: "", site_visit_id: siteVisitId, attendance_log_id: null, travel_start_time: null, site_arrival_time: null, work_start_time: null, break_start_time: null, break_end_time: null, work_end_time: null, return_travel_start_time: null, office_arrival_time: null, total_work_minutes: null }),
       ...optimisticPatch,
     }));
 
@@ -103,6 +104,7 @@ export function useSiteVisitWorkflow(siteVisitId: string | null) {
       end_break: "sv-end-break",
       end_visit: "sv-end-visit",
       start_return_travel: "sv-start-return-travel",
+      arrive_office: "arrive-office",
     };
     const queueTypeMap: Record<SiteVisitAction, string> = {
       start_travel: "sv_start_travel",
@@ -112,14 +114,17 @@ export function useSiteVisitWorkflow(siteVisitId: string | null) {
       end_break: "sv_end_break",
       end_visit: "sv_end_visit",
       start_return_travel: "sv_start_return_travel",
+      arrive_office: "arrive_office",
     };
 
     const body: Record<string, unknown> = {
       employee_id: employee.id,
       client_event_time: nowIso,
+      client_timestamp: nowIso,
       ...payload,
     };
     if (action === "start_travel") body.site_visit_id = siteVisitId;
+    else if (action === "arrive_office") body.attendance_log_id = session?.attendance_log_id;
     else body.session_id = session?.id;
 
     setActionLoading(false);
