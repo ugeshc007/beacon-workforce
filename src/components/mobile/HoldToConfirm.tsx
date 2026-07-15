@@ -29,12 +29,13 @@ export const HoldToConfirm = forwardRef<HTMLButtonElement, HoldToConfirmProps>(f
 }, ref) {
   const [progress, setProgress] = useState(0);
   const [holding, setHolding] = useState(false);
-  const timerRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
   const frameRef = useRef<number | null>(null);
   const confirmedRef = useRef(false);
+  const holdingRef = useRef(false);
+  const activePointerRef = useRef<number | null>(null);
 
-  // Reset progress when external loading finishes
+  // Reset when external loading finishes (defensive — also reset on cancel)
   useEffect(() => {
     if (!loading) {
       setProgress(0);
@@ -42,46 +43,65 @@ export const HoldToConfirm = forwardRef<HTMLButtonElement, HoldToConfirmProps>(f
     }
   }, [loading]);
 
+  const stopFrame = () => {
+    if (frameRef.current != null) {
+      cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
+    }
+  };
+
   const animate = useCallback(() => {
+    if (!holdingRef.current) return;
     const elapsed = Date.now() - startTimeRef.current;
     const pct = Math.min(elapsed / holdDurationMs, 1);
     setProgress(pct);
 
     if (pct >= 1 && !confirmedRef.current) {
       confirmedRef.current = true;
+      holdingRef.current = false;
       setHolding(false);
-      // Haptic feedback if available
+      stopFrame();
       import("@capacitor/haptics").then(({ Haptics, ImpactStyle }) => {
         Haptics.impact({ style: ImpactStyle.Heavy }).catch(() => {});
       }).catch(() => {});
       onConfirm();
+      // Safety: clear confirmed flag shortly after in case parent never
+      // toggles `loading` (offline enqueue path returns synchronously).
+      setTimeout(() => {
+        confirmedRef.current = false;
+        setProgress(0);
+      }, 400);
       return;
     }
 
-    if (pct < 1) {
-      frameRef.current = requestAnimationFrame(animate);
-    }
+    frameRef.current = requestAnimationFrame(animate);
   }, [holdDurationMs, onConfirm]);
 
   const startHold = useCallback(() => {
     if (disabled || loading) return;
-    confirmedRef.current = false;
+    if (holdingRef.current || confirmedRef.current) return; // ignore re-entry
+    holdingRef.current = true;
     setHolding(true);
     startTimeRef.current = Date.now();
-    // Light haptic on start
     import("@capacitor/haptics").then(({ Haptics, ImpactStyle }) => {
       Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
     }).catch(() => {});
+    stopFrame();
     frameRef.current = requestAnimationFrame(animate);
   }, [disabled, loading, animate]);
 
   const cancelHold = useCallback(() => {
-    if (confirmedRef.current) return; // already fired — let loading state take over
+    activePointerRef.current = null;
+    if (confirmedRef.current) return; // already fired
+    if (!holdingRef.current) return;
+    holdingRef.current = false;
     setHolding(false);
     setProgress(0);
-    if (frameRef.current) cancelAnimationFrame(frameRef.current);
-    if (timerRef.current) clearTimeout(timerRef.current);
+    stopFrame();
   }, []);
+
+  // Clean up on unmount
+  useEffect(() => () => stopFrame(), []);
 
   const isPrimary = variant === "primary";
   const heightCls = isPrimary ? "h-16 text-lg" : "h-14 text-base";
@@ -89,12 +109,28 @@ export const HoldToConfirm = forwardRef<HTMLButtonElement, HoldToConfirmProps>(f
   return (
     <button
       ref={ref}
-      onMouseDown={startHold}
-      onMouseUp={cancelHold}
-      onMouseLeave={cancelHold}
-      onTouchStart={startHold}
-      onTouchEnd={cancelHold}
-      onTouchCancel={cancelHold}
+      onPointerDown={(e) => {
+        // Only accept one active pointer; ignore synthetic duplicates.
+        if (activePointerRef.current != null) return;
+        activePointerRef.current = e.pointerId;
+        try { e.currentTarget.setPointerCapture(e.pointerId); } catch {}
+        startHold();
+      }}
+      onPointerUp={(e) => {
+        if (activePointerRef.current !== e.pointerId) return;
+        try { e.currentTarget.releasePointerCapture(e.pointerId); } catch {}
+        cancelHold();
+      }}
+      onPointerCancel={(e) => {
+        if (activePointerRef.current !== e.pointerId) return;
+        cancelHold();
+      }}
+      onPointerLeave={(e) => {
+        // Only cancel if the pointer is no longer pressed (mouse leaving while up).
+        // Touch pointers keep capture, so this won't fire mid-hold.
+        if (activePointerRef.current !== e.pointerId) return;
+        if (e.buttons === 0) cancelHold();
+      }}
       onContextMenu={(e) => e.preventDefault()}
       disabled={disabled || loading}
       className={cn(
