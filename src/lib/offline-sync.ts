@@ -233,6 +233,7 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
       }
       const needsSessionId = [
         "project_arrive_site",
+        "project_start_work",
         "project_start_break",
         "project_end_break",
         "project_end_work",
