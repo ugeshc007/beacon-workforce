@@ -260,17 +260,24 @@ export function AttendanceDetailDrawer({ log, open, onOpenChange }: Props) {
               <Briefcase className="h-4 w-4" /> Project Sessions ({resolvedSessions.length})
             </h3>
             <div className="space-y-4">
-              {resolvedSessions.map((s, idx) => (
-                <ProjectSessionCard
-                  key={s.id}
-                  session={s}
-                  index={idx + 1}
-                  fallbackReturnTravelTime={idx === resolvedSessions.length - 1 ? (log as any).return_travel_start_time ?? null : null}
-                  fallbackOfficeArrivalTime={idx === resolvedSessions.length - 1 ? (log as any).office_arrival_time ?? null : null}
-                  fallbackOfficeArrivalDistance={idx === resolvedSessions.length - 1 ? (log as any).office_arrival_distance_m ?? null : null}
-                  fallbackOfficeArrivalValid={idx === resolvedSessions.length - 1 ? (log as any).office_arrival_valid ?? null : null}
-                />
-              ))}
+              {(() => {
+                // Apply attendance-log return/office fallback to the FIRST
+                // session missing that timestamp (round trip happened before
+                // the next session began), not always the last.
+                const firstMissingReturnIdx = resolvedSessions.findIndex((s) => !s.return_travel_start_time);
+                const firstMissingArrivalIdx = resolvedSessions.findIndex((s) => !s.office_arrival_time);
+                return resolvedSessions.map((s, idx) => (
+                  <ProjectSessionCard
+                    key={s.id}
+                    session={s}
+                    index={idx + 1}
+                    fallbackReturnTravelTime={idx === firstMissingReturnIdx ? (log as any).return_travel_start_time ?? null : null}
+                    fallbackOfficeArrivalTime={idx === firstMissingArrivalIdx ? (log as any).office_arrival_time ?? null : null}
+                    fallbackOfficeArrivalDistance={idx === firstMissingArrivalIdx ? (log as any).office_arrival_distance_m ?? null : null}
+                    fallbackOfficeArrivalValid={idx === firstMissingArrivalIdx ? (log as any).office_arrival_valid ?? null : null}
+                  />
+                ));
+              })()}
 
             </div>
           </div>

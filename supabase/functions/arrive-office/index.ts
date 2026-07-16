@@ -74,6 +74,30 @@ Deno.serve(async (req) => {
 
     if (error) return errorResponse(error.message, 500);
 
+    // Stamp the earliest session that has return_travel_start_time but no
+    // office_arrival_time yet (matches the round trip we're closing).
+    const { data: pendingSessions } = await supabase
+      .from("project_work_sessions")
+      .select("id, return_travel_start_time, office_arrival_time")
+      .eq("employee_id", employee_id)
+      .eq("date", log.date)
+      .not("return_travel_start_time", "is", null)
+      .is("office_arrival_time", null)
+      .order("return_travel_start_time", { ascending: true })
+      .limit(1);
+
+    if (pendingSessions && pendingSessions.length > 0) {
+      await supabase
+        .from("project_work_sessions")
+        .update({
+          office_arrival_time: now,
+          ...(hasGps ? { office_arrival_lat: lat, office_arrival_lng: lng } : {}),
+          office_arrival_distance_m: Math.round(distance),
+          office_arrival_valid: valid,
+        })
+        .eq("id", pendingSessions[0].id);
+    }
+
     return jsonResponse({
       success: true,
       attendance_id: log.id,

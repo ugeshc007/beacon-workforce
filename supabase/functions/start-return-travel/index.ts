@@ -77,6 +77,28 @@ Deno.serve(async (req) => {
 
     if (error) return errorResponse(error.message, 500);
 
+    // Also stamp the earliest completed project session that has no
+    // return_travel_start_time yet, so per-session timeline shows it.
+    const { data: pendingSessions } = await supabase
+      .from("project_work_sessions")
+      .select("id, work_end_time, return_travel_start_time")
+      .eq("employee_id", employee_id)
+      .eq("date", log.date)
+      .is("return_travel_start_time", null)
+      .not("work_end_time", "is", null)
+      .order("work_end_time", { ascending: true })
+      .limit(1);
+
+    if (pendingSessions && pendingSessions.length > 0) {
+      await supabase
+        .from("project_work_sessions")
+        .update({
+          return_travel_start_time: now,
+          ...(hasGps ? { return_travel_start_lat: lat, return_travel_start_lng: lng } : {}),
+        })
+        .eq("id", pendingSessions[0].id);
+    }
+
     return jsonResponse({ success: true, attendance_id: log.id, timestamp: now });
   } catch (err) {
     return errorResponse(err, 500);
