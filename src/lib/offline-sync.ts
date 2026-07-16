@@ -284,25 +284,39 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
         }
       }
       if (needsSessionId && !payloadToSend.session_id) {
-        const projectId = payloadToSend.project_id as string | undefined;
         const employeeId = payloadToSend.employee_id as string | undefined;
         const date = payloadToSend.date as string | undefined;
-        if (projectId && employeeId && date) {
+        if (employeeId && date) {
           try {
             const { supabase } = await import("@/integrations/supabase/client");
             const sessionTable = sessionTableForAction(item.action_type);
-            const visitId = payloadToSend.site_visit_id as string | undefined;
-            if (!sessionTable) throw new Error("Unknown session table");
-            const { data: row } = await supabase
-              .from(sessionTable)
-              .select("id")
-              .eq("employee_id", employeeId)
-              .eq(sessionTable === "project_work_sessions" ? "project_id" : "site_visit_id", sessionTable === "project_work_sessions" ? projectId : visitId)
-              .eq("date", date)
-              .order("created_at", { ascending: false })
-              .limit(1)
-              .maybeSingle();
-            if (row?.id) payloadToSend = { ...payloadToSend, session_id: row.id };
+            if (sessionTable === "project_work_sessions") {
+              const projectId = payloadToSend.project_id as string | undefined;
+              if (!projectId) throw new Error("project_id required");
+              const { data: row } = await supabase
+                .from("project_work_sessions")
+                .select("id")
+                .eq("employee_id", employeeId)
+                .eq("project_id", projectId)
+                .eq("date", date)
+                .order("created_at", { ascending: false })
+                .limit(1)
+                .maybeSingle();
+              if (row?.id) payloadToSend = { ...payloadToSend, session_id: row.id };
+            } else if (sessionTable === "site_visit_work_sessions") {
+              const visitId = payloadToSend.site_visit_id as string | undefined;
+              if (!visitId) throw new Error("site_visit_id required");
+              const { data: row } = await supabase
+                .from("site_visit_work_sessions")
+                .select("id")
+                .eq("employee_id", employeeId)
+                .eq("site_visit_id", visitId)
+                .eq("date", date)
+                .order("created_at", { ascending: false })
+                .limit(1)
+                .maybeSingle();
+              if (row?.id) payloadToSend = { ...payloadToSend, session_id: row.id };
+            }
           } catch { /* will fail below if still missing */ }
         }
       }
