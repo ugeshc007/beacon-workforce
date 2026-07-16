@@ -100,6 +100,15 @@ const CREATOR_ACTIONS = new Set([
   "driver_start_trip",
 ]);
 
+const PROJECT_SESSION_ACTIONS = new Set([
+  "project_start_travel",
+  "project_arrive_site",
+  "project_start_work",
+  "project_start_break",
+  "project_end_break",
+  "project_end_work",
+]);
+
 function groupKey(item: QueuedAction): string {
   const p = item.payload as Record<string, unknown>;
   const emp = (p.employee_id as string) || "";
@@ -190,6 +199,7 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
     // Track which groups have a still-unsynced creator earlier in the pass.
     // Follow-ups for that group are deferred to the next sync pass.
     const blockedGroups = new Set<string>();
+    const resolvedProjectSessionIds = new Map<string, string>();
 
     for (const item of pending) {
       const grp = groupKey(item);
@@ -239,6 +249,12 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
         "project_end_work",
       ].includes(item.action_type);
       if (needsSessionId && !payloadToSend.session_id) {
+        const resolvedSid = resolvedProjectSessionIds.get(grp);
+        if (resolvedSid) {
+          payloadToSend = { ...payloadToSend, session_id: resolvedSid };
+        }
+      }
+      if (needsSessionId && !payloadToSend.session_id) {
         const projectId = payloadToSend.project_id as string | undefined;
         const employeeId = payloadToSend.employee_id as string | undefined;
         const date = payloadToSend.date as string | undefined;
@@ -261,10 +277,20 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
 
       while (attempt < MAX_RETRIES && !success) {
         try {
-          await invokeEdge(fnName, {
+          const data = await invokeEdge<Record<string, unknown>>(fnName, {
             ...payloadToSend,
             idempotency_key: item.idempotency_key,
           });
+
+          if (PROJECT_SESSION_ACTIONS.has(item.action_type)) {
+            const sessionId = typeof data?.session_id === "string" ? data.session_id : payloadToSend.session_id;
+            if (typeof sessionId === "string" && item.action_type !== "project_end_work") {
+              resolvedProjectSessionIds.set(grp, sessionId);
+            }
+            if (item.action_type === "project_end_work") {
+              resolvedProjectSessionIds.delete(grp);
+            }
+          }
 
           await markSynced(item.local_id);
           synced++;
