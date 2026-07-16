@@ -137,6 +137,12 @@ function employeeKey(item: QueuedAction): string {
   return (p.employee_id as string) || "";
 }
 
+function uaeDateFromIso(iso?: string): string | undefined {
+  const t = iso ? Date.parse(iso) : NaN;
+  if (Number.isNaN(t)) return undefined;
+  return new Date(t + 4 * 60 * 60 * 1000).toISOString().split("T")[0];
+}
+
 
 /**
  * Recognize server errors that mean "state has already moved past this action".
@@ -285,7 +291,9 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
       }
       if (needsSessionId && !payloadToSend.session_id) {
         const employeeId = payloadToSend.employee_id as string | undefined;
-        const date = payloadToSend.date as string | undefined;
+        const date = (payloadToSend.date as string | undefined)
+          || uaeDateFromIso(payloadToSend.client_timestamp as string | undefined)
+          || uaeDateFromIso(item.timestamp);
         if (employeeId && date) {
           try {
             const { supabase } = await import("@/integrations/supabase/client");
