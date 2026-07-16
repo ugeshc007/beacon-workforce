@@ -330,10 +330,13 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
 
           if (PROJECT_SESSION_ACTIONS.has(item.action_type) || SITE_VISIT_SESSION_ACTIONS.has(item.action_type)) {
             const sessionId = typeof data?.session_id === "string" ? data.session_id : payloadToSend.session_id;
-            if (typeof sessionId === "string" && item.action_type !== "project_end_work" && item.action_type !== "sv_end_visit") {
+            if (typeof sessionId === "string" && item.action_type !== "project_end_work") {
               resolvedSessionIds.set(grp, sessionId);
+              if (empKey && SITE_VISIT_SESSION_ACTIONS.has(item.action_type)) {
+                resolvedSessionIds.set(`${empKey}::`, sessionId);
+              }
             }
-            if (item.action_type === "project_end_work" || item.action_type === "sv_end_visit") {
+            if (item.action_type === "project_end_work") {
               resolvedSessionIds.delete(grp);
             }
           }
