@@ -1610,6 +1610,11 @@ export type Database = {
           employee_id: string
           id: string
           notes: string | null
+          office_arrival_distance_m: number | null
+          office_arrival_lat: number | null
+          office_arrival_lng: number | null
+          office_arrival_time: string | null
+          office_arrival_valid: boolean | null
           overtime_cost: number | null
           overtime_minutes: number | null
           project_id: string
@@ -1641,6 +1646,11 @@ export type Database = {
           employee_id: string
           id?: string
           notes?: string | null
+          office_arrival_distance_m?: number | null
+          office_arrival_lat?: number | null
+          office_arrival_lng?: number | null
+          office_arrival_time?: string | null
+          office_arrival_valid?: boolean | null
           overtime_cost?: number | null
           overtime_minutes?: number | null
           project_id: string
@@ -1672,6 +1682,11 @@ export type Database = {
           employee_id?: string
           id?: string
           notes?: string | null
+          office_arrival_distance_m?: number | null
+          office_arrival_lat?: number | null
+          office_arrival_lng?: number | null
+          office_arrival_time?: string | null
+          office_arrival_valid?: boolean | null
           overtime_cost?: number | null
           overtime_minutes?: number | null
           project_id?: string
