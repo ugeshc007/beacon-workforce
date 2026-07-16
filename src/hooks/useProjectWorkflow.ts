@@ -201,19 +201,16 @@ export function useProjectWorkflow(projectId: string | null, dateOverride?: stri
 
     const body: Record<string, unknown> = {
       employee_id: employee.id,
-      client_event_time: nowIso,
+      project_id: projectId,
+      date: today,
+      client_timestamp: nowIso,
       ...payload,
     };
-    if (action === "start_travel") {
-      body.project_id = projectId;
-    } else if (action === "start_work" && !session?.id) {
-      // In-house mode: no session exists yet — server creates one from project_id.
-      body.project_id = projectId;
-    } else {
-      // For follow-up actions we need a real session_id. If the optimistic
-      // session hasn't been replaced by a server row yet (e.g. user taps
-      // "Take Break" right after starting work in-house), fetch it now so we
-      // don't send an empty string and trigger "session_id required".
+
+    if (action !== "start_travel") {
+      // Follow-up actions need the server session id. If the previous step was
+      // queued offline, keep project_id + date in the payload so the sync
+      // engine can resolve the session after replaying the earlier action.
       let sid = session?.id;
       if (!sid && employee && projectId && navigator.onLine) {
         try {
@@ -231,13 +228,10 @@ export function useProjectWorkflow(projectId: string | null, dateOverride?: stri
       }
       if (sid) {
         body.session_id = sid;
+      } else if (action === "start_work" && workLocation === "in_house") {
+        // In-house mode starts by creating the project session from project_id.
       } else if (!navigator.onLine) {
-        // Offline and the prior start_travel (or start_work) is still in the
-        // queue — the server session doesn't exist yet. Queue this follow-up
-        // with project_id + date so the sync engine can resolve session_id
-        // after the prior queued action creates the row.
-        body.project_id = projectId;
-        body.date = today;
+        // Offline site flow: session_id will be resolved during sync.
       } else {
         setActionLoading(false);
         setStep(previousStep);
