@@ -61,6 +61,13 @@ export function todayDate(): string {
   return uae.toISOString().split("T")[0];
 }
 
+export function dateFromTimestamp(clientTimestamp?: string | null): string {
+  const t = clientTimestamp ? Date.parse(clientTimestamp) : NaN;
+  const base = Number.isNaN(t) ? new Date() : new Date(t);
+  const uae = new Date(base.getTime() + 4 * 60 * 60 * 1000);
+  return uae.toISOString().split("T")[0];
+}
+
 export function nowTimestamp(): string {
   return new Date().toISOString();
 }
