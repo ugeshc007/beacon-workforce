@@ -1,4 +1,4 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, todayDate, resolveTimestamp, checkIdempotency, recordIdempotencyResult, authenticateEmployee } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, dateFromTimestamp, resolveTimestamp, checkIdempotency, recordIdempotencyResult, authenticateEmployee } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
@@ -16,8 +16,8 @@ Deno.serve(async (req) => {
     const dup = await checkIdempotency(supabase, idempotency_key, employee_id, "sv-start-travel");
     if (dup) return dup;
 
-    const today = todayDate();
     const now = resolveTimestamp(client_timestamp);
+    const today = dateFromTimestamp(now);
 
     const { data: mandatorySetting } = await supabase
       .from("settings").select("value").eq("key", "office_punch_in_mandatory").maybeSingle();
