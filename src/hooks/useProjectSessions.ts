@@ -22,6 +22,9 @@ export interface ProjectWorkSession {
   break_minutes: number | null;
   work_end_time: string | null;
   return_travel_start_time: string | null;
+  office_arrival_time: string | null;
+  office_arrival_distance_m: number | null;
+  office_arrival_valid: boolean | null;
   total_work_minutes: number | null;
   overtime_minutes: number | null;
   work_location?: "in_house" | "site" | null;

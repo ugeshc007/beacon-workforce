@@ -18,7 +18,13 @@ export function ProjectSessionCard({
   fallbackOfficeArrivalValid?: boolean | null;
 }) {
   const returnTravel = session.return_travel_start_time ?? fallbackReturnTravelTime ?? null;
-  const officeArrival = fallbackOfficeArrivalTime ?? null;
+  const officeArrival = session.office_arrival_time ?? fallbackOfficeArrivalTime ?? null;
+  const officeArrivalDistance = session.office_arrival_time != null
+    ? session.office_arrival_distance_m
+    : (fallbackOfficeArrivalDistance ?? null);
+  const officeArrivalValid = session.office_arrival_time != null
+    ? session.office_arrival_valid
+    : (fallbackOfficeArrivalValid ?? null);
   // Schedule/session location is authoritative. Only fall back to timestamp
   // inference for older rows where the location cannot be resolved.
   const isInHouse = session.work_location === "in_house"
@@ -31,7 +37,7 @@ export function ProjectSessionCard({
     { label: "Break End", time: session.break_end_time },
     { label: "Work End", time: session.work_end_time },
     { label: "Return Travel", time: returnTravel },
-    { label: "At Office", time: officeArrival, distance: fallbackOfficeArrivalDistance ?? null, valid: fallbackOfficeArrivalValid ?? null },
+    { label: "At Office", time: officeArrival, distance: officeArrivalDistance, valid: officeArrivalValid },
   ];
   const hiddenInHouse = new Set(["Travel Start", "Site Arrival", "Return Travel", "At Office"]);
   const steps = isInHouse ? allSteps.filter((s) => !hiddenInHouse.has(s.label)) : allSteps;
