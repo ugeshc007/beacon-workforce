@@ -119,13 +119,13 @@ export function useSiteVisitWorkflow(siteVisitId: string | null) {
 
     const body: Record<string, unknown> = {
       employee_id: employee.id,
-      client_event_time: nowIso,
+      site_visit_id: siteVisitId,
+      date: today,
       client_timestamp: nowIso,
       ...payload,
     };
-    if (action === "start_travel") body.site_visit_id = siteVisitId;
-    else if (action === "arrive_office") body.attendance_log_id = session?.attendance_log_id;
-    else body.session_id = session?.id;
+    if (action === "arrive_office") body.attendance_log_id = session?.attendance_log_id;
+    else if (action !== "start_travel" && session?.id) body.session_id = session.id;
 
     setActionLoading(false);
 

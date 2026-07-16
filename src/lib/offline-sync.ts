@@ -100,11 +100,47 @@ const CREATOR_ACTIONS = new Set([
   "driver_start_trip",
 ]);
 
+const PROJECT_SESSION_ACTIONS = new Set([
+  "project_start_travel",
+  "project_arrive_site",
+  "project_start_work",
+  "project_start_break",
+  "project_end_break",
+  "project_end_work",
+]);
+
+const SITE_VISIT_SESSION_ACTIONS = new Set([
+  "sv_start_travel",
+  "sv_arrive_site",
+  "sv_start_survey",
+  "sv_start_break",
+  "sv_end_break",
+  "sv_end_visit",
+  "sv_start_return_travel",
+]);
+
+function sessionTableForAction(actionType: string): "project_work_sessions" | "site_visit_work_sessions" | null {
+  if (PROJECT_SESSION_ACTIONS.has(actionType)) return "project_work_sessions";
+  if (SITE_VISIT_SESSION_ACTIONS.has(actionType)) return "site_visit_work_sessions";
+  return null;
+}
+
 function groupKey(item: QueuedAction): string {
   const p = item.payload as Record<string, unknown>;
   const emp = (p.employee_id as string) || "";
   const proj = (p.project_id as string) || (p.site_visit_id as string) || (p.trip_leg_id as string) || "";
   return `${emp}::${proj}`;
+}
+
+function employeeKey(item: QueuedAction): string {
+  const p = item.payload as Record<string, unknown>;
+  return (p.employee_id as string) || "";
+}
+
+function uaeDateFromIso(iso?: string): string | undefined {
+  const t = iso ? Date.parse(iso) : NaN;
+  if (Number.isNaN(t)) return undefined;
+  return new Date(t + 4 * 60 * 60 * 1000).toISOString().split("T")[0];
 }
 
 
@@ -177,18 +213,27 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
 
     const queue = await getQueue();
     const pending = queue
-      .filter((q) => q.sync_status === "pending" || q.sync_status === "error")
-      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      .map((item, index) => ({ item, index }))
+      .filter(({ item }) => item.sync_status === "pending" || item.sync_status === "error")
+      .sort((a, b) => {
+        const at = Date.parse(a.item.timestamp) || 0;
+        const bt = Date.parse(b.item.timestamp) || 0;
+        return at === bt ? a.index - b.index : at - bt;
+      })
+      .map(({ item }) => item);
     notifyListeners(pending.length, true);
 
     // Track which groups have a still-unsynced creator earlier in the pass.
     // Follow-ups for that group are deferred to the next sync pass.
     const blockedGroups = new Set<string>();
+    const blockedEmployees = new Set<string>();
+    const resolvedSessionIds = new Map<string, string>();
 
     for (const item of pending) {
       const grp = groupKey(item);
+      const empKey = employeeKey(item);
       const isCreator = CREATOR_ACTIONS.has(item.action_type);
-      if (blockedGroups.has(grp)) {
+      if (blockedGroups.has(grp) || (empKey && blockedEmployees.has(empKey))) {
         // Skip: an earlier action in this group hasn't succeeded yet.
         // Preserves FIFO ordering within a session so timestamps replay in order.
         continue;
@@ -219,40 +264,90 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
       // creating action (project_start_travel / project_start_work) was also
       // queued offline. We look up the open session by (employee, project, date).
       let payloadToSend: Record<string, unknown> = item.payload;
+      if (!payloadToSend.client_timestamp && payloadToSend.client_event_time) {
+        payloadToSend = {
+          ...payloadToSend,
+          client_timestamp: payloadToSend.client_event_time,
+        };
+      }
       const needsSessionId = [
         "project_arrive_site",
         "project_start_work",
         "project_start_break",
         "project_end_break",
         "project_end_work",
+        "sv_arrive_site",
+        "sv_start_survey",
+        "sv_start_break",
+        "sv_end_break",
+        "sv_end_visit",
+        "sv_start_return_travel",
       ].includes(item.action_type);
       if (needsSessionId && !payloadToSend.session_id) {
-        const projectId = payloadToSend.project_id as string | undefined;
+        const resolvedSid = resolvedSessionIds.get(grp);
+        if (resolvedSid) {
+          payloadToSend = { ...payloadToSend, session_id: resolvedSid };
+        }
+      }
+      if (needsSessionId && !payloadToSend.session_id) {
         const employeeId = payloadToSend.employee_id as string | undefined;
-        const date = payloadToSend.date as string | undefined;
-        if (projectId && employeeId && date) {
+        const date = (payloadToSend.date as string | undefined)
+          || uaeDateFromIso(payloadToSend.client_timestamp as string | undefined)
+          || uaeDateFromIso(item.timestamp);
+        if (employeeId && date) {
           try {
             const { supabase } = await import("@/integrations/supabase/client");
-            const { data: row } = await supabase
-              .from("project_work_sessions")
-              .select("id")
-              .eq("employee_id", employeeId)
-              .eq("project_id", projectId)
-              .eq("date", date)
-              .order("created_at", { ascending: false })
-              .limit(1)
-              .maybeSingle();
-            if (row?.id) payloadToSend = { ...payloadToSend, session_id: row.id };
+            const sessionTable = sessionTableForAction(item.action_type);
+            if (sessionTable === "project_work_sessions") {
+              const projectId = payloadToSend.project_id as string | undefined;
+              if (!projectId) throw new Error("project_id required");
+              const { data: row } = await supabase
+                .from("project_work_sessions")
+                .select("id")
+                .eq("employee_id", employeeId)
+                .eq("project_id", projectId)
+                .eq("date", date)
+                .order("created_at", { ascending: false })
+                .limit(1)
+                .maybeSingle();
+              if (row?.id) payloadToSend = { ...payloadToSend, session_id: row.id };
+            } else if (sessionTable === "site_visit_work_sessions") {
+              const visitId = payloadToSend.site_visit_id as string | undefined;
+              let query = supabase
+                .from("site_visit_work_sessions")
+                .select("id")
+                .eq("employee_id", employeeId)
+                .eq("date", date);
+              if (visitId) query = query.eq("site_visit_id", visitId);
+              const { data: row } = await query
+                .order("created_at", { ascending: false })
+                .limit(1)
+                .maybeSingle();
+              if (row?.id) payloadToSend = { ...payloadToSend, session_id: row.id };
+            }
           } catch { /* will fail below if still missing */ }
         }
       }
 
       while (attempt < MAX_RETRIES && !success) {
         try {
-          await invokeEdge(fnName, {
+          const data = await invokeEdge<Record<string, unknown>>(fnName, {
             ...payloadToSend,
             idempotency_key: item.idempotency_key,
           });
+
+          if (PROJECT_SESSION_ACTIONS.has(item.action_type) || SITE_VISIT_SESSION_ACTIONS.has(item.action_type)) {
+            const sessionId = typeof data?.session_id === "string" ? data.session_id : payloadToSend.session_id;
+            if (typeof sessionId === "string" && item.action_type !== "project_end_work") {
+              resolvedSessionIds.set(grp, sessionId);
+              if (empKey && SITE_VISIT_SESSION_ACTIONS.has(item.action_type)) {
+                resolvedSessionIds.set(`${empKey}::`, sessionId);
+              }
+            }
+            if (item.action_type === "project_end_work") {
+              resolvedSessionIds.delete(grp);
+            }
+          }
 
           await markSynced(item.local_id);
           synced++;
@@ -306,6 +401,9 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
       // before earlier ones when a middle action failed.
       if (!success) {
         blockedGroups.add(grp);
+        if (empKey && (PROJECT_SESSION_ACTIONS.has(item.action_type) || SITE_VISIT_SESSION_ACTIONS.has(item.action_type))) {
+          blockedEmployees.add(empKey);
+        }
       }
     }
 
