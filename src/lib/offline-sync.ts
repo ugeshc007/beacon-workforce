@@ -116,6 +116,11 @@ function groupKey(item: QueuedAction): string {
   return `${emp}::${proj}`;
 }
 
+function employeeKey(item: QueuedAction): string {
+  const p = item.payload as Record<string, unknown>;
+  return (p.employee_id as string) || "";
+}
+
 
 /**
  * Recognize server errors that mean "state has already moved past this action".
@@ -199,12 +204,14 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
     // Track which groups have a still-unsynced creator earlier in the pass.
     // Follow-ups for that group are deferred to the next sync pass.
     const blockedGroups = new Set<string>();
+    const blockedEmployees = new Set<string>();
     const resolvedProjectSessionIds = new Map<string, string>();
 
     for (const item of pending) {
       const grp = groupKey(item);
+      const empKey = employeeKey(item);
       const isCreator = CREATOR_ACTIONS.has(item.action_type);
-      if (blockedGroups.has(grp)) {
+      if (blockedGroups.has(grp) || (empKey && blockedEmployees.has(empKey))) {
         // Skip: an earlier action in this group hasn't succeeded yet.
         // Preserves FIFO ordering within a session so timestamps replay in order.
         continue;
@@ -344,6 +351,9 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
       // before earlier ones when a middle action failed.
       if (!success) {
         blockedGroups.add(grp);
+        if (empKey && PROJECT_SESSION_ACTIONS.has(item.action_type)) {
+          blockedEmployees.add(empKey);
+        }
       }
     }
 
