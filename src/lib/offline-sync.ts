@@ -109,6 +109,22 @@ const PROJECT_SESSION_ACTIONS = new Set([
   "project_end_work",
 ]);
 
+const SITE_VISIT_SESSION_ACTIONS = new Set([
+  "sv_start_travel",
+  "sv_arrive_site",
+  "sv_start_survey",
+  "sv_start_break",
+  "sv_end_break",
+  "sv_end_visit",
+  "sv_start_return_travel",
+]);
+
+function sessionTableForAction(actionType: string): "project_work_sessions" | "site_visit_work_sessions" | null {
+  if (PROJECT_SESSION_ACTIONS.has(actionType)) return "project_work_sessions";
+  if (SITE_VISIT_SESSION_ACTIONS.has(actionType)) return "site_visit_work_sessions";
+  return null;
+}
+
 function groupKey(item: QueuedAction): string {
   const p = item.payload as Record<string, unknown>;
   const emp = (p.employee_id as string) || "";
@@ -205,7 +221,7 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
     // Follow-ups for that group are deferred to the next sync pass.
     const blockedGroups = new Set<string>();
     const blockedEmployees = new Set<string>();
-    const resolvedProjectSessionIds = new Map<string, string>();
+    const resolvedSessionIds = new Map<string, string>();
 
     for (const item of pending) {
       const grp = groupKey(item);
@@ -254,9 +270,15 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
         "project_start_break",
         "project_end_break",
         "project_end_work",
+        "sv_arrive_site",
+        "sv_start_survey",
+        "sv_start_break",
+        "sv_end_break",
+        "sv_end_visit",
+        "sv_start_return_travel",
       ].includes(item.action_type);
       if (needsSessionId && !payloadToSend.session_id) {
-        const resolvedSid = resolvedProjectSessionIds.get(grp);
+        const resolvedSid = resolvedSessionIds.get(grp);
         if (resolvedSid) {
           payloadToSend = { ...payloadToSend, session_id: resolvedSid };
         }
@@ -268,11 +290,14 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
         if (projectId && employeeId && date) {
           try {
             const { supabase } = await import("@/integrations/supabase/client");
+            const sessionTable = sessionTableForAction(item.action_type);
+            const visitId = payloadToSend.site_visit_id as string | undefined;
+            if (!sessionTable) throw new Error("Unknown session table");
             const { data: row } = await supabase
-              .from("project_work_sessions")
+              .from(sessionTable)
               .select("id")
               .eq("employee_id", employeeId)
-              .eq("project_id", projectId)
+              .eq(sessionTable === "project_work_sessions" ? "project_id" : "site_visit_id", sessionTable === "project_work_sessions" ? projectId : visitId)
               .eq("date", date)
               .order("created_at", { ascending: false })
               .limit(1)
@@ -289,13 +314,13 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
             idempotency_key: item.idempotency_key,
           });
 
-          if (PROJECT_SESSION_ACTIONS.has(item.action_type)) {
+          if (PROJECT_SESSION_ACTIONS.has(item.action_type) || SITE_VISIT_SESSION_ACTIONS.has(item.action_type)) {
             const sessionId = typeof data?.session_id === "string" ? data.session_id : payloadToSend.session_id;
-            if (typeof sessionId === "string" && item.action_type !== "project_end_work") {
-              resolvedProjectSessionIds.set(grp, sessionId);
+            if (typeof sessionId === "string" && item.action_type !== "project_end_work" && item.action_type !== "sv_end_visit") {
+              resolvedSessionIds.set(grp, sessionId);
             }
-            if (item.action_type === "project_end_work") {
-              resolvedProjectSessionIds.delete(grp);
+            if (item.action_type === "project_end_work" || item.action_type === "sv_end_visit") {
+              resolvedSessionIds.delete(grp);
             }
           }
 
@@ -351,7 +376,7 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
       // before earlier ones when a middle action failed.
       if (!success) {
         blockedGroups.add(grp);
-        if (empKey && PROJECT_SESSION_ACTIONS.has(item.action_type)) {
+        if (empKey && (PROJECT_SESSION_ACTIONS.has(item.action_type) || SITE_VISIT_SESSION_ACTIONS.has(item.action_type))) {
           blockedEmployees.add(empKey);
         }
       }
