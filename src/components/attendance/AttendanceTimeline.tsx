@@ -74,29 +74,44 @@ export function AttendanceTimeline({ log, workLocation }: Props) {
   // ONE line.
   // In-house assignments skip travel + site arrival + return travel + office arrival dots.
   const isInHouse = workLocation === "in_house";
+  // For multi-session days, decide travel/return dots per-session based on
+  // that session's own work_location. A single day can mix in-house + site.
+  const anySiteSession = sessions.some((s) => s.work_location === "site");
 
   const head: Dot[] = [
     { key: "office_punch_in", label: "Punch In", color: "bg-brand", time: log.office_punch_in },
   ];
-  if (!isInHouse) {
+  // Only add day-level travel/on-site dots for single-session days.
+  // Multi-session days emit travel/arrival per session in the middle group.
+  if (!isInHouse && sessions.length <= 1) {
     head.push(
       { key: "travel_start_time", label: "Travel", color: "bg-status-traveling", time: travelStartTime },
       { key: "site_arrival_time", label: "On Site", color: "bg-status-present", time: siteArrivalTime },
     );
   }
 
-  // Middle dots — work/sessions + break — sorted chronologically so a second
-  // project's start that happens AFTER break end shows up after the break dots.
+  // Middle dots — sessions + break — sorted chronologically.
   const middle: Dot[] = [];
   if (sessions.length > 1) {
     sessions.forEach((s, idx) => {
       const color = sessionColors[idx % sessionColors.length];
       const name = s.project_name ?? `Project ${idx + 1}`;
-      // Only emit dots for timestamps that actually exist. Offline-synced
-      // sessions may have partial data (e.g. only break_start) — rendering
-      // empty start/end dots for those creates confusing blank circles.
+      const isSiteSession = s.work_location === "site";
+      // Emit travel + arrival ONLY for site sessions; in-house skips them.
+      if (isSiteSession && s.travel_start_time) {
+        middle.push({ key: `s-${s.id}-travel`, label: `${name} — Travel`, color: "bg-status-traveling", time: s.travel_start_time });
+      }
+      if (isSiteSession && s.site_arrival_time) {
+        middle.push({ key: `s-${s.id}-arrive`, label: `${name} — On Site`, color: "bg-status-present", time: s.site_arrival_time });
+      }
       if (s.work_start_time) {
-        middle.push({ key: `s-${s.id}-start`, label: `${name} — Start`, color, time: s.work_start_time });
+        middle.push({ key: `s-${s.id}-start`, label: `${name} — Start${isSiteSession ? "" : " (In-House)"}`, color, time: s.work_start_time });
+      }
+      if (s.break_start_time) {
+        middle.push({ key: `s-${s.id}-bstart`, label: `${name} — Break Start`, color: "bg-orange-400", time: s.break_start_time });
+      }
+      if (s.break_end_time) {
+        middle.push({ key: `s-${s.id}-bend`, label: `${name} — Break End`, color: "bg-orange-300", time: s.break_end_time });
       }
       if (s.work_end_time) {
         middle.push({ key: `s-${s.id}-end`, label: `${name} — End`, color, time: s.work_end_time });
@@ -106,17 +121,12 @@ export function AttendanceTimeline({ log, workLocation }: Props) {
     if (workStartTime) {
       middle.push({ key: "work_start_time", label: "Working", color: "bg-status-present", time: workStartTime });
     }
-    // Work End dot: show as pending only if we already have a start (so the
-    // employee sees "next step"). Never render a fully-blank pair.
     if (workStartTime || workEndTime) {
       middle.push({ key: "work_end_time", label: "Work End", color: "bg-status-overtime", time: workEndTime });
     }
-  }
-  if (breakStartTime) {
-    middle.push({ key: "break_start_time", label: "Break Start", color: "bg-orange-400", time: breakStartTime });
-  }
-  if (breakStartTime || breakEndTime) {
-    // Only show Break End if a break actually started.
+    if (breakStartTime) {
+      middle.push({ key: "break_start_time", label: "Break Start", color: "bg-orange-400", time: breakStartTime });
+    }
     if (breakStartTime) {
       middle.push({ key: "break_end_time", label: "Break End", color: "bg-orange-300", time: breakEndTime });
     }
@@ -131,7 +141,9 @@ export function AttendanceTimeline({ log, workLocation }: Props) {
   });
 
   const tail: Dot[] = [];
-  if (!isInHouse) {
+  // Show return/office-arrival dots when the day involved any site session.
+  const showReturn = sessions.length > 1 ? anySiteSession : !isInHouse;
+  if (showReturn) {
     tail.push(
       { key: "return_travel_start_time", label: "Returning", color: "bg-status-traveling", time: (log as any).return_travel_start_time ?? null },
       { key: "office_arrival_time", label: "At Office", color: "bg-brand", time: (log as any).office_arrival_time ?? null },
