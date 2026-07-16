@@ -313,13 +313,13 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
               if (row?.id) payloadToSend = { ...payloadToSend, session_id: row.id };
             } else if (sessionTable === "site_visit_work_sessions") {
               const visitId = payloadToSend.site_visit_id as string | undefined;
-              if (!visitId) throw new Error("site_visit_id required");
-              const { data: row } = await supabase
+              let query = supabase
                 .from("site_visit_work_sessions")
                 .select("id")
                 .eq("employee_id", employeeId)
-                .eq("site_visit_id", visitId)
-                .eq("date", date)
+                .eq("date", date);
+              if (visitId) query = query.eq("site_visit_id", visitId);
+              const { data: row } = await query
                 .order("created_at", { ascending: false })
                 .limit(1)
                 .maybeSingle();
