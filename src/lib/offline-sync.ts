@@ -177,8 +177,14 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
 
     const queue = await getQueue();
     const pending = queue
-      .filter((q) => q.sync_status === "pending" || q.sync_status === "error")
-      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      .map((item, index) => ({ item, index }))
+      .filter(({ item }) => item.sync_status === "pending" || item.sync_status === "error")
+      .sort((a, b) => {
+        const at = Date.parse(a.item.timestamp) || 0;
+        const bt = Date.parse(b.item.timestamp) || 0;
+        return at === bt ? a.index - b.index : at - bt;
+      })
+      .map(({ item }) => item);
     notifyListeners(pending.length, true);
 
     // Track which groups have a still-unsynced creator earlier in the pass.
@@ -219,9 +225,14 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
       // creating action (project_start_travel / project_start_work) was also
       // queued offline. We look up the open session by (employee, project, date).
       let payloadToSend: Record<string, unknown> = item.payload;
+      if (!payloadToSend.client_timestamp && payloadToSend.client_event_time) {
+        payloadToSend = {
+          ...payloadToSend,
+          client_timestamp: payloadToSend.client_event_time,
+        };
+      }
       const needsSessionId = [
         "project_arrive_site",
-        "project_start_work",
         "project_start_break",
         "project_end_break",
         "project_end_work",
