@@ -299,7 +299,14 @@ export default function MobileHome() {
 
   // If every project assigned today is in-house, the employee never left the office,
   // so we skip the "Start Return Travel" → "Arrive Office" steps and offer Punch Out directly.
-  const allInHouseDay = !!todayProjects?.length && todayProjects.every((p) => p.workLocation === "in_house");
+  // We also treat "didn't actually travel today" (no travel/site timestamps on the shift)
+  // as in-house — protects against stale state where step is "work_done"/"returning" but
+  // the employee never left the office (e.g. mixed shift starting in-house).
+  const didNotTravel = !attendanceLog?.travel_start_time
+    && !attendanceLog?.site_arrival_time
+    && !attendanceLog?.return_travel_start_time;
+  const allInHouseDay = (!!todayProjects?.length && todayProjects.every((p) => p.workLocation === "in_house"))
+    || didNotTravel;
 
   return (
     <div className="flex flex-col gap-4 px-4 pb-24 safe-area-inset" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 3rem)' }}>
