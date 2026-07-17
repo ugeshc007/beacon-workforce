@@ -8,7 +8,7 @@ interface HoldToConfirmProps {
   disabled?: boolean;
   loading?: boolean;
   className?: string;
-  variant?: "primary" | "secondary";
+  variant?: "primary" | "secondary" | "ghost";
   children: React.ReactNode;
 }
 
