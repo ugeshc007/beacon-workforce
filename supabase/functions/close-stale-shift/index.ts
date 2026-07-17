@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
     const authId = authData.user.id;
 
     const body = (await req.json()) as Body;
-    if (!body?.attendance_log_id || !["complete", "forfeit", "incomplete"].includes(body.mode)) {
+    if (!body?.attendance_log_id || !["complete", "forfeit", "incomplete", "absent"].includes(body.mode)) {
       return json({ error: "attendance_log_id and mode required" }, 400);
     }
 
