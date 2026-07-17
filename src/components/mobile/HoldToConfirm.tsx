@@ -104,7 +104,8 @@ export const HoldToConfirm = forwardRef<HTMLButtonElement, HoldToConfirmProps>(f
   useEffect(() => () => stopFrame(), []);
 
   const isPrimary = variant === "primary";
-  const heightCls = isPrimary ? "h-16 text-lg" : "h-14 text-base";
+  const isGhost = variant === "ghost";
+  const heightCls = isPrimary ? "h-16 text-lg" : isGhost ? "h-11 text-sm" : "h-14 text-base";
 
   return (
     <button
