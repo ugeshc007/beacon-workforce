@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
 import { toLocalDateStr } from "@/lib/utils";
 import { enqueueAction } from "@/lib/offline-queue";
-import { syncPendingActions } from "@/lib/offline-sync";
+import { syncPendingActions, onSyncChange } from "@/lib/offline-sync";
 import { invokeEdge } from "@/lib/invoke-edge";
 import {
   SiteVisitStep,
@@ -165,11 +165,20 @@ export function useSiteVisitWorkflow(siteVisitId: string | null) {
 
   useEffect(() => {
     const onOnline = () => {
-      syncPendingActions().catch(console.error).finally(() => fetchSession());
+      syncPendingActions("hook:online").catch(console.error);
     };
     window.addEventListener("online", onOnline);
-    return () => window.removeEventListener("online", onOnline);
+    let wasSyncing = false;
+    const unsub = onSyncChange((_pending, syncing) => {
+      if (wasSyncing && !syncing) fetchSession();
+      wasSyncing = syncing;
+    });
+    return () => {
+      window.removeEventListener("online", onOnline);
+      unsub();
+    };
   }, [fetchSession]);
+
 
   return {
     session,
