@@ -107,6 +107,18 @@ Deno.serve(async (req) => {
       if (!log.return_travel_start_time) update.return_travel_start_time = closeAt;
       if (!log.office_arrival_time) update.office_arrival_time = closeAt;
     }
+    if (body.mode === "absent") {
+      // Employee never actually punched in — mark the shift as absent instead of
+      // fabricating a punch-in time. Close-out timestamps mirror punch-in fallback
+      // so downstream duration math yields zero.
+      update.notes = "Marked absent — punch-in never recorded";
+      update.is_absent = true;
+      update.is_incomplete_process = false;
+      // Zero-duration shift: close at the same instant we "opened" it.
+      const zeroAt = log.office_punch_in ?? closeAt;
+      update.office_punch_out = zeroAt;
+      if (!log.office_punch_in) update.office_punch_in = zeroAt;
+    }
     const { error: updErr } = await admin
       .from("attendance_logs")
       .update(update)
