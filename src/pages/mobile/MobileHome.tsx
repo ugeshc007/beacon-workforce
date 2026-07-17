@@ -212,18 +212,17 @@ export default function MobileHome() {
     navigate("/m/timesheet");
   };
 
-  // Self-serve "I forgot" close — calls close-stale-shift in forfeit mode.
+  // Self-serve "I forgot" close — calls close-stale-shift.
+  //   forfeit    → close using best-guess timestamps, mark incomplete
+  //   incomplete → same but explicitly flags the log so supervisor sees it
   const [forfeiting, setForfeiting] = useState(false);
-  const handleForfeitClose = async () => {
+  const runStaleClose = async (mode: "forfeit" | "incomplete", confirmMsg: string) => {
     if (!attendanceLog?.id) return;
-    const ok = window.confirm(
-      "Close this shift without travel-back times?\n\nUse this only if you cannot remember when you returned to office. Your supervisor will see this was self-closed."
-    );
-    if (!ok) return;
+    if (!window.confirm(confirmMsg)) return;
     setForfeiting(true);
     try {
       const { data, error } = await supabase.functions.invoke("close-stale-shift", {
-        body: { attendance_log_id: attendanceLog.id, mode: "forfeit" },
+        body: { attendance_log_id: attendanceLog.id, mode },
       });
       if (error || (data && (data as { error?: string }).error)) {
         toast({
@@ -232,12 +231,22 @@ export default function MobileHome() {
           variant: "destructive",
         });
       } else {
-        toast({ title: "Shift closed", description: "Your supervisor has been notified." });
+        toast({ title: "Shift closed", description: "Marked as incomplete. Your supervisor has been notified." });
       }
     } finally {
       setForfeiting(false);
     }
   };
+  const handleForfeitClose = () =>
+    runStaleClose(
+      "forfeit",
+      "Close this shift without travel-back times?\n\nUse this only if you cannot remember when you returned to office. Your supervisor will see this was self-closed."
+    );
+  const handleIncompleteClose = () =>
+    runStaleClose(
+      "incomplete",
+      "Auto-complete this shift with any missing steps?\n\nThe shift will be closed and marked as an incomplete process. Your supervisor will see missing steps."
+    );
 
   if (loading) {
     return (
@@ -345,15 +354,25 @@ export default function MobileHome() {
               ))}
           </div>
 
-          {/* Self-serve escape hatch */}
-          <button
-            type="button"
-            onClick={handleForfeitClose}
-            disabled={forfeiting}
-            className="w-full text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground disabled:opacity-50 pt-1"
-          >
-            {forfeiting ? "Closing…" : "Can't remember? Close shift without travel-back"}
-          </button>
+          {/* Self-serve escape hatches */}
+          <div className="flex flex-col gap-1 pt-1">
+            <button
+              type="button"
+              onClick={handleIncompleteClose}
+              disabled={forfeiting}
+              className="w-full text-[11px] text-orange-600 dark:text-orange-400 underline underline-offset-2 hover:text-orange-700 disabled:opacity-50"
+            >
+              {forfeiting ? "Closing…" : "Auto-complete missing steps (mark as incomplete)"}
+            </button>
+            <button
+              type="button"
+              onClick={handleForfeitClose}
+              disabled={forfeiting}
+              className="w-full text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground disabled:opacity-50"
+            >
+              Can't remember? Close shift without travel-back
+            </button>
+          </div>
         </div>
       )}
 
