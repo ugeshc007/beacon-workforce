@@ -91,7 +91,7 @@ export const projectStepLabels: Record<ProjectStep, string> = {
   at_site: "At Site",
   working: "Working",
   on_break: "On Break",
-  completed: "Completed",
+  completed: "Work ended",
 };
 
 export const projectStepColors: Record<ProjectStep, string> = {
