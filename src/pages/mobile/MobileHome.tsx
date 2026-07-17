@@ -621,30 +621,7 @@ export default function MobileHome() {
             </div>
           </Card>
 
-          {/* Break controls — in-house */}
-          {step === "on_break" ? (
-            <HoldToConfirm
-              onConfirm={() => executeAction("end_break")}
-              disabled={actionLoading}
-              loading={actionLoading}
-              variant="primary"
-            >
-              <Coffee className="h-5 w-5" />
-              {actionLabels.end_break}
-            </HoldToConfirm>
-          ) : (
-            <HoldToConfirm
-              onConfirm={() => executeAction("start_break")}
-              disabled={actionLoading}
-              loading={actionLoading}
-              variant="secondary"
-            >
-              <Coffee className="h-5 w-5" />
-              {actionLabels.start_break}
-            </HoldToConfirm>
-          )}
-
-          {/* Punch out — only when not on break */}
+          {/* Punch out — main action when not on break */}
           {step !== "on_break" && (
             <HoldToConfirm
               onConfirm={() => handleOfficeAction("punch_out")}
@@ -656,6 +633,31 @@ export default function MobileHome() {
               {actionLabels.punch_out}
             </HoldToConfirm>
           )}
+
+          {/* Break controls — optional, below main line */}
+          <div className={step !== "on_break" ? "mt-4" : ""}>
+            {step === "on_break" ? (
+              <HoldToConfirm
+                onConfirm={() => executeAction("end_break")}
+                disabled={actionLoading}
+                loading={actionLoading}
+                variant="primary"
+              >
+                <Coffee className="h-5 w-5" />
+                {actionLabels.end_break}
+              </HoldToConfirm>
+            ) : (
+              <HoldToConfirm
+                onConfirm={() => executeAction("start_break")}
+                disabled={actionLoading}
+                loading={actionLoading}
+                variant="ghost"
+              >
+                <Coffee className="h-5 w-5" />
+                {actionLabels.start_break}
+              </HoldToConfirm>
+            )}
+          </div>
         </div>
       )}
 
