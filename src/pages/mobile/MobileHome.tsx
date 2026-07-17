@@ -227,7 +227,7 @@ export default function MobileHome() {
   //   forfeit    → close using best-guess timestamps, mark incomplete
   //   incomplete → same but explicitly flags the log so supervisor sees it
   const [forfeiting, setForfeiting] = useState(false);
-  const runStaleClose = async (mode: "forfeit" | "incomplete", confirmMsg: string) => {
+  const runStaleClose = async (mode: "forfeit" | "incomplete" | "absent", confirmMsg: string) => {
     if (!attendanceLog?.id) return;
     if (!window.confirm(confirmMsg)) return;
     setForfeiting(true);
