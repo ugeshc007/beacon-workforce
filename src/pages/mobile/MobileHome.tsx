@@ -132,6 +132,17 @@ export default function MobileHome() {
       // proceeds without coordinates. Server-side validation can enforce if needed.
     }
 
+    // Stale shift with NO punch-in recorded → employee never actually started work.
+    // Don't ask them to fabricate a punch-in time; steer them to "Mark absent".
+    if (isStaleShift && action === "punch_in" && !attendanceLog?.office_punch_in) {
+      toast({
+        title: "Punch In not done",
+        description: "This shift was never started. Use \"Mark as Absent\" to close it.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // If this is a stale (previous-day) shift, ask the employee for the actual time
     // they did this step instead of stamping it as "now".
     if (isStaleShift && attendanceLog?.date) {
@@ -216,7 +227,7 @@ export default function MobileHome() {
   //   forfeit    → close using best-guess timestamps, mark incomplete
   //   incomplete → same but explicitly flags the log so supervisor sees it
   const [forfeiting, setForfeiting] = useState(false);
-  const runStaleClose = async (mode: "forfeit" | "incomplete", confirmMsg: string) => {
+  const runStaleClose = async (mode: "forfeit" | "incomplete" | "absent", confirmMsg: string) => {
     if (!attendanceLog?.id) return;
     if (!window.confirm(confirmMsg)) return;
     setForfeiting(true);
@@ -247,6 +258,13 @@ export default function MobileHome() {
       "incomplete",
       "Auto-complete this shift with any missing steps?\n\nThe shift will be closed and marked as an incomplete process. Your supervisor will see missing steps."
     );
+  const handleAbsentClose = () =>
+    runStaleClose(
+      "absent",
+      "Mark this shift as ABSENT?\n\nUse this if you never actually started work. The shift will be closed with zero hours and flagged as absent for your supervisor."
+    );
+
+  const hasNoPunchIn = !attendanceLog?.office_punch_in;
 
   if (loading) {
     return (
@@ -315,64 +333,85 @@ export default function MobileHome() {
                 Unfinished shift from {staleShiftLabel}
               </p>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                You're still punched in from a previous day. Finish the workflow below to close it.
+                {hasNoPunchIn
+                  ? "You never punched in for this shift. Mark it as absent to close it."
+                  : "You're still punched in from a previous day. Finish the workflow below to close it."}
               </p>
             </div>
             <ChevronRight className="h-4 w-4 text-orange-500 mt-1 shrink-0" />
           </button>
 
-          <button
-            type="button"
-            onClick={openStaleShift}
-            className="w-full rounded-lg border border-orange-500/40 bg-card/60 px-3 py-2 text-left flex items-center gap-2 hover:bg-card transition-colors"
-          >
-            <PlayCircle className="h-4 w-4 text-orange-500 shrink-0" />
-            <span className="text-[12px] font-medium text-foreground flex-1 truncate">
-              {staleProjectSession
-                ? `${staleProjectSession.work_end_time ? "Review" : "Finish"} project: ${staleProjectSession.projects?.name ?? "Open project"}`
-                : "Open unfinished shift"}
-            </span>
-            <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-          </button>
+          {hasNoPunchIn ? (
+            /* No punch-in ever recorded → the only sensible action is Mark Absent. */
+            <div className="flex flex-col gap-1 pt-1">
+              <button
+                type="button"
+                onClick={handleAbsentClose}
+                disabled={forfeiting}
+                className="w-full rounded-lg bg-red-500 px-3 py-2.5 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-50"
+              >
+                {forfeiting ? "Marking absent…" : "Mark as Absent"}
+              </button>
+              <p className="text-[11px] text-muted-foreground text-center pt-1">
+                Zero hours will be recorded and your supervisor will be notified.
+              </p>
+            </div>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={openStaleShift}
+                className="w-full rounded-lg border border-orange-500/40 bg-card/60 px-3 py-2 text-left flex items-center gap-2 hover:bg-card transition-colors"
+              >
+                <PlayCircle className="h-4 w-4 text-orange-500 shrink-0" />
+                <span className="text-[12px] font-medium text-foreground flex-1 truncate">
+                  {staleProjectSession
+                    ? `${staleProjectSession.work_end_time ? "Review" : "Finish"} project: ${staleProjectSession.projects?.name ?? "Open project"}`
+                    : "Open unfinished shift"}
+                </span>
+                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+              </button>
 
-          <div className="grid grid-cols-1 gap-2">
-            {availableActions
-              .filter((a) => a !== "punch_in")
-              .map((a) => (
-                <HoldToConfirm
-                  key={a}
-                  onConfirm={() => handleOfficeAction(a)}
-                  disabled={actionLoading}
-                  loading={actionLoading}
-                  variant={a === "punch_out" ? "primary" : "secondary"}
+              <div className="grid grid-cols-1 gap-2">
+                {availableActions
+                  .filter((a) => a !== "punch_in")
+                  .map((a) => (
+                    <HoldToConfirm
+                      key={a}
+                      onConfirm={() => handleOfficeAction(a)}
+                      disabled={actionLoading}
+                      loading={actionLoading}
+                      variant={a === "punch_out" ? "primary" : "secondary"}
+                    >
+                      {a === "start_return_travel" && <RotateCcw className="h-4 w-4" />}
+                      {a === "arrive_office" && <Building2 className="h-4 w-4" />}
+                      {a === "punch_out" && <CheckCircle2 className="h-4 w-4" />}
+                      {actionLabels[a]}
+                    </HoldToConfirm>
+                  ))}
+              </div>
+
+              {/* Self-serve escape hatches */}
+              <div className="flex flex-col gap-1 pt-1">
+                <button
+                  type="button"
+                  onClick={handleIncompleteClose}
+                  disabled={forfeiting}
+                  className="w-full text-[11px] text-orange-600 dark:text-orange-400 underline underline-offset-2 hover:text-orange-700 disabled:opacity-50"
                 >
-                  {a === "start_return_travel" && <RotateCcw className="h-4 w-4" />}
-                  {a === "arrive_office" && <Building2 className="h-4 w-4" />}
-                  {a === "punch_out" && <CheckCircle2 className="h-4 w-4" />}
-                  {actionLabels[a]}
-                </HoldToConfirm>
-              ))}
-          </div>
-
-          {/* Self-serve escape hatches */}
-          <div className="flex flex-col gap-1 pt-1">
-            <button
-              type="button"
-              onClick={handleIncompleteClose}
-              disabled={forfeiting}
-              className="w-full text-[11px] text-orange-600 dark:text-orange-400 underline underline-offset-2 hover:text-orange-700 disabled:opacity-50"
-            >
-              {forfeiting ? "Closing…" : "Auto-complete missing steps (mark as incomplete)"}
-            </button>
-            <button
-              type="button"
-              onClick={handleForfeitClose}
-              disabled={forfeiting}
-              className="w-full text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground disabled:opacity-50"
-            >
-              Can't remember? Close shift without travel-back
-            </button>
-          </div>
+                  {forfeiting ? "Closing…" : "Auto-complete missing steps (mark as incomplete)"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleForfeitClose}
+                  disabled={forfeiting}
+                  className="w-full text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground disabled:opacity-50"
+                >
+                  Can't remember? Close shift without travel-back
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
 

@@ -8,7 +8,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 type Body = {
   attendance_log_id: string;
-  mode: "complete" | "forfeit" | "incomplete";
+  mode: "complete" | "forfeit" | "incomplete" | "absent";
   client_timestamp?: string; // ISO, optional override for forfeit/incomplete close time
 };
 
@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
     const authId = authData.user.id;
 
     const body = (await req.json()) as Body;
-    if (!body?.attendance_log_id || !["complete", "forfeit", "incomplete"].includes(body.mode)) {
+    if (!body?.attendance_log_id || !["complete", "forfeit", "incomplete", "absent"].includes(body.mode)) {
       return json({ error: "attendance_log_id and mode required" }, 400);
     }
 
@@ -106,6 +106,18 @@ Deno.serve(async (req) => {
       if (!log.work_end_time) update.work_end_time = closeAt;
       if (!log.return_travel_start_time) update.return_travel_start_time = closeAt;
       if (!log.office_arrival_time) update.office_arrival_time = closeAt;
+    }
+    if (body.mode === "absent") {
+      // Employee never actually punched in — mark the shift as absent instead of
+      // fabricating a punch-in time. Close-out timestamps mirror punch-in fallback
+      // so downstream duration math yields zero.
+      update.notes = "Marked absent — punch-in never recorded";
+      update.is_absent = true;
+      update.is_incomplete_process = false;
+      // Zero-duration shift: close at the same instant we "opened" it.
+      const zeroAt = log.office_punch_in ?? closeAt;
+      update.office_punch_out = zeroAt;
+      if (!log.office_punch_in) update.office_punch_in = zeroAt;
     }
     const { error: updErr } = await admin
       .from("attendance_logs")
