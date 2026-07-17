@@ -258,6 +258,13 @@ export default function MobileHome() {
       "incomplete",
       "Auto-complete this shift with any missing steps?\n\nThe shift will be closed and marked as an incomplete process. Your supervisor will see missing steps."
     );
+  const handleAbsentClose = () =>
+    runStaleClose(
+      "absent",
+      "Mark this shift as ABSENT?\n\nUse this if you never actually started work. The shift will be closed with zero hours and flagged as absent for your supervisor."
+    );
+
+  const hasNoPunchIn = !attendanceLog?.office_punch_in;
 
   if (loading) {
     return (
