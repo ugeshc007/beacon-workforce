@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useTenant } from "@/hooks/useTenant";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,10 @@ export default function Login() {
   const { signIn } = useAuth();
   const { tenant } = useTenant();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const nextParam = searchParams.get("next");
+  const nextPath =
+    nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : null;
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -36,6 +40,10 @@ export default function Login() {
     }
 
     toast({ title: "Welcome back!", description: "You have been signed in successfully." });
+    if (nextPath) {
+      window.location.href = nextPath;
+      return;
+    }
     navigate("/dashboard", { replace: true });
   };
 
