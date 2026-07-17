@@ -8,7 +8,7 @@ interface HoldToConfirmProps {
   disabled?: boolean;
   loading?: boolean;
   className?: string;
-  variant?: "primary" | "secondary";
+  variant?: "primary" | "secondary" | "ghost";
   children: React.ReactNode;
 }
 
@@ -104,7 +104,8 @@ export const HoldToConfirm = forwardRef<HTMLButtonElement, HoldToConfirmProps>(f
   useEffect(() => () => stopFrame(), []);
 
   const isPrimary = variant === "primary";
-  const heightCls = isPrimary ? "h-16 text-lg" : "h-14 text-base";
+  const isGhost = variant === "ghost";
+  const heightCls = isPrimary ? "h-16 text-lg" : isGhost ? "h-11 text-sm" : "h-14 text-base";
 
   return (
     <button
@@ -139,6 +140,8 @@ export const HoldToConfirm = forwardRef<HTMLButtonElement, HoldToConfirmProps>(f
         heightCls,
         isPrimary
           ? "bg-primary text-white"
+          : isGhost
+          ? "bg-transparent text-muted-foreground border border-dashed border-border/60 shadow-none font-medium"
           : "bg-secondary text-secondary-foreground border border-border",
         disabled && "opacity-50 cursor-not-allowed",
         holding && "scale-[0.98]",
@@ -150,7 +153,7 @@ export const HoldToConfirm = forwardRef<HTMLButtonElement, HoldToConfirmProps>(f
       <div
         className={cn(
           "absolute inset-0 origin-left",
-          isPrimary ? "bg-white/25" : "bg-primary/20"
+          isPrimary ? "bg-white/25" : isGhost ? "bg-muted/40" : "bg-primary/20"
         )}
         style={{
           transform: `scaleX(${progress})`,

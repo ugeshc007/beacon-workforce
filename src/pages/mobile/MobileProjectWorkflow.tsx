@@ -338,14 +338,14 @@ export default function MobileProjectWorkflow() {
       )}
 
       {secondary.length > 0 && (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 mt-4">
           {secondary.map((a) => (
             <HoldToConfirm
               key={a}
               onConfirm={() => handleAction(a)}
               disabled={actionLoading}
               loading={actionLoading}
-              variant="secondary"
+              variant={a === "start_break" ? "ghost" : "secondary"}
             >
               {projectActionLabels[a]}
             </HoldToConfirm>
