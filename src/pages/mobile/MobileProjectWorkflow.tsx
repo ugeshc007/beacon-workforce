@@ -372,10 +372,22 @@ export default function MobileProjectWorkflow() {
             // not from the office state machine (which may still think the
             // employee is just "punched_in" on a stale log without site timestamps).
             const log = office.attendanceLog;
+            // Only require the return-to-office flow if the employee actually
+            // traveled today. In-house / office-based work skips travel entirely,
+            // so "Start Return Travel" / "Arrived at Office" must not appear —
+            // they just punch out. This mirrors the server-side punch-out check.
+            const traveled =
+              !!log?.travel_start_time ||
+              !!log?.site_arrival_time ||
+              !!log?.return_travel_start_time ||
+              workLocation === "site";
             const postProjectActions: ("start_return_travel" | "arrive_office" | "punch_out")[] = [];
-            if (!log?.return_travel_start_time) postProjectActions.push("start_return_travel");
-            else if (!log?.office_arrival_time) postProjectActions.push("arrive_office");
+            if (traveled) {
+              if (!log?.return_travel_start_time) postProjectActions.push("start_return_travel");
+              else if (!log?.office_arrival_time) postProjectActions.push("arrive_office");
+            }
             if (!log?.office_punch_out) postProjectActions.push("punch_out");
+
 
             return (
               <div className="mt-4 space-y-2">
