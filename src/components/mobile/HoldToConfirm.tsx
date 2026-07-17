@@ -153,7 +153,7 @@ export const HoldToConfirm = forwardRef<HTMLButtonElement, HoldToConfirmProps>(f
       <div
         className={cn(
           "absolute inset-0 origin-left",
-          isPrimary ? "bg-white/25" : "bg-primary/20"
+          isPrimary ? "bg-white/25" : isGhost ? "bg-muted/40" : "bg-primary/20"
         )}
         style={{
           transform: `scaleX(${progress})`,
