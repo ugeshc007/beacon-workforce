@@ -295,15 +295,30 @@ export function useProjectWorkflow(projectId: string | null, dateOverride?: stri
 
   // When the device comes back online, flush any queued project actions
   // and refresh from the server so the timer state matches reality.
+  // IMPORTANT: never overwrite optimistic state before the offline queue
+  // has finished replaying — otherwise the UI snaps back to "idle" because
+  // the server still has no session row for today's queued actions.
   useEffect(() => {
     const onOnline = () => {
-      syncPendingActions()
-        .catch(console.error)
-        .finally(() => fetchSession());
+      // Kick a sync (no-op if one is already running via initAutoSync).
+      syncPendingActions("hook:online").catch(console.error);
     };
     window.addEventListener("online", onOnline);
-    return () => window.removeEventListener("online", onOnline);
+    // Refetch only when the sync engine reports idle (syncing=false).
+    // This runs regardless of which caller kicked off the sync.
+    let wasSyncing = false;
+    const unsub = onSyncChange((_pending, syncing) => {
+      if (wasSyncing && !syncing) {
+        fetchSession();
+      }
+      wasSyncing = syncing;
+    });
+    return () => {
+      window.removeEventListener("online", onOnline);
+      unsub();
+    };
   }, [fetchSession]);
+
 
   return {
     session,
