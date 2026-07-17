@@ -46,9 +46,25 @@ Deno.serve(async (req) => {
 
     const now = new Date();
     let absentCount = 0;
+    let autoRecordedCount = 0;
 
     // Group absent employees by branch for batch notifications
     const branchAbsent: Record<string, { empName: string; projectName: string; shiftStart: string }[]> = {};
+
+    // Pre-load today's attendance_logs so we can tell which employees already
+    // have an absent row (idempotent) and skip them.
+    const { data: todayLogs } = await supabase
+      .from("attendance_logs")
+      .select("employee_id, is_absent")
+      .eq("date", today);
+    const alreadyAbsent = new Set(
+      (todayLogs ?? [])
+        .filter((l: { is_absent: boolean }) => l.is_absent)
+        .map((l: { employee_id: string }) => l.employee_id)
+    );
+    const anyLogToday = new Set(
+      (todayLogs ?? []).map((l: { employee_id: string }) => l.employee_id)
+    );
 
     for (const a of assignments) {
       const emp = a.employees as any;
@@ -56,12 +72,28 @@ Deno.serve(async (req) => {
       if (!emp || punchedInIds.has(a.employee_id) || onLeaveIds.has(a.employee_id)) continue;
 
       // Check if enough time has passed since shift start
+      let diffMinutes = Infinity;
       if (a.shift_start) {
         const shiftStartStr = `${today}T${a.shift_start}+04:00`;
         const shiftStart = new Date(shiftStartStr);
-        const diffMinutes = (now.getTime() - shiftStart.getTime()) / 60000;
+        diffMinutes = (now.getTime() - shiftStart.getTime()) / 60000;
 
         if (diffMinutes < absentDelayMinutes) continue; // Not late enough yet
+      }
+
+      // Auto-record absence when 24h have passed since shift start and no
+      // attendance log yet exists for the day. Marks the day as absent so
+      // reports and payroll can exclude them cleanly.
+      if (diffMinutes >= 24 * 60 && !anyLogToday.has(a.employee_id) && !alreadyAbsent.has(a.employee_id)) {
+        await supabase.from("attendance_logs").insert({
+          employee_id: a.employee_id,
+          date: today,
+          is_absent: true,
+          notes: "Auto-recorded absence (no punch-in within 24h of scheduled shift)",
+        });
+        alreadyAbsent.add(a.employee_id);
+        anyLogToday.add(a.employee_id);
+        autoRecordedCount++;
       }
 
       const branchId = emp.branch_id;
@@ -100,6 +132,7 @@ Deno.serve(async (req) => {
     return jsonResponse({
       checked: assignments.length,
       absent: absentCount,
+      auto_recorded: autoRecordedCount,
       branches_notified: Object.keys(branchAbsent).length,
     });
   } catch (err) {
