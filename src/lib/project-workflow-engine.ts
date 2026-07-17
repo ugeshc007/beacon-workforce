@@ -19,7 +19,7 @@ const transitions: Record<ProjectStep, ProjectAction[]> = {
   idle: ["start_travel"],
   traveling: ["arrive_site"],
   at_site: ["start_work"],
-  working: ["start_break", "end_work"],
+  working: ["end_work", "start_break"],
   on_break: ["end_break"],
   completed: [],
 };
@@ -30,7 +30,7 @@ const inHouseTransitions: Record<ProjectStep, ProjectAction[]> = {
   idle: ["start_work"],
   traveling: ["start_work"],     // safety: if a stray travel exists, let them continue
   at_site: ["start_work"],
-  working: ["start_break", "end_work"],
+  working: ["end_work", "start_break"],
   on_break: ["end_break"],
   completed: [],
 };
