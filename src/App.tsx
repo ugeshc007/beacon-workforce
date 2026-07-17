@@ -49,6 +49,7 @@ import SiteVisits from "./pages/SiteVisits";
 import SiteVisitDetail from "./pages/SiteVisitDetail";
 import RecurringJobs from "./pages/RecurringJobs";
 import ErrorAudit from "./pages/ErrorAudit";
+import OAuthConsent from "./pages/OAuthConsent";
 
 // Mobile screens
 import MobileLogin from "./pages/mobile/MobileLogin";
@@ -113,6 +114,7 @@ const App = () => (
           <Route path="/login" element={<AuthProvider><Login /></AuthProvider>} />
           <Route path="/forgot-password" element={<AuthProvider><ForgotPassword /></AuthProvider>} />
           <Route path="/reset-password" element={<AuthProvider><ResetPassword /></AuthProvider>} />
+          <Route path="/.lovable/oauth/consent" element={<AuthProvider><OAuthConsent /></AuthProvider>} />
           <Route path="/" element={<AuthProvider><Index /></AuthProvider>} />
           <Route
             element={
