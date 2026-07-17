@@ -354,15 +354,25 @@ export default function MobileHome() {
               ))}
           </div>
 
-          {/* Self-serve escape hatch */}
-          <button
-            type="button"
-            onClick={handleForfeitClose}
-            disabled={forfeiting}
-            className="w-full text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground disabled:opacity-50 pt-1"
-          >
-            {forfeiting ? "Closing…" : "Can't remember? Close shift without travel-back"}
-          </button>
+          {/* Self-serve escape hatches */}
+          <div className="flex flex-col gap-1 pt-1">
+            <button
+              type="button"
+              onClick={handleIncompleteClose}
+              disabled={forfeiting}
+              className="w-full text-[11px] text-orange-600 dark:text-orange-400 underline underline-offset-2 hover:text-orange-700 disabled:opacity-50"
+            >
+              {forfeiting ? "Closing…" : "Auto-complete missing steps (mark as incomplete)"}
+            </button>
+            <button
+              type="button"
+              onClick={handleForfeitClose}
+              disabled={forfeiting}
+              className="w-full text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground disabled:opacity-50"
+            >
+              Can't remember? Close shift without travel-back
+            </button>
+          </div>
         </div>
       )}
 
