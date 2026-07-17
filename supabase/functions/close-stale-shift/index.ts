@@ -8,8 +8,8 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 type Body = {
   attendance_log_id: string;
-  mode: "complete" | "forfeit";
-  client_timestamp?: string; // ISO, optional override for forfeit close time
+  mode: "complete" | "forfeit" | "incomplete";
+  client_timestamp?: string; // ISO, optional override for forfeit/incomplete close time
 };
 
 Deno.serve(async (req) => {
@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
     const authId = authData.user.id;
 
     const body = (await req.json()) as Body;
-    if (!body?.attendance_log_id || !["complete", "forfeit"].includes(body.mode)) {
+    if (!body?.attendance_log_id || !["complete", "forfeit", "incomplete"].includes(body.mode)) {
       return json({ error: "attendance_log_id and mode required" }, 400);
     }
 
@@ -59,11 +59,17 @@ Deno.serve(async (req) => {
       return json({ success: true, deduped: true, office_punch_out: log.office_punch_out });
     }
 
-    // Guard: only operate on shifts dated before today (UAE)
+    // Guard: allow closure when either the shift is dated before today (UAE) OR
+    // more than 24 hours have passed since punch-in. That covers same-UAE-day
+    // shifts where the employee punched in yesterday evening and is still open.
     const todayUAE = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Dubai" }))
       .toISOString().slice(0, 10);
-    if (log.date >= todayUAE) {
-      return json({ error: "This action is only for shifts from previous days. Use the normal punch-out for today." }, 400);
+    const punchedInAgeMs = log.office_punch_in
+      ? Date.now() - new Date(log.office_punch_in).getTime()
+      : 0;
+    const isStale = log.date < todayUAE || punchedInAgeMs > 24 * 60 * 60 * 1000;
+    if (!isStale) {
+      return json({ error: "This action is only for shifts from previous days or older than 24 hours. Use the normal punch-out for today." }, 400);
     }
 
     if (body.mode === "complete") {
@@ -90,6 +96,16 @@ Deno.serve(async (req) => {
     };
     if (body.mode === "forfeit") {
       update.notes = "Self-closed stale shift (forfeit)";
+      update.is_incomplete_process = true;
+    }
+    if (body.mode === "incomplete") {
+      update.notes = "Auto-completed after 24h with missing workflow steps";
+      update.is_incomplete_process = true;
+      // Backfill any missing intermediate timestamps with the close time so
+      // downstream reports do not divide by null.
+      if (!log.work_end_time) update.work_end_time = closeAt;
+      if (!log.return_travel_start_time) update.return_travel_start_time = closeAt;
+      if (!log.office_arrival_time) update.office_arrival_time = closeAt;
     }
     const { error: updErr } = await admin
       .from("attendance_logs")
