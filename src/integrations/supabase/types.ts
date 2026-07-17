@@ -77,7 +77,9 @@ export type Database = {
           holiday_premium_cost: number | null
           id: string
           idempotency_key: string | null
+          is_absent: boolean
           is_holiday: boolean
+          is_incomplete_process: boolean
           is_manual_override: boolean | null
           notes: string | null
           office_arrival_accuracy: number | null
@@ -135,7 +137,9 @@ export type Database = {
           holiday_premium_cost?: number | null
           id?: string
           idempotency_key?: string | null
+          is_absent?: boolean
           is_holiday?: boolean
+          is_incomplete_process?: boolean
           is_manual_override?: boolean | null
           notes?: string | null
           office_arrival_accuracy?: number | null
@@ -193,7 +197,9 @@ export type Database = {
           holiday_premium_cost?: number | null
           id?: string
           idempotency_key?: string | null
+          is_absent?: boolean
           is_holiday?: boolean
+          is_incomplete_process?: boolean
           is_manual_override?: boolean | null
           notes?: string | null
           office_arrival_accuracy?: number | null
