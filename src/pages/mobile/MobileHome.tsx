@@ -132,6 +132,17 @@ export default function MobileHome() {
       // proceeds without coordinates. Server-side validation can enforce if needed.
     }
 
+    // Stale shift with NO punch-in recorded → employee never actually started work.
+    // Don't ask them to fabricate a punch-in time; steer them to "Mark absent".
+    if (isStaleShift && action === "punch_in" && !attendanceLog?.office_punch_in) {
+      toast({
+        title: "Punch In not done",
+        description: "This shift was never started. Use \"Mark as Absent\" to close it.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // If this is a stale (previous-day) shift, ask the employee for the actual time
     // they did this step instead of stamping it as "now".
     if (isStaleShift && attendanceLog?.date) {
