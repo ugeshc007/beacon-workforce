@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
 import { toLocalDateStr } from "@/lib/utils";
 import { enqueueAction } from "@/lib/offline-queue";
-import { syncPendingActions } from "@/lib/offline-sync";
+import { syncPendingActions, onSyncChange } from "@/lib/offline-sync";
 import { invokeEdge } from "@/lib/invoke-edge";
 import { useDayWorkLocation } from "@/hooks/useDayWorkLocation";
 import {
