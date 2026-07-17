@@ -8,7 +8,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 type Body = {
   attendance_log_id: string;
-  mode: "complete" | "forfeit" | "incomplete";
+  mode: "complete" | "forfeit" | "incomplete" | "absent";
   client_timestamp?: string; // ISO, optional override for forfeit/incomplete close time
 };
 
