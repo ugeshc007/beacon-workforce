@@ -83,9 +83,27 @@ export function useProjectWorkflow(projectId: string | null, dateOverride?: stri
 
   // Fallback: if no explicit location is set for the assignment or day,
   // check the project itself — no site coords means in-house (no travel flow).
-  const [projectHasCoords, setProjectHasCoords] = useState<boolean | null>(null);
+  // Cache the result so offline launches still know if the project is in-house
+  // (otherwise the workflow defaults to the site table and shows "Start Travel"
+  // instead of "Start Work").
+  const coordsCacheKey = projectId ? `pwl_coords_${projectId}` : null;
+  const [projectHasCoords, setProjectHasCoords] = useState<boolean | null>(() => {
+    if (typeof window === "undefined" || !coordsCacheKey) return null;
+    try {
+      const cached = localStorage.getItem(coordsCacheKey);
+      return cached ? JSON.parse(cached) : null;
+    } catch { return null; }
+  });
   useEffect(() => {
-    if (!projectId || !navigator.onLine) return;
+    if (!projectId) return;
+    // Re-hydrate from cache when projectId changes.
+    if (coordsCacheKey) {
+      try {
+        const cached = localStorage.getItem(coordsCacheKey);
+        if (cached) setProjectHasCoords(JSON.parse(cached));
+      } catch { /* ignore */ }
+    }
+    if (!navigator.onLine) return;
     let cancelled = false;
     (async () => {
       const { data } = await supabase
@@ -94,11 +112,15 @@ export function useProjectWorkflow(projectId: string | null, dateOverride?: stri
         .eq("id", projectId)
         .maybeSingle();
       if (!cancelled) {
-        setProjectHasCoords(data?.site_latitude != null && data?.site_longitude != null);
+        const has = data?.site_latitude != null && data?.site_longitude != null;
+        setProjectHasCoords(has);
+        if (coordsCacheKey) {
+          try { localStorage.setItem(coordsCacheKey, JSON.stringify(has)); } catch { /* ignore */ }
+        }
       }
     })();
     return () => { cancelled = true; };
-  }, [projectId]);
+  }, [projectId, coordsCacheKey]);
   const inferredLocation: "in_house" | "site" | null =
     projectHasCoords === null ? null : (projectHasCoords ? "site" : "in_house");
   const workLocation = assignmentLocation ?? dayWorkLocation ?? inferredLocation ?? null;
