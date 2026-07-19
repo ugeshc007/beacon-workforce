@@ -774,7 +774,6 @@ export default function MobileHome() {
       {step !== "idle" && step !== "punched_out" && step !== "at_office" && (
         allProjectsDone
         || (isDriverDay && step === "returning")
-        || step === "work_done"
         || step === "returning"
       ) && (
         <div className="flex flex-col gap-3">
