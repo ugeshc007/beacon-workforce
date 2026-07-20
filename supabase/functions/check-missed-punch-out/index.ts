@@ -25,9 +25,9 @@ Deno.serve(async (req) => {
       .not("office_punch_in", "is", null)
       .is("office_punch_out", null);
 
-    if (!openLogs?.length) {
-      return jsonResponse({ checked: 0, reminded: 0 });
-    }
+    // Note: don't early-return when no openLogs — we still check pending
+    // project-step reminders below.
+
 
     // Already reminded buckets today
     const { data: alreadyReminded } = await supabase
@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
     let reminded = 0;
     const errors: string[] = [];
 
-    for (const log of openLogs) {
+    for (const log of openLogs ?? []) {
       const empId = (log as any).employee_id as string;
       const punchIn = (log as any).office_punch_in as string;
       if (!empId || !punchIn) continue;
@@ -83,9 +83,64 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ------------------------------------------------------------------
+    // Pending-step reminders: employee started work on a project but never
+    // tapped "End Work" after 9h of elapsed time. Fires once per session per
+    // hour bucket beyond 9h.
+    // ------------------------------------------------------------------
+    const { data: openSessions } = await supabase
+      .from("project_work_sessions")
+      .select("id, employee_id, work_start_time, work_end_time, project_id, projects(name), employees(name)")
+      .eq("date", today)
+      .not("work_start_time", "is", null)
+      .is("work_end_time", null);
+
+    const { data: alreadyRemindedSteps } = await supabase
+      .from("employee_notifications")
+      .select("employee_id, reference_id")
+      .eq("type", "pending_step_reminder")
+      .like("reference_id", `${today}-s%`);
+    const remindedStepKeys = new Set(
+      (alreadyRemindedSteps ?? []).map((r: { employee_id: string; reference_id: string }) => `${r.employee_id}:${r.reference_id}`),
+    );
+
+    let stepReminded = 0;
+    for (const sess of openSessions ?? []) {
+      const empId = (sess as any).employee_id as string;
+      const start = (sess as any).work_start_time as string;
+      if (!empId || !start) continue;
+      const elapsedMin = (now.getTime() - new Date(start).getTime()) / 60000;
+      if (elapsedMin < 9 * 60) continue;
+      const overHour = Math.floor((elapsedMin - 9 * 60) / 60) + 1;
+      const refId = `${today}-s${(sess as any).id}-h${overHour}`;
+      if (remindedStepKeys.has(`${empId}:${refId}`)) continue;
+
+      const empName = (sess as any).employees?.name ?? "there";
+      const projectName = (sess as any).projects?.name ?? "your project";
+      try {
+        await supabase.functions.invoke("send-push", {
+          body: {
+            employee_id: empId,
+            title: "Did you forget to end work?",
+            message: `Hi ${empName}, you've been working on ${projectName} for over 9 hours. Please tap End Work if you're done.`,
+            data: {
+              type: "pending_step_reminder",
+              priority: "high",
+              reference_id: refId,
+              reference_type: "project_session",
+            },
+          },
+        });
+        stepReminded++;
+      } catch (e) {
+        errors.push(`${empId}(step): ${(e as Error).message}`);
+      }
+    }
+
     return jsonResponse({
-      checked: openLogs.length,
+      checked: openLogs?.length ?? 0,
       reminded,
+      step_reminded: stepReminded,
       errors: errors.length ? errors : undefined,
     });
   } catch (err) {
