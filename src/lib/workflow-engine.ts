@@ -33,7 +33,8 @@ const transitions: Record<WorkflowStep, WorkflowAction[]> = {
   work_done: ["start_return_travel"],
   returning: ["arrive_office"],
   at_office: ["punch_out"],
-  punched_out: [],
+  // Allow starting a fresh shift after punching out (multi-shift days / next shift).
+  punched_out: ["punch_in"],
 };
 
 export function getAvailableActions(step: WorkflowStep): WorkflowAction[] {
