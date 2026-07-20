@@ -188,17 +188,21 @@ export function useMobileWorkflow() {
         default: return {};
       }
     })();
-    const optimisticLog: AttendanceLog = {
-      ...(attendanceLog ?? {
-        id: "",
-        date: today,
-        office_punch_in: null, travel_start_time: null, site_arrival_time: null,
-        work_start_time: null, break_start_time: null, break_end_time: null,
-        work_end_time: null, return_travel_start_time: null,
-        office_arrival_time: null, office_punch_out: null,
-      }),
-      ...logPatch,
-    };
+    // When punching in AFTER a previous shift has already been closed today,
+    // don't merge onto the closed log — build a fresh optimistic log so the
+    // UI shows a clean new shift instead of carrying over old timestamps.
+    const startingFreshShift = action === "punch_in" && !!attendanceLog?.office_punch_out;
+    const baseLog: AttendanceLog = (startingFreshShift || !attendanceLog)
+      ? {
+          id: "",
+          date: today,
+          office_punch_in: null, travel_start_time: null, site_arrival_time: null,
+          work_start_time: null, break_start_time: null, break_end_time: null,
+          work_end_time: null, return_travel_start_time: null,
+          office_arrival_time: null, office_punch_out: null,
+        }
+      : attendanceLog;
+    const optimisticLog: AttendanceLog = { ...baseLog, ...logPatch };
     setAttendanceLog(optimisticLog);
     cacheData(`attendance_${employee.id}_${today}`, optimisticLog).catch(() => {});
 
