@@ -381,23 +381,28 @@ export default function MobileHome() {
             </div>
           ) : (
             <>
-              <button
-                type="button"
-                onClick={openStaleShift}
-                className="w-full rounded-lg border border-orange-500/40 bg-card/60 px-3 py-2 text-left flex items-center gap-2 hover:bg-card transition-colors"
-              >
-                <PlayCircle className="h-4 w-4 text-orange-500 shrink-0" />
-                <span className="text-[12px] font-medium text-foreground flex-1 truncate">
-                  {staleProjectSession
-                    ? `${staleProjectSession.work_end_time ? "Review" : "Finish"} project: ${staleProjectSession.projects?.name ?? "Open project"}`
-                    : "Open unfinished shift"}
-                </span>
-                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-              </button>
+              {!staleNoAssignment && (
+                <button
+                  type="button"
+                  onClick={openStaleShift}
+                  className="w-full rounded-lg border border-orange-500/40 bg-card/60 px-3 py-2 text-left flex items-center gap-2 hover:bg-card transition-colors"
+                >
+                  <PlayCircle className="h-4 w-4 text-orange-500 shrink-0" />
+                  <span className="text-[12px] font-medium text-foreground flex-1 truncate">
+                    {staleProjectSession
+                      ? `${staleProjectSession.work_end_time ? "Review" : "Finish"} project: ${staleProjectSession.projects?.name ?? "Open project"}`
+                      : "Open unfinished shift"}
+                  </span>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                </button>
+              )}
 
               <div className="grid grid-cols-1 gap-2">
                 {availableActions
                   .filter((a) => a !== "punch_in")
+                  // When the stale day had no project assignment, retro is only
+                  // about closing the shift — hide travel/break/site steps.
+                  .filter((a) => !staleNoAssignment || a === "punch_out")
                   .map((a) => (
                     <HoldToConfirm
                       key={a}
@@ -416,14 +421,25 @@ export default function MobileHome() {
 
               {/* Self-serve escape hatches */}
               <div className="flex flex-col gap-1 pt-1">
+                {!staleNoAssignment && (
+                  <button
+                    type="button"
+                    onClick={handleIncompleteClose}
+                    disabled={forfeiting}
+                    className="w-full text-[11px] text-orange-600 dark:text-orange-400 underline underline-offset-2 hover:text-orange-700 disabled:opacity-50"
+                  >
+                    {forfeiting ? "Closing…" : "Auto-complete missing steps (mark as incomplete)"}
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={handleIncompleteClose}
+                  onClick={handleForfeitClose}
                   disabled={forfeiting}
-                  className="w-full text-[11px] text-orange-600 dark:text-orange-400 underline underline-offset-2 hover:text-orange-700 disabled:opacity-50"
+                  className="w-full text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground disabled:opacity-50"
                 >
-                  {forfeiting ? "Closing…" : "Auto-complete missing steps (mark as incomplete)"}
+                  Can't remember? Close shift without travel-back
                 </button>
+              </div>
                 <button
                   type="button"
                   onClick={handleForfeitClose}
