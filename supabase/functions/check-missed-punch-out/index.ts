@@ -25,9 +25,9 @@ Deno.serve(async (req) => {
       .not("office_punch_in", "is", null)
       .is("office_punch_out", null);
 
-    if (!openLogs?.length) {
-      return jsonResponse({ checked: 0, reminded: 0 });
-    }
+    // Note: don't early-return when no openLogs — we still check pending
+    // project-step reminders below.
+
 
     // Already reminded buckets today
     const { data: alreadyReminded } = await supabase
