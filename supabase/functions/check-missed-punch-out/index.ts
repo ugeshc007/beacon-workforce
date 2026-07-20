@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
     let reminded = 0;
     const errors: string[] = [];
 
-    for (const log of openLogs) {
+    for (const log of openLogs ?? []) {
       const empId = (log as any).employee_id as string;
       const punchIn = (log as any).office_punch_in as string;
       if (!empId || !punchIn) continue;
