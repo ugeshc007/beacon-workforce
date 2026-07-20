@@ -138,7 +138,7 @@ Deno.serve(async (req) => {
     }
 
     return jsonResponse({
-      checked: openLogs.length,
+      checked: openLogs?.length ?? 0,
       reminded,
       step_reminded: stepReminded,
       errors: errors.length ? errors : undefined,
