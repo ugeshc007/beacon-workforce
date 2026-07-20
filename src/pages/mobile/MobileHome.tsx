@@ -440,15 +440,6 @@ export default function MobileHome() {
                   Can't remember? Close shift without travel-back
                 </button>
               </div>
-                <button
-                  type="button"
-                  onClick={handleForfeitClose}
-                  disabled={forfeiting}
-                  className="w-full text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground disabled:opacity-50"
-                >
-                  Can't remember? Close shift without travel-back
-                </button>
-              </div>
             </>
           )}
         </div>
