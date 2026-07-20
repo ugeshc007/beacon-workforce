@@ -215,6 +215,22 @@ export default function MobileHome() {
     },
   });
 
+  // Was any project assigned on the stale day? If none, the retro banner must
+  // not offer travel/break — only Punch Out + "close without travel-back".
+  const { data: staleHasAssignment } = useQuery({
+    queryKey: ["stale-has-assignment", employee?.id, attendanceLog?.date],
+    enabled: !!employee && !!attendanceLog && isStaleShift,
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("project_assignments")
+        .select("id", { count: "exact", head: true })
+        .eq("employee_id", employee!.id)
+        .eq("date", attendanceLog!.date);
+      return (count ?? 0) > 0;
+    },
+  });
+  const staleNoAssignment = isStaleShift && staleHasAssignment === false;
+
   const openStaleShift = () => {
     if (staleProjectSession?.project_id && attendanceLog?.date) {
       navigate(`/m/project/${staleProjectSession.project_id}?date=${attendanceLog.date}`);
