@@ -239,12 +239,12 @@ export function useTodayProjects() {
             );
           });
         } catch { /* ignore */ }
-        return result;
+        return overlaySessionCache(result);
       } catch (err) {
         // Network/auth failure → fall back to cached snapshot if we have one
         if (cacheKey) {
           const cached = await getCachedData<TodayProject[]>(cacheKey);
-          if (cached) return cached.data;
+          if (cached) return overlaySessionCache(cached.data);
         }
         throw err;
       }
