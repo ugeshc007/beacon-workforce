@@ -70,6 +70,42 @@ export function useTodayProjects() {
     };
   }, [employee, today, qc]);
 
+  // Overlay optimistic per-project session state (written by useProjectWorkflow
+  // when actions are enqueued offline) so completed/working steps show up on
+  // the home list even without a fresh server fetch.
+  const overlaySessionCache = (list: TodayProject[]): TodayProject[] => {
+    if (!employee) return list;
+    return list.map((p) => {
+      try {
+        const raw = localStorage.getItem(`pws_${employee.id}_${p.projectId}_${today}`);
+        if (!raw) return p;
+        const cached = JSON.parse(raw) as {
+          id?: string;
+          travel_start_time?: string | null;
+          site_arrival_time?: string | null;
+          work_start_time?: string | null;
+          break_start_time?: string | null;
+          break_end_time?: string | null;
+          work_end_time?: string | null;
+          total_work_minutes?: number | null;
+        } | null;
+        if (!cached) return p;
+        const derived = deriveProjectStep(cached);
+        // Only advance forward; never regress a step the server already reported.
+        const order: ProjectStep[] = ["idle", "traveling", "at_site", "working", "on_break", "completed"];
+        const next = order.indexOf(derived) > order.indexOf(p.step) ? derived : p.step;
+        return {
+          ...p,
+          sessionId: p.sessionId ?? cached.id ?? null,
+          step: next,
+          totalWorkMinutes: cached.total_work_minutes ?? p.totalWorkMinutes,
+        };
+      } catch {
+        return p;
+      }
+    });
+  };
+
   return useQuery({
     queryKey: ["today-projects", employee?.id, today],
     enabled: !!employee,
@@ -83,11 +119,11 @@ export function useTodayProjects() {
     queryFn: async (): Promise<TodayProject[]> => {
       if (!employee) return [];
 
-      // Offline → return last cached snapshot immediately
+      // Offline → return last cached snapshot immediately, with per-project
+      // session cache overlaid so offline-completed projects show as done.
       if (!navigator.onLine && cacheKey) {
         const cached = await getCachedData<TodayProject[]>(cacheKey);
-        if (cached) return cached.data;
-        return [];
+        return overlaySessionCache(cached?.data ?? []);
       }
 
       try {
