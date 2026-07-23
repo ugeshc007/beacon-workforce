@@ -46,7 +46,30 @@ export function useProjectSessions(attendanceLogId: string | null | undefined) {
         .eq("attendance_log_id", attendanceLogId!)
         .order("created_at", { ascending: true });
       if (error) throw error;
-      const sessions = (data ?? []) as unknown as ProjectWorkSession[];
+      let sessions = (data ?? []) as unknown as ProjectWorkSession[];
+
+      // Fallback: if this attendance log has no linked project sessions
+      // (e.g. a short duplicate re-punch on the same site project), pull
+      // sibling sessions for the same employee+project+date so the timeline
+      // still shows the real travel/on-site/work data.
+      if (sessions.length === 0) {
+        const { data: log } = await supabase
+          .from("attendance_logs")
+          .select("employee_id, project_id, date")
+          .eq("id", attendanceLogId!)
+          .maybeSingle();
+        if (log?.employee_id && log?.project_id && log?.date) {
+          const { data: sibling } = await supabase
+            .from("project_work_sessions")
+            .select("*, projects(name, site_latitude, site_longitude)")
+            .eq("employee_id", log.employee_id)
+            .eq("project_id", log.project_id)
+            .eq("date", log.date)
+            .order("created_at", { ascending: true });
+          sessions = (sibling ?? []) as unknown as ProjectWorkSession[];
+        }
+      }
+
       const projectIds = Array.from(new Set(sessions.map((s) => s.project_id).filter(Boolean)));
       const employeeId = sessions[0]?.employee_id;
       const sessionDate = sessions[0]?.date;
