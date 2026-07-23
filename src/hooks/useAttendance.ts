@@ -83,19 +83,25 @@ export function useAttendanceLogs(filters: {
 
       let results = data as AttendanceLog[];
 
-      // Enrich logs with project sessions for this date (per-project start/end)
+      // Enrich logs with project sessions for this date (per-project start/end).
+      // We fetch ALL sessions for these employees on this date, so fragmented
+      // attendance logs (multiple short punch-in/outs on the same project) can
+      // still surface the real session data in the timeline — even when the
+      // session was linked to a sibling log for that same project.
       const logIds = results.map((r) => r.id);
+      const employeeIdsForSessions = Array.from(new Set(results.map((r) => r.employee_id).filter(Boolean) as string[]));
       let sessionsByLog = new Map<string, AttendanceSessionSummary[]>();
       let sessionProjectIds: string[] = [];
-      if (logIds.length > 0) {
+      const sessionsByEmpProject = new Map<string, AttendanceSessionSummary[]>();
+      if (logIds.length > 0 && employeeIdsForSessions.length > 0) {
         const { data: pws } = await supabase
           .from("project_work_sessions")
-          .select("id, attendance_log_id, project_id, travel_start_time, site_arrival_time, work_start_time, break_start_time, break_end_time, work_end_time, projects(name)")
-          .in("attendance_log_id", logIds)
+          .select("id, attendance_log_id, employee_id, project_id, travel_start_time, site_arrival_time, work_start_time, break_start_time, break_end_time, work_end_time, projects(name)")
+          .in("employee_id", employeeIdsForSessions)
+          .eq("date", filters.date)
           .order("created_at", { ascending: true });
         for (const s of (pws ?? []) as any[]) {
-          const list = sessionsByLog.get(s.attendance_log_id) ?? [];
-          list.push({
+          const summary: AttendanceSessionSummary = {
             id: s.id,
             project_id: s.project_id,
             project_name: s.projects?.name ?? null,
@@ -105,9 +111,28 @@ export function useAttendanceLogs(filters: {
             break_start_time: s.break_start_time,
             break_end_time: s.break_end_time,
             work_end_time: s.work_end_time,
-          });
-          sessionsByLog.set(s.attendance_log_id, list);
+          };
+          if (s.attendance_log_id) {
+            const list = sessionsByLog.get(s.attendance_log_id) ?? [];
+            list.push(summary);
+            sessionsByLog.set(s.attendance_log_id, list);
+          }
           if (s.project_id) sessionProjectIds.push(s.project_id);
+          if (s.employee_id && s.project_id) {
+            const key = `${s.employee_id}:${s.project_id}`;
+            const arr = sessionsByEmpProject.get(key) ?? [];
+            arr.push(summary);
+            sessionsByEmpProject.set(key, arr);
+          }
+        }
+        // Fallback: for logs with no directly-linked sessions, attach any
+        // sessions for the same employee+project+date so short re-punches
+        // still show real timeline data (travel, on-site, work, etc.).
+        for (const r of results) {
+          if ((sessionsByLog.get(r.id)?.length ?? 0) > 0) continue;
+          if (!r.employee_id || !r.project_id) continue;
+          const arr = sessionsByEmpProject.get(`${r.employee_id}:${r.project_id}`);
+          if (arr && arr.length > 0) sessionsByLog.set(r.id, arr);
         }
       }
 
