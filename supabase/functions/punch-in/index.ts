@@ -151,10 +151,26 @@ Deno.serve(async (req) => {
     if (recentClosed?.office_punch_out) {
       const closedAt = new Date(recentClosed.office_punch_out).getTime();
       const nowMs = new Date(now).getTime();
-      if (Math.abs(nowMs - closedAt) <= REPLAY_WINDOW_SECONDS * 1000) {
+      // Only treat as a replay when the incoming punch-in was authored BEFORE
+      // the recorded punch-out (out-of-order offline sync). A genuine new
+      // shift started after a punch-out must NOT reopen the previous log.
+      const isOutOfOrderReplay = nowMs <= closedAt;
+      if (isOutOfOrderReplay && (closedAt - nowMs) <= REPLAY_WINDOW_SECONDS * 1000) {
+        // Backfill office_punch_in if it was never recorded (root cause of
+        // logs showing work/break/punch-out but no punch-in after sync).
+        const patch: Record<string, unknown> = { office_punch_out: null };
+        if (!recentClosed.office_punch_in) {
+          patch.office_punch_in = now;
+          patch.office_punch_in_lat = lat ?? null;
+          patch.office_punch_in_lng = lng ?? null;
+          patch.office_punch_in_valid = valid;
+          patch.office_punch_in_distance_m = lat != null && lng != null ? Math.round(distance) : null;
+          patch.office_punch_in_accuracy = accuracy ?? null;
+          patch.office_punch_in_spoofed = is_spoofed ?? false;
+        }
         await supabase
           .from("attendance_logs")
-          .update({ office_punch_out: null })
+          .update(patch)
           .eq("id", recentClosed.id);
         return jsonResponse({
           success: true,
@@ -164,6 +180,7 @@ Deno.serve(async (req) => {
           timestamp: recentClosed.office_punch_in ?? now,
           deduped: true,
           reopened: true,
+          backfilled_punch_in: !recentClosed.office_punch_in,
         });
       }
     }
