@@ -134,6 +134,42 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Offline-replay guard: if the most recent closed log today was closed
+    // just seconds ago, this is almost certainly a duplicate replay from the
+    // offline queue (not a genuine second shift). Re-open that log instead of
+    // creating a new phantom short entry that produces empty timeline rows.
+    const REPLAY_WINDOW_SECONDS = 120;
+    const { data: recentClosed } = await supabase
+      .from("attendance_logs")
+      .select("id, office_punch_in, office_punch_out")
+      .eq("employee_id", employee_id)
+      .eq("date", today)
+      .not("office_punch_out", "is", null)
+      .order("office_punch_out", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (recentClosed?.office_punch_out) {
+      const closedAt = new Date(recentClosed.office_punch_out).getTime();
+      const nowMs = new Date(now).getTime();
+      if (Math.abs(nowMs - closedAt) <= REPLAY_WINDOW_SECONDS * 1000) {
+        await supabase
+          .from("attendance_logs")
+          .update({ office_punch_out: null })
+          .eq("id", recentClosed.id);
+        return jsonResponse({
+          success: true,
+          attendance_id: recentClosed.id,
+          gps_valid: valid,
+          distance_meters: Math.round(distance),
+          timestamp: recentClosed.office_punch_in ?? now,
+          deduped: true,
+          reopened: true,
+        });
+      }
+    }
+
+
+
     const blankOpenLog = openLogs?.[0];
     const punchPayload = {
         employee_id,
