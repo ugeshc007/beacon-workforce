@@ -86,10 +86,19 @@ export default function MobileTimesheet() {
     );
   }
 
-  const logMap = new Map(logs.map((l) => [l.date, l]));
+  // Aggregate multiple logs per day (e.g. site + in-house shifts on same date)
+  const dayAgg = new Map<string, { logs: DayLog[]; worked: number; ot: number }>();
+  for (const l of logs) {
+    const key = l.date;
+    if (!dayAgg.has(key)) dayAgg.set(key, { logs: [], worked: 0, ot: 0 });
+    const entry = dayAgg.get(key)!;
+    entry.logs.push(l);
+    entry.worked += getDisplayWorkedMinutes(l, now);
+    entry.ot += l.overtime_minutes || 0;
+  }
 
-  const totalWorked = logs.reduce((sum, l) => sum + getDisplayWorkedMinutes(l, now), 0);
-  const totalOT = logs.reduce((sum, l) => sum + (l.overtime_minutes || 0), 0);
+  const totalWorked = Array.from(dayAgg.values()).reduce((s, d) => s + d.worked, 0);
+  const totalOT = Array.from(dayAgg.values()).reduce((s, d) => s + d.ot, 0);
 
   return (
     <div className="flex flex-col gap-4 p-4 pb-24 safe-area-inset">
