@@ -86,10 +86,19 @@ export default function MobileTimesheet() {
     );
   }
 
-  const logMap = new Map(logs.map((l) => [l.date, l]));
+  // Aggregate multiple logs per day (e.g. site + in-house shifts on same date)
+  const dayAgg = new Map<string, { logs: DayLog[]; worked: number; ot: number }>();
+  for (const l of logs) {
+    const key = l.date;
+    if (!dayAgg.has(key)) dayAgg.set(key, { logs: [], worked: 0, ot: 0 });
+    const entry = dayAgg.get(key)!;
+    entry.logs.push(l);
+    entry.worked += getDisplayWorkedMinutes(l, now);
+    entry.ot += l.overtime_minutes || 0;
+  }
 
-  const totalWorked = logs.reduce((sum, l) => sum + getDisplayWorkedMinutes(l, now), 0);
-  const totalOT = logs.reduce((sum, l) => sum + (l.overtime_minutes || 0), 0);
+  const totalWorked = Array.from(dayAgg.values()).reduce((s, d) => s + d.worked, 0);
+  const totalOT = Array.from(dayAgg.values()).reduce((s, d) => s + d.ot, 0);
 
   return (
     <div className="flex flex-col gap-4 p-4 pb-24 safe-area-inset">
@@ -130,10 +139,22 @@ export default function MobileTimesheet() {
 
         {weekDays.map((day) => {
           const dateStr = format(day, "yyyy-MM-dd");
-          const log = logMap.get(dateStr);
+          const agg = dayAgg.get(dateStr);
+          const dayLogs = agg?.logs ?? [];
+          const firstLog = dayLogs[0];
           const isToday = dateStr === format(today, "yyyy-MM-dd");
           const isFuture = day > today;
-          const displayMinutes = log ? getDisplayWorkedMinutes(log, now) : 0;
+          const displayMinutes = agg?.worked ?? 0;
+          const otMinutes = agg?.ot ?? 0;
+          const firstPunchIn = dayLogs
+            .map((l) => l.office_punch_in)
+            .filter(Boolean)
+            .sort()[0];
+          const lastPunchOut = dayLogs
+            .map((l) => l.office_punch_out)
+            .filter(Boolean)
+            .sort()
+            .slice(-1)[0];
 
           return (
             <Card
@@ -146,24 +167,27 @@ export default function MobileTimesheet() {
                     {format(day, "EEE, dd MMM")}
                     {isToday && <span className="text-brand text-xs ml-2">Today</span>}
                   </p>
-                  {log?.office_punch_in && (
+                  {firstPunchIn && (
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {new Date(log.office_punch_in).toLocaleTimeString("en-AE", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Dubai" })}
-                      {log.office_punch_out && (
-                        <> – {new Date(log.office_punch_out).toLocaleTimeString("en-AE", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Dubai" })}</>
+                      {new Date(firstPunchIn).toLocaleTimeString("en-AE", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Dubai" })}
+                      {lastPunchOut && (
+                        <> – {new Date(lastPunchOut).toLocaleTimeString("en-AE", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Dubai" })}</>
+                      )}
+                      {dayLogs.length > 1 && (
+                        <span className="ml-1 opacity-70">· {dayLogs.length} shifts</span>
                       )}
                     </p>
                   )}
                 </div>
                 <div className="text-right">
-                  {log ? (
+                  {firstLog ? (
                     <>
                       <p className="text-sm font-semibold text-foreground">
                         {formatWorkedMinutes(displayMinutes)}
                       </p>
-                      {(log.overtime_minutes || 0) > 0 && (
+                      {otMinutes > 0 && (
                         <p className="text-xs text-amber-400">
-                          +{formatWorkedMinutes(log.overtime_minutes || 0)} OT
+                          +{formatWorkedMinutes(otMinutes)} OT
                         </p>
                       )}
                     </>
