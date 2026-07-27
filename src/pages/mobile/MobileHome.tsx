@@ -698,9 +698,9 @@ export default function MobileHome() {
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Today's Projects</p>
-            <p className={`text-xs ${allProjectsDone ? "text-amber-400" : "text-muted-foreground"}`}>
+            <p className={`text-xs ${allProjectsDone && !allInHouseDay ? "text-amber-400" : "text-muted-foreground"}`}>
               {allProjectsDone
-                ? "Work ended · office return pending"
+                ? (allInHouseDay ? "Work ended · ready to punch out" : "Work ended · office return pending")
                 : `${todayProjects.filter((p) => p.step === "completed").length}/${todayProjects.length} done`}
             </p>
           </div>
