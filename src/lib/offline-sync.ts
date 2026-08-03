@@ -155,11 +155,8 @@ const BENIGN_ERROR_PATTERNS: RegExp[] = [
   /already ended/i,
   /already punched (in|out)/i,
   /session already/i,
-  /no active attendance/i,
   /no attendance record/i,
-  /must punch in/i,
-  /must return to office/i,
-  /start travel first/i,
+
   /duplicate key/i,
   /deduped/i,
   /already exists/i,
