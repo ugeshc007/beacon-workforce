@@ -388,6 +388,13 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
             success = true;
             break;
           }
+          itemErr = msg;
+          // Premature action: a prerequisite step is still later in the queue.
+          // Don't burn retries and don't block the group — defer to pass 2.
+          if (isPrematureSyncError(msg)) {
+            premature = true;
+            break;
+          }
           attempt++;
           lastErr = msg;
           const cur = await getQueue();
@@ -420,6 +427,12 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
         }
       }
 
+      if (!success && premature) {
+        // Keep the queue moving: the prerequisite steps sit later in the queue.
+        deferred.push({ item, payload: payloadToSend, error: itemErr });
+        continue;
+      }
+
       // If this action didn't succeed, block ALL follow-ups in the same
       // group for this pass — preserves FIFO so later steps don't land
       // before earlier ones when a middle action failed.
@@ -430,6 +443,29 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
         }
       }
     }
+
+    // ---- Pass 2: retry premature items now that prerequisites have landed ----
+    for (const { item, payload, error } of deferred) {
+      try {
+        await invokeEdge<Record<string, unknown>>(edgeFunctionMap[item.action_type], {
+          ...payload,
+          idempotency_key: item.idempotency_key,
+        });
+        await markSynced(item.local_id);
+        synced++;
+      } catch (e: any) {
+        const msg: string = e?.message || error || "Sync failed";
+        if (isBenignSyncError(msg)) {
+          await markSynced(item.local_id);
+          synced++;
+          continue;
+        }
+        await markError(item.local_id, msg);
+        failed++;
+        lastErr = msg;
+      }
+    }
+
 
     await clearSynced();
   } finally {
