@@ -252,11 +252,14 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
     const blockedGroups = new Set<string>();
     const blockedEmployees = new Set<string>();
     const resolvedSessionIds = new Map<string, string>();
+    const deferred: { item: QueuedAction; payload: Record<string, unknown>; error: string }[] = [];
 
     for (const item of pending) {
       const grp = groupKey(item);
       const empKey = employeeKey(item);
       const isCreator = CREATOR_ACTIONS.has(item.action_type);
+      let itemErr = "";
+      let premature = false;
       if (blockedGroups.has(grp) || (empKey && blockedEmployees.has(empKey))) {
         // Skip: an earlier action in this group hasn't succeeded yet.
         // Preserves FIFO ordering within a session so timestamps replay in order.
