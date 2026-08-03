@@ -170,6 +170,30 @@ function isBenignSyncError(msg: string): boolean {
 }
 
 /**
+ * Errors that mean "this action arrived too early" — a prerequisite step is
+ * still sitting later in the queue (e.g. a Punch Out that was tapped before
+ * Start Return Travel / Arrive Office were queued). These must NOT block the
+ * rest of the queue: we skip the item, let the prerequisites replay, then
+ * retry the premature item in a second pass.
+ */
+const PREMATURE_ERROR_PATTERNS: RegExp[] = [
+  /return to (the )?office/i,
+  /arrive office/i,
+  /finish your trip/i,
+  /must punch in/i,
+  /start travel first/i,
+  /not started/i,
+  /no active attendance/i,
+  /session_id required/i,
+  /session not found/i,
+];
+
+function isPrematureSyncError(msg: string): boolean {
+  return PREMATURE_ERROR_PATTERNS.some((re) => re.test(msg));
+}
+
+
+/**
  * Process all pending items in the queue, oldest first.
  * Uses idempotency keys so duplicate sends are safe.
  *
