@@ -4,7 +4,7 @@ import { useMobileAuth } from "@/hooks/useMobileAuth";
 import { Card } from "@/components/ui/card";
 import { Loader2, Clock, Calendar, WifiOff } from "lucide-react";
 import { format, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
-import { formatWorkedMinutes, getDisplayWorkedMinutes } from "@/lib/timesheet-display";
+import { formatWorkedMinutes } from "@/lib/timesheet-display";
 import { cacheData, getCachedData } from "@/lib/offline-queue";
 
 interface DayLog {
@@ -17,7 +17,47 @@ interface DayLog {
   office_punch_out: string | null;
   work_start_time: string | null;
   work_end_time: string | null;
+  break_minutes: number | null;
+  break_start_time: string | null;
+  break_end_time: string | null;
 }
+
+const HHMM = (iso: string) =>
+  new Date(iso).toLocaleTimeString("en-AE", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "Asia/Dubai",
+  });
+
+/** Recorded break only — no implicit deduction. */
+function recordedBreakMinutes(log: DayLog): number {
+  if (log.break_minutes && log.break_minutes > 0) return log.break_minutes;
+  if (log.break_start_time && log.break_end_time) {
+    const bs = new Date(log.break_start_time).getTime();
+    const be = new Date(log.break_end_time).getTime();
+    if (be > bs) return Math.round((be - bs) / 60000);
+  }
+  return 0;
+}
+
+/**
+ * Duty = Punch Out − Punch In − recorded break.
+ * Falls back to work start/end when punch stamps are missing, and to "now"
+ * for an open shift today.
+ */
+function dutyMinutes(log: DayLog, now: Date): number {
+  const startIso = log.office_punch_in ?? log.work_start_time;
+  if (!startIso) return 0;
+  const start = new Date(startIso).getTime();
+  const endIso = log.office_punch_out ?? log.work_end_time;
+  let end = endIso ? new Date(endIso).getTime() : NaN;
+  if (!endIso || Number.isNaN(end) || end <= start) end = now.getTime();
+  if (end <= start) return 0;
+  const gross = Math.round((end - start) / 60000);
+  return Math.max(0, gross - recordedBreakMinutes(log));
+}
+
 
 export default function MobileTimesheet() {
   const { employee } = useMobileAuth();
@@ -54,7 +94,7 @@ export default function MobileTimesheet() {
       try {
         const { data, error } = await supabase
           .from("attendance_logs")
-          .select("date, total_work_minutes, overtime_minutes, regular_cost, overtime_cost, office_punch_in, office_punch_out, work_start_time, work_end_time")
+          .select("date, total_work_minutes, overtime_minutes, regular_cost, overtime_cost, office_punch_in, office_punch_out, work_start_time, work_end_time, break_minutes, break_start_time, break_end_time")
           .eq("employee_id", employee.id)
           .gte("date", format(weekStart, "yyyy-MM-dd"))
           .lte("date", format(weekEnd, "yyyy-MM-dd"))
@@ -86,19 +126,30 @@ export default function MobileTimesheet() {
     );
   }
 
+  // Standard duty hours per day (OT starts after this)
+  const stdHours = Number((employee as any)?.standard_hours_per_day) > 0
+    ? Number((employee as any).standard_hours_per_day)
+    : 8;
+  const stdMin = Math.round(stdHours * 60);
+
   // Aggregate multiple logs per day (e.g. site + in-house shifts on same date)
-  const dayAgg = new Map<string, { logs: DayLog[]; worked: number; ot: number }>();
+  const dayAgg = new Map<string, { logs: DayLog[]; duty: number; breakMin: number; ot: number }>();
   for (const l of logs) {
     const key = l.date;
-    if (!dayAgg.has(key)) dayAgg.set(key, { logs: [], worked: 0, ot: 0 });
+    if (!dayAgg.has(key)) dayAgg.set(key, { logs: [], duty: 0, breakMin: 0, ot: 0 });
     const entry = dayAgg.get(key)!;
     entry.logs.push(l);
-    entry.worked += getDisplayWorkedMinutes(l, now);
-    entry.ot += l.overtime_minutes || 0;
+    entry.duty += dutyMinutes(l, now);
+    entry.breakMin += recordedBreakMinutes(l);
+  }
+  // OT is computed on the combined daily duty, not per shift
+  for (const entry of dayAgg.values()) {
+    entry.ot = Math.max(0, entry.duty - stdMin);
   }
 
-  const totalWorked = Array.from(dayAgg.values()).reduce((s, d) => s + d.worked, 0);
+  const totalWorked = Array.from(dayAgg.values()).reduce((s, d) => s + d.duty, 0);
   const totalOT = Array.from(dayAgg.values()).reduce((s, d) => s + d.ot, 0);
+
 
   return (
     <div className="flex flex-col gap-4 p-4 pb-24 safe-area-inset">
@@ -144,8 +195,9 @@ export default function MobileTimesheet() {
           const firstLog = dayLogs[0];
           const isToday = dateStr === format(today, "yyyy-MM-dd");
           const isFuture = day > today;
-          const displayMinutes = agg?.worked ?? 0;
+          const displayMinutes = agg?.duty ?? 0;
           const otMinutes = agg?.ot ?? 0;
+          const breakMinutes = agg?.breakMin ?? 0;
           const firstPunchIn = dayLogs
             .map((l) => l.office_punch_in)
             .filter(Boolean)
@@ -161,32 +213,43 @@ export default function MobileTimesheet() {
               key={dateStr}
               className={`p-3 border-border/50 ${isToday ? "ring-1 ring-brand/50 bg-brand/5" : "bg-card"} ${isFuture ? "opacity-40" : ""}`}
             >
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
                   <p className="text-sm font-medium text-foreground">
                     {format(day, "EEE, dd MMM")}
                     {isToday && <span className="text-brand text-xs ml-2">Today</span>}
                   </p>
-                  {firstPunchIn && (
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {new Date(firstPunchIn).toLocaleTimeString("en-AE", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Dubai" })}
-                      {lastPunchOut && (
-                        <> – {new Date(lastPunchOut).toLocaleTimeString("en-AE", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Dubai" })}</>
-                      )}
-                      {dayLogs.length > 1 && (
-                        <span className="ml-1 opacity-70">· {dayLogs.length} shifts</span>
-                      )}
-                    </p>
+                  {firstLog && (
+                    <div className="mt-1 space-y-0.5">
+                      <p className="text-xs text-muted-foreground">
+                        <span className="opacity-70">In</span>{" "}
+                        <span className="font-medium text-foreground">
+                          {firstPunchIn ? HHMM(firstPunchIn) : "—"}
+                        </span>
+                        <span className="mx-1 opacity-50">→</span>
+                        <span className="opacity-70">Out</span>{" "}
+                        <span className="font-medium text-foreground">
+                          {lastPunchOut ? HHMM(lastPunchOut) : isToday ? "running" : "—"}
+                        </span>
+                      </p>
+                      <p className="text-[11px] text-muted-foreground">
+                        Break {breakMinutes > 0 ? `−${formatWorkedMinutes(breakMinutes)}` : "none"}
+                        {dayLogs.length > 1 && (
+                          <span className="ml-1 opacity-70">· {dayLogs.length} shifts</span>
+                        )}
+                      </p>
+                    </div>
                   )}
                 </div>
-                <div className="text-right">
+                <div className="text-right shrink-0">
                   {firstLog ? (
                     <>
                       <p className="text-sm font-semibold text-foreground">
                         {formatWorkedMinutes(displayMinutes)}
                       </p>
+                      <p className="text-[11px] text-muted-foreground">duty</p>
                       {otMinutes > 0 && (
-                        <p className="text-xs text-amber-400">
+                        <p className="text-xs text-amber-400 mt-0.5">
                           +{formatWorkedMinutes(otMinutes)} OT
                         </p>
                       )}
@@ -197,6 +260,7 @@ export default function MobileTimesheet() {
                 </div>
               </div>
             </Card>
+
           );
         })}
       </div>
