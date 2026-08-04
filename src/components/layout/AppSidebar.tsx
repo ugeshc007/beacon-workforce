@@ -66,6 +66,8 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + "/");
+  // "/schedule" must not light up while on the nested Common Tasks page.
+  const isExactActive = (path: string) => location.pathname === path;
   const { permissions } = useMyPermissions();
   const { isAdmin, isEmployee, isSuperAdmin } = useAuth();
   const { tenant } = useTenant();
@@ -100,10 +102,10 @@ export function AppSidebar() {
             <SidebarMenu>
               {visibleMain.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)}>
+                  <SidebarMenuButton asChild isActive={item.url === "/schedule" ? isExactActive(item.url) : isActive(item.url)}>
                     <NavLink
                       to={item.url}
-                      end={item.url === "/dashboard"}
+                      end={item.url === "/dashboard" || item.url === "/schedule"}
                       className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
                       activeClassName="bg-sidebar-accent text-brand font-medium"
                     >
