@@ -126,19 +126,30 @@ export default function MobileTimesheet() {
     );
   }
 
+  // Standard duty hours per day (OT starts after this)
+  const stdHours = Number((employee as any)?.standard_hours_per_day) > 0
+    ? Number((employee as any).standard_hours_per_day)
+    : 8;
+  const stdMin = Math.round(stdHours * 60);
+
   // Aggregate multiple logs per day (e.g. site + in-house shifts on same date)
-  const dayAgg = new Map<string, { logs: DayLog[]; worked: number; ot: number }>();
+  const dayAgg = new Map<string, { logs: DayLog[]; duty: number; breakMin: number; ot: number }>();
   for (const l of logs) {
     const key = l.date;
-    if (!dayAgg.has(key)) dayAgg.set(key, { logs: [], worked: 0, ot: 0 });
+    if (!dayAgg.has(key)) dayAgg.set(key, { logs: [], duty: 0, breakMin: 0, ot: 0 });
     const entry = dayAgg.get(key)!;
     entry.logs.push(l);
-    entry.worked += getDisplayWorkedMinutes(l, now);
-    entry.ot += l.overtime_minutes || 0;
+    entry.duty += dutyMinutes(l, now);
+    entry.breakMin += recordedBreakMinutes(l);
+  }
+  // OT is computed on the combined daily duty, not per shift
+  for (const entry of dayAgg.values()) {
+    entry.ot = Math.max(0, entry.duty - stdMin);
   }
 
-  const totalWorked = Array.from(dayAgg.values()).reduce((s, d) => s + d.worked, 0);
+  const totalWorked = Array.from(dayAgg.values()).reduce((s, d) => s + d.duty, 0);
   const totalOT = Array.from(dayAgg.values()).reduce((s, d) => s + d.ot, 0);
+
 
   return (
     <div className="flex flex-col gap-4 p-4 pb-24 safe-area-inset">
