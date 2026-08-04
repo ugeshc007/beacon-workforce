@@ -315,6 +315,158 @@ export type Database = {
           },
         ]
       }
+      common_task_sessions: {
+        Row: {
+          attendance_log_id: string | null
+          break_end_time: string | null
+          break_minutes: number | null
+          break_start_time: string | null
+          common_task_id: string
+          created_at: string
+          date: string
+          employee_id: string
+          id: string
+          notes: string | null
+          overtime_cost: number | null
+          overtime_minutes: number | null
+          regular_cost: number | null
+          status: string
+          total_work_minutes: number | null
+          updated_at: string
+          work_end_time: string | null
+          work_start_time: string | null
+        }
+        Insert: {
+          attendance_log_id?: string | null
+          break_end_time?: string | null
+          break_minutes?: number | null
+          break_start_time?: string | null
+          common_task_id: string
+          created_at?: string
+          date?: string
+          employee_id: string
+          id?: string
+          notes?: string | null
+          overtime_cost?: number | null
+          overtime_minutes?: number | null
+          regular_cost?: number | null
+          status?: string
+          total_work_minutes?: number | null
+          updated_at?: string
+          work_end_time?: string | null
+          work_start_time?: string | null
+        }
+        Update: {
+          attendance_log_id?: string | null
+          break_end_time?: string | null
+          break_minutes?: number | null
+          break_start_time?: string | null
+          common_task_id?: string
+          created_at?: string
+          date?: string
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          overtime_cost?: number | null
+          overtime_minutes?: number | null
+          regular_cost?: number | null
+          status?: string
+          total_work_minutes?: number | null
+          updated_at?: string
+          work_end_time?: string | null
+          work_start_time?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "common_task_sessions_attendance_log_id_fkey"
+            columns: ["attendance_log_id"]
+            isOneToOne: false
+            referencedRelation: "attendance_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "common_task_sessions_common_task_id_fkey"
+            columns: ["common_task_id"]
+            isOneToOne: false
+            referencedRelation: "common_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "common_task_sessions_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      common_tasks: {
+        Row: {
+          branch_id: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_seeded: boolean
+          max_headcount: number
+          priority: string
+          status: Database["public"]["Enums"]["common_task_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          branch_id?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_seeded?: boolean
+          max_headcount?: number
+          priority?: string
+          status?: Database["public"]["Enums"]["common_task_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          branch_id?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_seeded?: boolean
+          max_headcount?: number
+          priority?: string
+          status?: Database["public"]["Enums"]["common_task_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "common_tasks_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "common_tasks_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "common_tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           accent_color: string | null
@@ -2866,6 +3018,7 @@ export type Database = {
     }
     Enums: {
       assignment_mode: "manual" | "auto" | "hybrid"
+      common_task_status: "in_progress" | "completed"
       driver_leg_status: "traveling" | "on_site" | "completed"
       driver_leg_type: "drop_off" | "pick_up" | "wait"
       expense_category:
@@ -3039,6 +3192,7 @@ export const Constants = {
   public: {
     Enums: {
       assignment_mode: ["manual", "auto", "hybrid"],
+      common_task_status: ["in_progress", "completed"],
       driver_leg_status: ["traveling", "on_site", "completed"],
       driver_leg_type: ["drop_off", "pick_up", "wait"],
       expense_category: [
