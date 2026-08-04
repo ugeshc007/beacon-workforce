@@ -42,6 +42,7 @@ const mainNav = [
   { title: "Site Visits", url: "/site-visits", icon: ClipboardList, module: "site_visits" },
   { title: "Employees", url: "/employees", icon: Users, module: "employees" },
   { title: "Schedule", url: "/schedule", icon: CalendarDays, module: "schedule" },
+  { title: "Common Tasks", url: "/schedule/common-tasks", icon: ListChecks, module: "schedule" },
   { title: "Attendance", url: "/attendance", icon: ClipboardCheck, module: "attendance" },
   { title: "Travel", url: "/travel", icon: Car, module: "attendance" },
   { title: "Timesheets", url: "/timesheets", icon: Clock, module: "timesheets" },
