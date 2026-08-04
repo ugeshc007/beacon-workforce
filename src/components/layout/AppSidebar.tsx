@@ -10,6 +10,7 @@ import {
   Settings,
   Wrench,
   ClipboardList,
+  ListChecks,
   HelpCircle,
   Shield,
   Repeat,
