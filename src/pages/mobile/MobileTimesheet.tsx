@@ -17,7 +17,47 @@ interface DayLog {
   office_punch_out: string | null;
   work_start_time: string | null;
   work_end_time: string | null;
+  break_minutes: number | null;
+  break_start_time: string | null;
+  break_end_time: string | null;
 }
+
+const HHMM = (iso: string) =>
+  new Date(iso).toLocaleTimeString("en-AE", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "Asia/Dubai",
+  });
+
+/** Recorded break only — no implicit deduction. */
+function recordedBreakMinutes(log: DayLog): number {
+  if (log.break_minutes && log.break_minutes > 0) return log.break_minutes;
+  if (log.break_start_time && log.break_end_time) {
+    const bs = new Date(log.break_start_time).getTime();
+    const be = new Date(log.break_end_time).getTime();
+    if (be > bs) return Math.round((be - bs) / 60000);
+  }
+  return 0;
+}
+
+/**
+ * Duty = Punch Out − Punch In − recorded break.
+ * Falls back to work start/end when punch stamps are missing, and to "now"
+ * for an open shift today.
+ */
+function dutyMinutes(log: DayLog, now: Date): number {
+  const startIso = log.office_punch_in ?? log.work_start_time;
+  if (!startIso) return 0;
+  const start = new Date(startIso).getTime();
+  const endIso = log.office_punch_out ?? log.work_end_time;
+  let end = endIso ? new Date(endIso).getTime() : NaN;
+  if (!endIso || Number.isNaN(end) || end <= start) end = now.getTime();
+  if (end <= start) return 0;
+  const gross = Math.round((end - start) / 60000);
+  return Math.max(0, gross - recordedBreakMinutes(log));
+}
+
 
 export default function MobileTimesheet() {
   const { employee } = useMobileAuth();
