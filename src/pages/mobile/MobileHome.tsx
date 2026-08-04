@@ -16,7 +16,7 @@ import { officeActionTimeHints } from "@/lib/retro-time";
 
 import { DriverWorkflowCard } from "@/components/mobile/DriverWorkflowCard";
 import { Card } from "@/components/ui/card";
-import { Loader2, MapPin, Clock, Wifi, WifiOff, CheckCircle2, AlertTriangle, Crosshair, ChevronRight, PlayCircle, RotateCcw, Coffee, Building2, ClipboardList, ArrowRight } from "lucide-react";
+import { Loader2, MapPin, Clock, Wifi, WifiOff, CheckCircle2, AlertTriangle, Crosshair, ChevronRight, PlayCircle, RotateCcw, Coffee, Building2, ClipboardList, ListChecks, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -643,6 +643,21 @@ export default function MobileHome() {
               </div>
             </div>
           </Card>
+
+          {/* Pick a shared common task to log this in-house time against */}
+          <button
+            onClick={() => navigate("/m/common-tasks")}
+            className="flex items-center justify-between gap-3 rounded-xl border border-border/50 bg-card p-4 text-left hover:border-brand/40 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <ListChecks className="h-5 w-5 text-brand shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-foreground">Common Tasks</p>
+                <p className="text-xs text-muted-foreground">Select a task and start work</p>
+              </div>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </button>
 
           {/* Punch out — main action when not on break */}
           {step !== "on_break" && (

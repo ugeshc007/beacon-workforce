@@ -48,6 +48,7 @@ import MaintenanceDetail from "./pages/MaintenanceDetail";
 import SiteVisits from "./pages/SiteVisits";
 import SiteVisitDetail from "./pages/SiteVisitDetail";
 import RecurringJobs from "./pages/RecurringJobs";
+import CommonTasks from "./pages/CommonTasks";
 import ErrorAudit from "./pages/ErrorAudit";
 import OAuthConsent from "./pages/OAuthConsent";
 
@@ -56,6 +57,7 @@ import MobileLogin from "./pages/mobile/MobileLogin";
 import MobileLayout from "./pages/mobile/MobileLayout";
 import MobileHome from "./pages/mobile/MobileHome";
 import MobileTimesheet from "./pages/mobile/MobileTimesheet";
+import MobileCommonTasks from "./pages/mobile/MobileCommonTasks";
 import MobileNotifications from "./pages/mobile/MobileNotifications";
 import MobileProfile from "./pages/mobile/MobileProfile";
 import MobileSyncStatus from "./pages/mobile/MobileSyncStatus";
@@ -82,6 +84,7 @@ const App = () => (
           <Route path="/m" element={<MobileAuthProvider><MobileLayout /></MobileAuthProvider>}>
             <Route index element={<MobileHome />} />
             <Route path="timesheet" element={<MobileTimesheet />} />
+            <Route path="common-tasks" element={<MobileCommonTasks />} />
             <Route path="notifications" element={<MobileNotifications />} />
             <Route path="team" element={<MobileTeamStatus />} />
             <Route path="daily-log" element={<MobileDailyLog />} />
@@ -131,6 +134,7 @@ const App = () => (
             <Route path="/projects/:id" element={<ModuleGuard module="projects"><ProjectDetail /></ModuleGuard>} />
             <Route path="/employees" element={<ModuleGuard module="employees"><Employees /></ModuleGuard>} />
             <Route path="/schedule" element={<ModuleGuard module="schedule"><Schedule /></ModuleGuard>} />
+            <Route path="/schedule/common-tasks" element={<ModuleGuard module="schedule"><CommonTasks /></ModuleGuard>} />
             <Route path="/attendance" element={<ModuleGuard module="attendance"><Attendance /></ModuleGuard>} />
             <Route path="/attendance/daily" element={<ModuleGuard module="attendance"><DailyTeam /></ModuleGuard>} />
             <Route path="/travel" element={<ModuleGuard module="attendance"><Travel /></ModuleGuard>} />
