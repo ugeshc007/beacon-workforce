@@ -195,8 +195,9 @@ export default function MobileTimesheet() {
           const firstLog = dayLogs[0];
           const isToday = dateStr === format(today, "yyyy-MM-dd");
           const isFuture = day > today;
-          const displayMinutes = agg?.worked ?? 0;
+          const displayMinutes = agg?.duty ?? 0;
           const otMinutes = agg?.ot ?? 0;
+          const breakMinutes = agg?.breakMin ?? 0;
           const firstPunchIn = dayLogs
             .map((l) => l.office_punch_in)
             .filter(Boolean)
@@ -212,32 +213,43 @@ export default function MobileTimesheet() {
               key={dateStr}
               className={`p-3 border-border/50 ${isToday ? "ring-1 ring-brand/50 bg-brand/5" : "bg-card"} ${isFuture ? "opacity-40" : ""}`}
             >
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
                   <p className="text-sm font-medium text-foreground">
                     {format(day, "EEE, dd MMM")}
                     {isToday && <span className="text-brand text-xs ml-2">Today</span>}
                   </p>
-                  {firstPunchIn && (
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {new Date(firstPunchIn).toLocaleTimeString("en-AE", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Dubai" })}
-                      {lastPunchOut && (
-                        <> – {new Date(lastPunchOut).toLocaleTimeString("en-AE", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Dubai" })}</>
-                      )}
-                      {dayLogs.length > 1 && (
-                        <span className="ml-1 opacity-70">· {dayLogs.length} shifts</span>
-                      )}
-                    </p>
+                  {firstLog && (
+                    <div className="mt-1 space-y-0.5">
+                      <p className="text-xs text-muted-foreground">
+                        <span className="opacity-70">In</span>{" "}
+                        <span className="font-medium text-foreground">
+                          {firstPunchIn ? HHMM(firstPunchIn) : "—"}
+                        </span>
+                        <span className="mx-1 opacity-50">→</span>
+                        <span className="opacity-70">Out</span>{" "}
+                        <span className="font-medium text-foreground">
+                          {lastPunchOut ? HHMM(lastPunchOut) : isToday ? "running" : "—"}
+                        </span>
+                      </p>
+                      <p className="text-[11px] text-muted-foreground">
+                        Break {breakMinutes > 0 ? `−${formatWorkedMinutes(breakMinutes)}` : "none"}
+                        {dayLogs.length > 1 && (
+                          <span className="ml-1 opacity-70">· {dayLogs.length} shifts</span>
+                        )}
+                      </p>
+                    </div>
                   )}
                 </div>
-                <div className="text-right">
+                <div className="text-right shrink-0">
                   {firstLog ? (
                     <>
                       <p className="text-sm font-semibold text-foreground">
                         {formatWorkedMinutes(displayMinutes)}
                       </p>
+                      <p className="text-[11px] text-muted-foreground">duty</p>
                       {otMinutes > 0 && (
-                        <p className="text-xs text-amber-400">
+                        <p className="text-xs text-amber-400 mt-0.5">
                           +{formatWorkedMinutes(otMinutes)} OT
                         </p>
                       )}
@@ -248,6 +260,7 @@ export default function MobileTimesheet() {
                 </div>
               </div>
             </Card>
+
           );
         })}
       </div>
