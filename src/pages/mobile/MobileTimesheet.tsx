@@ -94,7 +94,7 @@ export default function MobileTimesheet() {
       try {
         const { data, error } = await supabase
           .from("attendance_logs")
-          .select("date, total_work_minutes, overtime_minutes, regular_cost, overtime_cost, office_punch_in, office_punch_out, work_start_time, work_end_time")
+          .select("date, total_work_minutes, overtime_minutes, regular_cost, overtime_cost, office_punch_in, office_punch_out, work_start_time, work_end_time, break_minutes, break_start_time, break_end_time")
           .eq("employee_id", employee.id)
           .gte("date", format(weekStart, "yyyy-MM-dd"))
           .lte("date", format(weekEnd, "yyyy-MM-dd"))
