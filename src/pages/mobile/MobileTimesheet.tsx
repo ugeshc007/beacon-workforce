@@ -4,7 +4,7 @@ import { useMobileAuth } from "@/hooks/useMobileAuth";
 import { Card } from "@/components/ui/card";
 import { Loader2, Clock, Calendar, WifiOff } from "lucide-react";
 import { format, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
-import { formatWorkedMinutes, getDisplayWorkedMinutes } from "@/lib/timesheet-display";
+import { formatWorkedMinutes } from "@/lib/timesheet-display";
 import { cacheData, getCachedData } from "@/lib/offline-queue";
 
 interface DayLog {
