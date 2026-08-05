@@ -1,5 +1,7 @@
 import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, nowTimestamp, resolveTimestamp, authenticateEmployee, checkIdempotency, recordIdempotencyResult } from "../_shared/helpers.ts";
 
+const MAX_BREAK_MINUTES = 60;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
   try {
@@ -15,7 +17,7 @@ Deno.serve(async (req) => {
 
     const { data: session } = await supabase
       .from("project_work_sessions")
-      .select("id, work_start_time, work_end_time, break_start_time, break_end_time")
+      .select("id, work_start_time, work_end_time, break_start_time, break_end_time, break_minutes")
       .eq("id", session_id)
       .eq("employee_id", employee_id)
       .maybeSingle();
@@ -25,9 +27,9 @@ Deno.serve(async (req) => {
     if (session.break_start_time && !session.break_end_time) {
       return jsonResponse({ success: true, timestamp: session.break_start_time, deduped: true });
     }
-    // If a completed break already exists, don't overwrite it on retry.
-    if (session.break_start_time && session.break_end_time) {
-      return jsonResponse({ success: true, timestamp: session.break_start_time, deduped: true });
+    // Multiple breaks are allowed per session, capped at MAX_BREAK_MINUTES total.
+    if ((session.break_minutes ?? 0) >= MAX_BREAK_MINUTES) {
+      return errorResponse(`Break limit of ${MAX_BREAK_MINUTES} minutes already used`, 400);
     }
 
     const now = resolveTimestamp(client_timestamp);

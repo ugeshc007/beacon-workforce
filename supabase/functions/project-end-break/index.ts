@@ -1,5 +1,7 @@
 import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, nowTimestamp, resolveTimestamp, authenticateEmployee, checkIdempotency, recordIdempotencyResult } from "../_shared/helpers.ts";
 
+const MAX_BREAK_MINUTES = 60;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
   try {
@@ -34,7 +36,7 @@ Deno.serve(async (req) => {
       .from("project_work_sessions")
       .update({
         break_end_time: now,
-        break_minutes: (session.break_minutes ?? 0) + addBreak,
+        break_minutes: Math.min(MAX_BREAK_MINUTES, (session.break_minutes ?? 0) + addBreak),
       })
       .eq("id", session_id);
 

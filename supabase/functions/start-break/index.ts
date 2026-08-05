@@ -1,5 +1,7 @@
 import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, todayDate, nowTimestamp, resolveTimestamp, checkIdempotency, authenticateEmployee, findOpenAttendanceLog } from "../_shared/helpers.ts";
 
+const MAX_BREAK_MINUTES = 60;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
 
@@ -20,7 +22,7 @@ Deno.serve(async (req) => {
     const log = await findOpenAttendanceLog(
       supabase,
       employee_id,
-      "id, date, work_start_time, work_end_time, break_start_time, break_end_time, office_punch_out"
+      "id, date, work_start_time, work_end_time, break_start_time, break_end_time, break_minutes, office_punch_out"
     );
 
     if (!log) return errorResponse("Must punch in first", 400);
@@ -29,10 +31,14 @@ Deno.serve(async (req) => {
     // if the day's work is already ended.
     if (log.work_end_time) return errorResponse("Work already ended", 400);
     if (log.break_start_time && !log.break_end_time) return errorResponse("Break already in progress", 400);
+    // Multiple breaks allowed, but total capped at MAX_BREAK_MINUTES per day.
+    if ((log.break_minutes ?? 0) >= MAX_BREAK_MINUTES) {
+      return errorResponse(`Daily break limit of ${MAX_BREAK_MINUTES} minutes already used`, 400);
+    }
 
     const { error } = await supabase
       .from("attendance_logs")
-      .update({ break_start_time: now })
+      .update({ break_start_time: now, break_end_time: null })
       .eq("id", log.id);
 
     if (error) return errorResponse(error.message, 500);

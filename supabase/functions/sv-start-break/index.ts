@@ -1,5 +1,7 @@
 import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, resolveTimestamp, checkIdempotency, recordIdempotencyResult, authenticateEmployee } from "../_shared/helpers.ts";
 
+const MAX_BREAK_MINUTES = 60;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
   try {
@@ -15,7 +17,7 @@ Deno.serve(async (req) => {
 
     const { data: session } = await supabase
       .from("site_visit_work_sessions")
-      .select("id, work_start_time, work_end_time, break_start_time, break_end_time")
+      .select("id, work_start_time, work_end_time, break_start_time, break_end_time, break_minutes")
       .eq("id", session_id)
       .eq("employee_id", employee_id)
       .maybeSingle();
@@ -26,6 +28,10 @@ Deno.serve(async (req) => {
       const out = { success: true, timestamp: session.break_start_time, deduped: true };
       await recordIdempotencyResult(supabase, idempotency_key, out);
       return jsonResponse(out);
+    }
+
+    if ((session.break_minutes ?? 0) >= MAX_BREAK_MINUTES) {
+      return errorResponse(`Break limit of ${MAX_BREAK_MINUTES} minutes already used`, 400);
     }
 
     let now = resolveTimestamp(client_timestamp);
