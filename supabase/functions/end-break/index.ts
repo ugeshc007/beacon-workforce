@@ -1,5 +1,7 @@
 import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, todayDate, nowTimestamp, resolveTimestamp, checkIdempotency, authenticateEmployee, findOpenAttendanceLog } from "../_shared/helpers.ts";
 
+const MAX_BREAK_MINUTES = 60;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
 
@@ -29,7 +31,8 @@ Deno.serve(async (req) => {
     const breakStart = new Date(log.break_start_time).getTime();
     const breakEnd = new Date(now).getTime();
     const thisBreakMinutes = Math.round((breakEnd - breakStart) / 60000);
-    const totalBreakMinutes = (log.break_minutes ?? 0) + thisBreakMinutes;
+    const priorBreak = log.break_minutes ?? 0;
+    const totalBreakMinutes = Math.min(MAX_BREAK_MINUTES, priorBreak + Math.max(0, thisBreakMinutes));
 
     const { error } = await supabase
       .from("attendance_logs")

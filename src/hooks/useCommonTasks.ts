@@ -253,25 +253,35 @@ export function useStartCommonTask() {
   });
 }
 
+const MAX_BREAK_MINUTES = 60;
+
 export function useCommonTaskBreak() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ sessionId, action }: { sessionId: string; action: "start" | "end" }) => {
-      if (action === "start") {
-        const { error } = await supabase
-          .from("common_task_sessions")
-          .update({ break_start_time: new Date().toISOString(), status: "on_break" })
-          .eq("id", sessionId);
-        if (error) throw error;
-        return;
-      }
-
       const { data: s, error: readErr } = await supabase
         .from("common_task_sessions")
         .select("break_start_time, break_minutes")
         .eq("id", sessionId)
         .single();
       if (readErr) throw readErr;
+
+      if (action === "start") {
+        // Multiple breaks allowed, capped at 1 hour total per session.
+        if ((s.break_minutes ?? 0) >= MAX_BREAK_MINUTES) {
+          throw new Error(`Break limit of ${MAX_BREAK_MINUTES} minutes already used`);
+        }
+        const { error } = await supabase
+          .from("common_task_sessions")
+          .update({
+            break_start_time: new Date().toISOString(),
+            break_end_time: null,
+            status: "on_break",
+          })
+          .eq("id", sessionId);
+        if (error) throw error;
+        return;
+      }
 
       const now = new Date();
       const started = s.break_start_time ? new Date(s.break_start_time) : null;
@@ -281,12 +291,13 @@ export function useCommonTaskBreak() {
         .from("common_task_sessions")
         .update({
           break_end_time: now.toISOString(),
-          break_minutes: (s.break_minutes ?? 0) + added,
+          break_minutes: Math.min(MAX_BREAK_MINUTES, (s.break_minutes ?? 0) + added),
           status: "working",
         })
         .eq("id", sessionId);
       if (error) throw error;
     },
+
     onSuccess: () => invalidateSessions(qc),
   });
 }
