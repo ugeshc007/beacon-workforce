@@ -1,5 +1,5 @@
 import { toLocalDateStr } from "@/lib/utils";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
 import { cacheData, getCachedData, enqueueAction } from "@/lib/offline-queue";
@@ -46,13 +46,15 @@ export function useMobileWorkflow() {
   const [assignment, setAssignment] = useState<TodayAssignment | null>(null);
   const [attendanceLog, setAttendanceLog] = useState<AttendanceLog | null>(null);
   const [loading, setLoading] = useState(true);
+  const hasLoadedRef = useRef(false);
   const [actionLoading, setActionLoading] = useState(false);
 
   const today = toLocalDateStr(new Date());
 
   const fetchData = useCallback(async () => {
     if (!employee) return;
-    setLoading(true);
+    // Blocking loader only on first load; background refreshes stay silent.
+    if (!hasLoadedRef.current) setLoading(true);
 
     const cacheKeyAssignment = `assignment_${employee.id}_${today}`;
     const cacheKeyLog = `attendance_${employee.id}_${today}`;
@@ -68,6 +70,7 @@ export function useMobileWorkflow() {
         setAttendanceLog(cachedLog.data);
         setStep(deriveStepFromLog(cachedLog.data));
       }
+      hasLoadedRef.current = true;
       setLoading(false);
       return;
     }
@@ -148,6 +151,7 @@ export function useMobileWorkflow() {
         setStep(deriveStepFromLog(cachedLog.data));
       }
     } finally {
+      hasLoadedRef.current = true;
       setLoading(false);
     }
   }, [employee, today]);

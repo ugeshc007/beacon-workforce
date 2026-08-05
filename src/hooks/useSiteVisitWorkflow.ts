@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
 import { toLocalDateStr } from "@/lib/utils";
@@ -33,16 +33,20 @@ export function useSiteVisitWorkflow(siteVisitId: string | null) {
   const [session, setSession] = useState<SessionRow | null>(null);
   const [step, setStep] = useState<SiteVisitStep>("idle");
   const [loading, setLoading] = useState(true);
+  const hasLoadedRef = useRef(false);
   const [actionLoading, setActionLoading] = useState(false);
 
   const today = toLocalDateStr(new Date());
 
   const fetchSession = useCallback(async () => {
     if (!employee || !siteVisitId) {
-      setLoading(false);
+      hasLoadedRef.current = true;
+    setLoading(false);
       return;
     }
-    setLoading(true);
+    // Only show the blocking loader on the very first load; background
+    // refreshes (sync finished, reconnect) must not flash the screen.
+    if (!hasLoadedRef.current) setLoading(true);
     const { data } = await supabase
       .from("site_visit_work_sessions")
       .select("id, site_visit_id, attendance_log_id, travel_start_time, site_arrival_time, work_start_time, break_start_time, break_end_time, work_end_time, return_travel_start_time, total_work_minutes")
@@ -63,6 +67,7 @@ export function useSiteVisitWorkflow(siteVisitId: string | null) {
     const merged: SessionRow | null = data ? { ...data, office_arrival_time: officeArrival } : null;
     setSession(merged);
     setStep(deriveSiteVisitStep(merged));
+    hasLoadedRef.current = true;
     setLoading(false);
   }, [employee, siteVisitId, today]);
 

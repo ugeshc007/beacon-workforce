@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
 import { toLocalDateStr } from "@/lib/utils";
@@ -32,6 +32,7 @@ export function useProjectWorkflow(projectId: string | null, dateOverride?: stri
   const [session, setSession] = useState<SessionRow | null>(null);
   const [step, setStep] = useState<ProjectStep>("idle");
   const [loading, setLoading] = useState(true);
+  const hasLoadedRef = useRef(false);
   const [locationLoading, setLocationLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [assignmentLocation, setAssignmentLocation] = useState<"in_house" | "site" | null>(null);
@@ -132,10 +133,13 @@ export function useProjectWorkflow(projectId: string | null, dateOverride?: stri
 
   const fetchSession = useCallback(async () => {
     if (!employee || !projectId) {
-      setLoading(false);
+      hasLoadedRef.current = true;
+    setLoading(false);
       return;
     }
-    setLoading(true);
+    // Only show the blocking loader on the very first load; background
+    // refreshes (sync finished, reconnect) must not flash the screen.
+    if (!hasLoadedRef.current) setLoading(true);
 
     // Offline → hydrate from localStorage cache, never overwrite with null
     if (!navigator.onLine) {
@@ -147,7 +151,8 @@ export function useProjectWorkflow(projectId: string | null, dateOverride?: stri
           setStep(deriveProjectStep(parsed));
         }
       } catch { /* ignore */ }
-      setLoading(false);
+      hasLoadedRef.current = true;
+    setLoading(false);
       return;
     }
 
@@ -163,6 +168,7 @@ export function useProjectWorkflow(projectId: string | null, dateOverride?: stri
     if (sessionCacheKey) {
       try { localStorage.setItem(sessionCacheKey, JSON.stringify(data ?? null)); } catch { /* ignore */ }
     }
+    hasLoadedRef.current = true;
     setLoading(false);
   }, [employee, projectId, today, sessionCacheKey]);
 

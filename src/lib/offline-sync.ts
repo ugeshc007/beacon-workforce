@@ -242,6 +242,12 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
         return at === bt ? a.index - b.index : at - bt;
       })
       .map(({ item }) => item);
+    // Nothing queued → don't emit a syncing=true/false cycle. Listeners use
+    // that transition to refetch, so a no-op poll would otherwise make the
+    // mobile screens reload every 30 seconds.
+    if (pending.length === 0) {
+      return { synced: 0, failed: 0 };
+    }
     notifyListeners(pending.length, true);
 
     // Track which groups have a still-unsynced creator earlier in the pass.
