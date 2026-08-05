@@ -71,14 +71,18 @@ export default function MobileHome() {
 
   // Keep GPS background tracking running while any project session is in travel
   const hasActiveTravel = (todayProjects ?? []).some((p) => p.step === "traveling");
+  // Depend on primitive ids only — using the whole objects restarted the GPS
+  // watcher on every background refresh, which churned the screen while traveling.
+  const employeeId = employee?.id ?? null;
+  const attendanceLogId = attendanceLog?.id ?? null;
   useEffect(() => {
-    if (hasActiveTravel && employee && attendanceLog) {
-      startTracking(employee.id, attendanceLog.id);
+    if (hasActiveTravel && employeeId && attendanceLogId) {
+      startTracking(employeeId, attendanceLogId);
     } else {
       stopTracking();
     }
     return () => { stopTracking(); };
-  }, [hasActiveTravel, employee, attendanceLog, startTracking, stopTracking]);
+  }, [hasActiveTravel, employeeId, attendanceLogId, startTracking, stopTracking]);
 
   // Auto-jump into the workflow if there's already an active project session
   useEffect(() => {
