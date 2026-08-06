@@ -37,7 +37,14 @@ Deno.serve(async (req) => {
       .in("date", [today, yesterday])
       .not("office_punch_in", "is", null);
 
-    const punchedInIds = new Set((punchIns ?? []).map((p: { employee_id: string }) => p.employee_id));
+    const now = new Date();
+    const punchedInIds = new Set(
+      (punchIns ?? [])
+        .filter((p: { office_punch_in: string }) =>
+          now.getTime() - new Date(p.office_punch_in).getTime() <= 14 * 60 * 60 * 1000
+        )
+        .map((p: { employee_id: string }) => p.employee_id)
+    );
 
     // Get employees on leave today
     const { data: leaves } = await supabase
