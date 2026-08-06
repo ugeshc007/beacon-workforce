@@ -61,11 +61,15 @@ export function useDriverLegs(employeeId?: string, date?: string) {
         return [];
       }
 
+      // Night-shift support: include legs from today and yesterday.
+      const yesterday = date
+        ? new Date(new Date(date + "T00:00:00").getTime() - 86_400_000).toISOString().split("T")[0]
+        : "";
       const { data } = await supabase
         .from("driver_trip_legs")
         .select("id, project_id, leg_number, travel_start_time, site_arrival_time, leg_type, leg_end_time, total_travel_minutes, total_onsite_minutes, status, projects(name)")
         .eq("driver_id", employeeId!)
-        .eq("date", date!)
+        .in("date", [date!, yesterday])
         .order("leg_number");
       const mapped: DriverLeg[] = (data ?? []).map((l: any) => ({
         ...l,
