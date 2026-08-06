@@ -25,7 +25,8 @@ Deno.serve(async (req) => {
       supabase,
       employee_id,
       attendance_log_id,
-      "id, date, return_travel_start_time"
+      "id, date, office_punch_in, return_travel_start_time",
+      now
     );
 
     if (!log) return errorResponse("No attendance record for today", 400);

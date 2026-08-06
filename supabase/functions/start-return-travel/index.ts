@@ -25,7 +25,8 @@ Deno.serve(async (req) => {
       supabase,
       employee_id,
       attendance_log_id,
-      "id, date, work_end_time"
+      "id, date, office_punch_in, work_end_time",
+      now
     );
 
     if (!log) return errorResponse("Must punch in first", 400);
