@@ -113,15 +113,39 @@ Deno.serve(async (req) => {
     // Allow multiple shifts per day, but make punch-in idempotent:
     // - A queued/offline duplicate punch-in should return success, not fail.
     // - A blank open log created by a travel/work action should be reused.
+    // - Night shifts: look back to yesterday so a punch-in on Day 1 that is
+    //   still open on Day 2 (within the 12-hour window) is reused.
+    const yesterday = new Date(new Date(today + "T00:00:00Z").getTime() - 86_400_000)
+      .toISOString()
+      .split("T")[0];
+
     const { data: openLogs } = await supabase
       .from("attendance_logs")
-      .select("id, office_punch_in, office_punch_out")
+      .select("id, date, office_punch_in, office_punch_out")
       .eq("employee_id", employee_id)
-      .eq("date", today)
+      .in("date", [today, yesterday])
       .is("office_punch_out", null)
+      .order("date", { ascending: false })
       .order("office_punch_in", { ascending: false, nullsFirst: false });
 
-    const punchedInOpenLog = openLogs?.find((l) => l.office_punch_in);
+    // Auto-close any open log that is outside the 12-hour shift window before
+    // allowing a fresh punch-in. This prevents a forgotten yesterday shift from
+    // blocking today's work.
+    const staleOpen = openLogs?.find((l) => l.office_punch_in && !isWithinShiftWindow(l.office_punch_in, now, SHIFT_WINDOW_HOURS));
+    if (staleOpen) {
+      await supabase
+        .from("attendance_logs")
+        .update({
+          office_punch_out: staleOpen.office_punch_in,
+          notes: "Auto-closed stale open shift before new punch-in (exceeded 12h window)",
+          is_incomplete_process: true,
+        })
+        .eq("id", staleOpen.id);
+    }
+
+    const punchedInOpenLog = openLogs?.find(
+      (l) => l.office_punch_in && isWithinShiftWindow(l.office_punch_in, now, SHIFT_WINDOW_HOURS)
+    );
     if (punchedInOpenLog) {
       return jsonResponse({
         success: true,
