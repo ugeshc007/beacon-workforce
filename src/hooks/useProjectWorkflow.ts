@@ -254,13 +254,19 @@ export function useProjectWorkflow(projectId: string | null, dateOverride?: stri
       let sid = session?.id;
       if (!sid && employee && projectId && navigator.onLine) {
         try {
+          const yesterday = new Date(new Date(today + "T00:00:00").getTime() - 86_400_000)
+            .toISOString()
+            .split("T")[0];
           const { data: row } = await supabase
             .from("project_work_sessions")
             .select("id")
             .eq("employee_id", employee.id)
             .eq("project_id", projectId)
-            .eq("date", today)
+            .in("date", [today, yesterday])
             .is("work_end_time", null)
+            .order("date", { ascending: false })
+            .order("travel_start_time", { ascending: false, nullsFirst: false })
+            .limit(1)
             .maybeSingle();
           sid = row?.id ?? undefined;
           if (sid) setSession((prev) => prev ? { ...prev, id: sid! } : prev);
