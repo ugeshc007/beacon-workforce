@@ -149,14 +149,16 @@ export async function findOpenAttendanceLog(
  * Resolve which attendance log an action should target.
  * If the client passes an explicit `attendance_log_id` (e.g. user is closing
  * a stale shift from a previous day via the unfinished-shift banner), honor
- * that log as long as it belongs to the employee and is still open.
+ * that log as long as it belongs to the employee and is still open and within
+ * the 12-hour shift window.
  * Otherwise fall back to findOpenAttendanceLog (today/yesterday).
  */
 export async function resolveAttendanceLog(
   supabase: ReturnType<typeof createSupabaseAdmin>,
   employeeId: string,
   explicitLogId: string | undefined | null,
-  columns: string
+  columns: string,
+  nowIso?: string
 ) {
   if (explicitLogId) {
     const { data } = await supabase
@@ -166,9 +168,9 @@ export async function resolveAttendanceLog(
       .eq("employee_id", employeeId)
       .is("office_punch_out", null)
       .maybeSingle();
-    if (data) return data;
+    if (data && isWithinShiftWindow((data as any).office_punch_in, nowIso, SHIFT_WINDOW_HOURS)) return data;
   }
-  return findOpenAttendanceLog(supabase, employeeId, columns);
+  return findOpenAttendanceLog(supabase, employeeId, columns, nowIso);
 }
 
 /**
