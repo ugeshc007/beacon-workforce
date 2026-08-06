@@ -156,17 +156,29 @@ export function useProjectWorkflow(projectId: string | null, dateOverride?: stri
       return;
     }
 
-    const { data } = await supabase
+    // Night-shift support: look for an open session from today OR yesterday.
+    // A session is considered active if work_end_time is null and it was
+    // started within the last 14 hours.
+    const yesterday = new Date(new Date(today + "T00:00:00").getTime() - 86_400_000)
+      .toISOString()
+      .split("T")[0];
+    const { data: openSession } = await supabase
       .from("project_work_sessions")
       .select("id, project_id, travel_start_time, site_arrival_time, work_start_time, break_start_time, break_end_time, work_end_time, total_work_minutes")
       .eq("employee_id", employee.id)
       .eq("project_id", projectId)
-      .eq("date", today)
+      .in("date", [today, yesterday])
+      .is("work_end_time", null)
+      .order("date", { ascending: false })
+      .order("travel_start_time", { ascending: false, nullsFirst: false })
+      .limit(1)
       .maybeSingle();
-    setSession(data ?? null);
-    setStep(deriveProjectStep(data ?? null));
+
+    const data = openSession ?? null;
+    setSession(data);
+    setStep(deriveProjectStep(data));
     if (sessionCacheKey) {
-      try { localStorage.setItem(sessionCacheKey, JSON.stringify(data ?? null)); } catch { /* ignore */ }
+      try { localStorage.setItem(sessionCacheKey, JSON.stringify(data)); } catch { /* ignore */ }
     }
     hasLoadedRef.current = true;
     setLoading(false);
