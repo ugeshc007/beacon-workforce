@@ -34,7 +34,6 @@ Deno.serve(async (req) => {
     const { data: punchIns } = await supabase
       .from("attendance_logs")
       .select("employee_id, office_punch_in")
-      .eq("employee_id", "dummy") // placeholder, replaced by in-filter below
       .in("date", [today, yesterday])
       .not("office_punch_in", "is", null);
 
