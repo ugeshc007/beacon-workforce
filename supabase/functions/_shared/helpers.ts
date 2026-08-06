@@ -92,19 +92,37 @@ export function resolveTimestamp(clientTimestamp?: string | null): string {
 }
 
 
+/** Maximum elapsed hours since punch-in for a shift to remain open/active. */
+export const SHIFT_WINDOW_HOURS = 12;
+
+/** Return true if punchIn is within `hours` of now (default 12h shift window). */
+export function isWithinShiftWindow(
+  punchInIso: string | null | undefined,
+  nowIso?: string,
+  hours = SHIFT_WINDOW_HOURS
+): boolean {
+  if (!punchInIso) return true; // no punch-in yet (blank log) — keep it open
+  const punchIn = new Date(punchInIso).getTime();
+  const now = nowIso ? new Date(nowIso).getTime() : Date.now();
+  return now - punchIn <= hours * 60 * 60 * 1000;
+}
+
 /**
  * Find the currently active (open) attendance log for an employee.
  * Looks at today first, then yesterday — so night shifts that started before
  * midnight and continue into the next UAE day still resolve to the same log.
- * "Open" = office_punch_out IS NULL. Returns null if none found.
+ * "Open" = office_punch_out IS NULL AND punch-in is within SHIFT_WINDOW_HOURS.
+ * Returns null if none found.
  *
- * `columns` must always include `id` and `date`; callers should add `office_punch_out`
- * only if they need to read it (the helper already filters on it).
+ * `columns` must always include `id`, `date`, and `office_punch_in`; callers
+ * should add `office_punch_out` only if they need to read it (the helper
+ * already filters on it).
  */
 export async function findOpenAttendanceLog(
   supabase: ReturnType<typeof createSupabaseAdmin>,
   employeeId: string,
-  columns: string
+  columns: string,
+  nowIso?: string
 ) {
   const today = todayDate();
   const yesterday = new Date(new Date(today + "T00:00:00Z").getTime() - 86_400_000)
@@ -121,6 +139,9 @@ export async function findOpenAttendanceLog(
     .order("office_punch_in", { ascending: false, nullsFirst: false })
     .limit(1)
     .maybeSingle();
+  if (!data) return null;
+  const punchIn = (data as any).office_punch_in as string | null;
+  if (!isWithinShiftWindow(punchIn, nowIso, SHIFT_WINDOW_HOURS)) return null;
   return data;
 }
 
