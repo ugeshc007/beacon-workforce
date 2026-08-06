@@ -81,13 +81,15 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Auto-close any stale open sessions from previous days
+      // Auto-close any stale open sessions from previous days (>12h old).
+      const staleSessionCutoff = new Date(new Date(now).getTime() - 12 * 60 * 60 * 1000).toISOString();
       await supabase
         .from("project_work_sessions")
         .update({ work_end_time: now, status: "completed" })
         .eq("employee_id", employee_id)
         .is("work_end_time", null)
-        .lt("date", today);
+        .lt("date", today)
+        .lt("travel_start_time", staleSessionCutoff);
 
       // Block if another active session today
       const { data: activeToday } = await supabase
