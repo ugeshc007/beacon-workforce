@@ -31,14 +31,14 @@ Deno.serve(async (req) => {
     // project-step reminders below.
 
 
-    // Already reminded buckets in the lookback window. Use the log's own
-    // date for the reference key so night shifts still dedupe correctly.
+    // Already reminded buckets in the lookback window. Reference key uses the
+    // current UAE date so reminders for night shifts still dedupe per hour.
     const today = todayDate();
     const { data: alreadyReminded } = await supabase
       .from("employee_notifications")
       .select("employee_id, reference_id")
       .eq("type", "punch_out_reminder")
-      .like("reference_id", `%${today}-h%`);
+      .like("reference_id", `${today}-h%`);
     const remindedKeys = new Set(
       (alreadyReminded ?? []).map((r: { employee_id: string; reference_id: string }) => `${r.employee_id}:${r.reference_id}`),
     );
