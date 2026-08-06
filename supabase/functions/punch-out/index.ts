@@ -22,7 +22,8 @@ Deno.serve(async (req) => {
       supabase,
       employee_id,
       attendance_log_id,
-      "id, date, office_arrival_time, office_punch_out, travel_start_time, site_arrival_time"
+      "id, date, office_punch_in, office_arrival_time, office_punch_out, travel_start_time, site_arrival_time",
+      now
     );
 
     if (!log) return errorResponse("No active attendance to punch out from", 400);

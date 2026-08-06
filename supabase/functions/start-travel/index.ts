@@ -27,7 +27,8 @@ Deno.serve(async (req) => {
     let log = await findOpenAttendanceLog(
       supabase,
       employee_id,
-      "id, date, office_punch_in, travel_start_time, work_end_time, office_punch_out"
+      "id, date, office_punch_in, travel_start_time, work_end_time, office_punch_out",
+      now
     );
 
     if (!log) {

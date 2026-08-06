@@ -20,7 +20,8 @@ Deno.serve(async (req) => {
     const log = await findOpenAttendanceLog(
       supabase,
       employee_id,
-      "id, date, project_id, site_arrival_time, work_start_time, work_end_time, office_punch_out"
+      "id, date, office_punch_in, project_id, site_arrival_time, work_start_time, work_end_time, office_punch_out",
+      now
     );
 
     if (!log) return errorResponse("Must punch in first", 400);

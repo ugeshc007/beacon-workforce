@@ -26,14 +26,25 @@ Deno.serve(async (req) => {
       return jsonResponse({ checked: 0, absent: 0 });
     }
 
-    // Get all punch-ins for today
+    // Get all punch-ins for today or yesterday (covers night shifts that
+    // started yesterday and continue into today).
+    const yesterday = new Date(new Date(today + "T00:00:00Z").getTime() - 86_400_000)
+      .toISOString()
+      .split("T")[0];
     const { data: punchIns } = await supabase
       .from("attendance_logs")
-      .select("employee_id")
-      .eq("date", today)
+      .select("employee_id, office_punch_in")
+      .in("date", [today, yesterday])
       .not("office_punch_in", "is", null);
 
-    const punchedInIds = new Set((punchIns ?? []).map((p: { employee_id: string }) => p.employee_id));
+    const now = new Date();
+    const punchedInIds = new Set(
+      (punchIns ?? [])
+        .filter((p: { office_punch_in: string }) =>
+          now.getTime() - new Date(p.office_punch_in).getTime() <= 14 * 60 * 60 * 1000
+        )
+        .map((p: { employee_id: string }) => p.employee_id)
+    );
 
     // Get employees on leave today
     const { data: leaves } = await supabase

@@ -14,22 +14,26 @@ Deno.serve(async (req) => {
 
   try {
     const supabase = createSupabaseAdmin();
-    const today = todayDate();
     const now = new Date();
+    // Look back 14 hours so night shifts punched in on Day 1 and still open
+    // on Day 2 get reminder notifications.
+    const lookback = new Date(now.getTime() - 14 * 60 * 60 * 1000).toISOString();
 
-    // Open shifts: punched in today, no punch-out yet
+    // Open shifts: punched in within the last 14 hours, no punch-out yet
     const { data: openLogs } = await supabase
       .from("attendance_logs")
       .select("id, employee_id, office_punch_in, project_id, projects(name), employees(name, standard_hours_per_day)")
-      .eq("date", today)
       .not("office_punch_in", "is", null)
-      .is("office_punch_out", null);
+      .is("office_punch_out", null)
+      .gte("office_punch_in", lookback);
 
     // Note: don't early-return when no openLogs — we still check pending
     // project-step reminders below.
 
 
-    // Already reminded buckets today
+    // Already reminded buckets in the lookback window. Reference key uses the
+    // current UAE date so reminders for night shifts still dedupe per hour.
+    const today = todayDate();
     const { data: alreadyReminded } = await supabase
       .from("employee_notifications")
       .select("employee_id, reference_id")
@@ -91,9 +95,9 @@ Deno.serve(async (req) => {
     const { data: openSessions } = await supabase
       .from("project_work_sessions")
       .select("id, employee_id, work_start_time, work_end_time, project_id, projects(name), employees(name)")
-      .eq("date", today)
       .not("work_start_time", "is", null)
-      .is("work_end_time", null);
+      .is("work_end_time", null)
+      .gte("work_start_time", lookback);
 
     const { data: alreadyRemindedSteps } = await supabase
       .from("employee_notifications")

@@ -47,12 +47,20 @@ export function useSiteVisitWorkflow(siteVisitId: string | null) {
     // Only show the blocking loader on the very first load; background
     // refreshes (sync finished, reconnect) must not flash the screen.
     if (!hasLoadedRef.current) setLoading(true);
+    // Night-shift support: look for an open session from today OR yesterday.
+    const yesterday = new Date(new Date(today + "T00:00:00").getTime() - 86_400_000)
+      .toISOString()
+      .split("T")[0];
     const { data } = await supabase
       .from("site_visit_work_sessions")
       .select("id, site_visit_id, attendance_log_id, travel_start_time, site_arrival_time, work_start_time, break_start_time, break_end_time, work_end_time, return_travel_start_time, total_work_minutes")
       .eq("employee_id", employee.id)
       .eq("site_visit_id", siteVisitId)
-      .eq("date", today)
+      .in("date", [today, yesterday])
+      .is("work_end_time", null)
+      .order("date", { ascending: false })
+      .order("travel_start_time", { ascending: false, nullsFirst: false })
+      .limit(1)
       .maybeSingle();
 
     let officeArrival: string | null = null;
