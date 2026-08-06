@@ -60,16 +60,16 @@ Deno.serve(async (req) => {
     }
 
     // Guard: allow closure when either the shift is dated before today (UAE) OR
-    // more than 24 hours have passed since punch-in. That covers same-UAE-day
-    // shifts where the employee punched in yesterday evening and is still open.
+    // more than 12 hours have passed since punch-in. Night shifts are allowed
+    // to span two calendar days as long as they remain within the 12-hour window.
     const todayUAE = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Dubai" }))
       .toISOString().slice(0, 10);
     const punchedInAgeMs = log.office_punch_in
       ? Date.now() - new Date(log.office_punch_in).getTime()
       : 0;
-    const isStale = log.date < todayUAE || punchedInAgeMs > 24 * 60 * 60 * 1000;
+    const isStale = log.date < todayUAE || punchedInAgeMs > 12 * 60 * 60 * 1000;
     if (!isStale) {
-      return json({ error: "This action is only for shifts from previous days or older than 24 hours. Use the normal punch-out for today." }, 400);
+      return json({ error: "This action is only for shifts from previous days or older than 12 hours. Use the normal punch-out for today." }, 400);
     }
 
     if (body.mode === "complete") {
