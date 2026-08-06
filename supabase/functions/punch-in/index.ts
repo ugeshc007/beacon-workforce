@@ -165,10 +165,11 @@ Deno.serve(async (req) => {
     const REPLAY_WINDOW_SECONDS = 120;
     const { data: recentClosed } = await supabase
       .from("attendance_logs")
-      .select("id, office_punch_in, office_punch_out")
+      .select("id, date, office_punch_in, office_punch_out")
       .eq("employee_id", employee_id)
-      .eq("date", today)
+      .in("date", [today, yesterday])
       .not("office_punch_out", "is", null)
+      .order("date", { ascending: false })
       .order("office_punch_out", { ascending: false })
       .limit(1)
       .maybeSingle();
