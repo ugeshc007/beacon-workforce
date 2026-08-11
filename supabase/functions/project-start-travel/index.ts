@@ -1,4 +1,4 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, dateFromTimestamp, resolveTimestamp, authenticateEmployee, checkIdempotency, recordIdempotencyResult } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, dateFromTimestamp, resolveTimestamp, authenticateEmployee, checkIdempotency, recordIdempotencyResult, pickLogForTimestamp } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
@@ -26,16 +26,16 @@ Deno.serve(async (req) => {
       .from("settings").select("value").eq("key", "office_punch_in_mandatory").maybeSingle();
     const officeMandatory = (mandatorySetting?.value ?? "") === "true";
 
-    // Find ANY existing log for today (open preferred), to avoid violating
-    // the partial unique index attendance_logs_one_open_per_day.
+    // Find the log this action belongs to. We load ALL logs for the day and
+    // match by time window so a second (night) shift's travel never attaches
+    // to the earlier shift's log — that merged both shifts in the timeline.
     const { data: logs } = await supabase
       .from("attendance_logs")
       .select("id, office_punch_in, office_punch_out")
       .eq("employee_id", employee_id)
-      .eq("date", today)
-      .order("office_punch_out", { ascending: true, nullsFirst: true })
-      .limit(1);
-    let log = logs?.[0] ?? null;
+      .eq("date", today);
+    let log = pickLogForTimestamp(logs, now);
+
 
     if (!log) {
       if (officeMandatory) return errorResponse("Must punch in at office first", 400);

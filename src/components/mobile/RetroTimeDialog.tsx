@@ -38,8 +38,14 @@ export function RetroTimeDialog({ open, shiftDate, actionLabel, minTime, default
     return `${pad(now.getHours())}:${pad(now.getMinutes())}`;
   }, [defaultTime, minTime]);
 
+  const todayStr = useMemo(() => {
+    const n = new Date();
+    return `${n.getFullYear()}-${pad(n.getMonth() + 1)}-${pad(n.getDate())}`;
+  }, []);
+
   const [time, setTime] = useState(initial);
-  useEffect(() => { setTime(initial); }, [initial, open]);
+  const [date, setDate] = useState(shiftDate);
+  useEffect(() => { setTime(initial); setDate(shiftDate); }, [initial, shiftDate, open]);
 
   const prettyDate = useMemo(() => {
     if (!shiftDate) return "";
@@ -48,12 +54,14 @@ export function RetroTimeDialog({ open, shiftDate, actionLabel, minTime, default
     });
   }, [shiftDate]);
 
-  const invalid = !!minTime && time < minTime;
+  // Time ordering only applies when staying on the shift's own date.
+  const invalid = date === shiftDate && !!minTime && time < minTime;
 
   const handleConfirm = () => {
     if (invalid) return;
-    onConfirm(toIso(shiftDate, time));
+    onConfirm(toIso(date || shiftDate, time));
   };
+
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onCancel(); }}>
@@ -69,27 +77,41 @@ export function RetroTimeDialog({ open, shiftDate, actionLabel, minTime, default
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-2 py-2">
-          <Label htmlFor="retro-time">Time (24h)</Label>
-          <Input
-            id="retro-time"
-            type="time"
-            value={time}
-            min={minTime ?? undefined}
-            onChange={(e) => setTime(e.target.value)}
-            className="text-lg font-mono"
-          />
-          {minTime && (
-            <p className="text-[11px] text-muted-foreground">
-              Must be after previous step ({minTime}).
-            </p>
-          )}
-          {invalid && (
-            <p className="text-[11px] text-destructive">
-              Time must be after {minTime}.
-            </p>
-          )}
+        <div className="space-y-3 py-2">
+          <div className="space-y-2">
+            <Label htmlFor="retro-date">Date</Label>
+            <Input
+              id="retro-date"
+              type="date"
+              value={date}
+              min={shiftDate}
+              max={todayStr}
+              onChange={(e) => setDate(e.target.value)}
+              className="text-base font-mono"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="retro-time">Time (24h)</Label>
+            <Input
+              id="retro-time"
+              type="time"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+              className="text-lg font-mono"
+            />
+            {minTime && date === shiftDate && (
+              <p className="text-[11px] text-muted-foreground">
+                Must be after previous step ({minTime}).
+              </p>
+            )}
+            {invalid && (
+              <p className="text-[11px] text-destructive">
+                Time must be after {minTime}.
+              </p>
+            )}
+          </div>
         </div>
+
 
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={onCancel}>Cancel</Button>

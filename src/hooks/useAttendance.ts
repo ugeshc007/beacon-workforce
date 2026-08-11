@@ -84,15 +84,15 @@ export function useAttendanceLogs(filters: {
       let results = data as AttendanceLog[];
 
       // Enrich logs with project sessions for this date (per-project start/end).
-      // We fetch ALL sessions for these employees on this date, so fragmented
-      // attendance logs (multiple short punch-in/outs on the same project) can
-      // still surface the real session data in the timeline — even when the
-      // session was linked to a sibling log for that same project.
+      // IMPORTANT: sessions are matched to a log by TIME WINDOW, not only by the
+      // stored attendance_log_id. Offline sync can bind a session to the wrong
+      // shift (e.g. a night-shift session attached to the morning log), which
+      // used to merge two shifts into one timeline. Windowing keeps every shift
+      // separate and self-healing.
       const logIds = results.map((r) => r.id);
       const employeeIdsForSessions = Array.from(new Set(results.map((r) => r.employee_id).filter(Boolean) as string[]));
       let sessionsByLog = new Map<string, AttendanceSessionSummary[]>();
       let sessionProjectIds: string[] = [];
-      const sessionsByEmpProject = new Map<string, AttendanceSessionSummary[]>();
       if (logIds.length > 0 && employeeIdsForSessions.length > 0) {
         const { data: pws } = await supabase
           .from("project_work_sessions")
@@ -100,6 +100,23 @@ export function useAttendanceLogs(filters: {
           .in("employee_id", employeeIdsForSessions)
           .eq("date", filters.date)
           .order("created_at", { ascending: true });
+
+        // Build per-employee shift windows from the logs themselves.
+        const windowsByEmp = new Map<string, { id: string; start: number; end: number }[]>();
+        for (const r of results) {
+          if (!r.employee_id || !r.office_punch_in) continue;
+          const start = new Date(r.office_punch_in).getTime();
+          const end = r.office_punch_out
+            ? new Date(r.office_punch_out).getTime()
+            : start + 12 * 60 * 60 * 1000;
+          const arr = windowsByEmp.get(r.employee_id) ?? [];
+          arr.push({ id: r.id, start, end });
+          windowsByEmp.set(r.employee_id, arr);
+        }
+        for (const arr of windowsByEmp.values()) arr.sort((a, b) => a.start - b.start);
+
+        const ts = (v: string | null) => (v ? new Date(v).getTime() : null);
+
         for (const s of (pws ?? []) as any[]) {
           const summary: AttendanceSessionSummary = {
             id: s.id,
@@ -112,29 +129,40 @@ export function useAttendanceLogs(filters: {
             break_end_time: s.break_end_time,
             work_end_time: s.work_end_time,
           };
-          if (s.attendance_log_id) {
-            const list = sessionsByLog.get(s.attendance_log_id) ?? [];
-            list.push(summary);
-            sessionsByLog.set(s.attendance_log_id, list);
-          }
           if (s.project_id) sessionProjectIds.push(s.project_id);
-          if (s.employee_id && s.project_id) {
-            const key = `${s.employee_id}:${s.project_id}`;
-            const arr = sessionsByEmpProject.get(key) ?? [];
-            arr.push(summary);
-            sessionsByEmpProject.set(key, arr);
+
+          const sessionStart =
+            ts(s.travel_start_time) ??
+            ts(s.site_arrival_time) ??
+            ts(s.work_start_time) ??
+            ts(s.break_start_time) ??
+            ts(s.work_end_time);
+
+          const windows = windowsByEmp.get(s.employee_id) ?? [];
+          let targetLogId: string | null = null;
+          if (sessionStart != null && windows.length > 0) {
+            // Prefer the shift whose window contains the session start.
+            const containing = windows.filter((w) => sessionStart >= w.start && sessionStart <= w.end);
+            if (containing.length > 0) {
+              targetLogId = containing[containing.length - 1].id;
+            } else {
+              // Otherwise the latest shift that started before the session.
+              const before = windows.filter((w) => w.start <= sessionStart);
+              if (before.length > 0) targetLogId = before[before.length - 1].id;
+            }
           }
-        }
-        // Fallback: for logs with no directly-linked sessions, attach any
-        // sessions for the same employee+project+date so short re-punches
-        // still show real timeline data (travel, on-site, work, etc.).
-        for (const r of results) {
-          if ((sessionsByLog.get(r.id)?.length ?? 0) > 0) continue;
-          if (!r.employee_id || !r.project_id) continue;
-          const arr = sessionsByEmpProject.get(`${r.employee_id}:${r.project_id}`);
-          if (arr && arr.length > 0) sessionsByLog.set(r.id, arr);
+          // Last resort: honour the stored binding when it points at a visible log.
+          if (!targetLogId && s.attendance_log_id && logIds.includes(s.attendance_log_id)) {
+            targetLogId = s.attendance_log_id;
+          }
+          if (!targetLogId) continue;
+
+          const list = sessionsByLog.get(targetLogId) ?? [];
+          list.push(summary);
+          sessionsByLog.set(targetLogId, list);
         }
       }
+
 
       // Enrich each log with the day's work_location (in_house vs site) for its project
       const projectIds = Array.from(new Set([

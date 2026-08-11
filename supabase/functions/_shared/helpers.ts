@@ -146,6 +146,88 @@ export async function findOpenAttendanceLog(
 }
 
 /**
+ * Pick which attendance log an action timestamp belongs to, given ALL logs for
+ * that employee/date. Offline replays can arrive out of order (e.g. a night
+ * shift's travel action lands before its punch-in row exists), so choosing
+ * "the first open log" is not enough — it merges two shifts into one.
+ *
+ * Priority:
+ *  1. an open log whose punch-in is at/before the action time (latest one)
+ *  2. a closed log whose [punch_in, punch_out] window contains the action time
+ *  3. the latest log that started before the action time
+ *  4. the earliest log (never leave the action unbound when logs exist)
+ */
+export function pickLogForTimestamp<T extends { office_punch_in?: string | null; office_punch_out?: string | null }>(
+  logs: T[] | null | undefined,
+  nowIso: string
+): T | null {
+  if (!logs || logs.length === 0) return null;
+  const now = new Date(nowIso).getTime();
+  const rows = logs.map((l) => ({
+    l,
+    start: l.office_punch_in ? new Date(l.office_punch_in).getTime() : null,
+    end: l.office_punch_out ? new Date(l.office_punch_out).getTime() : null,
+  }));
+
+  const open = rows
+    .filter((r) => r.end == null && (r.start == null || r.start <= now + 60_000))
+    .sort((a, b) => (a.start ?? 0) - (b.start ?? 0));
+  if (open.length > 0) return open[open.length - 1].l;
+
+  const containing = rows
+    .filter((r) => r.start != null && r.end != null && r.start <= now && now <= r.end)
+    .sort((a, b) => (a.start as number) - (b.start as number));
+  if (containing.length > 0) return containing[containing.length - 1].l;
+
+  const before = rows
+    .filter((r) => r.start != null && (r.start as number) <= now)
+    .sort((a, b) => (a.start as number) - (b.start as number));
+  if (before.length > 0) return before[before.length - 1].l;
+
+  return rows.sort((a, b) => (a.start ?? 0) - (b.start ?? 0))[0].l;
+}
+
+/**
+ * Re-bind project work sessions to the shift they actually belong to.
+ * Call after a punch-in creates/updates a log: any session for that employee
+ * on that date whose first timestamp falls inside the new log's window but is
+ * bound to a different (already closed) log gets moved onto the new log.
+ * This keeps admin timelines from merging two shifts after an offline sync.
+ */
+export async function rebindSessionsToLog(
+  supabase: ReturnType<typeof createSupabaseAdmin>,
+  employeeId: string,
+  date: string,
+  logId: string,
+  logPunchInIso: string
+): Promise<void> {
+  const start = new Date(logPunchInIso).getTime();
+  const { data: sessions } = await supabase
+    .from("project_work_sessions")
+    .select("id, attendance_log_id, travel_start_time, site_arrival_time, work_start_time, break_start_time, work_end_time")
+    .eq("employee_id", employeeId)
+    .eq("date", date);
+
+  const toMove = (sessions ?? []).filter((s: any) => {
+    if (s.attendance_log_id === logId) return false;
+    const first = [s.travel_start_time, s.site_arrival_time, s.work_start_time, s.break_start_time, s.work_end_time]
+      .filter(Boolean)
+      .map((t: string) => new Date(t).getTime())
+      .sort((a, b) => a - b)[0];
+    if (first == null) return false;
+    return first >= start - 60_000;
+  });
+
+  for (const s of toMove) {
+    await supabase
+      .from("project_work_sessions")
+      .update({ attendance_log_id: logId })
+      .eq("id", (s as any).id);
+  }
+}
+
+
+/**
  * Resolve which attendance log an action should target.
  * If the client passes an explicit `attendance_log_id` (e.g. user is closing
  * a stale shift from a previous day via the unfinished-shift banner), honor

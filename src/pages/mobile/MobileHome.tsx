@@ -108,12 +108,22 @@ export default function MobileHome() {
     staleTime: 60_000,
   });
 
-  // Detect a stale shift: the open attendance log's date is before today.
+  // Detect a stale shift. A night shift that crossed midnight is NOT stale by
+  // itself — we only nag once the shift has run longer than a normal working
+  // day (9h including break), because no real shift goes beyond that.
+  const STALE_AFTER_HOURS = 9;
   const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Dubai" });
-  const isStaleShift = !!attendanceLog?.date && attendanceLog.date < todayStr && !attendanceLog.office_punch_out;
+  const openPunchInMs = attendanceLog?.office_punch_in ? new Date(attendanceLog.office_punch_in).getTime() : null;
+  const elapsedHours = openPunchInMs ? (Date.now() - openPunchInMs) / 3_600_000 : Infinity;
+  const isStaleShift =
+    !!attendanceLog?.date &&
+    attendanceLog.date < todayStr &&
+    !attendanceLog.office_punch_out &&
+    elapsedHours >= STALE_AFTER_HOURS;
   const staleShiftLabel = attendanceLog?.date
     ? new Date(attendanceLog.date + "T00:00:00").toLocaleDateString("en-AE", { weekday: "short", day: "2-digit", month: "short" })
     : "";
+
 
   // Retro-time dialog state for stale shifts
   const [retroAction, setRetroAction] = useState<WorkflowAction | null>(null);
@@ -362,8 +372,9 @@ export default function MobileHome() {
               <p className="text-[11px] text-muted-foreground mt-0.5">
                 {hasNoPunchIn
                   ? "You never punched in for this shift. Mark it as absent to close it."
-                  : "You're still punched in from a previous day. Finish the workflow below to close it."}
+                  : `This shift has been open for over ${STALE_AFTER_HOURS} hours. Pick the real date and time you finished to close it.`}
               </p>
+
             </div>
             <ChevronRight className="h-4 w-4 text-orange-500 mt-1 shrink-0" />
           </button>
