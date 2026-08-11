@@ -1,4 +1,4 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, todayDate, nowTimestamp, resolveTimestamp, checkIdempotency, authenticateEmployee } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, todayDate, nowTimestamp, resolveTimestamp, checkIdempotency, authenticateEmployee, pickLogForTimestamp } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
@@ -26,10 +26,8 @@ Deno.serve(async (req) => {
       .from("attendance_logs")
       .select("id, office_punch_in, office_punch_out")
       .eq("employee_id", employee_id)
-      .eq("date", today)
-      .order("office_punch_out", { ascending: true, nullsFirst: true })
-      .limit(1);
-    let log = logs?.[0] ?? null;
+      .eq("date", today);
+    let log = pickLogForTimestamp(logs, now);
     if (!log) {
       if (officeMandatory) return errorResponse("Must punch in at office first", 400);
       const { data: created, error: createErr } = await supabase
