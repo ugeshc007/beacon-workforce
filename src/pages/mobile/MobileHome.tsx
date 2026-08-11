@@ -372,8 +372,9 @@ export default function MobileHome() {
               <p className="text-[11px] text-muted-foreground mt-0.5">
                 {hasNoPunchIn
                   ? "You never punched in for this shift. Mark it as absent to close it."
-                  : "You're still punched in from a previous day. Finish the workflow below to close it."}
+                  : `This shift has been open for over ${STALE_AFTER_HOURS} hours. Pick the real date and time you finished to close it.`}
               </p>
+
             </div>
             <ChevronRight className="h-4 w-4 text-orange-500 mt-1 shrink-0" />
           </button>
