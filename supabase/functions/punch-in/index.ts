@@ -1,4 +1,4 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, haversineDistance, todayDate, nowTimestamp, resolveTimestamp, checkIdempotency, notifyBranchManagers, authenticateEmployee, isWithinShiftWindow, SHIFT_WINDOW_HOURS } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, haversineDistance, todayDate, nowTimestamp, resolveTimestamp, checkIdempotency, notifyBranchManagers, authenticateEmployee, rebindSessionsToLog, isWithinShiftWindow, SHIFT_WINDOW_HOURS } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
@@ -260,6 +260,11 @@ Deno.serve(async (req) => {
       }
       return errorResponse(error.message, 500);
     }
+
+    // Offline sync can create a session BEFORE its own shift's punch-in row
+    // exists, leaving the session bound to the previous (already closed) shift
+    // and merging both shifts in the admin timeline. Re-bind them now.
+    await rebindSessionsToLog(supabase, employee_id, today, log.id, now);
 
     // Check if late — compare punch-in time against shift_start
     if (assignment?.shift_start) {
