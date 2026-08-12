@@ -124,9 +124,21 @@ export default function MobileProjectWorkflow() {
   }
 
   // Stale shift detection — dateOverride is set when opened from the unfinished-shift banner.
+  // A night shift that simply crossed midnight is NOT stale: we only ask for a
+  // manual time once the shift has run longer than a normal working day (9h incl. break).
+  const STALE_AFTER_HOURS = 9;
   const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Dubai" });
   const shiftDate = dateOverride || todayStr;
-  const isStale = shiftDate < todayStr;
+  const shiftStartIso =
+    office.attendanceLog?.office_punch_in ||
+    session?.travel_start_time ||
+    session?.work_start_time ||
+    null;
+  const shiftElapsedHours = shiftStartIso
+    ? (Date.now() - new Date(shiftStartIso).getTime()) / 3_600_000
+    : Infinity;
+  const isStale = shiftDate < todayStr && shiftElapsedHours >= STALE_AFTER_HOURS;
+
 
   // Retro-time dialog state is hoisted above the early-return (see top of function).
 
