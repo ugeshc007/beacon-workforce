@@ -1,4 +1,4 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, haversineDistance, todayDate, nowTimestamp, resolveTimestamp, checkIdempotency, notifyBranchManagers, authenticateEmployee, rebindSessionsToLog, isWithinShiftWindow, SHIFT_WINDOW_HOURS } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, haversineDistance, todayDate, dateFromTimestamp, nowTimestamp, resolveTimestamp, checkIdempotency, notifyBranchManagers, authenticateEmployee, rebindSessionsToLog, isWithinShiftWindow, SHIFT_WINDOW_HOURS } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
@@ -16,7 +16,14 @@ Deno.serve(async (req) => {
     const auth = await authenticateEmployee(req, supabase, employee_id);
     if (auth.error) return auth.error;
 
-    const today = todayDate();
+    // Effective punch time (honors offline/retro client_timestamp) and the UAE
+    // calendar date that time belongs to. Using the *punch time* — not the
+    // server clock — keeps a 22:00 punch-in filed under that day even when the
+    // request lands after midnight (sync/offline), so the day isn't left blank
+    // and later flagged absent.
+    const now = resolveTimestamp(client_timestamp);
+    const today = dateFromTimestamp(now);
+
 
     // Read company-wide GPS toggle. When OFF → bypass geofence checks entirely.
     const { data: gpsSetting } = await supabase
@@ -86,7 +93,6 @@ Deno.serve(async (req) => {
       .eq("date", today)
       .order("shift_start", { ascending: true, nullsFirst: false });
 
-    const now = resolveTimestamp(client_timestamp);
     const nowInUae = new Date(new Date(now).getTime() + 4 * 60 * 60 * 1000);
     const nowMinutes = nowInUae.getUTCHours() * 60 + nowInUae.getUTCMinutes();
     const toMinutes = (value: string | null | undefined) => {

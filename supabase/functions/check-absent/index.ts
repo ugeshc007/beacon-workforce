@@ -54,8 +54,6 @@ Deno.serve(async (req) => {
       .gte("end_date", today);
 
     const onLeaveIds = new Set((leaves ?? []).map((l: { employee_id: string }) => l.employee_id));
-
-    const now = new Date();
     let absentCount = 0;
     let autoRecordedCount = 0;
 
