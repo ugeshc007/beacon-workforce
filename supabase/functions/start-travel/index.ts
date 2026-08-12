@@ -1,4 +1,4 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, todayDate, nowTimestamp, resolveTimestamp, checkIdempotency, authenticateEmployee, findOpenAttendanceLog } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, dateFromTimestamp, nowTimestamp, resolveTimestamp, checkIdempotency, authenticateEmployee, findOpenAttendanceLog } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
@@ -15,8 +15,10 @@ Deno.serve(async (req) => {
     const auth = await authenticateEmployee(req, supabase, employee_id);
     if (auth.error) return auth.error;
 
-    const today = todayDate();
     const now = resolveTimestamp(client_timestamp);
+    // Derive the shift date from the punch/action time so a late-night action
+    // synced after midnight stays on its own day.
+    const today = dateFromTimestamp(now);
     const dup = await checkIdempotency(supabase, idempotency_key, employee_id, "start-travel");
     if (dup) return dup;
 
