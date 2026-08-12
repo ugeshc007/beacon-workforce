@@ -93,7 +93,6 @@ Deno.serve(async (req) => {
       .eq("date", today)
       .order("shift_start", { ascending: true, nullsFirst: false });
 
-    const now = resolveTimestamp(client_timestamp);
     const nowInUae = new Date(new Date(now).getTime() + 4 * 60 * 60 * 1000);
     const nowMinutes = nowInUae.getUTCHours() * 60 + nowInUae.getUTCMinutes();
     const toMinutes = (value: string | null | undefined) => {
