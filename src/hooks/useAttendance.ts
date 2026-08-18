@@ -235,10 +235,11 @@ export function useAttendanceLogs(filters: {
           ? "in_house"
           : null;
 
-        // Did the schedule give this employee a named task today?
+        // Did the schedule give this employee work today (assignment or named task)?
         const hasTask =
           sessions.some((s) => !!s.task) ||
-          (!!r.project_id && !!assignmentTaskMap.get(`${r.employee_id}:${r.project_id}`));
+          (!!r.project_id && !!assignmentTaskMap.get(`${r.employee_id}:${r.project_id}`)) ||
+          assignedEmployeeIds.has(r.employee_id);
 
         return {
           ...r,
