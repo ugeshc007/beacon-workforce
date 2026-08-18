@@ -172,6 +172,7 @@ export function useAttendanceLogs(filters: {
       let locMap = new Map<string, "in_house" | "site">();
       let assignmentLocMap = new Map<string, "in_house" | "site">();
       const assignmentTaskMap = new Map<string, string>();
+      const assignedEmployeeIds = new Set<string>();
       if (projectIds.length > 0) {
         const { data: locs } = await supabase
           .from("project_day_work_locations")
@@ -202,6 +203,20 @@ export function useAttendanceLogs(filters: {
         }
       }
 
+      // Any scheduled assignment (with or without a task note) counts as "given work".
+      {
+        const employeeIds = Array.from(new Set(results.map((r) => r.employee_id).filter(Boolean) as string[]));
+        if (employeeIds.length > 0) {
+          const { data: allAssigns } = await supabase
+            .from("project_assignments")
+            .select("employee_id")
+            .eq("date", filters.date)
+            .in("employee_id", employeeIds);
+          for (const a of allAssigns ?? []) assignedEmployeeIds.add(a.employee_id);
+        }
+      }
+
+
 
       results = results.map((r) => {
         const sessions = (sessionsByLog.get(r.id) ?? []).map((s) => ({
@@ -220,10 +235,11 @@ export function useAttendanceLogs(filters: {
           ? "in_house"
           : null;
 
-        // Did the schedule give this employee a named task today?
+        // Did the schedule give this employee work today (assignment or named task)?
         const hasTask =
           sessions.some((s) => !!s.task) ||
-          (!!r.project_id && !!assignmentTaskMap.get(`${r.employee_id}:${r.project_id}`));
+          (!!r.project_id && !!assignmentTaskMap.get(`${r.employee_id}:${r.project_id}`)) ||
+          assignedEmployeeIds.has(r.employee_id);
 
         return {
           ...r,
