@@ -171,6 +171,7 @@ export function useAttendanceLogs(filters: {
       ]));
       let locMap = new Map<string, "in_house" | "site">();
       let assignmentLocMap = new Map<string, "in_house" | "site">();
+      const assignmentTaskMap = new Map<string, string>();
       if (projectIds.length > 0) {
         const { data: locs } = await supabase
           .from("project_day_work_locations")
@@ -185,7 +186,7 @@ export function useAttendanceLogs(filters: {
         if (employeeIds.length > 0) {
           const { data: assigns } = await supabase
             .from("project_assignments")
-            .select("employee_id, project_id, work_location")
+            .select("employee_id, project_id, work_location, task")
             .eq("date", filters.date)
             .in("project_id", projectIds)
             .in("employee_id", employeeIds);
@@ -193,9 +194,14 @@ export function useAttendanceLogs(filters: {
             if (a.work_location) {
               assignmentLocMap.set(`${a.employee_id}:${a.project_id}`, a.work_location as "in_house" | "site");
             }
+            const task = (a as any).task as string | null;
+            if (task && task.trim()) {
+              assignmentTaskMap.set(`${a.employee_id}:${a.project_id}`, task.trim());
+            }
           }
         }
       }
+
 
       results = results.map((r) => {
         const sessions = (sessionsByLog.get(r.id) ?? []).map((s) => ({
