@@ -209,6 +209,7 @@ export function useAttendanceLogs(filters: {
           work_location: s.project_id
             ? (assignmentLocMap.get(`${r.employee_id}:${s.project_id}`) ?? locMap.get(s.project_id) ?? null)
             : null,
+          task: s.project_id ? (assignmentTaskMap.get(`${r.employee_id}:${s.project_id}`) ?? null) : null,
         }));
         const sessionLocations = sessions
           .map((s) => s.work_location)
@@ -219,6 +220,11 @@ export function useAttendanceLogs(filters: {
           ? "in_house"
           : null;
 
+        // Did the schedule give this employee a named task today?
+        const hasTask =
+          sessions.some((s) => !!s.task) ||
+          (!!r.project_id && !!assignmentTaskMap.get(`${r.employee_id}:${r.project_id}`));
+
         return {
           ...r,
           // Per-project sessions are the source of truth on multi-shift days.
@@ -227,6 +233,7 @@ export function useAttendanceLogs(filters: {
           work_location: sessionResolvedLocation ?? (r.project_id
             ? (assignmentLocMap.get(`${r.employee_id}:${r.project_id}`) ?? locMap.get(r.project_id) ?? null)
             : null),
+          has_task: hasTask,
           sessions,
         };
       });
