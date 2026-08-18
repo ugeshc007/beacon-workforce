@@ -203,6 +203,20 @@ export function useAttendanceLogs(filters: {
         }
       }
 
+      // Any scheduled assignment (with or without a task note) counts as "given work".
+      {
+        const employeeIds = Array.from(new Set(results.map((r) => r.employee_id).filter(Boolean) as string[]));
+        if (employeeIds.length > 0) {
+          const { data: allAssigns } = await supabase
+            .from("project_assignments")
+            .select("employee_id")
+            .eq("date", filters.date)
+            .in("employee_id", employeeIds);
+          for (const a of allAssigns ?? []) assignedEmployeeIds.add(a.employee_id);
+        }
+      }
+
+
 
       results = results.map((r) => {
         const sessions = (sessionsByLog.get(r.id) ?? []).map((s) => ({
