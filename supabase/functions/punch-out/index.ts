@@ -1,4 +1,4 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, haversineDistance, todayDate, nowTimestamp, resolveTimestamp, checkIdempotency, authenticateEmployee, findOpenAttendanceLog, resolveAttendanceLog } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, haversineDistance, todayDate, nowTimestamp, resolveTimestamp, checkIdempotency, authenticateEmployee, findOpenAttendanceLog, findAnyOpenAttendanceLog, resolveAttendanceLog } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
@@ -18,13 +18,19 @@ Deno.serve(async (req) => {
     const dup = await checkIdempotency(supabase, idempotency_key, employee_id, "punch-out");
     if (dup) return dup;
 
-    const log = await resolveAttendanceLog(
+    const resolved = await resolveAttendanceLog(
       supabase,
       employee_id,
       attendance_log_id,
       "id, date, office_punch_in, office_arrival_time, office_punch_out, travel_start_time, site_arrival_time",
       now
     );
+
+    // No time condition on punch-out: if nothing resolves inside the normal
+    // shift window, fall back to ANY still-open shift (even days old) so the
+    // employee can always close it. Admins can correct the times afterwards.
+    const cols = "id, date, office_punch_in, office_arrival_time, office_punch_out, travel_start_time, site_arrival_time";
+    const log = resolved ?? (await findAnyOpenAttendanceLog(supabase, employee_id, cols));
 
     if (!log) return errorResponse("No active attendance to punch out from", 400);
     if (log.office_punch_out) return errorResponse("Already punched out", 400);
@@ -65,7 +71,9 @@ Deno.serve(async (req) => {
         );
       }
 
-      if (actuallyTraveled) {
+      const shiftAgeMs = log.office_punch_in ? Date.now() - new Date(log.office_punch_in).getTime() : 0;
+      const isOldShift = shiftAgeMs > 12 * 60 * 60 * 1000;
+      if (actuallyTraveled && !isOldShift) {
         return errorResponse(
           "Can't punch out yet. You went to a site today, so you must return to the office and tap 'Arrive Office' before punching out. Steps: 1) Tap 'Start Return Travel' at the site, 2) Tap 'Arrive Office' when you reach the office, 3) Then punch out.",
           400
@@ -104,10 +112,14 @@ Deno.serve(async (req) => {
       }
     }
 
+    const ageMs = log.office_punch_in ? new Date(now).getTime() - new Date(log.office_punch_in).getTime() : 0;
+    const lateClose = ageMs > 12 * 60 * 60 * 1000;
+
     const { error } = await supabase
       .from("attendance_logs")
       .update({
         office_punch_out: now,
+        ...(lateClose ? { is_incomplete_process: true, notes: "Punched out late — shift open more than 12h; admin can adjust times" } : {}),
         office_punch_out_lat: hasGps ? lat : null,
         office_punch_out_lng: hasGps ? lng : null,
         office_punch_out_accuracy: accuracy ?? null,
