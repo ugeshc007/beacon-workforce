@@ -130,6 +130,13 @@ Deno.serve(async (req) => {
 
     if (error) return errorResponse(error.message, 500);
 
+    // Close any still-open work sessions on this shift so nothing dangles.
+    await supabase
+      .from("project_work_sessions")
+      .update({ work_end_time: now, status: "completed" })
+      .eq("attendance_log_id", log.id)
+      .is("work_end_time", null);
+
     return jsonResponse({
       success: true,
       attendance_id: log.id,
