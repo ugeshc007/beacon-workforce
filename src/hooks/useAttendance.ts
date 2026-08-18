@@ -172,6 +172,7 @@ export function useAttendanceLogs(filters: {
       let locMap = new Map<string, "in_house" | "site">();
       let assignmentLocMap = new Map<string, "in_house" | "site">();
       const assignmentTaskMap = new Map<string, string>();
+      const assignedEmployeeIds = new Set<string>();
       if (projectIds.length > 0) {
         const { data: locs } = await supabase
           .from("project_day_work_locations")
