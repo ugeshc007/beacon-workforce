@@ -255,7 +255,16 @@ export default function Attendance() {
                         </td>
                         <td className="py-2.5">
                           {resolvedLoc === "in_house" ? (
-                            <Badge variant="outline" className="text-[9px] border-primary/40 text-primary">In-House</Badge>
+                            // Green when the schedule assigned a task, blue when no task was given
+                            <Badge
+                              variant="outline"
+                              className={`text-[9px] ${(log as any).has_task
+                                ? "border-status-present/50 text-status-present"
+                                : "border-primary/40 text-primary"}`}
+                              title={(log as any).has_task ? "In-House with assigned task" : "In-House, no task assigned"}
+                            >
+                              In-House
+                            </Badge>
                           ) : resolvedLoc === "site" ? (
                             <Badge variant="outline" className="text-[9px] border-status-traveling/40 text-status-traveling">Site</Badge>
                           ) : (

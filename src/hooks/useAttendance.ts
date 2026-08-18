@@ -171,6 +171,7 @@ export function useAttendanceLogs(filters: {
       ]));
       let locMap = new Map<string, "in_house" | "site">();
       let assignmentLocMap = new Map<string, "in_house" | "site">();
+      const assignmentTaskMap = new Map<string, string>();
       if (projectIds.length > 0) {
         const { data: locs } = await supabase
           .from("project_day_work_locations")
@@ -185,7 +186,7 @@ export function useAttendanceLogs(filters: {
         if (employeeIds.length > 0) {
           const { data: assigns } = await supabase
             .from("project_assignments")
-            .select("employee_id, project_id, work_location")
+            .select("employee_id, project_id, work_location, task")
             .eq("date", filters.date)
             .in("project_id", projectIds)
             .in("employee_id", employeeIds);
@@ -193,9 +194,14 @@ export function useAttendanceLogs(filters: {
             if (a.work_location) {
               assignmentLocMap.set(`${a.employee_id}:${a.project_id}`, a.work_location as "in_house" | "site");
             }
+            const task = (a as any).task as string | null;
+            if (task && task.trim()) {
+              assignmentTaskMap.set(`${a.employee_id}:${a.project_id}`, task.trim());
+            }
           }
         }
       }
+
 
       results = results.map((r) => {
         const sessions = (sessionsByLog.get(r.id) ?? []).map((s) => ({
@@ -203,6 +209,7 @@ export function useAttendanceLogs(filters: {
           work_location: s.project_id
             ? (assignmentLocMap.get(`${r.employee_id}:${s.project_id}`) ?? locMap.get(s.project_id) ?? null)
             : null,
+          task: s.project_id ? (assignmentTaskMap.get(`${r.employee_id}:${s.project_id}`) ?? null) : null,
         }));
         const sessionLocations = sessions
           .map((s) => s.work_location)
@@ -213,6 +220,11 @@ export function useAttendanceLogs(filters: {
           ? "in_house"
           : null;
 
+        // Did the schedule give this employee a named task today?
+        const hasTask =
+          sessions.some((s) => !!s.task) ||
+          (!!r.project_id && !!assignmentTaskMap.get(`${r.employee_id}:${r.project_id}`));
+
         return {
           ...r,
           // Per-project sessions are the source of truth on multi-shift days.
@@ -221,6 +233,7 @@ export function useAttendanceLogs(filters: {
           work_location: sessionResolvedLocation ?? (r.project_id
             ? (assignmentLocMap.get(`${r.employee_id}:${r.project_id}`) ?? locMap.get(r.project_id) ?? null)
             : null),
+          has_task: hasTask,
           sessions,
         };
       });
