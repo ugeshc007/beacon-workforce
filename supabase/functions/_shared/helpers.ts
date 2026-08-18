@@ -146,6 +146,29 @@ export async function findOpenAttendanceLog(
 }
 
 /**
+ * Find ANY still-open attendance log for an employee, regardless of date or the
+ * 12-hour shift window. Used by punch-out so an employee can always close a
+ * shift they forgot about, no matter how old it is.
+ */
+export async function findAnyOpenAttendanceLog(
+  supabase: ReturnType<typeof createSupabaseAdmin>,
+  employeeId: string,
+  columns: string
+) {
+  const { data } = await supabase
+    .from("attendance_logs")
+    .select(columns)
+    .eq("employee_id", employeeId)
+    .is("office_punch_out", null)
+    .not("office_punch_in", "is", null)
+    .order("office_punch_in", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data ?? null;
+}
+
+
+/**
  * Pick which attendance log an action timestamp belongs to, given ALL logs for
  * that employee/date. Offline replays can arrive out of order (e.g. a night
  * shift's travel action lands before its punch-in row exists), so choosing
