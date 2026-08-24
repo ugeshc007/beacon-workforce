@@ -1,10 +1,11 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2 } from "lucide-react";
+import { Loader2, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { isNativeApp } from "@/lib/capacitor";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { session, loading } = useAuth();
+  const { session, loading, authError, retryAuth } = useAuth();
 
   if (loading) {
     return (
@@ -13,6 +14,16 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <p className="text-sm text-muted-foreground">Loading...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (authError && !session) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background p-6 text-center">
+        <p className="text-lg font-semibold text-foreground">Couldn't load your account</p>
+        <p className="max-w-sm text-sm text-muted-foreground">{authError}</p>
+        <Button onClick={retryAuth} className="gap-2"><RefreshCw className="h-4 w-4" /> Retry</Button>
       </div>
     );
   }

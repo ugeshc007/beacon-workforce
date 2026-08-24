@@ -1,7 +1,7 @@
 import { Outlet, NavLink, Navigate, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
-import { Home, ClipboardList, Bell, User, Loader2, Users, MapPin, LogOut } from "lucide-react";
+import { Home, ClipboardList, Bell, User, Loader2, Users, MapPin, LogOut, RefreshCw } from "lucide-react";
 import { initAutoSync, flushQueueNow } from "@/lib/offline-sync";
 import { initDailyLogAutoSync } from "@/lib/offline-daily-logs";
 import { initSessionMirror } from "@/lib/mobile-session-persist";
@@ -9,7 +9,7 @@ import { SyncStatusBadge } from "@/components/mobile/SyncStatusBadge";
 import { Button } from "@/components/ui/button";
 
 export default function MobileLayout() {
-  const { session, employee, loading, signOut } = useMobileAuth();
+  const { session, employee, loading, authError, retryAuth, signOut } = useMobileAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -51,6 +51,11 @@ export default function MobileLayout() {
             ? "Connect to the internet once so we can load your profile, then you can keep working offline."
             : "This login is not connected to a field employee profile. Sign out and use the correct employee account."}
         </p>
+        {authError && <p className="text-sm text-muted-foreground">{authError}</p>}
+        <Button onClick={retryAuth} variant="outline" className="mt-1 h-11 px-5 gap-2">
+          <RefreshCw className="h-4 w-4" />
+          Retry
+        </Button>
         <Button onClick={handleUseDifferentAccount} className="mt-2 h-11 px-5 gap-2">
           <LogOut className="h-4 w-4" />
           Use different account
