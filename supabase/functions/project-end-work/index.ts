@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
 
     const { data: session } = await supabase
       .from("project_work_sessions")
-      .select("work_start_time, work_end_time, break_start_time, break_end_time, break_minutes, employee_id")
+      .select("work_start_time, work_end_time, break_start_time, break_end_time, break_minutes, employee_id, site_arrival_time")
       .eq("id", session_id)
       .eq("employee_id", employee_id)
       .maybeSingle();
