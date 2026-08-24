@@ -33,6 +33,11 @@ Deno.serve(async (req) => {
     // Auto-close any open break
     let breakMinutes = session.break_minutes ?? 0;
     const updates: Record<string, unknown> = { work_end_time: now, status: "completed" };
+    const workStartedAt = (session.work_start_time as string | null) ?? session.site_arrival_time ?? now;
+    if (backfillWorkStart) {
+      updates.work_start_time = workStartedAt;
+      updates.notes = "Work start back-filled at End Work — admin can adjust times";
+    }
     if (session.break_start_time && !session.break_end_time) {
       const add = Math.max(0, Math.round((new Date(now).getTime() - new Date(session.break_start_time).getTime()) / 60000));
       breakMinutes += add;
@@ -41,9 +46,10 @@ Deno.serve(async (req) => {
     }
 
     // Total work minutes = end - start - breaks
-    const grossMin = Math.round((new Date(now).getTime() - new Date(session.work_start_time).getTime()) / 60000);
+    const grossMin = Math.round((new Date(now).getTime() - new Date(workStartedAt).getTime()) / 60000);
     const totalWorkMinutes = Math.max(0, grossMin - breakMinutes);
     updates.total_work_minutes = totalWorkMinutes;
+
 
     // Cost calculation using employee rates
     const { data: emp } = await supabase
