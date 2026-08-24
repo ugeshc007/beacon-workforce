@@ -34,6 +34,30 @@ export interface TodayProject {
 /** Returns ALL today's project assignments + their session state.
  *  Cached to device storage so the list still shows when the employee is
  *  offline; punch / work actions enqueue separately via the offline queue. */
+function diffMinutes(from?: string | null, to?: string | null): number {
+  if (!from || !to) return 0;
+  const a = new Date(from).getTime();
+  const b = new Date(to).getTime();
+  if (!Number.isFinite(a) || !Number.isFinite(b) || b <= a) return 0;
+  return Math.round((b - a) / 60000);
+}
+
+/** Trustworthy worked minutes for a project card: always derived from the
+ *  session's own work start/end (minus its break) so a bad server-side
+ *  total (e.g. computed from the shift punch-in after an out-of-order sync)
+ *  can never show up as an inflated duration. */
+export function projectWorkedMinutes(p: {
+  workStartTime: string | null;
+  workEndTime: string | null;
+  breakMinutes: number;
+  totalWorkMinutes: number | null;
+}): number | null {
+  if (p.workStartTime && p.workEndTime) {
+    return Math.max(0, diffMinutes(p.workStartTime, p.workEndTime) - (p.breakMinutes || 0));
+  }
+  return p.totalWorkMinutes;
+}
+
 export function useTodayProjects() {
   const { employee } = useMobileAuth();
   const today = toLocalDateStr(new Date());
