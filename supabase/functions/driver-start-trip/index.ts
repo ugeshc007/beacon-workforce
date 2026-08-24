@@ -1,4 +1,4 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, dateFromTimestamp, nowTimestamp, resolveTimestamp, checkIdempotency, authenticateEmployee, pickLogForTimestamp, findContinuingOpenLog } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, dateFromTimestamp, nowTimestamp, resolveTimestamp, checkIdempotency, authenticateEmployee, pickLogForTimestamp, findContinuingOpenLog, reopenRecentAutoClosedLog } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
@@ -34,6 +34,11 @@ Deno.serve(async (req) => {
       // Continue an already-open shift even if the Dubai date rolled over past
       // midnight — a night shift must never split into a second log.
       log = await findContinuingOpenLog(supabase, employee_id, "id, office_punch_in, office_punch_out", now) as typeof log;
+      if (!log) {
+        // A job may have force-closed this shift mid-flow — reopen it instead of
+        // starting a second shift after midnight.
+        log = await reopenRecentAutoClosedLog(supabase, employee_id, "id, office_punch_in, office_punch_out", now) as typeof log;
+      }
     }
     if (!log) {
       if (officeMandatory) return errorResponse("Must punch in at office first", 400);

@@ -1,4 +1,4 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, dateFromTimestamp, resolveTimestamp, authenticateEmployee, checkIdempotency, recordIdempotencyResult, pickLogForTimestamp, findContinuingOpenLog } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, dateFromTimestamp, resolveTimestamp, authenticateEmployee, checkIdempotency, recordIdempotencyResult, pickLogForTimestamp, findContinuingOpenLog, reopenRecentAutoClosedLog } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
@@ -42,6 +42,11 @@ Deno.serve(async (req) => {
       // midnight — a night shift must never split into a second log.
 
       log = await findContinuingOpenLog(supabase, employee_id, "id, office_punch_in", now) as typeof log;
+      if (!log) {
+        // A job may have force-closed this shift mid-flow — reopen it instead of
+        // starting a second shift after midnight.
+        log = await reopenRecentAutoClosedLog(supabase, employee_id, "id, office_punch_in", now) as typeof log;
+      }
 
     }
 

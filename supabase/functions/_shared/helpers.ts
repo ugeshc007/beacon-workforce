@@ -198,6 +198,63 @@ export async function findAnyOpenAttendanceLog(
   return data ?? null;
 }
 
+/**
+ * Reopen a shift that an automatic job closed while the employee was still
+ * working. Night shifts get force-closed at the date boundary / 24h mark; the
+ * next mid-flow action (travel, arrive, work start) then used to create a
+ * brand-new log after midnight, splitting one shift into two and leaving a
+ * record that can never be punched out properly.
+ *
+ * Only auto-closed shifts (`auto_closed_by_user`) whose closure happened within
+ * `hours` are reopened. Returns the reopened log or null.
+ */
+export async function reopenRecentAutoClosedLog(
+  supabase: ReturnType<typeof createSupabaseAdmin>,
+  employeeId: string,
+  columns: string,
+  nowIso?: string,
+  hours = CONTINUING_SHIFT_HOURS
+) {
+  const now = nowIso ? new Date(nowIso).getTime() : Date.now();
+  const { data } = await supabase
+    .from("attendance_logs")
+    .select("id, date, office_punch_in, office_punch_out, auto_closed_by_user, notes")
+    .eq("employee_id", employeeId)
+    .eq("auto_closed_by_user", true)
+    .not("office_punch_out", "is", null)
+    .not("office_punch_in", "is", null)
+    .order("office_punch_out", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!data) return null;
+
+  const closedAt = new Date((data as any).office_punch_out).getTime();
+  const startedAt = new Date((data as any).office_punch_in).getTime();
+  if (now - closedAt > hours * 60 * 60 * 1000) return null;
+  if (now - startedAt > hours * 60 * 60 * 1000) return null;
+
+  const { error } = await supabase
+    .from("attendance_logs")
+    .update({
+      office_punch_out: null,
+      auto_closed_by_user: false,
+      is_incomplete_process: false,
+      is_absent: false,
+      notes: "Reopened — shift was auto-closed while still in progress",
+    })
+    .eq("id", (data as any).id);
+  if (error) return null;
+
+  const { data: fresh } = await supabase
+    .from("attendance_logs")
+    .select(columns)
+    .eq("id", (data as any).id)
+    .maybeSingle();
+  return fresh ?? null;
+}
+
+
+
 
 /**
  * Pick which attendance log an action timestamp belongs to, given ALL logs for

@@ -875,8 +875,28 @@ export default function MobileHome() {
               {actionLabels.arrive_office}
             </HoldToConfirm>
           )}
+
+          {/* Escape hatch — punch out is never blocked. Missing steps are flagged
+              for the admin to correct instead of trapping the employee. */}
+          {!allInHouseDay && (
+            <>
+              <HoldToConfirm
+                onConfirm={() => handleOfficeAction("punch_out")}
+                disabled={actionLoading}
+                loading={actionLoading}
+                variant="secondary"
+              >
+                <CheckCircle2 className="h-5 w-5" />
+                {actionLabels.punch_out}
+              </HoldToConfirm>
+              <p className="text-[11px] text-muted-foreground text-center">
+                Punching out with steps missing? It will be saved and marked for admin review.
+              </p>
+            </>
+          )}
         </div>
       )}
+
 
 
       {/* Punch Out — when projects exist and we're at office (after return-travel flow) */}
