@@ -26,13 +26,18 @@ Deno.serve(async (req) => {
 
     if (!log) return errorResponse("Must punch in first", 400);
     if (log.office_punch_out) return errorResponse("Already punched out for the day", 400);
-    if (!log.site_arrival_time) return errorResponse("Must arrive at site before starting work", 400);
     if (log.work_start_time) return errorResponse("Work already started", 400);
+    // Never block on a missing previous step: back-fill site arrival and flag it.
+    const backfillArrival = !log.site_arrival_time;
 
     const { error } = await supabase
       .from("attendance_logs")
-      .update({ work_start_time: now })
+      .update({
+        work_start_time: now,
+        ...(backfillArrival ? { site_arrival_time: now, is_incomplete_process: true } : {}),
+      })
       .eq("id", log.id);
+
 
     if (error) return errorResponse(error.message, 500);
 
