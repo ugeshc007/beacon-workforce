@@ -1,0 +1,137 @@
+// End-of-day closer: any scheduled task/shift left unfinished for a past day is
+// closed as "incomplete process" so nothing carries forward to the next day.
+// Intended to run from cron shortly after midnight (Dubai) but safe to call
+// manually — it is idempotent and only touches days before today (Dubai).
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse } from "../_shared/helpers.ts";
+
+function dubaiToday(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Dubai" }).format(new Date());
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return corsResponse();
+
+  try {
+    const supabase = createSupabaseAdmin();
+    const today = dubaiToday();
+    const nowIso = new Date().toISOString();
+
+    const result = {
+      date_boundary: today,
+      logs_closed: 0,
+      logs_absent: 0,
+      project_sessions_closed: 0,
+      site_visit_sessions_closed: 0,
+      common_task_sessions_closed: 0,
+    };
+
+    // ── 1. Open attendance logs from previous days ──
+    const { data: logs, error: logsErr } = await supabase
+      .from("attendance_logs")
+      .select(
+        "id, date, office_punch_in, work_end_time, return_travel_start_time, office_arrival_time, notes"
+      )
+      .lt("date", today)
+      .is("office_punch_out", null);
+    if (logsErr) throw logsErr;
+
+    for (const log of logs ?? []) {
+      const closeAt =
+        log.office_arrival_time ??
+        log.return_travel_start_time ??
+        log.work_end_time ??
+        log.office_punch_in ??
+        nowIso;
+
+      if (!log.office_punch_in) {
+        // Never punched in — the scheduled task simply did not happen.
+        await supabase
+          .from("attendance_logs")
+          .update({
+            office_punch_in: closeAt,
+            office_punch_out: closeAt,
+            is_absent: true,
+            is_incomplete_process: false,
+            notes: log.notes ?? "Auto-closed at end of day — no punch-in recorded",
+          })
+          .eq("id", log.id);
+        result.logs_absent++;
+        continue;
+      }
+
+      await supabase
+        .from("attendance_logs")
+        .update({
+          office_punch_out: closeAt,
+          work_end_time: log.work_end_time ?? closeAt,
+          return_travel_start_time: log.return_travel_start_time ?? closeAt,
+          office_arrival_time: log.office_arrival_time ?? closeAt,
+          is_incomplete_process: true,
+          notes: log.notes ?? "Auto-closed at end of day — workflow left incomplete",
+        })
+        .eq("id", log.id);
+      result.logs_closed++;
+    }
+
+    // ── 2. Open project work sessions from previous days ──
+    const { data: pws } = await supabase
+      .from("project_work_sessions")
+      .select("id, work_start_time, break_start_time, break_minutes, site_arrival_time, travel_start_time")
+      .lt("date", today)
+      .is("work_end_time", null);
+
+    for (const s of pws ?? []) {
+      const closeAt = s.work_start_time ?? s.site_arrival_time ?? s.travel_start_time ?? nowIso;
+      const update: Record<string, unknown> = {
+        work_end_time: closeAt,
+        status: "incomplete",
+        notes: "Auto-closed at end of day — task left incomplete",
+      };
+      if (s.break_start_time) update.break_end_time = closeAt;
+      await supabase.from("project_work_sessions").update(update).eq("id", s.id);
+      result.project_sessions_closed++;
+    }
+
+    // ── 3. Open site-visit work sessions from previous days ──
+    const { data: svws } = await supabase
+      .from("site_visit_work_sessions")
+      .select("id, work_start_time, site_arrival_time, travel_start_time, break_start_time")
+      .lt("date", today)
+      .is("work_end_time", null);
+
+    for (const s of svws ?? []) {
+      const closeAt = s.work_start_time ?? s.site_arrival_time ?? s.travel_start_time ?? nowIso;
+      const update: Record<string, unknown> = {
+        work_end_time: closeAt,
+        status: "incomplete",
+        notes: "Auto-closed at end of day — visit left incomplete",
+      };
+      if (s.break_start_time) update.break_end_time = closeAt;
+      await supabase.from("site_visit_work_sessions").update(update).eq("id", s.id);
+      result.site_visit_sessions_closed++;
+    }
+
+    // ── 4. Open common-task sessions from previous days ──
+    const { data: cts } = await supabase
+      .from("common_task_sessions")
+      .select("id, work_start_time, break_start_time")
+      .lt("date", today)
+      .is("work_end_time", null);
+
+    for (const s of cts ?? []) {
+      const closeAt = s.work_start_time ?? nowIso;
+      const update: Record<string, unknown> = {
+        work_end_time: closeAt,
+        status: "incomplete",
+        notes: "Auto-closed at end of day — task left incomplete",
+      };
+      if (s.break_start_time) update.break_end_time = closeAt;
+      await supabase.from("common_task_sessions").update(update).eq("id", s.id);
+      result.common_task_sessions_closed++;
+    }
+
+    return jsonResponse({ success: true, ...result });
+  } catch (err) {
+    return errorResponse(err, 500);
+  }
+});
