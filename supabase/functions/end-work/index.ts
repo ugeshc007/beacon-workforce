@@ -27,7 +27,19 @@ Deno.serve(async (req) => {
     );
 
     if (!log) return errorResponse("Must punch in first", 400);
-    if (!log.work_start_time) return errorResponse("Work not started", 400);
+    // Never block: if "Start Work" was never recorded (offline gap, app restart),
+    // treat the punch-in time as the work start and flag for admin correction.
+    let workStartedAt = log.work_start_time as string | null;
+    let backfilledWorkStart = false;
+    if (!workStartedAt) {
+      workStartedAt = (log.office_punch_in as string | null) ?? now;
+      backfilledWorkStart = true;
+      await supabase
+        .from("attendance_logs")
+        .update({ work_start_time: workStartedAt, is_incomplete_process: true })
+        .eq("id", log.id);
+    }
+
 
     const { data: emp } = await supabase
       .from("employees")
