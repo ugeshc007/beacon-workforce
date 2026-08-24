@@ -23,7 +23,10 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (!session) return errorResponse("Session not found", 404);
     if (session.work_end_time) return errorResponse("Session already ended", 400);
-    if (!session.work_start_time) return errorResponse("Must start work before taking a break", 400);
+    // Never block: allow a break even if "Start Work" wasn't recorded — the
+    // session's work start is back-filled when the break begins.
+    const backfillWorkStart = !session.work_start_time;
+
     if (session.break_start_time && !session.break_end_time) {
       return jsonResponse({ success: true, timestamp: session.break_start_time, deduped: true });
     }
@@ -35,9 +38,14 @@ Deno.serve(async (req) => {
     const now = resolveTimestamp(client_timestamp);
     const { error } = await supabase
       .from("project_work_sessions")
-      .update({ break_start_time: now, break_end_time: null })
+      .update({
+        break_start_time: now,
+        break_end_time: null,
+        ...(backfillWorkStart ? { work_start_time: now } : {}),
+      })
       .eq("id", session_id)
       .eq("employee_id", employee_id);
+
 
     if (error) return errorResponse(error.message, 500);
     const out = { success: true, timestamp: now };

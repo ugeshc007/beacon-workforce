@@ -167,16 +167,21 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (!session) return errorResponse("Session not found", 404);
     if (session.work_end_time) return errorResponse("Session already ended", 400);
-    if (!session.site_arrival_time) return errorResponse("Must arrive at site before starting work", 400);
+    // Never block on a missing previous step: back-fill site arrival.
+    const backfillArrival = !session.site_arrival_time;
     if (session.work_start_time) {
       return jsonResponse({ success: true, timestamp: session.work_start_time, deduped: true });
     }
 
     const { error } = await supabase
       .from("project_work_sessions")
-      .update({ work_start_time: now })
+      .update({
+        work_start_time: now,
+        ...(backfillArrival ? { site_arrival_time: now } : {}),
+      })
       .eq("id", session_id)
       .eq("employee_id", employee_id);
+
 
     if (error) return errorResponse(error.message, 500);
     const outSite = { success: true, timestamp: now };

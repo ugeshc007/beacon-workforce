@@ -27,9 +27,20 @@ Deno.serve(async (req) => {
     );
 
     if (!log) return errorResponse("Must punch in first", 400);
-    if (!log.break_start_time) return errorResponse("Break not started", 400);
+    // Never block: if no break is open, close it as a zero-length break so the
+    // worker can carry on instead of being stuck on the break screen.
+    if (!log.break_start_time) {
+      await supabase.from("attendance_logs").update({ break_end_time: now }).eq("id", log.id);
+      return jsonResponse({
+        success: true,
+        attendance_id: log.id,
+        break_minutes: log.break_minutes ?? 0,
+        timestamp: now,
+      });
+    }
 
     const breakStart = new Date(log.break_start_time).getTime();
+
     const breakEnd = new Date(now).getTime();
     const thisBreakMinutes = Math.round((breakEnd - breakStart) / 60000);
     const priorBreak = log.break_minutes ?? 0;
