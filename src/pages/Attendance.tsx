@@ -4,7 +4,7 @@ import { useAttendanceLogs, useAttendanceSummary, type AttendanceLog } from "@/h
 import { useCanAccess } from "@/hooks/usePermissions";
 import { useProjects } from "@/hooks/useProjects";
 import { AttendanceTimeline } from "@/components/attendance/AttendanceTimeline";
-import { getDisplayWorkedMinutes, getDisplayOvertimeMinutes, formatWorkedMinutes } from "@/lib/timesheet-display";
+import { getDisplayWorkedMinutes, getDisplayOvertimeMinutes, getWorkedMinutesWithSessions, getOvertimeMinutesWithSessions, formatWorkedMinutes } from "@/lib/timesheet-display";
 import { AttendanceOverrideDialog } from "@/components/attendance/AttendanceOverrideDialog";
 import { AttendanceDetailDrawer } from "@/components/attendance/AttendanceDetailDrawer";
 import { StatCard } from "@/components/ui/stat-card";
@@ -188,8 +188,9 @@ export default function Attendance() {
                 <tbody>
                   {filteredLogs.map((log) => {
                     const stdHours = Number((log.employees as any)?.standard_hours_per_day ?? 8);
-                    const workedMin = getDisplayWorkedMinutes(log as any);
-                    const otMin = getDisplayOvertimeMinutes(log as any, stdHours);
+                    const logSessions = (log as any).sessions as Array<any> | undefined;
+                    const workedMin = getWorkedMinutesWithSessions(log as any, logSessions);
+                    const otMin = getOvertimeMinutesWithSessions(log as any, logSessions, stdHours);
                     const totalDisplay = workedMin > 0 ? formatWorkedMinutes(workedMin) : "—";
                     const otDisplay = otMin > 0 ? formatWorkedMinutes(otMin) : "0m";
                     const status = deriveStatus(log);
