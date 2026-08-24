@@ -122,6 +122,7 @@ Deno.serve(async (req) => {
       .update({
         office_punch_out: effectiveNow,
         ...(lateClose ? { is_incomplete_process: true, notes: "Punched out late — shift open more than 12h; admin can adjust times" } : {}),
+        ...(missingSteps ? { is_incomplete_process: true, notes: "Punched out with missing steps (return travel / arrive office) — admin can adjust times" } : {}),
         ...(staleNote ? { is_incomplete_process: true, notes: staleNote } : {}),
         office_punch_out_lat: hasGps ? lat : null,
         office_punch_out_lng: hasGps ? lng : null,
