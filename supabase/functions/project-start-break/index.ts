@@ -38,9 +38,14 @@ Deno.serve(async (req) => {
     const now = resolveTimestamp(client_timestamp);
     const { error } = await supabase
       .from("project_work_sessions")
-      .update({ break_start_time: now, break_end_time: null })
+      .update({
+        break_start_time: now,
+        break_end_time: null,
+        ...(backfillWorkStart ? { work_start_time: now } : {}),
+      })
       .eq("id", session_id)
       .eq("employee_id", employee_id);
+
 
     if (error) return errorResponse(error.message, 500);
     const out = { success: true, timestamp: now };
