@@ -52,12 +52,14 @@ Deno.serve(async (req) => {
       .from("project_work_sessions")
       .update({
         site_arrival_time: now,
+        ...(backfillTravel ? { travel_start_time: now } : {}),
         site_arrival_lat: hasGps ? lat : null,
         site_arrival_lng: hasGps ? lng : null,
         site_arrival_distance_m: hasGps ? Math.round(distance) : null,
         site_arrival_valid: hasGps ? valid : null,
       })
       .eq("id", session_id);
+
 
     if (error) return errorResponse(error.message, 500);
     const out = { success: true, gps_valid: valid, distance_meters: Math.round(distance), timestamp: now };
