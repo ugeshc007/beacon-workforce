@@ -739,6 +739,17 @@ export default function MobileHome() {
           {todayProjects.map((p) => {
             const isActive = p.sessionId && p.step !== "completed";
             const isDone = p.step === "completed";
+            // Work recorded before the scheduled window opened (out-of-order
+            // sync or wrong card tapped) — surface it, never block the user.
+            const offSchedule = (() => {
+              if (!p.workStartTime || !p.shiftStart) return false;
+              const started = new Date(p.workStartTime);
+              if (Number.isNaN(started.getTime())) return false;
+              const [h, m] = p.shiftStart.split(":").map(Number);
+              const windowOpen = new Date(started);
+              windowOpen.setHours(h, m ?? 0, 0, 0);
+              return started.getTime() < windowOpen.getTime() - 15 * 60 * 1000;
+            })();
             return (
               <button
                 key={p.assignmentId}
