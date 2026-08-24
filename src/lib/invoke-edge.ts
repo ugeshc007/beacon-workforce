@@ -8,6 +8,41 @@ import { isOnline, markNetworkFailure, markNetworkSuccess, OfflineError } from "
 const REQUEST_TIMEOUT_MS = 12_000;
 
 /**
+ * Workflow functions whose successful calls are recorded in the audit trail so
+ * admins can follow a worker's full day, not just the failures.
+ */
+function auditCategory(fnName: string): string | null {
+  if (/^(punch-in|punch-out)$/.test(fnName)) return "punch";
+  if (/^(start-travel|arrive-site|start-work|start-break|end-break|end-work|start-return-travel|arrive-office)$/.test(fnName)) return "workflow";
+  if (fnName.startsWith("project-")) return "workflow";
+  if (fnName.startsWith("driver-")) return "workflow";
+  if (fnName.startsWith("common-task")) return "workflow";
+  if (fnName.startsWith("sv-")) return "site_visit";
+  if (fnName.startsWith("close-stale")) return "workflow";
+  return null;
+}
+
+function auditSuccess(fnName: string, body: Record<string, unknown>) {
+  const category = auditCategory(fnName);
+  if (!category) return;
+  import("@/lib/error-logger")
+    .then(({ logMobileAction }) =>
+      logMobileAction({
+        category: category as any,
+        action: fnName,
+        message: `${fnName.replace(/-/g, " ")} completed`,
+        context: {
+          project_id: (body.project_id as string) ?? undefined,
+          site_visit_id: (body.site_visit_id as string) ?? undefined,
+          queued_offline: body.queued_offline ?? undefined,
+        },
+      })
+    )
+    .catch(() => { /* never break the action */ });
+}
+
+
+/**
  * Wraps supabase.functions.invoke to surface the actual error message
  * returned by the edge function (e.g. "Must punch in at office first")
  * instead of the generic "Edge Function returned a non-2xx status code".
@@ -57,5 +92,7 @@ export async function invokeEdge<T = unknown>(
     throw new Error(typeof e === "string" ? e : JSON.stringify(e));
   }
 
+  auditSuccess(fnName, body);
   return data as T;
+
 }

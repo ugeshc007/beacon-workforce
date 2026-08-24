@@ -36,29 +36,36 @@ type ErrorRow = {
 
 const CATEGORIES = ["all", "auth", "punch", "workflow", "site_visit", "daily_log", "sync", "gps", "network", "unknown"];
 
+/** A row is an activity entry (successful action) when the logger tagged it so. */
+const isSuccessRow = (r: ErrorRow) => (r.context as any)?.outcome === "success";
+
 export default function ErrorAudit() {
   const qc = useQueryClient();
   const [category, setCategory] = useState<string>("all");
-  const [status, setStatus] = useState<"all" | "unreviewed" | "reviewed">("unreviewed");
+  const [status, setStatus] = useState<"all" | "unreviewed" | "reviewed">("all");
+  const [outcome, setOutcome] = useState<"all" | "failure" | "success">("all");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<ErrorRow | null>(null);
 
   const { data: rows = [], isLoading, refetch } = useQuery({
-    queryKey: ["error-logs", category, status],
+    queryKey: ["error-logs", category, status, outcome],
     queryFn: async () => {
       let q = (supabase.from("error_logs") as any)
         .select("*, employees:employee_id(name, employee_code)")
         .eq("source", "mobile")
         .order("created_at", { ascending: false })
-        .limit(500);
+        .limit(1000);
       if (category !== "all") q = q.eq("category", category);
       if (status === "unreviewed") q = q.eq("reviewed", false);
       if (status === "reviewed") q = q.eq("reviewed", true);
+      if (outcome === "success") q = q.eq("severity", "info");
+      if (outcome === "failure") q = q.neq("severity", "info");
       const { data, error } = await q;
       if (error) throw error;
       return (data ?? []) as ErrorRow[];
     },
   });
+
 
   // Look up all referenced projects so we can label In-House vs Site.
   const projectIds = useMemo(() => {
@@ -124,9 +131,10 @@ export default function ErrorAudit() {
 
   const stats = useMemo(() => {
     const total = rows.length;
-    const unreviewed = rows.filter((r) => !r.reviewed).length;
+    const failures = rows.filter((r) => !isSuccessRow(r)).length;
+    const successes = total - failures;
     const last24h = rows.filter((r) => Date.now() - new Date(r.created_at).getTime() < 86400000).length;
-    return { total, unreviewed, last24h };
+    return { total, failures, successes, last24h, unreviewed: rows.filter((r) => !r.reviewed).length };
   }, [rows]);
 
   const severityColor = (s: string) =>
@@ -137,10 +145,10 @@ export default function ErrorAudit() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold flex items-center gap-2">
-            <AlertTriangle className="h-6 w-6 text-amber-500" /> Audit — Mobile App Errors
+            <AlertTriangle className="h-6 w-6 text-amber-500" /> Audit — Mobile App Activity
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Every user-facing failure captured from the field worker app.
+            Every action from the field worker app — successful and failed. Kept for 7 days, then removed automatically.
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => refetch()}>
@@ -148,14 +156,18 @@ export default function ErrorAudit() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         <Card className="p-4">
-          <div className="text-xs text-muted-foreground">Total (500 max)</div>
+          <div className="text-xs text-muted-foreground">Actions (last 7 days)</div>
           <div className="text-2xl font-semibold mt-1">{stats.total}</div>
         </Card>
         <Card className="p-4">
-          <div className="text-xs text-muted-foreground">Unreviewed</div>
-          <div className="text-2xl font-semibold mt-1 text-amber-500">{stats.unreviewed}</div>
+          <div className="text-xs text-muted-foreground">Successful</div>
+          <div className="text-2xl font-semibold mt-1 text-green-500">{stats.successes}</div>
+        </Card>
+        <Card className="p-4">
+          <div className="text-xs text-muted-foreground">Failed</div>
+          <div className="text-2xl font-semibold mt-1 text-amber-500">{stats.failures}</div>
         </Card>
         <Card className="p-4">
           <div className="text-xs text-muted-foreground">Last 24 h</div>
@@ -168,6 +180,14 @@ export default function ErrorAudit() {
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Filter className="h-4 w-4" /> Filters:
           </div>
+          <Select value={outcome} onValueChange={(v) => setOutcome(v as any)}>
+            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All actions</SelectItem>
+              <SelectItem value="success">Successful only</SelectItem>
+              <SelectItem value="failure">Failed only</SelectItem>
+            </SelectContent>
+          </Select>
           <Select value={category} onValueChange={setCategory}>
             <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -184,6 +204,7 @@ export default function ErrorAudit() {
               <SelectItem value="reviewed">Reviewed only</SelectItem>
             </SelectContent>
           </Select>
+
           <Input
             placeholder="Search message, action, employee…"
             value={search}
@@ -223,7 +244,7 @@ export default function ErrorAudit() {
             {isLoading ? (
               <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
             ) : filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No errors 🎉</TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No activity recorded</TableCell></TableRow>
             ) : (
               filtered.map((r) => {
                 const proj = projectFor(r);
@@ -264,12 +285,17 @@ export default function ErrorAudit() {
                     <div className="text-[10px]">{r.platform} · {r.network_state}</div>
                   </TableCell>
                   <TableCell>
-                    {r.reviewed ? (
+                    {isSuccessRow(r) ? (
+                      <Badge className="text-xs bg-green-500/15 text-green-500 border-green-500/30" variant="outline">
+                        Success
+                      </Badge>
+                    ) : r.reviewed ? (
                       <Badge variant="outline" className="text-xs">Reviewed</Badge>
                     ) : (
-                      <Badge variant="destructive" className="text-xs">New</Badge>
+                      <Badge variant="destructive" className="text-xs">Failed</Badge>
                     )}
                   </TableCell>
+
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     {!r.reviewed && (
                       <Button size="sm" variant="ghost" onClick={() => markReviewed.mutate([r.id])}>
@@ -288,7 +314,7 @@ export default function ErrorAudit() {
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Error detail</DialogTitle>
+            <DialogTitle>Action detail</DialogTitle>
           </DialogHeader>
           {selected && (
             <div className="space-y-3 text-sm">
