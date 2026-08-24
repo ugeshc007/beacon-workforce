@@ -1031,7 +1031,27 @@ export default function MobileHome() {
           />
         );
       })()}
+
+      {employee && unstartedOpen && (
+        <UnstartedTasksDialog
+          open={unstartedOpen}
+          employeeId={employee.id}
+          tasks={(todayProjects ?? []).filter((p) => !p.sessionId && p.step === "idle")}
+          onOpenChange={(o) => {
+            setUnstartedOpen(o);
+            if (!o) setPendingPunchOut(null);
+          }}
+          onResolved={() => { void refetchTodayProjects(); }}
+          onContinue={async () => {
+            const payload = pendingPunchOut ?? {};
+            setUnstartedOpen(false);
+            setPendingPunchOut(null);
+            await submitAction("punch_out", payload);
+          }}
+        />
+      )}
     </div>
+
   );
 }
 
