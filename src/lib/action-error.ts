@@ -55,3 +55,24 @@ export function userNoticeToast(title: string, description?: string | null): Act
   };
 }
 
+
+/**
+ * Translates raw technical auth/network errors into plain language.
+ * Never show "Failed to fetch" or similar to a field user.
+ */
+export function friendlyAuthMessage(message?: string | null): string {
+  const msg = message || "";
+  if (/failed to fetch|networkerror|network request failed|load failed|timeout|timed out|ERR_/i.test(msg)) {
+    return "No internet connection — please check your signal and try again.";
+  }
+  if (/invalid login credentials|invalid credentials/i.test(msg)) {
+    return "Wrong email or password. Please try again.";
+  }
+  if (/email not confirmed/i.test(msg)) {
+    return "This account is not activated yet. Please contact your admin.";
+  }
+  if (/rate limit|too many/i.test(msg)) {
+    return "Too many attempts. Please wait a minute and try again.";
+  }
+  return msg || "Something went wrong. Please try again.";
+}

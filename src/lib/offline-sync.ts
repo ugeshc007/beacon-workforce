@@ -16,7 +16,7 @@ import {
   removeAction,
 } from "@/lib/offline-queue";
 
-const MAX_RETRIES = 3;
+const MAX_RETRIES = 5;
 const BASE_DELAY_MS = 2000;
 /**
  * Queued actions older than this are discarded instead of replayed. A stale

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { friendlyAuthMessage } from "@/lib/action-error";
 import bebrightLogo from "@/assets/bebright-logo.png";
 import { APP_VERSION, APP_BUILD } from "@/lib/app-version";
 
@@ -33,7 +34,7 @@ export default function MobileLogin() {
     if (error) {
       toast({
         title: "Login failed",
-        description: error.message,
+        description: friendlyAuthMessage(error.message),
         variant: "info",
       });
       import("@/lib/error-logger").then(({ logMobileError }) =>
