@@ -83,8 +83,10 @@ Deno.serve(async (req) => {
           regular_cost: Math.round(sum("regular_cost") * 100) / 100,
           overtime_cost: Math.round(sum("overtime_cost") * 100) / 100,
           break_minutes: sum("break_minutes"),
+          ...(incompleteFlag ? { is_incomplete_process: true } : {}),
         })
         .eq("id", log.id);
+
     }
 
     const { error } = await supabase
