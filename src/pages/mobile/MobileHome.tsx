@@ -778,9 +778,9 @@ export default function MobileHome() {
                           {p.shiftStart.slice(0, 5)}–{p.shiftEnd.slice(0, 5)}
                         </span>
                       )}
-                      {isDone && p.totalWorkMinutes != null && (
+                      {isDone && projectWorkedMinutes(p) != null && (
                         <span className="text-[10px] text-muted-foreground">
-                          {Math.floor(p.totalWorkMinutes / 60)}h {p.totalWorkMinutes % 60}m
+                          {Math.floor(projectWorkedMinutes(p)! / 60)}h {projectWorkedMinutes(p)! % 60}m
                         </span>
                       )}
                     </div>
