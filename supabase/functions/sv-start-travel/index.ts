@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
       if (createErr) return errorResponse(createErr.message, 500);
       log = created as typeof log;
     }
-    } else if (officeMandatory && !log.office_punch_in) {
+    if (officeMandatory && !log.office_punch_in) {
       return errorResponse("Must punch in at office first", 400);
     }
 
