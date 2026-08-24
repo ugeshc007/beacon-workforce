@@ -314,7 +314,7 @@ export default function ErrorAudit() {
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Error detail</DialogTitle>
+            <DialogTitle>Action detail</DialogTitle>
           </DialogHeader>
           {selected && (
             <div className="space-y-3 text-sm">
