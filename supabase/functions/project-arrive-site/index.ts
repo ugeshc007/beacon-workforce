@@ -27,7 +27,9 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (!session) return errorResponse("Session not found", 404);
     if (session.work_end_time) return errorResponse("Session already ended", 400);
-    if (!session.travel_start_time) return errorResponse("Must start travel before arriving at site", 400);
+    // Never block on a missing previous step: back-fill travel start.
+    const backfillTravel = !session.travel_start_time;
+
     // Idempotent: if already recorded (replayed offline action), return success
     if (session.site_arrival_time) {
       return jsonResponse({ success: true, timestamp: session.site_arrival_time, deduped: true });
