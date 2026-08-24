@@ -3011,6 +3011,10 @@ export type Database = {
         Args: { cron_expr: string }
         Returns: undefined
       }
+      update_day_incomplete_cron: {
+        Args: { cron_expr?: string }
+        Returns: undefined
+      }
       update_morning_briefing_cron: {
         Args: { cron_expr: string }
         Returns: undefined
