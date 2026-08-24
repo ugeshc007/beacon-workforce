@@ -35,7 +35,6 @@ Deno.serve(async (req) => {
     if (!log) return errorResponse("No active attendance to punch out from", 400);
     if (log.office_punch_out) return errorResponse("Already punched out", 400);
 
-    // Block punch-out if the driver still has an open trip leg from the shift's date.
     // Punch-out is ALWAYS allowed (no time / flow conditions).
     // If steps are missing (open driver legs, no 'Arrive Office' after site travel),
     // we still close the shift but flag it so an admin can fix the times.
