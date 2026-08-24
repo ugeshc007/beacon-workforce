@@ -128,6 +128,9 @@ export function useTodayProjects() {
           sessionId: p.sessionId ?? cached.id ?? null,
           step: next,
           totalWorkMinutes: cached.total_work_minutes ?? p.totalWorkMinutes,
+          workStartTime: cached.work_start_time ?? p.workStartTime,
+          workEndTime: cached.work_end_time ?? p.workEndTime,
+          breakMinutes: diffMinutes(cached.break_start_time, cached.break_end_time) || p.breakMinutes,
         };
       } catch {
         return p;
