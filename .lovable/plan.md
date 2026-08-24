@@ -1,85 +1,55 @@
+# Missing punch-out at 23:58 — what the logs show, and the fix
 
-# Idle Time Report
+## What actually happened (verified in the data)
 
-A new report that measures **idle time** (unproductive minutes) inside every employee's paid shift, so managers can spot people who punched in but didn't actually work.
+The user is ADNAN V A (15037). There *is* activity at 11:58 PM Dubai yesterday, but it was not stored as a punch-out.
 
-## What counts as idle time
-
-For each attendance log (one employee, one shift):
-
+Timeline (Dubai time, 23 Aug):
 ```text
-Shift span   = office_punch_out - office_punch_in
-Productive   = sum of work minutes across their project_work_sessions
-                (work_start_time -> work_end_time, minus breaks)
-             + real travel minutes (site & return)
-Idle time    = Shift span - Productive - Break
+19:52  attendance log A (23 Aug) was auto-closed by the nightly job
+       note: "Auto-completed after 24h with missing workflow steps"
+       — that job stamped office_punch_in / return_travel / office_arrival all at 19:52
+20:28  work start on project session (bound to log A)
+23:43  second project session work start (bound to log A)
+23:57:55  WORK END on that session  <-- the 23:58 activity the user remembers
+          the same timestamp also landed in log A as office_punch_out + work_end_time
+00:01:19 (24 Aug) a NEW attendance log B was opened
+          note: "Start time recovered from first recorded activity"
+07:45  work end on log B's session (session status = completed)
+03:46 / 03:57 / 03:58 / 04:18 UTC (07:46-08:18 Dubai) four punch-out attempts
+          all rejected: "Can't punch out yet. You went to a site today,
+          so you must return to the office and tap 'Arrive Office'..."
 ```
 
-Special cases that make the WHOLE shift idle:
-- Punched in and out but **no project assignment** for that date.
-- Punched in and out but **no work_start_time** was ever recorded (didn't press "Start Work").
-- Long gaps (>30 min) between punch-in and travel start, or between site arrival and work start, are counted as idle.
+So: nothing was lost at 23:58 — the tap was recorded as a *work end*, and because the previous shift had already been force-closed by the nightly job, the workflow rolled him into a brand-new shift after midnight. That new shift is the one he cannot punch out of, and his punch-out taps are being blocked by the old "must arrive office first" rule (his device is still on build 13.8.4, which enforces that check locally before calling the server).
 
-Currently-open shifts (no punch-out yet) are excluded from totals but shown as "In progress".
+No edge-function request logs exist for the 23:30-00:30 window, which is consistent with the work-end being the only call that reached the server.
 
-## Report page
+## Root causes
 
-Route: `/reports/idle-time` (new entry in the Reports sidebar).
+1. The nightly auto-close job closed a shift that was still in use, so the following actions had no valid open shift and a second log was created after midnight.
+2. The client on build 13.8.4 still hard-blocks punch-out when site work has no "Arrive Office" step, so the user cannot close the shift at all — even though the server no longer blocks it.
+3. Work end on a shift already marked auto-closed writes into `office_punch_out`, which makes the record look like a punch-out that then contradicts the real one.
 
-**Filters (top bar)**
-- Date range (default: last 7 days)
-- Branch / Project / Skill type
-- Employee search
-- Min idle threshold (e.g. show only ≥ 60 min)
+## Plan
 
-**Section 1 — Summary cards**
-- Total idle hours (range)
-- Avg idle per employee per day
-- Employees with any idle time
-- Worst offender (name + hours)
+1. Heal the two records for ADNAN V A
+   - Close log B (24 Aug) with a punch-out at his real last activity (work end 07:45 Dubai), flag it `is_incomplete_process` with a note "Punched out with missing steps — corrected by admin".
+   - Correct log A (23 Aug) so its punch-out reflects the 23:57:55 work end and it is clearly labelled as auto-closed/incomplete, not a normal shift.
 
-**Section 2 — Employee-wise table** (one row per employee for the range)
-| Employee | Days worked | Shift hrs | Productive hrs | Break hrs | **Idle hrs** | Idle % | Reason mix |
-|---|---|---|---|---|---|---|---|
-| Amin Ansari | 5 | 42.0 | 22.5 | 1.0 | **18.5** | 44% | No work start ×2, Gap ×3 |
+2. Stop the nightly job from closing shifts that are still active
+   - Only auto-close a shift when there has been no activity of any kind (log timestamps and its project/task sessions) for the cutoff period. Currently a shift with an open session in progress can be caught.
 
-- Row click → opens the individual drill-down.
-- Sort by Idle hrs / Idle % / Employee.
-- CSV export button.
+3. Remove the client-side punch-out block (mobile)
+   - Punch-out becomes always allowed on the device, matching the server. Missing steps are flagged for admin correction instead of blocking the worker. Shows the blue guidance notice ("contact admin to override the time") instead of a red failure.
 
-**Section 3 — Individual drill-down (drawer)**
-Per selected employee, one card per day:
-- Timeline strip: Punch In → Travel → Site → Work → Break → Work End → Return → Punch Out, with **idle gaps highlighted in red** with their duration.
-- Reason chips: `No project assigned`, `No work started`, `Long pre-travel gap 3h 12m`, `Long site-idle gap 7h 10m` (Amin's case).
-- Totals for the day: Shift / Productive / Break / **Idle**.
+4. Do not create a new shift from a mid-flow action
+   - When a work start / travel action arrives and the only recent shift was auto-closed, reopen that shift instead of creating a new post-midnight log, so a night shift stays as one record.
 
-## Technical details
+5. Version bump and rebuild
+   - Bump to the next build so the punch-out block is removed on devices; steps 1, 2 and 4 are server-side and take effect immediately.
 
-**Data source** — read-only aggregation on the client from existing tables:
-- `attendance_logs` (punch in/out, break)
-- `project_work_sessions` (real work + travel windows) joined via `attendance_log_id`
-- `project_assignments` (to detect "no assignment on this date")
-- `employees` (name, code, skill_type, branch)
+## Technical notes
 
-No schema changes. No new tables.
-
-**New files**
-- `src/hooks/useIdleTimeReport.ts` — react-query hook that pulls the 4 tables for the range and computes idle per (employee, date) client-side. Groups results by employee for the summary.
-- `src/lib/idle-time.ts` — pure calculator: takes one attendance log + its sessions + assignments and returns `{ shiftMin, productiveMin, breakMin, idleMin, reasons[], gaps[] }`. Unit-testable.
-- `src/pages/reports/IdleTimeReport.tsx` — the page (cards + table + CSV export).
-- `src/components/reports/IdleEmployeeDrawer.tsx` — per-employee day-by-day drawer.
-- Add route in `src/App.tsx` and sidebar entry in `src/components/layout/AppSidebar.tsx` (under Reports).
-
-**Gap detection thresholds** (kept in `idle-time.ts` as constants so you can tune later):
-- `PRE_TRAVEL_IDLE_MIN = 30` — punch-in → travel-start gap over this = idle.
-- `SITE_IDLE_MIN = 30` — site-arrival → work-start gap over this = idle.
-- `POST_WORK_IDLE_MIN = 30` — work-end → return-travel gap over this = idle.
-- `RETURN_IDLE_MIN = 30` — at-office → punch-out gap over this = idle.
-
-**Permissions**
-- Guarded by existing `useCanAccess("reports", "can_view")` — same pattern as other reports pages, no new permission row needed.
-
-## Not in scope
-- No changes to punch/work edge functions.
-- No changes to how idle time affects payroll (this is a visibility report only).
-- No push notifications for high idle time — can be a follow-up.
+- Records involved: `attendance_logs` 75b9ffea (23 Aug) and fa4aa020 (24 Aug); `project_work_sessions` for projects cdaec35f and 7bec465a.
+- Edits: migration for the data heal; `close-day-incomplete` / absent-check function for the activity-aware cutoff; `punch-out` client guard in the mobile workflow engine and project workflow hook; log-resolution helper so mid-flow actions reopen an auto-closed shift.
