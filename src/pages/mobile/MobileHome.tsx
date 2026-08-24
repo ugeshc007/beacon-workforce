@@ -130,6 +130,10 @@ export default function MobileHome() {
   const [retroAction, setRetroAction] = useState<WorkflowAction | null>(null);
   const [retroPayload, setRetroPayload] = useState<Record<string, unknown>>({});
 
+  // Punch-out gate: ask what to do with assigned tasks that were never started.
+  const [unstartedOpen, setUnstartedOpen] = useState(false);
+  const [pendingPunchOut, setPendingPunchOut] = useState<Record<string, unknown> | null>(null);
+
   const handleOfficeAction = async (action: WorkflowAction) => {
     let payload: Record<string, unknown> = {};
     if (GPS_ACTIONS.includes(action)) {
@@ -146,6 +150,7 @@ export default function MobileHome() {
       // GPS is best-effort: when it fails (timeout, denied, etc.) the action still
       // proceeds without coordinates. Server-side validation can enforce if needed.
     }
+
 
     // Stale shift with NO punch-in recorded → employee never actually started work.
     // Don't ask them to fabricate a punch-in time; steer them to "Mark absent".
