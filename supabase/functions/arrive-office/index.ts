@@ -30,7 +30,9 @@ Deno.serve(async (req) => {
     );
 
     if (!log) return errorResponse("No attendance record for today", 400);
-    if (!log.return_travel_start_time) return errorResponse("Must start return travel first", 400);
+    // Never block on a missing previous step: back-fill "Return Travel" and flag.
+    const backfillReturn = !log.return_travel_start_time;
+
 
     // Get employee's office for GPS validation
     const { data: emp } = await supabase
