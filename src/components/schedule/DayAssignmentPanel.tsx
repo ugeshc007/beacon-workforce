@@ -49,7 +49,26 @@ interface Props {
   readOnly?: boolean;
 }
 
+/** "Mon 24 Aug" label for a YYYY-MM-DD date string */
+function shiftDayLabel(d: string): string {
+  if (!d) return "";
+  return new Date(d + "T00:00:00").toLocaleDateString("en-AE", { weekday: "short", day: "2-digit", month: "short" });
+}
+
+function addDays(d: string, n: number): string {
+  const dt = new Date(d + "T00:00:00");
+  dt.setDate(dt.getDate() + n);
+  const p = (x: number) => String(x).padStart(2, "0");
+  return `${dt.getFullYear()}-${p(dt.getMonth() + 1)}-${p(dt.getDate())}`;
+}
+
+/** End time on/before start time means the shift rolls into the next day */
+function isOvernight(start: string, end: string): boolean {
+  return !!start && !!end && end <= start;
+}
+
 const skillColors: Record<string, string> = {
+
   team_member: "bg-brand/15 text-brand border-brand/30",
   team_leader: "bg-status-overtime/15 text-status-overtime border-status-overtime/30",
   driver: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
