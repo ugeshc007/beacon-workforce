@@ -184,3 +184,79 @@ export function groupAndAggregateLogs<T extends TimesheetDisplayLog & { employee
   return result;
 }
 
+
+interface TimesheetDisplaySession {
+  travel_start_time?: string | null;
+  site_arrival_time?: string | null;
+  work_start_time?: string | null;
+  break_start_time?: string | null;
+  break_end_time?: string | null;
+  work_end_time?: string | null;
+  return_travel_start_time?: string | null;
+  office_arrival_time?: string | null;
+  break_minutes?: number | null;
+  total_work_minutes?: number | null;
+}
+
+/**
+ * Worked minutes for a daily log, falling back to its project work sessions
+ * when the parent attendance log has no usable stamps (mobile flow writes the
+ * real travel/work stamps onto project_work_sessions).
+ */
+export function getWorkedMinutesWithSessions(
+  log: TimesheetDisplayLog,
+  sessions?: TimesheetDisplaySession[] | null,
+  now: Date = new Date(),
+): number {
+  const base = getDisplayWorkedMinutes(log, now);
+  if (base > 0) return base;
+  if (!sessions?.length) return base;
+
+  const start = earliestDate(
+    sessions.flatMap((s) => [s.travel_start_time, s.site_arrival_time, s.work_start_time]),
+  );
+  const end = latestDate(
+    sessions.flatMap((s) => [
+      s.work_end_time,
+      s.return_travel_start_time,
+      s.office_arrival_time,
+      s.break_end_time,
+    ]),
+  );
+  if (!start || !end || end <= start) return base;
+
+  let breakMin = 0;
+  for (const s of sessions) {
+    if (s.break_minutes && s.break_minutes > 0) {
+      breakMin += s.break_minutes;
+    } else if (s.break_start_time && s.break_end_time) {
+      const bs = new Date(s.break_start_time);
+      const be = new Date(s.break_end_time);
+      if (!isNaN(bs.getTime()) && !isNaN(be.getTime()) && be > bs) breakMin += diffMinutes(bs, be);
+    }
+  }
+
+  return getDisplayWorkedMinutes(
+    {
+      date: log.date,
+      work_start_time: start.toISOString(),
+      work_end_time: end.toISOString(),
+      break_minutes: breakMin || null,
+    },
+    now,
+  );
+}
+
+/** Overtime derived from session-aware worked minutes. */
+export function getOvertimeMinutesWithSessions(
+  log: TimesheetDisplayLog,
+  sessions?: TimesheetDisplaySession[] | null,
+  standardHoursPerDay: number = 8,
+  now: Date = new Date(),
+): number {
+  const stored = (log as any).overtime_minutes;
+  if (stored != null && stored > 0) return stored;
+  const worked = getWorkedMinutesWithSessions(log, sessions, now);
+  const stdMin = Math.round((standardHoursPerDay || 8) * 60);
+  return Math.max(0, worked - stdMin);
+}
