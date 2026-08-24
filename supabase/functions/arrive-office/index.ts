@@ -68,12 +68,14 @@ Deno.serve(async (req) => {
       .from("attendance_logs")
       .update({
         office_arrival_time: now,
+        ...(backfillReturn ? { return_travel_start_time: now, is_incomplete_process: true } : {}),
         ...(hasGps ? { office_arrival_lat: lat, office_arrival_lng: lng } : {}),
         office_arrival_accuracy: accuracy ?? null,
         office_arrival_distance_m: Math.round(distance),
         office_arrival_valid: valid,
       })
       .eq("id", log.id);
+
 
     if (error) return errorResponse(error.message, 500);
 
