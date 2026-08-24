@@ -23,19 +23,23 @@ export type WorkflowAction =
   | "arrive_office"
   | "punch_out";
 
+// Punch-out is allowed from EVERY active state: a worker must never be trapped
+// in a shift because a middle step is missing. The server records the shift as
+// "incomplete process" so an admin can correct the times afterwards.
 const transitions: Record<WorkflowStep, WorkflowAction[]> = {
   idle: ["punch_in"],
   punched_in: ["start_travel", "start_break", "punch_out"],
-  traveling: ["arrive_site"],
-  at_site: ["start_work"],
-  working: ["start_break", "end_work"],
-  on_break: ["end_break"],
-  work_done: ["start_return_travel"],
-  returning: ["arrive_office"],
+  traveling: ["arrive_site", "punch_out"],
+  at_site: ["start_work", "punch_out"],
+  working: ["start_break", "end_work", "punch_out"],
+  on_break: ["end_break", "punch_out"],
+  work_done: ["start_return_travel", "punch_out"],
+  returning: ["arrive_office", "punch_out"],
   at_office: ["punch_out"],
   // Allow starting a fresh shift after punching out (multi-shift days / next shift).
   punched_out: ["punch_in"],
 };
+
 
 export function getAvailableActions(step: WorkflowStep): WorkflowAction[] {
   return transitions[step] || [];
