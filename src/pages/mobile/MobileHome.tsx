@@ -794,6 +794,11 @@ export default function MobileHome() {
                           {Math.floor(projectWorkedMinutes(p)! / 60)}h {projectWorkedMinutes(p)! % 60}m
                         </span>
                       )}
+                      {offSchedule && (
+                        <span className="text-[10px] font-medium text-blue-400">
+                          logged outside schedule
+                        </span>
+                      )}
                     </div>
                     {!isDone && (
                       <p className="text-[11px] font-semibold text-brand mt-2 flex items-center gap-1">
