@@ -141,6 +141,14 @@ Deno.serve(async (req) => {
       .eq("attendance_log_id", log.id)
       .is("work_end_time", null);
 
+    // Close any open driver trip legs from the same day.
+    await supabase
+      .from("driver_trip_legs")
+      .update({ leg_end_time: effectiveNow, status: "completed" })
+      .eq("driver_id", employee_id)
+      .eq("date", log.date)
+      .neq("status", "completed");
+
     return jsonResponse({
       success: true,
       attendance_id: log.id,
