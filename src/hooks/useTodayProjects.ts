@@ -1,3 +1,4 @@
+import { isOnline } from "@/lib/connectivity";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,7 +7,6 @@ import { toLocalDateStr } from "@/lib/utils";
 import { deriveProjectStep, ProjectStep } from "@/lib/project-workflow-engine";
 import { cacheData, getCachedData } from "@/lib/offline-queue";
 import { invokeEdge } from "@/lib/invoke-edge";
-import { isOnline } from "@/lib/connectivity";
 
 
 export interface TodayProject {

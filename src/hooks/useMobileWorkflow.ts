@@ -1,3 +1,4 @@
+import { isOnline } from "@/lib/connectivity";
 import { toLocalDateStr } from "@/lib/utils";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,7 +8,6 @@ import { invokeEdge } from "@/lib/invoke-edge";
 import { syncPendingActions } from "@/lib/offline-sync";
 import { toast } from "@/hooks/use-toast";
 import {
-import { isOnline } from "@/lib/connectivity";
   WorkflowStep,
   WorkflowAction,
   deriveStepFromLog,

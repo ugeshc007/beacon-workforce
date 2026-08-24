@@ -1,3 +1,4 @@
+import { isOnline } from "@/lib/connectivity";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
@@ -6,7 +7,6 @@ import { enqueueAction } from "@/lib/offline-queue";
 import { syncPendingActions, onSyncChange } from "@/lib/offline-sync";
 import { invokeEdge } from "@/lib/invoke-edge";
 import {
-import { isOnline } from "@/lib/connectivity";
   SiteVisitStep,
   SiteVisitAction,
   deriveSiteVisitStep,

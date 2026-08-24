@@ -1,8 +1,8 @@
+import { isOnline } from "@/lib/connectivity";
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session } from "@supabase/supabase-js";
 import { clearCachedDataByPrefix } from "@/lib/offline-queue";
-import { isOnline } from "@/lib/connectivity";
 
 interface EmployeeUser {
   id: string;          // employees.id
