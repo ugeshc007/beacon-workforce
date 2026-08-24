@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+import { actionErrorToast } from "@/lib/action-error";
 import {
   ArrowLeft, ListChecks, Users, Play, Square, Coffee, Loader2, WifiOff,
 } from "lucide-react";
@@ -63,7 +64,7 @@ export default function MobileCommonTasks() {
       });
       toast({ title: `Started · ${task.title}` });
     } catch (err: any) {
-      toast({ title: "Could not start", description: err.message, variant: "destructive" });
+      toast(actionErrorToast(err.message));
     } finally {
       setBusyId(null);
     }
@@ -76,7 +77,7 @@ export default function MobileCommonTasks() {
       await breakMut.mutateAsync({ sessionId: mySession.id, action });
       toast({ title: action === "start" ? "Break started" : "Break ended" });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast(actionErrorToast(err.message));
     } finally {
       setBusyId(null);
     }
@@ -89,7 +90,7 @@ export default function MobileCommonTasks() {
       const mins = await end.mutateAsync({ sessionId: mySession.id });
       toast({ title: "Task work ended", description: `${mins} minutes logged.` });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast(actionErrorToast(err.message));
     } finally {
       setBusyId(null);
     }

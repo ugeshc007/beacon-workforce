@@ -8,7 +8,7 @@ import { getGpsPosition } from "@/lib/gps";
 import { MapPin, Truck, PackageCheck, PackageOpen, Hourglass, ChevronRight, CheckCircle2 } from "lucide-react";
 import type { TodayProject } from "@/hooks/useTodayProjects";
 import { useState } from "react";
-import { actionErrorToast } from "@/lib/action-error";
+import { userNoticeToast, actionErrorToast } from "@/lib/action-error";
 
 interface Props {
   todayProjects: TodayProject[];
@@ -40,7 +40,7 @@ export function DriverWorkflowCard({ todayProjects, step, onReturnToOffice, disa
 
   const handleStart = async () => {
     if (!pickedProject) {
-      toast({ title: "Pick a project first", variant: "destructive" });
+      toast(userNoticeToast("Pick a project first", "Select a project to continue."));
       return;
     }
     setBusy(true);

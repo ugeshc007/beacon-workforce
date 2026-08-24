@@ -41,3 +41,17 @@ export function actionErrorToast(message?: string | null): ActionToastContent {
     variant: "destructive",
   };
 }
+
+/**
+ * Toast payload for anything the employee can resolve themselves
+ * (validation, missing selection, offline, GPS, permissions).
+ * Always blue with white text — red is reserved for system failures.
+ */
+export function userNoticeToast(title: string, description?: string | null): ActionToastContent {
+  return {
+    title,
+    description: description || "Please check and try again.",
+    variant: "info",
+  };
+}
+

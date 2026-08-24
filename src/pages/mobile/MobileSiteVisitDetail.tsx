@@ -13,6 +13,7 @@ import { useSiteVisit, useSiteVisitPhotos, useUpdateSiteVisit, useUploadSiteVisi
 import { useToast } from "@/hooks/use-toast";
 import { SiteVisitWorkflowCard } from "@/components/mobile/SiteVisitWorkflowCard";
 import { logMobileError } from "@/lib/error-logger";
+import { userNoticeToast } from "@/lib/action-error";
 
 const statusColors: Record<string, string> = {
   pending: "bg-amber-500/15 text-amber-400",
@@ -88,7 +89,7 @@ export default function MobileSiteVisitDetail() {
 
   const submit = async () => {
     if (!form.signed_by_name.trim()) {
-      toast({ title: "Please enter your name to sign off", variant: "destructive" });
+      toast(userNoticeToast("Name required", "Please enter your name to sign off."));
       return;
     }
     if (!confirm("Submit this site visit report? You can still edit later if needed.")) return;

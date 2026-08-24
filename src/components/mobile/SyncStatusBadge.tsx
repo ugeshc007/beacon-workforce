@@ -7,6 +7,7 @@ import { getQueue, type QueuedAction } from "@/lib/offline-queue";
 import { getDailyLogQueue, type QueuedDailyLog, syncPendingDailyLogs } from "@/lib/offline-daily-logs";
 import { syncPendingActions, onSyncChange } from "@/lib/offline-sync";
 import { useToast } from "@/hooks/use-toast";
+import { userNoticeToast } from "@/lib/action-error";
 
 
 export function SyncStatusBadge() {
@@ -56,7 +57,7 @@ export function SyncStatusBadge() {
 
   const handleRetry = async () => {
     if (!online) {
-      toast({ title: "Still offline", description: "Connect to sync.", variant: "destructive" });
+      toast(userNoticeToast("Still offline", "Connect to the internet to sync."));
       return;
     }
     toast({ title: "Syncing…" });

@@ -20,6 +20,7 @@ import {
   CheckCircle2, Clock, Loader2, CalendarRange,
 } from "lucide-react";
 import { logMobileError } from "@/lib/error-logger";
+import { userNoticeToast, actionErrorToast } from "@/lib/action-error";
 
 function SignedPhoto({ path, index }: { path: string; index: number }) {
   const [src, setSrc] = useState(path);
@@ -161,11 +162,11 @@ export default function MobileDailyLog() {
 
   const handleSubmit = async () => {
     if (!description.trim()) {
-      toast({ title: "Description required", variant: "destructive" });
+      toast(userNoticeToast("Description required", "Add a short description before submitting."));
       return;
     }
     if (!projectId) {
-      toast({ title: "No project assigned today", variant: "destructive" });
+      toast(userNoticeToast("No project assigned today", "Contact your admin to get a project assigned."));
       return;
     }
 
@@ -220,7 +221,7 @@ export default function MobileDailyLog() {
       toast({ title: "Daily update posted ✓" });
       resetForm();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast(actionErrorToast(err.message));
       logMobileError({ category: "daily_log", action: "post_update", message: err?.message || "Daily log submit failed", context: { project_id: projectId, status, has_photos: photos.length > 0 } });
     } finally {
       setUploading(false);
@@ -229,7 +230,7 @@ export default function MobileDailyLog() {
 
   const handleManualSync = async () => {
     if (!navigator.onLine) {
-      toast({ title: "Still offline", variant: "destructive" });
+      toast(userNoticeToast("Still offline", "Connect to the internet to sync."));
       return;
     }
     const { synced, failed } = await syncPendingDailyLogs();
@@ -244,7 +245,7 @@ export default function MobileDailyLog() {
       await updateMutation.mutateAsync({ id: logId, projectId, status: newStatus });
       toast({ title: "Status updated" });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast(actionErrorToast(err.message));
       logMobileError({ category: "daily_log", action: "update_status", message: err?.message || "Daily log status update failed", context: { log_id: logId, project_id: projectId, new_status: newStatus } });
     }
   };
