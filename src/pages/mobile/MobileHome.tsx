@@ -1,6 +1,6 @@
 import { useMobileWorkflow } from "@/hooks/useMobileWorkflow";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
-import { useTodayProjects } from "@/hooks/useTodayProjects";
+import { useTodayProjects, projectWorkedMinutes } from "@/hooks/useTodayProjects";
 import { useUpcomingProjects } from "@/hooks/useUpcomingProjects";
 import { useBackgroundTracking } from "@/hooks/useBackgroundTracking";
 import { actionLabels, stepLabels, stepColors, WorkflowAction } from "@/lib/workflow-engine";
