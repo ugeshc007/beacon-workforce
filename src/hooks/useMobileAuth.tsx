@@ -98,15 +98,37 @@ export function MobileAuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
+    // Never sit on a blank spinner: if the session/profile call hangs on a weak
+    // connection, give up after 8s, surface an error and let the user retry.
+    const timer = setTimeout(() => {
+      if (!mounted) return;
+      setLoading(false);
+      setAuthError("Couldn't load your account — check your connection.");
+    }, 8000);
+
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!mounted) return;
       setSession(session);
       if (session?.user) {
         const emp = await fetchEmployee(session.user.id);
-        if (mounted) setEmployee(emp);
+        if (mounted) {
+          setEmployee(emp);
+          if (!emp && isOnline()) {
+            setAuthError("Couldn't load your account — check your connection.");
+          }
+        }
       }
-      if (mounted) setLoading(false);
+      if (mounted) {
+        clearTimeout(timer);
+        setLoading(false);
+      }
+    }).catch(() => {
+      if (!mounted) return;
+      clearTimeout(timer);
+      setLoading(false);
+      setAuthError("Couldn't load your account — check your connection.");
     });
+
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return;
