@@ -22,6 +22,10 @@ export interface TodayProject {
   sessionId: string | null;
   step: ProjectStep;
   totalWorkMinutes: number | null;
+  /** Session's own work start/end (used for a trustworthy card duration). */
+  workStartTime: string | null;
+  workEndTime: string | null;
+  breakMinutes: number;
   assignedRole: string;
   workLocation: "in_house" | "site" | null;
   task: string | null;
