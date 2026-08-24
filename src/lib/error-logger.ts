@@ -72,7 +72,7 @@ if (typeof window !== "undefined") {
   window.addEventListener("offline", () => (netState = "offline"));
 }
 
-export async function logMobileError(input: LogErrorInput): Promise<void> {
+async function writeLog(input: LogErrorInput, outcome: "failure" | "success"): Promise<void> {
   try {
     const employee_id = await getCachedEmployeeId();
     const platform = Capacitor.getPlatform?.() ?? "web";
@@ -81,7 +81,7 @@ export async function logMobileError(input: LogErrorInput): Promise<void> {
 
     // Enrich context with project_id derived from route so the audit UI can
     // show which project (and whether it's in-house vs site) the error came from.
-    const ctx: Record<string, unknown> = { ...(input.context ?? {}) };
+    const ctx: Record<string, unknown> = { ...(input.context ?? {}), outcome };
     if (!ctx.project_id) {
       const pid = extractProjectIdFromRoute(route);
       if (pid) ctx.project_id = pid;
@@ -89,7 +89,7 @@ export async function logMobileError(input: LogErrorInput): Promise<void> {
 
     await (supabase.from("error_logs") as any).insert({
       source: "mobile",
-      severity: input.severity ?? "error",
+      severity: input.severity ?? (outcome === "success" ? "info" : "error"),
       category: input.category,
       action: input.action ?? null,
       error_code: input.error_code ?? null,
@@ -102,8 +102,25 @@ export async function logMobileError(input: LogErrorInput): Promise<void> {
       platform,
       user_agent: userAgent,
       network_state: netState,
+      // Successful actions need no admin review — they are activity history.
+      reviewed: outcome === "success",
+      reviewed_at: outcome === "success" ? new Date().toISOString() : null,
     });
   } catch {
     // Silent — logging must never break the app
   }
 }
+
+export async function logMobileError(input: LogErrorInput): Promise<void> {
+  return writeLog(input, "failure");
+}
+
+/**
+ * Activity trail: records a mobile action that SUCCEEDED so admins can see the
+ * full picture on the audit page, not only failures. Written as severity "info"
+ * and pre-marked reviewed. Rows older than 7 days are purged automatically.
+ */
+export async function logMobileAction(input: LogErrorInput): Promise<void> {
+  return writeLog({ severity: "info", ...input }, "success");
+}
+
