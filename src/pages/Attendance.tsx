@@ -4,7 +4,7 @@ import { useAttendanceLogs, useAttendanceSummary, type AttendanceLog } from "@/h
 import { useCanAccess } from "@/hooks/usePermissions";
 import { useProjects } from "@/hooks/useProjects";
 import { AttendanceTimeline } from "@/components/attendance/AttendanceTimeline";
-import { getDisplayWorkedMinutes, getDisplayOvertimeMinutes, getWorkedMinutesWithSessions, getOvertimeMinutesWithSessions, formatWorkedMinutes } from "@/lib/timesheet-display";
+import { getWorkedMinutesWithSessions, getOvertimeMinutesWithSessions, formatWorkedMinutes } from "@/lib/timesheet-display";
 import { AttendanceOverrideDialog } from "@/components/attendance/AttendanceOverrideDialog";
 import { AttendanceDetailDrawer } from "@/components/attendance/AttendanceDetailDrawer";
 import { StatCard } from "@/components/ui/stat-card";
