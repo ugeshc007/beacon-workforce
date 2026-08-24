@@ -30,8 +30,11 @@ Deno.serve(async (req) => {
 
     if (!log) return errorResponse("Must punch in first", 400);
     if (log.office_punch_out) return errorResponse("Already punched out for the day", 400);
-    if (!log.travel_start_time) return errorResponse("Must start travel before arriving at site", 400);
     if (log.site_arrival_time) return errorResponse("Site arrival already recorded", 400);
+    // Never block on a missing previous step: back-fill "Start Travel" with the
+    // same timestamp and flag the log so an admin can correct the times.
+    const backfillTravel = !log.travel_start_time;
+
 
     let valid = false;
     let distance = 0;
