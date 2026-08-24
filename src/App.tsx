@@ -69,7 +69,24 @@ import MobileSiteVisits from "./pages/mobile/MobileSiteVisits";
 import MobileSiteVisitDetail from "./pages/mobile/MobileSiteVisitDetail";
 import MobileProjectWorkflow from "./pages/mobile/MobileProjectWorkflow";
 
-const queryClient = new QueryClient();
+// Offline-tolerant defaults: don't burn the main thread on long retry chains
+// when the device has no connection (the classic "app slow after unlock").
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      networkMode: "offlineFirst",
+      retry: 1,
+      retryDelay: 1500,
+      staleTime: 15_000,
+      refetchIntervalInBackground: false,
+      refetchOnWindowFocus: false,
+    },
+    mutations: { networkMode: "offlineFirst", retry: 0 },
+  },
+});
+
+initConnectivity();
+
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
