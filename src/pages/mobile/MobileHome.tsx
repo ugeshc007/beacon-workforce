@@ -170,9 +170,21 @@ export default function MobileHome() {
       setRetroAction(action);
       return;
     }
+    // Punching out with scheduled tasks never started → ask the employee to
+    // cancel them or push them to tomorrow. Never blocks: they can still punch
+    // out from the dialog. Skipped offline (schedule changes need the server).
+    if (action === "punch_out" && isOnline && !isStaleShift) {
+      const unstarted = (todayProjects ?? []).filter((p) => !p.sessionId && p.step === "idle");
+      if (unstarted.length && !pendingPunchOut) {
+        setPendingPunchOut(payload);
+        setUnstartedOpen(true);
+        return;
+      }
+    }
 
     await submitAction(action, payload);
   };
+
 
   const submitAction = async (action: WorkflowAction, payload: Record<string, unknown>) => {
     if (!employee) return;
