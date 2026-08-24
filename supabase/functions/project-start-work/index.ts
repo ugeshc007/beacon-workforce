@@ -1,4 +1,4 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, resolveTimestamp, dateFromTimestamp, authenticateEmployee, checkIdempotency, recordIdempotencyResult, pickLogForTimestamp } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, resolveTimestamp, dateFromTimestamp, authenticateEmployee, checkIdempotency, recordIdempotencyResult, pickLogForTimestamp, findContinuingOpenLog } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
@@ -31,16 +31,44 @@ Deno.serve(async (req) => {
       let log = pickLogForTimestamp(logs, now);
 
       if (!log) {
-        if (officeMandatory) return errorResponse("Must punch in at office first", 400);
-        const { data: created, error: createErr } = await supabase
-          .from("attendance_logs").insert({ employee_id, date: today })
-          .select("id, office_punch_in").single();
-        if (createErr) return errorResponse(createErr.message, 500);
-        log = created;
-      } else if (officeMandatory && !log.office_punch_in) {
-        return errorResponse("Must punch in at office first", 400);
+
+        // Continue an already-open shift even if the Dubai date rolled over past
+
+        // midnight — a night shift must never split into a second log.
+
+        log = await findContinuingOpenLog(supabase, employee_id, "id, office_punch_in", now) as typeof log;
+
       }
 
+      if (!log) {
+
+        if (officeMandatory) return errorResponse("Must punch in at office first", 400);
+
+        // Never create a bare log without a punch-in: stamp punch-in at the action
+
+        // time so the shift always shows where it started.
+
+        const { data: created, error: createErr } = await supabase
+
+          .from("attendance_logs")
+
+          .insert({ employee_id, date: today, office_punch_in: now })
+
+          .select("id, office_punch_in")
+
+          .single();
+
+        if (createErr) return errorResponse(createErr.message, 500);
+
+        log = created as typeof log;
+
+      }
+
+      if (officeMandatory && !log.office_punch_in) {
+
+        return errorResponse("Must punch in at office first", 400);
+
+      }
       // Verify assignment for this project today (and read its per-assignment work_location)
       const { data: assignment } = await supabase
         .from("project_assignments")

@@ -1,4 +1,4 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, dateFromTimestamp, resolveTimestamp, checkIdempotency, recordIdempotencyResult, authenticateEmployee, pickLogForTimestamp } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, dateFromTimestamp, resolveTimestamp, checkIdempotency, recordIdempotencyResult, authenticateEmployee, pickLogForTimestamp, findContinuingOpenLog } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
@@ -30,16 +30,25 @@ Deno.serve(async (req) => {
       .eq("date", today);
     let log = pickLogForTimestamp(logs, now);
     if (!log) {
+      // Continue an already-open shift even if the Dubai date rolled over past
+      // midnight — a night shift must never split into a second log.
+      log = await findContinuingOpenLog(supabase, employee_id, "id, office_punch_in", now) as typeof log;
+    }
+    if (!log) {
       if (officeMandatory) return errorResponse("Must punch in at office first", 400);
+      // Never create a bare log without a punch-in: stamp punch-in at the action
+      // time so the shift always shows where it started.
       const { data: created, error: createErr } = await supabase
-        .from("attendance_logs").insert({ employee_id, date: today })
-        .select("id, office_punch_in").single();
+        .from("attendance_logs")
+        .insert({ employee_id, date: today, office_punch_in: now })
+        .select("id, office_punch_in")
+        .single();
       if (createErr) return errorResponse(createErr.message, 500);
-      log = created;
-    } else if (officeMandatory && !log.office_punch_in) {
+      log = created as typeof log;
+    }
+    if (officeMandatory && !log.office_punch_in) {
       return errorResponse("Must punch in at office first", 400);
     }
-
     // Sequential rule: no other open site-visit session
     const { data: activeSv } = await supabase
       .from("site_visit_work_sessions")

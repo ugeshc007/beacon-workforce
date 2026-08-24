@@ -1,4 +1,4 @@
-import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, dateFromTimestamp, nowTimestamp, resolveTimestamp, checkIdempotency, authenticateEmployee, findOpenAttendanceLog } from "../_shared/helpers.ts";
+import { createSupabaseAdmin, jsonResponse, errorResponse, corsResponse, dateFromTimestamp, nowTimestamp, resolveTimestamp, checkIdempotency, authenticateEmployee, findOpenAttendanceLog, findContinuingOpenLog } from "../_shared/helpers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
@@ -34,9 +34,19 @@ Deno.serve(async (req) => {
     );
 
     if (!log) {
+      // Continue an already-open shift across the Dubai midnight boundary.
+      log = await findContinuingOpenLog(
+        supabase,
+        employee_id,
+        "id, date, office_punch_in, travel_start_time, work_end_time, office_punch_out",
+        now
+      ) as typeof log;
+    }
+
+    if (!log) {
       if (officeMandatory) return errorResponse("Must punch in at office first", 400);
       const { data: created, error: createErr } = await supabase
-        .from("attendance_logs").insert({ employee_id, date: today })
+        .from("attendance_logs").insert({ employee_id, date: today, office_punch_in: now })
         .select("id, date, office_punch_in, travel_start_time, work_end_time, office_punch_out").single();
       if (createErr) return errorResponse(createErr.message, 500);
       log = created as typeof log;
