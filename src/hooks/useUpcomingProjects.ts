@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
 import { toLocalDateStr } from "@/lib/utils";
 import { cacheData, getCachedData } from "@/lib/offline-queue";
+import { isOnline } from "@/lib/connectivity";
 
 export interface UpcomingProject {
   assignmentId: string;
@@ -43,7 +44,7 @@ export function useUpcomingProjects(days = 7) {
       if (!employee) return [];
 
       // Offline → return last cached snapshot immediately
-      if (typeof navigator !== "undefined" && !navigator.onLine && cacheKey) {
+      if (!isOnline() && cacheKey) {
         const cached = await getCachedData<UpcomingProject[]>(cacheKey);
         if (cached) return cached.data;
         return [];

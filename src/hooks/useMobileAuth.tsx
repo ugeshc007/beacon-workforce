@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode, useCallback 
 import { supabase } from "@/integrations/supabase/client";
 import type { Session } from "@supabase/supabase-js";
 import { clearCachedDataByPrefix } from "@/lib/offline-queue";
+import { isOnline } from "@/lib/connectivity";
 
 interface EmployeeUser {
   id: string;          // employees.id
@@ -61,7 +62,7 @@ export function MobileAuthProvider({ children }: { children: ReactNode }) {
 
   const fetchEmployee = useCallback(async (authId: string): Promise<EmployeeUser | null> => {
     // Offline → use cache immediately, no network attempt
-    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    if (!isOnline()) {
       return readCachedEmployee(authId);
     }
 
@@ -112,7 +113,7 @@ export function MobileAuthProvider({ children }: { children: ReactNode }) {
       // If we're offline and supabase reports SIGNED_OUT, it's almost always
       // a failed refresh call — not a real sign-out. Keep the cached employee
       // in state so the worker stays inside the app until real network returns.
-      const offline = typeof navigator !== "undefined" && navigator.onLine === false;
+      const offline = !isOnline();
       if (event === "SIGNED_OUT" && offline) {
         return;
       }

@@ -6,6 +6,7 @@ import { enqueueAction } from "@/lib/offline-queue";
 import { syncPendingActions, onSyncChange } from "@/lib/offline-sync";
 import { invokeEdge } from "@/lib/invoke-edge";
 import {
+import { isOnline } from "@/lib/connectivity";
   SiteVisitStep,
   SiteVisitAction,
   deriveSiteVisitStep,
@@ -142,7 +143,7 @@ export function useSiteVisitWorkflow(siteVisitId: string | null) {
 
     setActionLoading(false);
 
-    if (!navigator.onLine) {
+    if (!isOnline()) {
       try {
         await enqueueAction({ action_type: queueTypeMap[action], payload: body, timestamp: nowIso });
         return { success: true, queued: true };

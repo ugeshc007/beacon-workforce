@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import { cacheData, getCachedData } from "@/lib/offline-queue";
+import { isOnline } from "@/lib/connectivity";
 
 export type SiteVisit = Tables<"site_visits"> & {
   assigned_employee?: { id: string; name: string; employee_code: string } | null;
@@ -54,7 +55,7 @@ export function useSiteVisit(id: string | null) {
     enabled: !!id,
     staleTime: 60_000,
     queryFn: async () => {
-      if (!navigator.onLine && cacheKey) {
+      if (!isOnline() && cacheKey) {
         const cached = await getCachedData<SiteVisit | null>(cacheKey);
         if (cached) return cached.data;
       }
@@ -217,7 +218,7 @@ export function useMySiteVisits(employeeId: string | null) {
     enabled: !!employeeId,
     staleTime: 60_000,
     queryFn: async () => {
-      if (!navigator.onLine && cacheKey) {
+      if (!isOnline() && cacheKey) {
         const cached = await getCachedData<SiteVisit[]>(cacheKey);
         if (cached) return cached.data;
       }
@@ -253,7 +254,7 @@ export function useMyTodaySiteVisits(employeeId: string | null) {
     refetchInterval: 30000,
     staleTime: 60_000,
     queryFn: async () => {
-      if (!navigator.onLine && cacheKey) {
+      if (!isOnline() && cacheKey) {
         const cached = await getCachedData<any[]>(cacheKey);
         if (cached) return cached.data;
       }
