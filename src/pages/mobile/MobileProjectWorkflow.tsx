@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Loader2, MapPin, Clock, ArrowLeft, CheckCircle2, Crosshair, ArrowRight, RotateCcw, X, Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { actionErrorToast } from "@/lib/action-error";
 
 // GPS is captured at start_travel only; arrive_site no longer requires a fresh fix
 // (the travel start already proved the phone had location, and the server accepts
@@ -189,7 +190,7 @@ export default function MobileProjectWorkflow() {
     }
     const r = await office.executeAction(action, payload);
     if (!r?.success) {
-      toast({ title: "Failed", description: r?.error || "Try again.", variant: "destructive" });
+      toast(actionErrorToast(r?.error));
       import("@/lib/error-logger").then(({ logMobileError }) =>
         logMobileError({ category: "workflow", action: `office:${action}`, message: r?.error || "Office action failed", context: { payload } })
       );
@@ -209,7 +210,7 @@ export default function MobileProjectWorkflow() {
       }
       const r = await office.executeAction(action, payload);
       if (!r?.success) {
-        toast({ title: "Failed", description: r?.error || "Try again.", variant: "destructive" });
+        toast(actionErrorToast(r?.error));
         import("@/lib/error-logger").then(({ logMobileError }) =>
           logMobileError({ category: "workflow", action: `office:${action}`, message: r?.error || "Office action failed", context: { payload } })
         );
@@ -230,7 +231,7 @@ export default function MobileProjectWorkflow() {
   const submitAction = async (action: ProjectAction, payload: Record<string, unknown>) => {
     const result = (await executeAction(action, payload)) as { success: boolean; error?: string; queued?: boolean };
     if (!result?.success) {
-      toast({ title: "Failed", description: result?.error || "Something went wrong.", variant: "destructive" });
+      toast(actionErrorToast(result?.error));
       import("@/lib/error-logger").then(({ logMobileError }) =>
         logMobileError({ category: "workflow", action, message: result?.error || "Project action failed", context: { payload } })
       );
@@ -473,7 +474,7 @@ export default function MobileProjectWorkflow() {
               setRetroOfficePayload({});
               const r = await office.executeAction(action, payload);
               if (!r?.success) {
-                toast({ title: "Failed", description: r?.error || "Try again.", variant: "destructive" });
+                toast(actionErrorToast(r?.error));
               }
             }}
           />

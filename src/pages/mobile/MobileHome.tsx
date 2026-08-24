@@ -22,6 +22,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { actionErrorToast } from "@/lib/action-error";
 
 const GPS_ACTIONS: WorkflowAction[] = ["punch_in", "punch_out", "start_return_travel", "arrive_office"];
 
@@ -172,7 +173,7 @@ export default function MobileHome() {
     if (!employee) return;
     const result = await executeAction(action, payload);
     if (!result?.success) {
-      toast({ title: "Failed", description: result?.error || "Something went wrong.", variant: "destructive" });
+      toast(actionErrorToast(result?.error));
       import("@/lib/error-logger").then(({ logMobileError }) =>
         logMobileError({
           category: action === "punch_in" || action === "punch_out" ? "punch" : "workflow",
