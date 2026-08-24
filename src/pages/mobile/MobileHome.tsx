@@ -10,6 +10,8 @@ import { initAutoSync } from "@/lib/offline-sync";
 import { getCachedData } from "@/lib/offline-queue";
 import { HoldToConfirm } from "@/components/mobile/HoldToConfirm";
 import { RetroTimeDialog } from "@/components/mobile/RetroTimeDialog";
+import { UnstartedTasksDialog } from "@/components/mobile/UnstartedTasksDialog";
+
 import { officeActionTimeHints } from "@/lib/retro-time";
 
 
@@ -130,6 +132,10 @@ export default function MobileHome() {
   const [retroAction, setRetroAction] = useState<WorkflowAction | null>(null);
   const [retroPayload, setRetroPayload] = useState<Record<string, unknown>>({});
 
+  // Punch-out gate: ask what to do with assigned tasks that were never started.
+  const [unstartedOpen, setUnstartedOpen] = useState(false);
+  const [pendingPunchOut, setPendingPunchOut] = useState<Record<string, unknown> | null>(null);
+
   const handleOfficeAction = async (action: WorkflowAction) => {
     let payload: Record<string, unknown> = {};
     if (GPS_ACTIONS.includes(action)) {
@@ -146,6 +152,7 @@ export default function MobileHome() {
       // GPS is best-effort: when it fails (timeout, denied, etc.) the action still
       // proceeds without coordinates. Server-side validation can enforce if needed.
     }
+
 
     // Stale shift with NO punch-in recorded → employee never actually started work.
     // Don't ask them to fabricate a punch-in time; steer them to "Mark absent".
@@ -165,9 +172,21 @@ export default function MobileHome() {
       setRetroAction(action);
       return;
     }
+    // Punching out with scheduled tasks never started → ask the employee to
+    // cancel them or push them to tomorrow. Never blocks: they can still punch
+    // out from the dialog. Skipped offline (schedule changes need the server).
+    if (action === "punch_out" && isOnline && !isStaleShift) {
+      const unstarted = (todayProjects ?? []).filter((p) => !p.sessionId && p.step === "idle");
+      if (unstarted.length && !pendingPunchOut) {
+        setPendingPunchOut(payload);
+        setUnstartedOpen(true);
+        return;
+      }
+    }
 
     await submitAction(action, payload);
   };
+
 
   const submitAction = async (action: WorkflowAction, payload: Record<string, unknown>) => {
     if (!employee) return;
@@ -1014,7 +1033,27 @@ export default function MobileHome() {
           />
         );
       })()}
+
+      {employee && unstartedOpen && (
+        <UnstartedTasksDialog
+          open={unstartedOpen}
+          employeeId={employee.id}
+          tasks={(todayProjects ?? []).filter((p) => !p.sessionId && p.step === "idle")}
+          onOpenChange={(o) => {
+            setUnstartedOpen(o);
+            if (!o) setPendingPunchOut(null);
+          }}
+          onResolved={() => { void refetchTodayProjects(); }}
+          onContinue={async () => {
+            const payload = pendingPunchOut ?? {};
+            setUnstartedOpen(false);
+            setPendingPunchOut(null);
+            await submitAction("punch_out", payload);
+          }}
+        />
+      )}
     </div>
+
   );
 }
 
