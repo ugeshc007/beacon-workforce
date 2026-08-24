@@ -22,6 +22,10 @@ export interface TodayProject {
   sessionId: string | null;
   step: ProjectStep;
   totalWorkMinutes: number | null;
+  /** Session's own work start/end (used for a trustworthy card duration). */
+  workStartTime: string | null;
+  workEndTime: string | null;
+  breakMinutes: number;
   assignedRole: string;
   workLocation: "in_house" | "site" | null;
   task: string | null;
@@ -30,6 +34,30 @@ export interface TodayProject {
 /** Returns ALL today's project assignments + their session state.
  *  Cached to device storage so the list still shows when the employee is
  *  offline; punch / work actions enqueue separately via the offline queue. */
+function diffMinutes(from?: string | null, to?: string | null): number {
+  if (!from || !to) return 0;
+  const a = new Date(from).getTime();
+  const b = new Date(to).getTime();
+  if (!Number.isFinite(a) || !Number.isFinite(b) || b <= a) return 0;
+  return Math.round((b - a) / 60000);
+}
+
+/** Trustworthy worked minutes for a project card: always derived from the
+ *  session's own work start/end (minus its break) so a bad server-side
+ *  total (e.g. computed from the shift punch-in after an out-of-order sync)
+ *  can never show up as an inflated duration. */
+export function projectWorkedMinutes(p: {
+  workStartTime: string | null;
+  workEndTime: string | null;
+  breakMinutes: number;
+  totalWorkMinutes: number | null;
+}): number | null {
+  if (p.workStartTime && p.workEndTime) {
+    return Math.max(0, diffMinutes(p.workStartTime, p.workEndTime) - (p.breakMinutes || 0));
+  }
+  return p.totalWorkMinutes;
+}
+
 export function useTodayProjects() {
   const { employee } = useMobileAuth();
   const today = toLocalDateStr(new Date());
@@ -100,6 +128,9 @@ export function useTodayProjects() {
           sessionId: p.sessionId ?? cached.id ?? null,
           step: next,
           totalWorkMinutes: cached.total_work_minutes ?? p.totalWorkMinutes,
+          workStartTime: cached.work_start_time ?? p.workStartTime,
+          workEndTime: cached.work_end_time ?? p.workEndTime,
+          breakMinutes: diffMinutes(cached.break_start_time, cached.break_end_time) || p.breakMinutes,
         };
       } catch {
         return p;
@@ -196,6 +227,9 @@ export function useTodayProjects() {
             sessionId: session?.id ?? null,
             step: deriveProjectStep(session ?? null),
             totalWorkMinutes: session?.total_work_minutes ?? null,
+            workStartTime: session?.work_start_time ?? null,
+            workEndTime: session?.work_end_time ?? null,
+            breakMinutes: diffMinutes(session?.break_start_time, session?.break_end_time),
             assignedRole: a.assigned_role ?? "team_member",
             workLocation,
             task: (a as any).task ?? null,

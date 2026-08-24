@@ -1,6 +1,6 @@
 import { useMobileWorkflow } from "@/hooks/useMobileWorkflow";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
-import { useTodayProjects } from "@/hooks/useTodayProjects";
+import { useTodayProjects, projectWorkedMinutes } from "@/hooks/useTodayProjects";
 import { useUpcomingProjects } from "@/hooks/useUpcomingProjects";
 import { useBackgroundTracking } from "@/hooks/useBackgroundTracking";
 import { actionLabels, stepLabels, stepColors, WorkflowAction } from "@/lib/workflow-engine";
@@ -739,6 +739,17 @@ export default function MobileHome() {
           {todayProjects.map((p) => {
             const isActive = p.sessionId && p.step !== "completed";
             const isDone = p.step === "completed";
+            // Work recorded before the scheduled window opened (out-of-order
+            // sync or wrong card tapped) — surface it, never block the user.
+            const offSchedule = (() => {
+              if (!p.workStartTime || !p.shiftStart) return false;
+              const started = new Date(p.workStartTime);
+              if (Number.isNaN(started.getTime())) return false;
+              const [h, m] = p.shiftStart.split(":").map(Number);
+              const windowOpen = new Date(started);
+              windowOpen.setHours(h, m ?? 0, 0, 0);
+              return started.getTime() < windowOpen.getTime() - 15 * 60 * 1000;
+            })();
             return (
               <button
                 key={p.assignmentId}
@@ -778,9 +789,14 @@ export default function MobileHome() {
                           {p.shiftStart.slice(0, 5)}–{p.shiftEnd.slice(0, 5)}
                         </span>
                       )}
-                      {isDone && p.totalWorkMinutes != null && (
+                      {isDone && projectWorkedMinutes(p) != null && (
                         <span className="text-[10px] text-muted-foreground">
-                          {Math.floor(p.totalWorkMinutes / 60)}h {p.totalWorkMinutes % 60}m
+                          {Math.floor(projectWorkedMinutes(p)! / 60)}h {projectWorkedMinutes(p)! % 60}m
+                        </span>
+                      )}
+                      {offSchedule && (
+                        <span className="text-[10px] font-medium text-blue-400">
+                          logged outside schedule
                         </span>
                       )}
                     </div>
