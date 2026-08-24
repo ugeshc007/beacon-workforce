@@ -37,9 +37,9 @@ Deno.serve(async (req) => {
 
     if (!log) {
 
-      // Continue an already-open shift even if the Dubai date has rolled over
+      // Continue an already-open shift even if the Dubai date rolled over past
 
-      // past midnight — a night shift must never split into a second log.
+      // midnight — a night shift must never split into a second log.
 
       log = await findContinuingOpenLog(supabase, employee_id, "id, office_punch_in", now) as typeof log;
 
@@ -49,9 +49,9 @@ Deno.serve(async (req) => {
 
       if (officeMandatory) return errorResponse("Must punch in at office first", 400);
 
-      // Never create a bare log without a punch-in: stamp punch-in at the
+      // Never create a bare log without a punch-in: stamp punch-in at the action
 
-      // action time so the shift always shows where it started.
+      // time so the shift always shows where it started.
 
       const { data: created, error: createErr } = await supabase
 
@@ -68,10 +68,12 @@ Deno.serve(async (req) => {
       log = created as typeof log;
 
     }
-    if (officeMandatory && !log.office_punch_in) {
-      return errorResponse("Must punch in at office first", 400);
-    }
 
+    if (officeMandatory && !log.office_punch_in) {
+
+      return errorResponse("Must punch in at office first", 400);
+
+    }
     // Auto-close any stale open sessions from previous days (>12h old).
     // Keep night-shift sessions that started yesterday but are still within
     // the 12-hour window.
