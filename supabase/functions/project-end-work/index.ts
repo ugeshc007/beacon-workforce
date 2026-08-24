@@ -22,7 +22,10 @@ Deno.serve(async (req) => {
       .eq("employee_id", employee_id)
       .maybeSingle();
     if (!session) return errorResponse("Session not found", 404);
-    if (!session.work_start_time) return errorResponse("Work was never started", 400);
+    // Never block: if "Start Work" was never recorded, back-fill it now so the
+    // worker can close the session; admin can adjust the times afterwards.
+    const backfillWorkStart = !session.work_start_time;
+
     if (session.work_end_time) {
       return jsonResponse({ success: true, timestamp: session.work_end_time, deduped: true });
     }
