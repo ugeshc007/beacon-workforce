@@ -49,7 +49,26 @@ interface Props {
   readOnly?: boolean;
 }
 
+/** "Mon 24 Aug" label for a YYYY-MM-DD date string */
+function shiftDayLabel(d: string): string {
+  if (!d) return "";
+  return new Date(d + "T00:00:00").toLocaleDateString("en-AE", { weekday: "short", day: "2-digit", month: "short" });
+}
+
+function addDays(d: string, n: number): string {
+  const dt = new Date(d + "T00:00:00");
+  dt.setDate(dt.getDate() + n);
+  const p = (x: number) => String(x).padStart(2, "0");
+  return `${dt.getFullYear()}-${p(dt.getMonth() + 1)}-${p(dt.getDate())}`;
+}
+
+/** End time on/before start time means the shift rolls into the next day */
+function isOvernight(start: string, end: string): boolean {
+  return !!start && !!end && end <= start;
+}
+
 const skillColors: Record<string, string> = {
+
   team_member: "bg-brand/15 text-brand border-brand/30",
   team_leader: "bg-status-overtime/15 text-status-overtime border-status-overtime/30",
   driver: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
@@ -674,20 +693,29 @@ export function DayAssignmentPanel({
             {/* Shift time inputs */}
             <div className="flex items-center gap-2">
               <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <Input
-                type="time"
-                value={shiftStart}
-                onChange={(e) => setShiftStart(e.target.value)}
-                className="h-7 text-xs w-24"
-              />
+              <div className="flex flex-col gap-0.5">
+                <Input
+                  type="time"
+                  value={shiftStart}
+                  onChange={(e) => setShiftStart(e.target.value)}
+                  className="h-7 text-xs w-24"
+                />
+                <span className="text-[10px] text-muted-foreground text-center">{shiftDayLabel(date)}</span>
+              </div>
               <span className="text-xs text-muted-foreground">to</span>
-              <Input
-                type="time"
-                value={shiftEnd}
-                onChange={(e) => setShiftEnd(e.target.value)}
-                className="h-7 text-xs w-24"
-              />
+              <div className="flex flex-col gap-0.5">
+                <Input
+                  type="time"
+                  value={shiftEnd}
+                  onChange={(e) => setShiftEnd(e.target.value)}
+                  className="h-7 text-xs w-24"
+                />
+                <span className={`text-[10px] text-center ${isOvernight(shiftStart, shiftEnd) ? "text-status-overtime" : "text-muted-foreground"}`}>
+                  {isOvernight(shiftStart, shiftEnd) ? `+1 day · ${shiftDayLabel(addDays(date, 1))}` : shiftDayLabel(date)}
+                </span>
+              </div>
             </div>
+
 
             {/* Work location — required */}
             <div className="flex items-center gap-2">
