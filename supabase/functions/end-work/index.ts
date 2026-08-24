@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
 
     if (!emp) return errorResponse("Employee not found", 404);
 
-    const workStart = new Date(log.work_start_time).getTime();
+    const workStart = new Date(workStartedAt as string).getTime();
     const workEnd = new Date(now).getTime();
     const totalWorkMinutes = Math.round((workEnd - workStart) / 60000) - (log.break_minutes ?? 0);
     const standardMinutes = Number(emp.standard_hours_per_day) * 60;
