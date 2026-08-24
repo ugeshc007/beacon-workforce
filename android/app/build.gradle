@@ -7,8 +7,8 @@ android {
         applicationId "com.bebright.planner"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-    versionCode 61
-    versionName "13.8.4"
+    versionCode 62
+    versionName "13.8.5"
 
 
 
