@@ -674,20 +674,29 @@ export function DayAssignmentPanel({
             {/* Shift time inputs */}
             <div className="flex items-center gap-2">
               <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <Input
-                type="time"
-                value={shiftStart}
-                onChange={(e) => setShiftStart(e.target.value)}
-                className="h-7 text-xs w-24"
-              />
+              <div className="flex flex-col gap-0.5">
+                <Input
+                  type="time"
+                  value={shiftStart}
+                  onChange={(e) => setShiftStart(e.target.value)}
+                  className="h-7 text-xs w-24"
+                />
+                <span className="text-[10px] text-muted-foreground text-center">{shiftDayLabel(date)}</span>
+              </div>
               <span className="text-xs text-muted-foreground">to</span>
-              <Input
-                type="time"
-                value={shiftEnd}
-                onChange={(e) => setShiftEnd(e.target.value)}
-                className="h-7 text-xs w-24"
-              />
+              <div className="flex flex-col gap-0.5">
+                <Input
+                  type="time"
+                  value={shiftEnd}
+                  onChange={(e) => setShiftEnd(e.target.value)}
+                  className="h-7 text-xs w-24"
+                />
+                <span className={`text-[10px] text-center ${isOvernight(shiftStart, shiftEnd) ? "text-status-overtime" : "text-muted-foreground"}`}>
+                  {isOvernight(shiftStart, shiftEnd) ? `+1 day · ${shiftDayLabel(addDays(date, 1))}` : shiftDayLabel(date)}
+                </span>
+              </div>
             </div>
+
 
             {/* Work location — required */}
             <div className="flex items-center gap-2">
