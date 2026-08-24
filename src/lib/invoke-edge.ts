@@ -92,5 +92,7 @@ export async function invokeEdge<T = unknown>(
     throw new Error(typeof e === "string" ? e : JSON.stringify(e));
   }
 
+  auditSuccess(fnName, body);
   return data as T;
+
 }
