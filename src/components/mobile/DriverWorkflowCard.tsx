@@ -8,6 +8,7 @@ import { getGpsPosition } from "@/lib/gps";
 import { MapPin, Truck, PackageCheck, PackageOpen, Hourglass, ChevronRight, CheckCircle2 } from "lucide-react";
 import type { TodayProject } from "@/hooks/useTodayProjects";
 import { useState } from "react";
+import { actionErrorToast } from "@/lib/action-error";
 
 interface Props {
   todayProjects: TodayProject[];
@@ -51,7 +52,7 @@ export function DriverWorkflowCard({ todayProjects, step, onReturnToOffice, disa
       toast({ title: "Trip started" });
       setPickedProject(null);
     } catch (e: any) {
-      toast({ title: "Failed", description: e.message, variant: "destructive" });
+      toast(actionErrorToast(e.message));
     } finally {
       setBusy(false);
     }
@@ -70,7 +71,7 @@ export function DriverWorkflowCard({ todayProjects, step, onReturnToOffice, disa
       });
       toast({ title: `Arrived — ${legTypeLabel[leg_type]}` });
     } catch (e: any) {
-      toast({ title: "Failed", description: e.message, variant: "destructive" });
+      toast(actionErrorToast(e.message));
     } finally {
       setBusy(false);
     }
@@ -88,7 +89,7 @@ export function DriverWorkflowCard({ todayProjects, step, onReturnToOffice, disa
       });
       toast({ title: "Trip leg complete" });
     } catch (e: any) {
-      toast({ title: "Failed", description: e.message, variant: "destructive" });
+      toast(actionErrorToast(e.message));
     } finally {
       setBusy(false);
     }
