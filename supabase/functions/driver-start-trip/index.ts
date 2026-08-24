@@ -93,7 +93,6 @@ Deno.serve(async (req) => {
       }
     }
 
-
     // Verify driver assignment for this project today
     const { data: assignment } = await supabase
       .from("project_assignments")

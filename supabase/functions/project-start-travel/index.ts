@@ -10,7 +10,6 @@ Deno.serve(async (req) => {
     }
     const hasGps = lat != null && lng != null;
 
-
     const supabase = createSupabaseAdmin();
     const auth = await authenticateEmployee(req, supabase, employee_id);
     if (auth.error) return auth.error;
@@ -36,54 +35,37 @@ Deno.serve(async (req) => {
       .eq("date", today);
     let log = pickLogForTimestamp(logs, now);
 
-
     if (!log) {
-
 
       // Continue an already-open shift even if the Dubai date has rolled over
 
-
       // past midnight — a night shift must never split into a second log.
-
 
       log = await findContinuingOpenLog(supabase, employee_id, "id, office_punch_in", now) as typeof log;
 
-
     }
-
 
     if (!log) {
 
-
       if (officeMandatory) return errorResponse("Must punch in at office first", 400);
-
 
       // Never create a bare log without a punch-in: stamp punch-in at the
 
-
       // action time so the shift always shows where it started.
-
 
       const { data: created, error: createErr } = await supabase
 
-
         .from("attendance_logs")
-
 
         .insert({ employee_id, date: today, office_punch_in: now })
 
-
         .select("id, office_punch_in")
-
 
         .single();
 
-
       if (createErr) return errorResponse(createErr.message, 500);
 
-
       log = created as typeof log;
-
 
     }
     if (officeMandatory && !log.office_punch_in) {
