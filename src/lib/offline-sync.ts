@@ -12,10 +12,18 @@ import {
   markSynced,
   markError,
   clearSynced,
+  removeAction,
 } from "@/lib/offline-queue";
 
 const MAX_RETRIES = 3;
 const BASE_DELAY_MS = 2000;
+/**
+ * Queued actions older than this are discarded instead of replayed. A stale
+ * replay (e.g. a Punch Out queued 5 days ago) would otherwise overwrite a
+ * fresh shift with an old timestamp and corrupt the day's hours.
+ */
+const MAX_QUEUED_AGE_MS = 24 * 60 * 60 * 1000;
+
 
 type SyncListener = (pending: number, syncing: boolean) => void;
 const listeners = new Set<SyncListener>();
