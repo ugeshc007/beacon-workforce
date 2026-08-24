@@ -107,6 +107,37 @@ export function isWithinShiftWindow(
   return now - punchIn <= hours * 60 * 60 * 1000;
 }
 
+/** Max hours a shift may continue across the Dubai date boundary. */
+export const CONTINUING_SHIFT_HOURS = 20;
+
+/**
+ * Find an employee's still-open, already-punched-in shift REGARDLESS of date.
+ * Mid-flow actions (travel, arrive, work start) must continue that shift even
+ * when the Dubai date has just rolled over past midnight — otherwise a brand
+ * new log is created for the next day with no punch-in, which looks like a
+ * missing punch-in and splits the night shift in two.
+ */
+export async function findContinuingOpenLog(
+  supabase: ReturnType<typeof createSupabaseAdmin>,
+  employeeId: string,
+  columns: string,
+  nowIso?: string,
+  hours = CONTINUING_SHIFT_HOURS
+) {
+  const { data } = await supabase
+    .from("attendance_logs")
+    .select(columns)
+    .eq("employee_id", employeeId)
+    .is("office_punch_out", null)
+    .not("office_punch_in", "is", null)
+    .order("office_punch_in", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!data) return null;
+  if (!isWithinShiftWindow((data as any).office_punch_in, nowIso, hours)) return null;
+  return data;
+}
+
 /**
  * Find the currently active (open) attendance log for an employee.
  * Looks at today first, then yesterday — so night shifts that started before
