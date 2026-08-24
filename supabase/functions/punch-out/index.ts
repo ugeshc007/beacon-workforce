@@ -36,31 +36,22 @@ Deno.serve(async (req) => {
     if (log.office_punch_out) return errorResponse("Already punched out", 400);
 
     // Block punch-out if the driver still has an open trip leg from the shift's date.
+    // Punch-out is ALWAYS allowed (no time / flow conditions).
+    // If steps are missing (open driver legs, no 'Arrive Office' after site travel),
+    // we still close the shift but flag it so an admin can fix the times.
+    let missingSteps = false;
+
     const { data: openLegs } = await supabase
       .from("driver_trip_legs")
-      .select("id, leg_number, projects(name)")
+      .select("id")
       .eq("driver_id", employee_id)
       .eq("date", log.date)
       .neq("status", "completed");
 
-    if (openLegs && openLegs.length > 0) {
-      const names = openLegs
-        .map((l: any) => l.projects?.name || `Leg #${l.leg_number}`)
-        .join(", ");
-      return errorResponse(
-        `Finish your trip first before punching out. Open trip(s): ${names}. Tap 'Arrived at Site' then 'End Leg' to close them.`,
-        400
-      );
-    }
+    if (openLegs && openLegs.length > 0) missingSteps = true;
 
-    // Require "Arrive Office" only if the employee actually traveled today.
-    // We check real evidence of travel (log OR any project work session has
-    // travel/site-arrival timestamps) — NOT just the assignment's work_location,
-    // because a site-tagged assignment that was never started shouldn't block
-    // punch-out for an in-house workday.
     if (!log.office_arrival_time) {
       let actuallyTraveled = !!log.travel_start_time || !!log.site_arrival_time;
-
       if (!actuallyTraveled) {
         const { data: sessions } = await supabase
           .from("project_work_sessions")
@@ -70,16 +61,9 @@ Deno.serve(async (req) => {
           (s: any) => s.travel_start_time || s.site_arrival_time || s.return_travel_start_time
         );
       }
-
-      const shiftAgeMs = log.office_punch_in ? Date.now() - new Date(log.office_punch_in).getTime() : 0;
-      const isOldShift = shiftAgeMs > 12 * 60 * 60 * 1000;
-      if (actuallyTraveled && !isOldShift) {
-        return errorResponse(
-          "Can't punch out yet. You went to a site today, so you must return to the office and tap 'Arrive Office' before punching out. Steps: 1) Tap 'Start Return Travel' at the site, 2) Tap 'Arrive Office' when you reach the office, 3) Then punch out.",
-          400
-        );
-      }
+      if (actuallyTraveled) missingSteps = true;
     }
+
 
 
     // Validate office GPS
