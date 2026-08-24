@@ -25,7 +25,11 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (!session) return errorResponse("Session not found", 404);
     if (session.work_end_time) return errorResponse("Session already ended", 400);
-    if (!session.break_start_time) return errorResponse("Break was never started", 400);
+    // Never block: if no break is open, report success so the worker isn't stuck.
+    if (!session.break_start_time) {
+      return jsonResponse({ success: true, timestamp: now, added_break_minutes: 0, deduped: true });
+    }
+
     if (session.break_end_time) {
       return jsonResponse({ success: true, timestamp: session.break_end_time, deduped: true });
     }
