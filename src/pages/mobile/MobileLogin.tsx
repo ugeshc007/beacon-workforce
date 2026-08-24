@@ -34,7 +34,7 @@ export default function MobileLogin() {
       toast({
         title: "Login failed",
         description: error.message,
-        variant: "destructive",
+        variant: "info",
       });
       import("@/lib/error-logger").then(({ logMobileError }) =>
         logMobileError({ category: "auth", action: "sign-in", message: error.message, context: { email } })

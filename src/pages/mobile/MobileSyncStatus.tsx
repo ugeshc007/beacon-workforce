@@ -29,6 +29,7 @@ import {
 } from "@/lib/offline-daily-logs";
 import { syncPendingActions, onSyncChange, getSyncDiagnostics, type SyncDiagnostics } from "@/lib/offline-sync";
 import { useToast } from "@/hooks/use-toast";
+import { userNoticeToast } from "@/lib/action-error";
 
 type Tab = "pending" | "failed" | "synced";
 
@@ -110,11 +111,7 @@ export default function MobileSyncStatus() {
 
   const handleSyncAll = async () => {
     if (!online) {
-      toast({
-        title: "Still offline",
-        description: "Connect to the internet to sync.",
-        variant: "destructive",
-      });
+      toast(userNoticeToast("Still offline", "Connect to the internet to sync."));
       return;
     }
     toast({ title: "Syncing…" });
