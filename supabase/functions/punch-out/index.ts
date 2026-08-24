@@ -130,11 +130,16 @@ Deno.serve(async (req) => {
     const lateClose = ageMs > 12 * 60 * 60 * 1000;
 
 
+    const staleNote = staleClientTime
+      ? "Punch-out device time was before punch-in (stale offline replay) — server time used; admin can adjust"
+      : null;
+
     const { error } = await supabase
       .from("attendance_logs")
       .update({
-        office_punch_out: now,
+        office_punch_out: effectiveNow,
         ...(lateClose ? { is_incomplete_process: true, notes: "Punched out late — shift open more than 12h; admin can adjust times" } : {}),
+        ...(staleNote ? { is_incomplete_process: true, notes: staleNote } : {}),
         office_punch_out_lat: hasGps ? lat : null,
         office_punch_out_lng: hasGps ? lng : null,
         office_punch_out_accuracy: accuracy ?? null,
@@ -148,7 +153,7 @@ Deno.serve(async (req) => {
     // Close any still-open work sessions on this shift so nothing dangles.
     await supabase
       .from("project_work_sessions")
-      .update({ work_end_time: now, status: "completed" })
+      .update({ work_end_time: effectiveNow, status: "completed" })
       .eq("attendance_log_id", log.id)
       .is("work_end_time", null);
 
@@ -157,8 +162,10 @@ Deno.serve(async (req) => {
       attendance_id: log.id,
       gps_valid: valid,
       distance_meters: Math.round(distance),
-      timestamp: now,
+      timestamp: effectiveNow,
+      stale_client_time: staleClientTime,
     });
+
   } catch (err) {
     return errorResponse(err, 500);
   }
