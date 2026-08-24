@@ -36,29 +36,36 @@ type ErrorRow = {
 
 const CATEGORIES = ["all", "auth", "punch", "workflow", "site_visit", "daily_log", "sync", "gps", "network", "unknown"];
 
+/** A row is an activity entry (successful action) when the logger tagged it so. */
+const isSuccessRow = (r: ErrorRow) => (r.context as any)?.outcome === "success";
+
 export default function ErrorAudit() {
   const qc = useQueryClient();
   const [category, setCategory] = useState<string>("all");
-  const [status, setStatus] = useState<"all" | "unreviewed" | "reviewed">("unreviewed");
+  const [status, setStatus] = useState<"all" | "unreviewed" | "reviewed">("all");
+  const [outcome, setOutcome] = useState<"all" | "failure" | "success">("all");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<ErrorRow | null>(null);
 
   const { data: rows = [], isLoading, refetch } = useQuery({
-    queryKey: ["error-logs", category, status],
+    queryKey: ["error-logs", category, status, outcome],
     queryFn: async () => {
       let q = (supabase.from("error_logs") as any)
         .select("*, employees:employee_id(name, employee_code)")
         .eq("source", "mobile")
         .order("created_at", { ascending: false })
-        .limit(500);
+        .limit(1000);
       if (category !== "all") q = q.eq("category", category);
       if (status === "unreviewed") q = q.eq("reviewed", false);
       if (status === "reviewed") q = q.eq("reviewed", true);
+      if (outcome === "success") q = q.eq("severity", "info");
+      if (outcome === "failure") q = q.neq("severity", "info");
       const { data, error } = await q;
       if (error) throw error;
       return (data ?? []) as ErrorRow[];
     },
   });
+
 
   // Look up all referenced projects so we can label In-House vs Site.
   const projectIds = useMemo(() => {
