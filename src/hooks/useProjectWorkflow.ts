@@ -1,3 +1,4 @@
+import { isOnline } from "@/lib/connectivity";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useMobileAuth } from "@/hooks/useMobileAuth";
@@ -53,7 +54,7 @@ export function useProjectWorkflow(projectId: string | null, dateOverride?: stri
     }
     setLocationLoading(true);
     // Offline → hydrate from cache, don't try the network
-    if (!navigator.onLine) {
+    if (!isOnline()) {
       try {
         const cached = workLocCacheKey ? localStorage.getItem(workLocCacheKey) : null;
         if (cached) setAssignmentLocation(JSON.parse(cached));
@@ -104,7 +105,7 @@ export function useProjectWorkflow(projectId: string | null, dateOverride?: stri
         if (cached) setProjectHasCoords(JSON.parse(cached));
       } catch { /* ignore */ }
     }
-    if (!navigator.onLine) return;
+    if (!isOnline()) return;
     let cancelled = false;
     (async () => {
       const { data } = await supabase
@@ -142,7 +143,7 @@ export function useProjectWorkflow(projectId: string | null, dateOverride?: stri
     if (!hasLoadedRef.current) setLoading(true);
 
     // Offline → hydrate from localStorage cache, never overwrite with null
-    if (!navigator.onLine) {
+    if (!isOnline()) {
       try {
         const cached = sessionCacheKey ? localStorage.getItem(sessionCacheKey) : null;
         if (cached) {
@@ -252,7 +253,7 @@ export function useProjectWorkflow(projectId: string | null, dateOverride?: stri
       // queued offline, keep project_id + date in the payload so the sync
       // engine can resolve the session after replaying the earlier action.
       let sid = session?.id;
-      if (!sid && employee && projectId && navigator.onLine) {
+      if (!sid && employee && projectId && isOnline()) {
         try {
           const yesterday = new Date(new Date(today + "T00:00:00").getTime() - 86_400_000)
             .toISOString()
@@ -276,7 +277,7 @@ export function useProjectWorkflow(projectId: string | null, dateOverride?: stri
         body.session_id = sid;
       } else if (action === "start_work" && workLocation === "in_house") {
         // In-house mode starts by creating the project session from project_id.
-      } else if (!navigator.onLine) {
+      } else if (!isOnline()) {
         // Offline site flow: session_id will be resolved during sync.
       } else {
         setActionLoading(false);
@@ -290,7 +291,7 @@ export function useProjectWorkflow(projectId: string | null, dateOverride?: stri
     setActionLoading(false);
 
     // Offline path — queue immediately, keep optimistic UI, sync later.
-    if (!navigator.onLine) {
+    if (!isOnline()) {
       try {
         await enqueueAction({
           action_type: queueTypeMap[action],

@@ -21,10 +21,16 @@
   <meta name="twitter:title" content="BeBright Planner — Workforce Management">
   <meta property="og:description" content="BeBright Planner workforce and project management platform for LED wall and digital display installation services.">
   <meta name="twitter:description" content="BeBright Planner workforce and project management platform for LED wall and digital display installation services.">
+  <meta name="theme-color" content="#0F172A" />
+  <style>
+    /* Avoids the black flash while the WebView repaints after unlocking */
+    html, body, #root { background-color: #0F172A; }
+  </style>
 </head>
 
   <body>
     <div id="root"></div>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

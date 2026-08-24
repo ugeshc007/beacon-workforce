@@ -1,3 +1,4 @@
+import { isOnline } from "@/lib/connectivity";
 import { toLocalDateStr } from "@/lib/utils";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -60,7 +61,7 @@ export function useMobileWorkflow() {
     const cacheKeyLog = `attendance_${employee.id}_${today}`;
 
     // OFFLINE: hydrate from cache
-    if (!navigator.onLine) {
+    if (!isOnline()) {
       const [cachedAssignment, cachedLog] = await Promise.all([
         getCachedData<TodayAssignment | null>(cacheKeyAssignment),
         getCachedData<AttendanceLog | null>(cacheKeyLog),
@@ -236,7 +237,7 @@ export function useMobileWorkflow() {
     };
 
     // If offline → queue immediately, don't even try the network call
-    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    if (!isOnline()) {
       await enqueueAction({ action_type: action, payload: body, timestamp: clientTimestamp });
       setActionLoading(false);
       toast({ title: "Saved offline", description: "Will sync when you're back online." });
@@ -252,7 +253,7 @@ export function useMobileWorkflow() {
       // Network-style failure → queue for later. Keep optimistic step.
       const msg = (e?.message || "").toLowerCase();
       const isNetwork = msg.includes("network") || msg.includes("fetch") || msg.includes("failed to") || msg.includes("timeout");
-      if (isNetwork || typeof navigator !== "undefined" && !navigator.onLine) {
+      if (isNetwork || !isOnline()) {
         await enqueueAction({ action_type: action, payload: body, timestamp: clientTimestamp });
         toast({ title: "Saved offline", description: "Will sync when connection returns." });
         // Try a background sync attempt shortly in case the blip cleared

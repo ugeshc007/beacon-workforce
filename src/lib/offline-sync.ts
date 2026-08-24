@@ -5,6 +5,7 @@
  */
 
 import { invokeEdge } from "@/lib/invoke-edge";
+import { isOnline } from "@/lib/connectivity";
 import {
   QueuedAction,
   getQueue,
@@ -524,7 +525,17 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
  * Fire both the action queue and the daily-log queue.
  * Called from every reconnect signal so the two stay in lockstep.
  */
+let lastFlushAt = 0;
+const FLUSH_MIN_GAP_MS = 5000;
+
 function flushAllQueues(trigger: string) {
+  // Resume fires several signals at once (visibilitychange + native:resume +
+  // networkStatusChange). Without this gate they all start a queue pass and the
+  // UI thread is busy re-sending the same actions right when the user unlocks.
+  const now = Date.now();
+  if (trigger !== "manual" && now - lastFlushAt < FLUSH_MIN_GAP_MS) return;
+  lastFlushAt = now;
+
   syncPendingActions(trigger).catch(console.error);
   import("@/lib/offline-daily-logs")
     .then((m) => m.syncPendingDailyLogs().catch(console.error))
@@ -545,6 +556,7 @@ export function flushQueueNow(trigger: string = "layout:mount") {
  */
 export function initAutoSync(): () => void {
   const onlineHandler = () => flushAllQueues("browser:online");
+  // Skip work entirely while offline so nothing blocks on dead sockets.
   const visHandler = () => { if (document.visibilityState === "visible") flushAllQueues("visibilitychange"); };
 
   window.addEventListener("online", onlineHandler);
@@ -579,7 +591,7 @@ export function initAutoSync(): () => void {
       const status = await Network.getStatus();
       if (status.connected) flushAllQueues("poll");
     } catch {
-      if (navigator.onLine) flushAllQueues("poll");
+      if (isOnline()) flushAllQueues("poll");
     }
   }, 30000);
 

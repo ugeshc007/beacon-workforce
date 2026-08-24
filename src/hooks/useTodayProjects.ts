@@ -1,3 +1,4 @@
+import { isOnline } from "@/lib/connectivity";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,7 +42,7 @@ export function useTodayProjects() {
     if (!employee) return;
     let channel: ReturnType<typeof supabase.channel> | null = null;
     const subscribe = () => {
-      if (typeof navigator !== "undefined" && navigator.onLine === false) return;
+      if (!isOnline()) return;
       if (channel) return;
       channel = supabase
         .channel(`today-assignments-${employee.id}`)
@@ -121,7 +122,7 @@ export function useTodayProjects() {
 
       // Offline → return last cached snapshot immediately, with per-project
       // session cache overlaid so offline-completed projects show as done.
-      if (!navigator.onLine && cacheKey) {
+      if (!isOnline() && cacheKey) {
         const cached = await getCachedData<TodayProject[]>(cacheKey);
         return overlaySessionCache(cached?.data ?? []);
       }
