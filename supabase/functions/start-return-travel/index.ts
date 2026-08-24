@@ -42,9 +42,29 @@ Deno.serve(async (req) => {
         .eq("date", log.date);
 
       const sess = sessions ?? [];
-      if (sess.length === 0) return errorResponse("Must end work first", 400);
-      const allDone = sess.every((s: any) => s.status === "completed" && s.work_end_time);
-      if (!allDone) return errorResponse("Finish all projects before returning to office", 400);
+      // Never block the return to office. Any project session still open is
+      // auto-closed now and the shift is flagged so an admin can fix the times.
+      const openIds = sess
+        .filter((s: any) => !s.work_end_time || s.status !== "completed")
+        .map((s: any) => s.id)
+        .filter(Boolean);
+      let incompleteFlag = false;
+      if (openIds.length > 0) {
+        incompleteFlag = true;
+        await supabase
+          .from("project_work_sessions")
+          .update({
+            work_end_time: now,
+            status: "completed",
+            notes: "Auto-closed on return travel — steps missing, admin can adjust times",
+          })
+          .in("id", openIds);
+        for (const s of sess as any[]) {
+          if (!s.work_end_time) s.work_end_time = now;
+          s.status = "completed";
+        }
+      }
+
 
       const sum = (k: string) => sess.reduce((a: number, s: any) => a + Number(s[k] ?? 0), 0);
       // Use latest project work_end_time as office work_end_time so it doesn't
