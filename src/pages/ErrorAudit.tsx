@@ -244,7 +244,7 @@ export default function ErrorAudit() {
             {isLoading ? (
               <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
             ) : filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No errors 🎉</TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No activity recorded</TableCell></TableRow>
             ) : (
               filtered.map((r) => {
                 const proj = projectFor(r);
