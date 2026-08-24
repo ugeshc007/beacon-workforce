@@ -16,7 +16,7 @@ import {
   removeAction,
 } from "@/lib/offline-queue";
 
-const MAX_RETRIES = 3;
+const MAX_RETRIES = 5;
 const BASE_DELAY_MS = 2000;
 /**
  * Queued actions older than this are discarded instead of replayed. A stale
@@ -448,6 +448,13 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
           } else {
             await markError(item.local_id, msg);
             failed++;
+            try {
+              const { toast } = await import("sonner");
+              toast.error("Couldn't save to the server", {
+                description: "Your work is stored on this phone. It will be sent automatically when the connection is back — check Sync Status.",
+                duration: 8000,
+              });
+            } catch { /* noop */ }
             try {
               const { logMobileError } = await import("@/lib/error-logger");
               logMobileError({

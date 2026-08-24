@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { friendlyAuthMessage } from "@/lib/action-error";
 import { Loader2, Zap, Eye, EyeOff } from "lucide-react";
 
 export default function Login() {
@@ -32,7 +33,7 @@ export default function Login() {
     if (error) {
       toast({
         title: "Login failed",
-        description: error.message,
+        description: friendlyAuthMessage(error.message),
         variant: "destructive",
       });
       setIsLoading(false);
