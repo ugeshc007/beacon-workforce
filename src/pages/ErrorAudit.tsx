@@ -285,12 +285,17 @@ export default function ErrorAudit() {
                     <div className="text-[10px]">{r.platform} · {r.network_state}</div>
                   </TableCell>
                   <TableCell>
-                    {r.reviewed ? (
+                    {isSuccessRow(r) ? (
+                      <Badge className="text-xs bg-green-500/15 text-green-500 border-green-500/30" variant="outline">
+                        Success
+                      </Badge>
+                    ) : r.reviewed ? (
                       <Badge variant="outline" className="text-xs">Reviewed</Badge>
                     ) : (
-                      <Badge variant="destructive" className="text-xs">New</Badge>
+                      <Badge variant="destructive" className="text-xs">Failed</Badge>
                     )}
                   </TableCell>
+
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     {!r.reviewed && (
                       <Button size="sm" variant="ghost" onClick={() => markReviewed.mutate([r.id])}>
