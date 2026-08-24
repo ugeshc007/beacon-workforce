@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
     if (!log.work_end_time) {
       const { data: sessions } = await supabase
         .from("project_work_sessions")
-        .select("work_end_time, total_work_minutes, overtime_minutes, regular_cost, overtime_cost, break_minutes, status")
+        .select("id, work_end_time, total_work_minutes, overtime_minutes, regular_cost, overtime_cost, break_minutes, status")
         .eq("employee_id", employee_id)
         .eq("date", log.date);
 
