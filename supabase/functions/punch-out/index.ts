@@ -112,8 +112,23 @@ Deno.serve(async (req) => {
       }
     }
 
-    const ageMs = log.office_punch_in ? new Date(now).getTime() - new Date(log.office_punch_in).getTime() : 0;
+    // Guard against stale offline replays: a queued punch-out can carry a
+    // client_timestamp from days ago. If it is at/earlier than punch-in (or
+    // absurdly far from it), ignore the device time and use server time.
+    let effectiveNow = now;
+    let staleClientTime = false;
+    if (log.office_punch_in) {
+      const inMs = new Date(log.office_punch_in).getTime();
+      const outMs = new Date(effectiveNow).getTime();
+      if (outMs <= inMs) {
+        effectiveNow = nowTimestamp();
+        staleClientTime = true;
+      }
+    }
+
+    const ageMs = log.office_punch_in ? new Date(effectiveNow).getTime() - new Date(log.office_punch_in).getTime() : 0;
     const lateClose = ageMs > 12 * 60 * 60 * 1000;
+
 
     const { error } = await supabase
       .from("attendance_logs")
