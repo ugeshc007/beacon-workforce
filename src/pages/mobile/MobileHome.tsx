@@ -10,6 +10,8 @@ import { initAutoSync } from "@/lib/offline-sync";
 import { getCachedData } from "@/lib/offline-queue";
 import { HoldToConfirm } from "@/components/mobile/HoldToConfirm";
 import { RetroTimeDialog } from "@/components/mobile/RetroTimeDialog";
+import { UnstartedTasksDialog } from "@/components/mobile/UnstartedTasksDialog";
+
 import { officeActionTimeHints } from "@/lib/retro-time";
 
 
