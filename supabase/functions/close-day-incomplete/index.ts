@@ -130,7 +130,13 @@ Deno.serve(async (req) => {
       .is("work_end_time", null);
 
     for (const s of pws ?? []) {
+      // Still in progress right now? leave it alone.
+      if (!isIdle([s.travel_start_time, s.site_arrival_time, s.work_start_time, s.break_start_time], nowMs)) {
+        result.project_sessions_skipped_active++;
+        continue;
+      }
       const closeAt = s.work_start_time ?? s.site_arrival_time ?? s.travel_start_time ?? nowIso;
+
       const update: Record<string, unknown> = {
         work_end_time: closeAt,
         status: "incomplete",
