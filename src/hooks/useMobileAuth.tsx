@@ -19,6 +19,8 @@ interface MobileAuthContextType {
   session: Session | null;
   employee: EmployeeUser | null;
   loading: boolean;
+  authError: string | null;
+  retryAuth: () => void;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
@@ -59,6 +61,8 @@ export function MobileAuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [employee, setEmployee] = useState<EmployeeUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authAttempt, setAuthAttempt] = useState(0);
 
   const fetchEmployee = useCallback(async (authId: string): Promise<EmployeeUser | null> => {
     // Offline → use cache immediately, no network attempt
@@ -95,8 +99,15 @@ export function MobileAuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const retryAuth = useCallback(() => {
+    setAuthError(null);
+    setLoading(true);
+    setAuthAttempt((n) => n + 1);
+  }, []);
+
   useEffect(() => {
     let mounted = true;
+    setAuthError(null);
 
     // Never sit on a blank spinner: if the session/profile call hangs on a weak
     // connection, give up after 8s, surface an error and let the user retry.
@@ -160,7 +171,7 @@ export function MobileAuthProvider({ children }: { children: ReactNode }) {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [fetchEmployee]);
+  }, [fetchEmployee, authAttempt]);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -181,7 +192,7 @@ export function MobileAuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <MobileAuthContext.Provider value={{ session, employee, loading, signIn, signOut }}>
+    <MobileAuthContext.Provider value={{ session, employee, loading, authError, retryAuth, signIn, signOut }}>
       {children}
     </MobileAuthContext.Provider>
   );

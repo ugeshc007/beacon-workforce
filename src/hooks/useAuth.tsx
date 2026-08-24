@@ -18,6 +18,8 @@ interface AuthContextType {
   session: Session | null;
   user: AuthUser | null;
   loading: boolean;
+  authError: string | null;
+  retryAuth: () => void;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   isSuperAdmin: boolean;
@@ -33,6 +35,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authAttempt, setAuthAttempt] = useState(0);
 
   const fetchUserProfile = async (authUser: User): Promise<AuthUser | null> => {
     try {
@@ -89,15 +93,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+    setAuthError(null);
+
+    // Hard timeout so a slow/failed profile fetch can never leave the app
+    // stuck on an endless loading spinner.
+    const timer = setTimeout(() => {
+      if (!mounted) return;
+      setLoading(false);
+      setAuthError("Couldn't load your account — check your connection.");
+    }, 8000);
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!mounted) return;
       setSession(session);
       if (session?.user) {
         const profile = await fetchUserProfile(session.user);
-        if (mounted) setUser(profile);
+        if (mounted) {
+          setUser(profile);
+          if (!profile) setAuthError("Couldn't load your account — check your connection.");
+        }
       }
-      if (mounted) setLoading(false);
+      if (mounted) {
+        clearTimeout(timer);
+        setLoading(false);
+      }
+    }).catch(() => {
+      if (!mounted) return;
+      clearTimeout(timer);
+      setLoading(false);
+      setAuthError("Couldn't load your account — check your connection.");
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -118,9 +142,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       mounted = false;
+      clearTimeout(timer);
       subscription.unsubscribe();
     };
-  }, []);
+  }, [authAttempt]);
+
+  const retryAuth = () => {
+    setAuthError(null);
+    setLoading(true);
+    setAuthAttempt((n) => n + 1);
+  };
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -138,6 +169,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         session,
         user,
+        authError,
+        retryAuth,
         loading,
         signIn,
         signOut,
