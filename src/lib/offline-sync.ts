@@ -240,7 +240,31 @@ export async function syncPendingActions(trigger: string = "manual"): Promise<{ 
       if (mutated) await saveQueue(q0);
     }
 
+    // Drop actions that have been sitting in the queue too long — replaying
+    // them would stamp an old time onto the current shift.
+    const rawQueue = await getQueue();
+    const nowMs = Date.now();
+    for (const it of rawQueue) {
+      if (it.sync_status === "synced") continue;
+      const t = Date.parse(it.timestamp);
+      if (!Number.isNaN(t) && nowMs - t > MAX_QUEUED_AGE_MS) {
+        await removeAction(it.local_id);
+        try {
+          const { logMobileError } = await import("@/lib/error-logger");
+          logMobileError({
+            category: "sync",
+            action: it.action_type,
+            severity: "warning",
+            message: `Discarded stale queued action (queued ${it.timestamp})`,
+            error_code: "stale_queued_action",
+            context: { local_id: it.local_id },
+          });
+        } catch { /* noop */ }
+      }
+    }
+
     const queue = await getQueue();
+
     const pending = queue
       .map((item, index) => ({ item, index }))
       .filter(({ item }) => item.sync_status === "pending" || item.sync_status === "error")
