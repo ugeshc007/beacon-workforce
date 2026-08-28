@@ -36,28 +36,6 @@ function diffMinutes(start: Date, end: Date): number {
   return Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
 }
 
-function earliestDate(values: (string | null | undefined)[]): Date | null {
-  let min: Date | null = null;
-  for (const v of values) {
-    if (!v) continue;
-    const d = new Date(v);
-    if (isNaN(d.getTime())) continue;
-    if (!min || d < min) min = d;
-  }
-  return min;
-}
-
-function latestDate(values: (string | null | undefined)[]): Date | null {
-  let max: Date | null = null;
-  for (const v of values) {
-    if (!v) continue;
-    const d = new Date(v);
-    if (isNaN(d.getTime())) continue;
-    if (!max || d > max) max = d;
-  }
-  return max;
-}
-
 /**
  * Computes worked minutes across ANY work stage:
  * office punch-in/out, travel, site arrival, work start/end, return travel.
