@@ -647,7 +647,7 @@ export default function MobileHome() {
       {/* Resume in-progress project */}
       {step !== "idle" && step !== "punched_out" && !isDriverDay && activeProject && (
         <button
-          onClick={() => navigate(`/m/project/${activeProject.projectId}`)}
+          onClick={() => navigate(`/m/project/${activeProject.projectId}${activeProject.isOvernightCarry ? `?date=${activeProject.date}` : ""}`)}
           className="rounded-xl border border-brand/50 bg-brand/10 p-4 text-left transition-colors hover:bg-brand/15"
         >
           <div className="flex items-center gap-3">
