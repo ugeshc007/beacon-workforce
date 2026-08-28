@@ -1,5 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  getEffectiveWorkedMinutes,
+  getEffectiveTravelMinutes,
+  getEffectiveIdleMinutes,
+  getEffectiveOvertimeMinutes,
+} from "@/lib/timesheet-display";
 
 /** Count working days between two ISO dates (excludes Fridays for UAE) */
 function countWorkingDays(start: string, end: string) {
@@ -189,8 +195,12 @@ export function useUtilizationData(start: string, end: string, filters?: {
         const weekKey = sun.toISOString().slice(0, 10);
         if (!weeklyMap.has(weekKey)) weeklyMap.set(weekKey, { regular: 0, ot: 0 });
         const w = weeklyMap.get(weekKey)!;
-        const otMin = l.overtime_minutes ?? 0;
-        const regMin = Math.max(0, (l.total_work_minutes ?? 0) - otMin);
+        const daySessions = sessionsByKey.get(`${l.employee_id}|${l.date}`) ?? null;
+        const worked = getEffectiveWorkedMinutes(l, daySessions);
+        const otMin = l.overtime_minutes && l.overtime_minutes > 0
+          ? l.overtime_minutes
+          : getEffectiveOvertimeMinutes(l, daySessions, stdHoursByEmp.get(l.employee_id) ?? 8);
+        const regMin = Math.max(0, worked - otMin);
         w.regular += regMin;
         w.ot += otMin;
       }
