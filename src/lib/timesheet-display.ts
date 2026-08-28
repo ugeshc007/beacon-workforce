@@ -65,53 +65,9 @@ function latestDate(values: (string | null | undefined)[]): Date | null {
  * Subtracts break minutes when known.
  */
 export function getDisplayWorkedMinutes(log: TimesheetDisplayLog, now: Date = new Date()): number {
-  const storedMinutes = log.total_work_minutes ?? 0;
-  if (storedMinutes > 0) return storedMinutes;
-
-  const isToday = !!log.date && log.date === getUaeDateKey(now);
-
-  const start = earliestDate([
-    log.office_punch_in,
-    log.travel_start_time,
-    log.site_arrival_time,
-    log.work_start_time,
-  ]);
-
-  if (!start) return storedMinutes;
-
-  const end = latestDate([
-    log.office_punch_out,
-    log.return_travel_start_time,
-    log.work_end_time,
-    log.break_end_time,
-    log.break_start_time,
-    log.office_arrival_time,
-  ]);
-
-  let endTime: Date | null = end;
-  if (!endTime || endTime <= start) {
-    endTime = isToday ? now : null;
-  }
-  if (!endTime) return storedMinutes;
-
-  let minutes = diffMinutes(start, endTime);
-
-  // Determine break to deduct: use recorded break if any, otherwise default 60 min
-  // (org standard: 1 hour unpaid break per shift)
-  const DEFAULT_BREAK_MIN = 60;
-  let breakMin = log.break_minutes ?? 0;
-  if (!breakMin && log.break_start_time && log.break_end_time) {
-    const bs = new Date(log.break_start_time);
-    const be = new Date(log.break_end_time);
-    if (!isNaN(bs.getTime()) && !isNaN(be.getTime()) && be > bs) {
-      breakMin = diffMinutes(bs, be);
-    }
-  }
-  const deduct = Math.max(breakMin, DEFAULT_BREAK_MIN);
-  // Only deduct if shift is long enough to warrant a break
-  if (minutes > deduct) minutes -= deduct;
-
-  return minutes;
+  // Delegates to the canonical rule below: work_start → work_end minus breaks,
+  // with presence as a last-resort fallback. Kept for call-site compatibility.
+  return getEffectiveWorkedMinutes(log, null, now);
 }
 
 /**
@@ -208,43 +164,7 @@ export function getWorkedMinutesWithSessions(
   sessions?: TimesheetDisplaySession[] | null,
   now: Date = new Date(),
 ): number {
-  const base = getDisplayWorkedMinutes(log, now);
-  if (base > 0) return base;
-  if (!sessions?.length) return base;
-
-  const start = earliestDate(
-    sessions.flatMap((s) => [s.travel_start_time, s.site_arrival_time, s.work_start_time]),
-  );
-  const end = latestDate(
-    sessions.flatMap((s) => [
-      s.work_end_time,
-      s.return_travel_start_time,
-      s.office_arrival_time,
-      s.break_end_time,
-    ]),
-  );
-  if (!start || !end || end <= start) return base;
-
-  let breakMin = 0;
-  for (const s of sessions) {
-    if (s.break_minutes && s.break_minutes > 0) {
-      breakMin += s.break_minutes;
-    } else if (s.break_start_time && s.break_end_time) {
-      const bs = new Date(s.break_start_time);
-      const be = new Date(s.break_end_time);
-      if (!isNaN(bs.getTime()) && !isNaN(be.getTime()) && be > bs) breakMin += diffMinutes(bs, be);
-    }
-  }
-
-  return getDisplayWorkedMinutes(
-    {
-      date: log.date,
-      work_start_time: start.toISOString(),
-      work_end_time: end.toISOString(),
-      break_minutes: breakMin || null,
-    },
-    now,
-  );
+  return getEffectiveWorkedMinutes(log, sessions, now);
 }
 
 /** Overtime derived from session-aware worked minutes. */
@@ -348,9 +268,18 @@ export function getEffectiveWorkedMinutes(
   // 3. Server-computed value.
   if (log.total_work_minutes && log.total_work_minutes > 0) return log.total_work_minutes;
 
-  // 4. Last resort: presence minus recorded break (no work stamps at all).
+  // 4. Last resort: presence minus break (no work stamps at all). Same >8h
+  //    minimum-break rule applies.
   const presence = spanMinutes(log.office_punch_in, log.office_punch_out);
-  if (presence > 0) return Math.max(0, presence - recordedBreakMinutes(log));
+  if (presence > 0) {
+    let deduct = recordedBreakMinutes(log);
+    if (presence > 480) deduct = Math.max(deduct, 60);
+    return Math.max(0, presence - deduct);
+  }
+  // Still running today with only a punch-in? Count elapsed presence.
+  if (isToday && log.office_punch_in && !log.office_punch_out) {
+    return spanMinutes(log.office_punch_in, now.toISOString());
+  }
   return 0;
 }
 
