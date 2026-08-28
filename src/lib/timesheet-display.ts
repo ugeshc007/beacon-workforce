@@ -260,3 +260,149 @@ export function getOvertimeMinutesWithSessions(
   const stdMin = Math.round((standardHoursPerDay || 8) * 60);
   return Math.max(0, worked - stdMin);
 }
+
+/* ──────────────────────────────────────────────────────────────
+ * CANONICAL WORKED / TRAVEL / IDLE RULE
+ * Single source of truth shared by reports, drawers and dashboards.
+ *
+ *   Working time  = work_start → work_end, minus recorded breaks.
+ *                   (Preferred from project work sessions; falls back to the
+ *                    parent attendance log's own work stamps.)
+ *   Travel time   = travel_start → site_arrival  +  return_travel → office_arrival
+ *   Idle time     = presence (punch-in → punch-out) − working − travel − break
+ *
+ * Anything that is neither working nor travel nor break is IDLE — it is never
+ * counted as working hours.
+ * ────────────────────────────────────────────────────────────── */
+
+function spanMinutes(start?: string | null, end?: string | null): number {
+  if (!start || !end) return 0;
+  const a = new Date(start).getTime();
+  const b = new Date(end).getTime();
+  if (isNaN(a) || isNaN(b) || b <= a) return 0;
+  return Math.round((b - a) / 60000);
+}
+
+function recordedBreakMinutes(s: TimesheetDisplaySession | TimesheetDisplayLog): number {
+  if (s.break_minutes && s.break_minutes > 0) return s.break_minutes;
+  return spanMinutes(s.break_start_time, s.break_end_time);
+}
+
+/**
+ * Working minutes of a single work-stamp source (session or log):
+ * work_start → work_end minus recorded break. Returns null when there is no
+ * usable work_start (so callers can fall through to the next source).
+ * An open work_start on today's row counts up to `now`.
+ */
+function workStampMinutes(
+  s: TimesheetDisplaySession | TimesheetDisplayLog,
+  isToday: boolean,
+  now: Date,
+): number | null {
+  if (!s.work_start_time) return null;
+  const end = s.work_end_time ?? (isToday ? now.toISOString() : null);
+  if (!end) return null;
+  const gross = spanMinutes(s.work_start_time, end);
+  if (gross <= 0) return null;
+  return Math.max(0, gross - recordedBreakMinutes(s));
+}
+
+/**
+ * Effective working minutes for one attendance log.
+ * Priority: project work sessions' work stamps → the log's own work stamps →
+ * stored total_work_minutes → presence (punch-in → punch-out) minus break.
+ */
+export function getEffectiveWorkedMinutes(
+  log: TimesheetDisplayLog,
+  sessions?: TimesheetDisplaySession[] | null,
+  now: Date = new Date(),
+): number {
+  const isToday = !!log.date && log.date === getUaeDateKey(now);
+
+  // 1. Per-project sessions are the authoritative record of actual work.
+  if (sessions?.length) {
+    let total = 0;
+    let found = false;
+    for (const s of sessions) {
+      const m = workStampMinutes(s, isToday, now);
+      if (m != null) {
+        total += m;
+        found = true;
+      } else if (s.total_work_minutes && s.total_work_minutes > 0) {
+        total += s.total_work_minutes;
+        found = true;
+      }
+    }
+    if (found) return total;
+  }
+
+  // 2. The log's own work stamps (in-house flow writes these directly).
+  const own = workStampMinutes(log, isToday, now);
+  if (own != null) return own;
+
+  // 3. Server-computed value.
+  if (log.total_work_minutes && log.total_work_minutes > 0) return log.total_work_minutes;
+
+  // 4. Last resort: presence minus recorded break (no work stamps at all).
+  const presence = spanMinutes(log.office_punch_in, log.office_punch_out);
+  if (presence > 0) return Math.max(0, presence - recordedBreakMinutes(log));
+  return 0;
+}
+
+/** Travel minutes (outbound + return), from sessions when present. */
+export function getEffectiveTravelMinutes(
+  log: TimesheetDisplayLog,
+  sessions?: TimesheetDisplaySession[] | null,
+): number {
+  let travel = 0;
+  if (sessions?.length) {
+    for (const s of sessions) {
+      travel += spanMinutes(s.travel_start_time, s.site_arrival_time);
+      travel += spanMinutes(s.return_travel_start_time, s.office_arrival_time);
+    }
+  }
+  if (travel > 0) return travel;
+  return spanMinutes(log.travel_start_time, log.site_arrival_time)
+    + spanMinutes(log.return_travel_start_time, log.office_arrival_time);
+}
+
+/** Break minutes for the day (sessions when present, else the log). */
+export function getEffectiveBreakMinutes(
+  log: TimesheetDisplayLog,
+  sessions?: TimesheetDisplaySession[] | null,
+): number {
+  if (sessions?.length) {
+    const total = sessions.reduce((sum, s) => sum + recordedBreakMinutes(s), 0);
+    if (total > 0) return total;
+  }
+  return recordedBreakMinutes(log);
+}
+
+/**
+ * Idle minutes = presence − working − travel − break.
+ * Zero when the shift has no closed presence window.
+ */
+export function getEffectiveIdleMinutes(
+  log: TimesheetDisplayLog,
+  sessions?: TimesheetDisplaySession[] | null,
+  now: Date = new Date(),
+): number {
+  const presence = spanMinutes(log.office_punch_in, log.office_punch_out);
+  if (presence <= 0) return 0;
+  const worked = getEffectiveWorkedMinutes(log, sessions, now);
+  const travel = getEffectiveTravelMinutes(log, sessions);
+  const breakMin = getEffectiveBreakMinutes(log, sessions);
+  return Math.max(0, presence - worked - travel - breakMin);
+}
+
+/** Overtime against the employee's standard day, from effective worked time. */
+export function getEffectiveOvertimeMinutes(
+  log: TimesheetDisplayLog,
+  sessions?: TimesheetDisplaySession[] | null,
+  standardHoursPerDay: number = 8,
+  now: Date = new Date(),
+): number {
+  const worked = getEffectiveWorkedMinutes(log, sessions, now);
+  const stdMin = Math.round((standardHoursPerDay || 8) * 60);
+  return Math.max(0, worked - stdMin);
+}
