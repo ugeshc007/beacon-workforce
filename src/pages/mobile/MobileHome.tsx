@@ -807,6 +807,12 @@ export default function MobileHome() {
                         <span className="text-[10px] text-muted-foreground flex items-center gap-1">
                           <Clock className="h-3 w-3" />
                           {p.shiftStart.slice(0, 5)}–{p.shiftEnd.slice(0, 5)}
+                          {p.shiftEnd < p.shiftStart && <span className="text-blue-400">+1d</span>}
+                        </span>
+                      )}
+                      {p.isOvernightCarry && (
+                        <span className="text-[10px] font-medium text-blue-400">
+                          continues from yesterday
                         </span>
                       )}
                       {isDone && projectWorkedMinutes(p) != null && (
