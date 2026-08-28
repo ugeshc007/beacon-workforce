@@ -29,7 +29,12 @@ export interface TodayProject {
   assignedRole: string;
   workLocation: "in_house" | "site" | null;
   task: string | null;
+  /** The assignment's own schedule date (may be yesterday for an overnight shift). */
+  date: string;
+  /** True when this assignment belongs to yesterday and is still running past midnight. */
+  isOvernightCarry: boolean;
 }
+
 
 /** Returns ALL today's project assignments + their session state.
  *  Cached to device storage so the list still shows when the employee is
