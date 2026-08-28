@@ -32,10 +32,6 @@ function getUaeDateKey(date: Date): string {
   return `${values.year}-${values.month}-${values.day}`;
 }
 
-function diffMinutes(start: Date, end: Date): number {
-  return Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
-}
-
 /**
  * Computes worked minutes across ANY work stage:
  * office punch-in/out, travel, site arrival, work start/end, return travel.
