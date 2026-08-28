@@ -83,7 +83,7 @@ export function useUtilizationData(start: string, end: string, filters?: {
         empQuery,
         supabase
           .from("attendance_logs")
-          .select("id, employee_id, date, total_work_minutes, overtime_minutes, break_minutes, break_start_time, break_end_time, work_start_time, work_end_time, office_punch_in, office_punch_out, travel_start_time, site_arrival_time, return_travel_start_time, office_arrival_time")
+          .select("id, employee_id, date, total_work_minutes, overtime_minutes, break_minutes, break_start_time, break_end_time, work_start_time, work_end_time, office_punch_in, office_punch_out, travel_start_time, site_arrival_time, return_travel_start_time, office_arrival_time, derived_worked_minutes, derived_travel_minutes, derived_break_minutes, derived_idle_minutes, derived_overtime_minutes, derived_computed_at")
           .gte("date", start)
           .lte("date", end),
         supabase
@@ -306,7 +306,7 @@ export function useCostData(start: string, end: string, filters?: {
 
       const [logsRes, sessionsRes, expensesRes, projectsRes, branchRes] = await Promise.all([
         supabase.from("attendance_logs")
-          .select("project_id, date, regular_cost, overtime_cost, travel_start_time, site_arrival_time, return_travel_start_time, office_arrival_time")
+          .select("project_id, date, regular_cost, overtime_cost, travel_start_time, site_arrival_time, return_travel_start_time, office_arrival_time, derived_worked_minutes, derived_travel_minutes, derived_break_minutes, derived_idle_minutes, derived_overtime_minutes, derived_computed_at")
           .gte("date", start).lte("date", end),
         supabase.from("project_work_sessions")
           .select("project_id, date, regular_cost, overtime_cost, travel_start_time, site_arrival_time, return_travel_start_time, work_end_time")
@@ -724,7 +724,7 @@ export function useAttendanceReport(start: string, end: string, filters?: { bran
       const [empRes, logsRes, sessRes, branchRes] = await Promise.all([
         empQuery,
         supabase.from("attendance_logs")
-          .select("employee_id, date, total_work_minutes, overtime_minutes, break_minutes, office_punch_in, office_punch_out, travel_start_time, site_arrival_time, work_start_time, break_start_time, break_end_time, work_end_time, return_travel_start_time, office_arrival_time, projects(name)")
+          .select("employee_id, date, total_work_minutes, overtime_minutes, break_minutes, office_punch_in, office_punch_out, travel_start_time, site_arrival_time, work_start_time, break_start_time, break_end_time, work_end_time, return_travel_start_time, office_arrival_time, derived_worked_minutes, derived_travel_minutes, derived_break_minutes, derived_idle_minutes, derived_overtime_minutes, derived_computed_at, projects(name)")
           .gte("date", start).lte("date", end)
           .order("date", { ascending: false }),
         supabase.from("project_work_sessions")

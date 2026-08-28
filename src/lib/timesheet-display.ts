@@ -15,6 +15,23 @@ interface TimesheetDisplayLog {
   break_start_time?: string | null;
   break_end_time?: string | null;
   break_minutes?: number | null;
+  // Stored (backfilled) derived metrics — see the backfill-derived-metrics job.
+  derived_worked_minutes?: number | null;
+  derived_travel_minutes?: number | null;
+  derived_break_minutes?: number | null;
+  derived_idle_minutes?: number | null;
+  derived_overtime_minutes?: number | null;
+  derived_computed_at?: string | null;
+}
+
+/**
+ * Stored derived metrics are trusted only for closed past days: today's row is
+ * still moving, and a still-open shift can be reopened, so those recompute live.
+ */
+function useStored(log: TimesheetDisplayLog, now: Date): boolean {
+  if (!log.derived_computed_at) return false;
+  if (!log.office_punch_out) return false;
+  return !!log.date && log.date !== getUaeDateKey(now);
 }
 
 function getUaeDateKey(date: Date): string {
@@ -216,6 +233,9 @@ export function getEffectiveWorkedMinutes(
   sessions?: TimesheetDisplaySession[] | null,
   now: Date = new Date(),
 ): number {
+  if (useStored(log, now) && log.derived_worked_minutes != null) {
+    return log.derived_worked_minutes;
+  }
   const isToday = !!log.date && log.date === getUaeDateKey(now);
 
   // 1. Per-project sessions are the authoritative record of actual work.
@@ -261,7 +281,11 @@ export function getEffectiveWorkedMinutes(
 export function getEffectiveTravelMinutes(
   log: TimesheetDisplayLog,
   sessions?: TimesheetDisplaySession[] | null,
+  now: Date = new Date(),
 ): number {
+  if (useStored(log, now) && log.derived_travel_minutes != null) {
+    return log.derived_travel_minutes;
+  }
   let travel = 0;
   if (sessions?.length) {
     for (const s of sessions) {
@@ -278,7 +302,11 @@ export function getEffectiveTravelMinutes(
 export function getEffectiveBreakMinutes(
   log: TimesheetDisplayLog,
   sessions?: TimesheetDisplaySession[] | null,
+  now: Date = new Date(),
 ): number {
+  if (useStored(log, now) && log.derived_break_minutes != null) {
+    return log.derived_break_minutes;
+  }
   if (sessions?.length) {
     const total = sessions.reduce((sum, s) => sum + recordedBreakMinutes(s), 0);
     if (total > 0) return total;
@@ -295,6 +323,9 @@ export function getEffectiveIdleMinutes(
   sessions?: TimesheetDisplaySession[] | null,
   now: Date = new Date(),
 ): number {
+  if (useStored(log, now) && log.derived_idle_minutes != null) {
+    return log.derived_idle_minutes;
+  }
   const presence = spanMinutes(log.office_punch_in, log.office_punch_out);
   if (presence <= 0) return 0;
   const worked = getEffectiveWorkedMinutes(log, sessions, now);
@@ -310,6 +341,9 @@ export function getEffectiveOvertimeMinutes(
   standardHoursPerDay: number = 8,
   now: Date = new Date(),
 ): number {
+  if (useStored(log, now) && log.derived_overtime_minutes != null && standardHoursPerDay === 8) {
+    return log.derived_overtime_minutes;
+  }
   const worked = getEffectiveWorkedMinutes(log, sessions, now);
   const stdMin = Math.round((standardHoursPerDay || 8) * 60);
   return Math.max(0, worked - stdMin);
