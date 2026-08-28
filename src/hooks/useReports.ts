@@ -1,5 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  getEffectiveWorkedMinutes,
+  getEffectiveTravelMinutes,
+  getEffectiveIdleMinutes,
+  getEffectiveOvertimeMinutes,
+} from "@/lib/timesheet-display";
 
 /** Count working days between two ISO dates (excludes Fridays for UAE) */
 function countWorkingDays(start: string, end: string) {
@@ -73,11 +79,16 @@ export function useUtilizationData(start: string, end: string, filters?: {
         empQuery = empQuery.eq("skill_type", filters.skillType as "technician" | "helper" | "team_leader");
       }
 
-      const [empRes, logsRes, leaveRes, branchRes] = await Promise.all([
+      const [empRes, logsRes, sessRes, leaveRes, branchRes] = await Promise.all([
         empQuery,
         supabase
           .from("attendance_logs")
-          .select("employee_id, date, total_work_minutes, overtime_minutes, break_minutes, office_punch_in, office_punch_out, travel_start_time, site_arrival_time, return_travel_start_time, office_arrival_time")
+          .select("id, employee_id, date, total_work_minutes, overtime_minutes, break_minutes, break_start_time, break_end_time, work_start_time, work_end_time, office_punch_in, office_punch_out, travel_start_time, site_arrival_time, return_travel_start_time, office_arrival_time")
+          .gte("date", start)
+          .lte("date", end),
+        supabase
+          .from("project_work_sessions")
+          .select("employee_id, date, travel_start_time, site_arrival_time, work_start_time, work_end_time, break_start_time, break_end_time, break_minutes, total_work_minutes, return_travel_start_time, office_arrival_time")
           .gte("date", start)
           .lte("date", end),
         supabase
@@ -90,6 +101,7 @@ export function useUtilizationData(start: string, end: string, filters?: {
 
       const employees = empRes.data ?? [];
       const logs = logsRes.data ?? [];
+      const sessions = sessRes.data ?? [];
       const leaves = leaveRes.data ?? [];
       const branches = branchRes.data ?? [];
 
@@ -98,11 +110,15 @@ export function useUtilizationData(start: string, end: string, filters?: {
         filteredEmps = employees.filter((e) => filters.employeeIds!.includes(e.id));
       }
 
-      const diffMin = (a: string | null, b: string | null) => {
-        if (!a || !b) return 0;
-        const ms = new Date(b).getTime() - new Date(a).getTime();
-        return ms > 0 ? Math.round(ms / 60000) : 0;
-      };
+      // Sessions grouped per (employee, date) — the authoritative work stamps.
+      const sessionsByKey = new Map<string, typeof sessions>();
+      for (const s of sessions) {
+        const key = `${s.employee_id}|${s.date}`;
+        if (!sessionsByKey.has(key)) sessionsByKey.set(key, [] as never);
+        sessionsByKey.get(key)!.push(s);
+      }
+
+      const stdHoursByEmp = new Map(employees.map((e) => [e.id, Number(e.standard_hours_per_day) || 8]));
 
       const logMap = new Map<string, {
         days: Set<string>;
@@ -119,16 +135,16 @@ export function useUtilizationData(start: string, end: string, filters?: {
         });
         const entry = logMap.get(l.employee_id)!;
         entry.days.add(l.date);
-        const work = l.total_work_minutes ?? 0;
-        const ot = l.overtime_minutes ?? 0;
-        const breakMin = l.break_minutes ?? 0;
-        // Travel = outbound (travel_start → site_arrival) + return (return_travel_start → office_arrival)
-        const travel = diffMin(l.travel_start_time, l.site_arrival_time)
-                     + diffMin(l.return_travel_start_time, l.office_arrival_time);
-        // Presence = office_punch_in → office_punch_out
-        const presence = diffMin(l.office_punch_in, l.office_punch_out);
-        // Idle = presence − work − travel − break (only when punched in & out)
-        const idle = presence > 0 ? Math.max(0, presence - work - travel - breakMin) : 0;
+
+        // Shared rule: work_start → work_end (minus breaks) is working time;
+        // travel is travel; everything else inside presence is idle.
+        const daySessions = sessionsByKey.get(`${l.employee_id}|${l.date}`) ?? null;
+        const work = getEffectiveWorkedMinutes(l, daySessions);
+        const travel = getEffectiveTravelMinutes(l, daySessions);
+        const idle = getEffectiveIdleMinutes(l, daySessions);
+        const ot = l.overtime_minutes && l.overtime_minutes > 0
+          ? l.overtime_minutes
+          : getEffectiveOvertimeMinutes(l, daySessions, stdHoursByEmp.get(l.employee_id) ?? 8);
 
         entry.totalMin += work;
         entry.otMin += ot;
@@ -179,8 +195,12 @@ export function useUtilizationData(start: string, end: string, filters?: {
         const weekKey = sun.toISOString().slice(0, 10);
         if (!weeklyMap.has(weekKey)) weeklyMap.set(weekKey, { regular: 0, ot: 0 });
         const w = weeklyMap.get(weekKey)!;
-        const otMin = l.overtime_minutes ?? 0;
-        const regMin = Math.max(0, (l.total_work_minutes ?? 0) - otMin);
+        const daySessions = sessionsByKey.get(`${l.employee_id}|${l.date}`) ?? null;
+        const worked = getEffectiveWorkedMinutes(l, daySessions);
+        const otMin = l.overtime_minutes && l.overtime_minutes > 0
+          ? l.overtime_minutes
+          : getEffectiveOvertimeMinutes(l, daySessions, stdHoursByEmp.get(l.employee_id) ?? 8);
+        const regMin = Math.max(0, worked - otMin);
         w.regular += regMin;
         w.ot += otMin;
       }
@@ -701,18 +721,29 @@ export function useAttendanceReport(start: string, end: string, filters?: { bran
       let empQuery = supabase.from("employees").select("id, name, branch_id, standard_hours_per_day").eq("is_active", true);
       if (filters?.branchId && filters.branchId !== "all") empQuery = empQuery.eq("branch_id", filters.branchId);
 
-      const [empRes, logsRes, branchRes] = await Promise.all([
+      const [empRes, logsRes, sessRes, branchRes] = await Promise.all([
         empQuery,
         supabase.from("attendance_logs")
-          .select("employee_id, date, total_work_minutes, overtime_minutes, office_punch_in, office_punch_out, travel_start_time, site_arrival_time, work_start_time, break_start_time, break_end_time, work_end_time, return_travel_start_time, office_arrival_time, projects(name)")
+          .select("employee_id, date, total_work_minutes, overtime_minutes, break_minutes, office_punch_in, office_punch_out, travel_start_time, site_arrival_time, work_start_time, break_start_time, break_end_time, work_end_time, return_travel_start_time, office_arrival_time, projects(name)")
           .gte("date", start).lte("date", end)
           .order("date", { ascending: false }),
+        supabase.from("project_work_sessions")
+          .select("employee_id, date, travel_start_time, site_arrival_time, work_start_time, work_end_time, break_start_time, break_end_time, break_minutes, total_work_minutes, return_travel_start_time, office_arrival_time")
+          .gte("date", start).lte("date", end),
         supabase.from("branches").select("id, name").order("name"),
       ]);
 
       const employees = empRes.data ?? [];
       const logs = logsRes.data ?? [];
+      const sessions = sessRes.data ?? [];
       const branches = branchRes.data ?? [];
+
+      const sessionsByKey = new Map<string, typeof sessions>();
+      for (const s of sessions) {
+        const key = `${s.employee_id}|${s.date}`;
+        if (!sessionsByKey.has(key)) sessionsByKey.set(key, [] as never);
+        sessionsByKey.get(key)!.push(s);
+      }
 
       const logMap = new Map<string, { days: Set<string>; totalMin: number; lateDays: number; punchInDays: number }>();
       const dailyCount = new Map<string, number>();
@@ -721,7 +752,8 @@ export function useAttendanceReport(start: string, end: string, filters?: { bran
         if (!logMap.has(l.employee_id)) logMap.set(l.employee_id, { days: new Set(), totalMin: 0, lateDays: 0, punchInDays: 0 });
         const entry = logMap.get(l.employee_id)!;
         entry.days.add(l.date);
-        entry.totalMin += l.total_work_minutes ?? 0;
+        // Shared rule: working time comes from work_start → work_end (minus breaks).
+        entry.totalMin += getEffectiveWorkedMinutes(l, sessionsByKey.get(`${l.employee_id}|${l.date}`) ?? null);
         if (l.office_punch_in) entry.punchInDays++;
         dailyCount.set(l.date, (dailyCount.get(l.date) ?? 0) + 1);
       }
@@ -770,7 +802,7 @@ export function useAttendanceReport(start: string, end: string, filters?: { bran
           return_travel_start_time: l.return_travel_start_time,
           office_arrival_time: l.office_arrival_time,
           office_punch_out: l.office_punch_out,
-          total_work_minutes: l.total_work_minutes,
+          total_work_minutes: getEffectiveWorkedMinutes(l, sessionsByKey.get(`${l.employee_id}|${l.date}`) ?? null),
           overtime_minutes: l.overtime_minutes,
         }));
 
