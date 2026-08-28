@@ -145,7 +145,7 @@ Deno.serve(async (req) => {
         }
 
         const computedAt = new Date().toISOString();
-        for (const log of logs) {
+        const writeOne = async (log: typeof logs[number]) => {
           const m = computeDerivedMetrics(
             log,
             byLog.get(log.id as string) ?? [],
@@ -166,7 +166,11 @@ Deno.serve(async (req) => {
             })
             .eq("id", log.id);
           if (updErr) throw updErr;
-          rowsProcessed++;
+        };
+        // Bounded concurrency keeps a run well inside the function timeout.
+        for (let i = 0; i < logs.length; i += 20) {
+          await Promise.all(logs.slice(i, i + 20).map(writeOne));
+          rowsProcessed += Math.min(20, logs.length - i);
         }
         perDate[date] = logs.length;
       }
