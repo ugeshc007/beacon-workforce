@@ -7,6 +7,12 @@ import { MapPin, MapPinOff, ShieldAlert, Clock, CheckCircle2, Briefcase } from "
 import MiniMap from "./MiniMap";
 import { useProjectSessions, type ProjectWorkSession } from "@/hooks/useProjectSessions";
 import { ProjectSessionCard } from "./ProjectSessionCard";
+import {
+  getEffectiveWorkedMinutes,
+  getEffectiveIdleMinutes,
+  getEffectiveBreakMinutes,
+  getEffectiveOvertimeMinutes,
+} from "@/lib/timesheet-display";
 
 interface Props {
   log: AttendanceLog | null;
@@ -149,9 +155,21 @@ export function AttendanceDetailDrawer({ log, open, onOpenChange }: Props) {
     steps = steps.filter((s) => !hiddenWhenSessions.has(s.label));
   }
 
-  const totalHours = log.total_work_minutes != null ? (log.total_work_minutes / 60).toFixed(1) : "—";
-  const otHours = log.overtime_minutes != null ? (log.overtime_minutes / 60).toFixed(1) : "0";
-  const breakMin = log.break_minutes ?? 0;
+  // Shared rule: working time = work_start → work_end minus breaks (sessions
+  // first, then the log's own stamps). Everything else in the shift is idle.
+  const workedMin = getEffectiveWorkedMinutes(log, resolvedSessions);
+  const idleMin = getEffectiveIdleMinutes(log, resolvedSessions);
+  const totalHours = workedMin > 0 ? (workedMin / 60).toFixed(1) : "0.0";
+  const otMin = log.overtime_minutes && log.overtime_minutes > 0
+    ? log.overtime_minutes
+    : getEffectiveOvertimeMinutes(log, resolvedSessions, Number(log.employees?.standard_hours_per_day) || 8);
+  const otHours = (otMin / 60).toFixed(1);
+  const breakMin = getEffectiveBreakMinutes(log, resolvedSessions);
+  const idleHours = (idleMin / 60).toFixed(1);
+  // Header: fall back to the session's project when the log has none.
+  const projectLabel = log.projects?.name
+    ?? resolvedSessions.map((s) => s.projects?.name).filter(Boolean).join(", ")
+    ?? null;
   
 
   return (
@@ -160,23 +178,27 @@ export function AttendanceDetailDrawer({ log, open, onOpenChange }: Props) {
         <SheetHeader>
           <SheetTitle className="text-lg">{log.employees?.name ?? "Employee"}</SheetTitle>
           <SheetDescription>
-            {log.employees?.employee_code} · {log.date} · {log.projects?.name ?? "No project"}
+            {log.employees?.employee_code} · {log.date} · {projectLabel || "No project"}
           </SheetDescription>
         </SheetHeader>
 
         {/* Summary */}
-        <div className="grid grid-cols-3 gap-3 mt-6">
-          <div className="rounded-lg border border-border p-3">
+        <div className="grid grid-cols-4 gap-2 mt-6">
+          <div className="rounded-lg border border-border p-2.5">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Total Hours</p>
             <p className="text-lg font-bold text-foreground">{totalHours}h</p>
           </div>
-          <div className="rounded-lg border border-border p-3">
+          <div className="rounded-lg border border-border p-2.5">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Overtime</p>
             <p className="text-lg font-bold text-status-overtime">{otHours}h</p>
           </div>
-          <div className="rounded-lg border border-border p-3">
+          <div className="rounded-lg border border-border p-2.5">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Break</p>
             <p className="text-lg font-bold text-foreground">{breakMin}m</p>
+          </div>
+          <div className="rounded-lg border border-border p-2.5">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Idle</p>
+            <p className="text-lg font-bold text-muted-foreground">{idleHours}h</p>
           </div>
         </div>
 
