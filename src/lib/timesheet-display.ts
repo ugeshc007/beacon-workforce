@@ -304,7 +304,12 @@ function workStampMinutes(
   if (!end) return null;
   const gross = spanMinutes(s.work_start_time, end);
   if (gross <= 0) return null;
-  return Math.max(0, gross - recordedBreakMinutes(s));
+  // Org rule: a shift longer than the 8h standard always carries at least a
+  // 1-hour unpaid break (9h continuous on site = 8h duty). Short stints keep
+  // only their recorded break.
+  let deduct = recordedBreakMinutes(s);
+  if (gross > 480) deduct = Math.max(deduct, 60);
+  return Math.max(0, gross - deduct);
 }
 
 /**
