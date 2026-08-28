@@ -22,12 +22,6 @@ function dubaiToday(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Dubai" }).format(new Date());
 }
 
-function addDays(date: string, days: number): string {
-  const d = new Date(`${date}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return corsResponse();
 
@@ -177,13 +171,10 @@ Deno.serve(async (req) => {
         perDate[date] = logs.length;
       }
 
-      // Cursor walks backwards from the oldest date handled this run.
-      const oldest = dates.length ? dates[dates.length - 1] : cursor;
-      const nextCursor = body.date
-        ? job.cursor_date
-        : complete
-        ? job.cursor_date
-        : addDays(oldest as string, 0);
+      // Progress is authoritative per row (derived_computed_at); cursor_date is
+      // the oldest date touched, kept for visibility in the jobs UI.
+      const oldest = dates.length ? dates[dates.length - 1] : null;
+      const nextCursor = body.date ? job.cursor_date : (oldest ?? job.cursor_date ?? today);
 
       await release({
         cursor_date: nextCursor,
