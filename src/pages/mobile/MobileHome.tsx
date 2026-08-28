@@ -764,15 +764,16 @@ export default function MobileHome() {
               if (!p.workStartTime || !p.shiftStart) return false;
               const started = new Date(p.workStartTime);
               if (Number.isNaN(started.getTime())) return false;
-              const [h, m] = p.shiftStart.split(":").map(Number);
-              const windowOpen = new Date(started);
-              windowOpen.setHours(h, m ?? 0, 0, 0);
+              // Window opens on the assignment's OWN date, so an overnight
+              // shift that ran past midnight is not falsely flagged.
+              const windowOpen = new Date(`${p.date}T${p.shiftStart.slice(0, 8)}`);
+              if (Number.isNaN(windowOpen.getTime())) return false;
               return started.getTime() < windowOpen.getTime() - 15 * 60 * 1000;
             })();
             return (
               <button
                 key={p.assignmentId}
-                onClick={() => navigate(`/m/project/${p.projectId}`)}
+                onClick={() => navigate(`/m/project/${p.projectId}${p.isOvernightCarry ? `?date=${p.date}` : ""}`)}
                 disabled={isDone}
                 className={`text-left rounded-xl border p-4 transition-all ${
                   isDone
