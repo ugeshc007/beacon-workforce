@@ -73,6 +73,12 @@ export type Database = {
           break_start_time: string | null
           created_at: string
           date: string
+          derived_break_minutes: number | null
+          derived_computed_at: string | null
+          derived_idle_minutes: number | null
+          derived_overtime_minutes: number | null
+          derived_travel_minutes: number | null
+          derived_worked_minutes: number | null
           employee_id: string
           holiday_premium_cost: number | null
           id: string
@@ -133,6 +139,12 @@ export type Database = {
           break_start_time?: string | null
           created_at?: string
           date: string
+          derived_break_minutes?: number | null
+          derived_computed_at?: string | null
+          derived_idle_minutes?: number | null
+          derived_overtime_minutes?: number | null
+          derived_travel_minutes?: number | null
+          derived_worked_minutes?: number | null
           employee_id: string
           holiday_premium_cost?: number | null
           id?: string
@@ -193,6 +205,12 @@ export type Database = {
           break_start_time?: string | null
           created_at?: string
           date?: string
+          derived_break_minutes?: number | null
+          derived_computed_at?: string | null
+          derived_idle_minutes?: number | null
+          derived_overtime_minutes?: number | null
+          derived_travel_minutes?: number | null
+          derived_worked_minutes?: number | null
           employee_id?: string
           holiday_premium_cost?: number | null
           id?: string
@@ -269,6 +287,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      backfill_jobs: {
+        Row: {
+          created_at: string
+          cursor_date: string | null
+          dates_processed: number
+          earliest_date: string | null
+          id: string
+          is_complete: boolean
+          is_paused: boolean
+          job_name: string
+          last_error: string | null
+          last_run_at: string | null
+          lock_expires_at: string | null
+          lock_owner: string | null
+          pause_reason: string | null
+          rows_processed: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          cursor_date?: string | null
+          dates_processed?: number
+          earliest_date?: string | null
+          id?: string
+          is_complete?: boolean
+          is_paused?: boolean
+          job_name: string
+          last_error?: string | null
+          last_run_at?: string | null
+          lock_expires_at?: string | null
+          lock_owner?: string | null
+          pause_reason?: string | null
+          rows_processed?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          cursor_date?: string | null
+          dates_processed?: number
+          earliest_date?: string | null
+          id?: string
+          is_complete?: boolean
+          is_paused?: boolean
+          job_name?: string
+          last_error?: string | null
+          last_run_at?: string | null
+          lock_expires_at?: string | null
+          lock_owner?: string | null
+          pause_reason?: string | null
+          rows_processed?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       branches: {
         Row: {
@@ -3012,6 +3084,10 @@ export type Database = {
         Returns: undefined
       }
       update_day_incomplete_cron: {
+        Args: { cron_expr?: string }
+        Returns: undefined
+      }
+      update_derived_backfill_cron: {
         Args: { cron_expr?: string }
         Returns: undefined
       }
