@@ -29,7 +29,12 @@ export interface TodayProject {
   assignedRole: string;
   workLocation: "in_house" | "site" | null;
   task: string | null;
+  /** The assignment's own schedule date (may be yesterday for an overnight shift). */
+  date: string;
+  /** True when this assignment belongs to yesterday and is still running past midnight. */
+  isOvernightCarry: boolean;
 }
+
 
 /** Returns ALL today's project assignments + their session state.
  *  Cached to device storage so the list still shows when the employee is
@@ -58,9 +63,26 @@ export function projectWorkedMinutes(p: {
   return p.totalWorkMinutes;
 }
 
+/** Grace period after an overnight shift's end time during which the
+ *  assignment stays visible so the employee can still finish / punch out. */
+const OVERNIGHT_GRACE_HOURS = 4;
+
+function prevDateStr(dateStr: string): string {
+  const d = new Date(`${dateStr}T00:00:00`);
+  d.setDate(d.getDate() - 1);
+  return toLocalDateStr(d);
+}
+
+/** True when a shift's end time is earlier than its start time (crosses midnight). */
+function isOvernightShift(start?: string | null, end?: string | null): boolean {
+  if (!start || !end) return false;
+  return end < start;
+}
+
 export function useTodayProjects() {
   const { employee } = useMobileAuth();
   const today = toLocalDateStr(new Date());
+  const yesterday = prevDateStr(today);
   const cacheKey = employee ? `today_projects_v2_${employee.id}_${today}` : null;
   const qc = useQueryClient();
 
@@ -101,12 +123,13 @@ export function useTodayProjects() {
 
   // Overlay optimistic per-project session state (written by useProjectWorkflow
   // when actions are enqueued offline) so completed/working steps show up on
-  // the home list even without a fresh server fetch.
+  // the home list even without a fresh server fetch. Keyed off each
+  // assignment's OWN date so overnight carry-overs read yesterday's cache.
   const overlaySessionCache = (list: TodayProject[]): TodayProject[] => {
     if (!employee) return list;
     return list.map((p) => {
       try {
-        const raw = localStorage.getItem(`pws_${employee.id}_${p.projectId}_${today}`);
+        const raw = localStorage.getItem(`pws_${employee.id}_${p.projectId}_${p.date ?? today}`);
         if (!raw) return p;
         const cached = JSON.parse(raw) as {
           id?: string;
@@ -159,56 +182,95 @@ export function useTodayProjects() {
       }
 
       try {
+        // Shift window: today + yesterday. Yesterday's rows are kept only when
+        // they are genuinely still live (overnight shift inside its grace
+        // window, an open project session, or an open attendance log).
         const { data: assignments, error: aErr } = await supabase
           .from("project_assignments")
-          .select("id, project_id, shift_start, shift_end, assigned_role, work_location, task, projects(name, site_address, site_latitude, site_longitude, site_gps_radius)")
+          .select("id, date, project_id, shift_start, shift_end, assigned_role, work_location, task, projects(name, site_address, site_latitude, site_longitude, site_gps_radius)")
           .eq("employee_id", employee.id)
-          .eq("date", today);
+          .in("date", [yesterday, today]);
         if (aErr) throw aErr;
 
         const { data: overrides } = await supabase
           .from("daily_team_overrides")
-          .select("project_id, action")
-          .eq("date", today)
+          .select("project_id, date, action")
+          .in("date", [yesterday, today])
           .eq("employee_id", employee.id);
 
-        const cancelledProjectIds = new Set(
+        const cancelledKeys = new Set(
           (overrides ?? [])
             .filter((o) => o.action === "removed" || o.action === "absent")
-            .map((o) => o.project_id)
+            .map((o) => `${o.project_id}_${o.date}`)
         );
 
-        const filteredAssignments = (assignments ?? []).filter(
-          (a) => !cancelledProjectIds.has(a.project_id)
+        const { data: sessions } = await supabase
+          .from("project_work_sessions")
+          .select("id, project_id, date, travel_start_time, site_arrival_time, work_start_time, break_start_time, break_end_time, work_end_time, total_work_minutes")
+          .eq("employee_id", employee.id)
+          .in("date", [yesterday, today]);
+
+        const sessionByKey = new Map(
+          (sessions ?? []).map((s) => [`${s.project_id}_${s.date}`, s])
         );
+
+        const { data: logs } = await supabase
+          .from("attendance_logs")
+          .select("date, office_punch_out")
+          .eq("employee_id", employee.id)
+          .in("date", [yesterday, today]);
+        const openLogDates = new Set(
+          (logs ?? []).filter((l) => !l.office_punch_out).map((l) => l.date)
+        );
+
+        const nowMs = Date.now();
+        const stillLiveFromYesterday = (a: {
+          date: string;
+          project_id: string;
+          shift_start: string | null;
+          shift_end: string | null;
+        }): boolean => {
+          const session = sessionByKey.get(`${a.project_id}_${a.date}`);
+          // An unfinished session from yesterday must stay reachable.
+          if (session && !session.work_end_time) return true;
+          // Yesterday's shift is still open at the office level.
+          if (openLogDates.has(a.date)) return true;
+          // Overnight shift that has not yet passed its end time + grace.
+          if (isOvernightShift(a.shift_start, a.shift_end) && a.shift_end) {
+            const [h, m] = a.shift_end.split(":").map((n) => parseInt(n, 10));
+            const end = new Date(`${today}T00:00:00`);
+            end.setHours(h || 0, m || 0, 0, 0);
+            return nowMs <= end.getTime() + OVERNIGHT_GRACE_HOURS * 3_600_000;
+          }
+          return false;
+        };
+
+        const filteredAssignments = (assignments ?? []).filter((a) => {
+          if (cancelledKeys.has(`${a.project_id}_${a.date}`)) return false;
+          if (a.date === today) return true;
+          return stillLiveFromYesterday(a as never);
+        });
 
         if (!filteredAssignments.length) {
           if (cacheKey) await cacheData(cacheKey, []);
           return [];
         }
 
-        const { data: sessions } = await supabase
-          .from("project_work_sessions")
-          .select("id, project_id, travel_start_time, site_arrival_time, work_start_time, break_start_time, break_end_time, work_end_time, total_work_minutes")
-          .eq("employee_id", employee.id)
-          .eq("date", today);
-
-        const sessionByProject = new Map(
-          (sessions ?? []).map((s) => [s.project_id, s])
-        );
-
-        const projectIds = filteredAssignments.map((a) => a.project_id);
+        const projectIds = Array.from(new Set(filteredAssignments.map((a) => a.project_id)));
         const { data: dayLocs } = await supabase
           .from("project_day_work_locations")
-          .select("project_id, location")
-          .eq("date", today)
+          .select("project_id, date, location")
+          .in("date", [yesterday, today])
           .in("project_id", projectIds);
-        const dayLocByProject = new Map((dayLocs ?? []).map((d) => [d.project_id, d.location as "in_house" | "site"]));
+        const dayLocByKey = new Map(
+          (dayLocs ?? []).map((d) => [`${d.project_id}_${d.date}`, d.location as "in_house" | "site"])
+        );
 
         let result: TodayProject[] = filteredAssignments.map((a) => {
           const project = a.projects as { name?: string; site_address?: string | null; site_latitude?: number | null; site_longitude?: number | null; site_gps_radius?: number | null } | null;
-          const session = sessionByProject.get(a.project_id);
-          const explicitLoc = (a.work_location as "in_house" | "site" | null) ?? dayLocByProject.get(a.project_id) ?? null;
+          const key = `${a.project_id}_${a.date}`;
+          const session = sessionByKey.get(key);
+          const explicitLoc = (a.work_location as "in_house" | "site" | null) ?? dayLocByKey.get(key) ?? null;
           // Fallback inference: no site coords → in-house; otherwise site.
           // Prevents the travel flow from ever appearing for pure in-house jobs
           // where the scheduler never set work_location explicitly.
@@ -233,13 +295,22 @@ export function useTodayProjects() {
             assignedRole: a.assigned_role ?? "team_member",
             workLocation,
             task: (a as any).task ?? null,
+            date: a.date,
+            isOvernightCarry: a.date !== today,
           };
+        });
+
+        // Order: live/unfinished carry-overs first, then by shift start.
+        result.sort((x, y) => {
+          if (x.isOvernightCarry !== y.isOvernightCarry) return x.isOvernightCarry ? -1 : 1;
+          return (x.shiftStart ?? "").localeCompare(y.shiftStart ?? "");
         });
 
         // Authoritative mobile fallback: the backend function returns the same
         // effective location used by workflow actions. This overwrites stale or
         // RLS-missed client inference (BG002 case: schedule says Site, project
-        // has no GPS coords, old cache said In-House).
+        // has no GPS coords, old cache said In-House). Only applies to today's
+        // rows — the function only resolves today's assignment.
         try {
           const effective = await invokeEdge<{
             assigned?: boolean;
@@ -247,7 +318,7 @@ export function useTodayProjects() {
             project?: { id?: string | null } | null;
           }>("today-assignment", { employee_id: employee.id });
           if (effective?.assigned && effective.project?.id && effective.work_location) {
-            result = result.map((project) => project.projectId === effective.project?.id
+            result = result.map((project) => project.projectId === effective.project?.id && !project.isOvernightCarry
               ? { ...project, workLocation: effective.work_location ?? project.workLocation }
               : project);
           }
@@ -257,6 +328,7 @@ export function useTodayProjects() {
         // Seed per-project work-location cache so useProjectWorkflow knows
         // in_house vs site even if the user opens the project card for the
         // first time while offline (otherwise it defaults to site/travel flow).
+        // Keyed by the assignment's own date so overnight carry-overs match.
         try {
           result.forEach((r) => {
             // Always seed the cache so offline never falls back to the site
@@ -265,11 +337,11 @@ export function useTodayProjects() {
             const inferred = r.workLocation
               ?? (r.siteLat == null && r.siteLng == null ? "in_house" : "site");
             localStorage.setItem(
-              `pwl_${employee.id}_${r.projectId}_${today}`,
+              `pwl_${employee.id}_${r.projectId}_${r.date}`,
               JSON.stringify(inferred),
             );
             localStorage.setItem(
-              `pwl_v2_${employee.id}_${r.projectId}_${today}`,
+              `pwl_v2_${employee.id}_${r.projectId}_${r.date}`,
               JSON.stringify(inferred),
             );
           });
@@ -286,3 +358,4 @@ export function useTodayProjects() {
     },
   });
 }
+

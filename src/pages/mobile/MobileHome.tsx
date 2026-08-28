@@ -647,7 +647,7 @@ export default function MobileHome() {
       {/* Resume in-progress project */}
       {step !== "idle" && step !== "punched_out" && !isDriverDay && activeProject && (
         <button
-          onClick={() => navigate(`/m/project/${activeProject.projectId}`)}
+          onClick={() => navigate(`/m/project/${activeProject.projectId}${activeProject.isOvernightCarry ? `?date=${activeProject.date}` : ""}`)}
           className="rounded-xl border border-brand/50 bg-brand/10 p-4 text-left transition-colors hover:bg-brand/15"
         >
           <div className="flex items-center gap-3">
@@ -764,15 +764,16 @@ export default function MobileHome() {
               if (!p.workStartTime || !p.shiftStart) return false;
               const started = new Date(p.workStartTime);
               if (Number.isNaN(started.getTime())) return false;
-              const [h, m] = p.shiftStart.split(":").map(Number);
-              const windowOpen = new Date(started);
-              windowOpen.setHours(h, m ?? 0, 0, 0);
+              // Window opens on the assignment's OWN date, so an overnight
+              // shift that ran past midnight is not falsely flagged.
+              const windowOpen = new Date(`${p.date}T${p.shiftStart.slice(0, 8)}`);
+              if (Number.isNaN(windowOpen.getTime())) return false;
               return started.getTime() < windowOpen.getTime() - 15 * 60 * 1000;
             })();
             return (
               <button
                 key={p.assignmentId}
-                onClick={() => navigate(`/m/project/${p.projectId}`)}
+                onClick={() => navigate(`/m/project/${p.projectId}${p.isOvernightCarry ? `?date=${p.date}` : ""}`)}
                 disabled={isDone}
                 className={`text-left rounded-xl border p-4 transition-all ${
                   isDone
@@ -806,6 +807,12 @@ export default function MobileHome() {
                         <span className="text-[10px] text-muted-foreground flex items-center gap-1">
                           <Clock className="h-3 w-3" />
                           {p.shiftStart.slice(0, 5)}–{p.shiftEnd.slice(0, 5)}
+                          {p.shiftEnd < p.shiftStart && <span className="text-blue-400">+1d</span>}
+                        </span>
+                      )}
+                      {p.isOvernightCarry && (
+                        <span className="text-[10px] font-medium text-blue-400">
+                          continues from yesterday
                         </span>
                       )}
                       {isDone && projectWorkedMinutes(p) != null && (

@@ -60,9 +60,14 @@ Deno.serve(async (req) => {
     let newDate: string | null = null;
 
     if (action === "postpone") {
-      const d = new Date(assignment.date + "T00:00:00Z");
+      // Always land on the day AFTER today (Dubai), so postponing an overnight
+      // carry-over from yesterday does not re-create it for today.
+      const todayDubai = new Date(Date.now() + 4 * 3_600_000).toISOString().slice(0, 10);
+      const base = assignment.date > todayDubai ? assignment.date : todayDubai;
+      const d = new Date(base + "T00:00:00Z");
       d.setUTCDate(d.getUTCDate() + 1);
       newDate = d.toISOString().slice(0, 10);
+
 
       const { data: existing } = await supabase
         .from("project_assignments")

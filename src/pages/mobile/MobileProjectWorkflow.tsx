@@ -78,7 +78,10 @@ export default function MobileProjectWorkflow() {
     };
   }, [step, loading]);
 
-  const project = todayProjects?.find((p) => p.projectId === projectId);
+  // Match the assignment for the requested date first (overnight carry-over
+  // opens with ?date=yesterday), then fall back to any date.
+  const project = todayProjects?.find((p) => p.projectId === projectId && (!dateOverride || p.date === dateOverride))
+    ?? todayProjects?.find((p) => p.projectId === projectId);
 
   const getLocationFallbackCoords = (reading?: GpsReading | null) => {
     if (reading) return { lat: reading.lat, lng: reading.lng };

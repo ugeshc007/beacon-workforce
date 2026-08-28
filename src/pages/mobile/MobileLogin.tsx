@@ -72,14 +72,10 @@ export default function MobileLogin() {
               .eq("id", emp.id);
           } catch { /* best-effort */ }
 
-          const today = new Date().toISOString().slice(0, 10);
-          const { data: assignments } = await supabase
-            .from("project_assignments")
-            .select("id, project_id, shift_start, shift_end, assigned_role, work_location, task, projects(name, site_address, site_latitude, site_longitude, site_gps_radius)")
-            .eq("employee_id", emp.id)
-            .eq("date", today);
-          const { cacheData } = await import("@/lib/offline-queue");
-          await cacheData(`today_projects_v2_${emp.id}_${today}`, assignments ?? []);
+          // Note: today's project list cache is owned by useTodayProjects
+          // (shift-window aware, includes overnight carry-overs). Writing raw
+          // assignment rows here used to poison that cache, so we don't.
+
         }
       }
     } catch { /* best-effort */ }
