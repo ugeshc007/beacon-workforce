@@ -30,15 +30,59 @@ var whoami_default = defineTool({
 });
 
 // src/lib/mcp/tools/list-projects.ts
-import { createClient } from "npm:@supabase/supabase-js@^2.101.1";
 import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@0.23.0";
 import { z } from "npm:zod@^4.4.3";
+
+// src/lib/mcp/supabase.ts
+import { createClient } from "npm:@supabase/supabase-js@^2.101.1";
+function runtimeEnv(name) {
+  const runtime = globalThis;
+  return runtime.Deno?.env?.get?.(name) ?? runtime.process?.env?.[name];
+}
+function configuredEnv(names) {
+  for (const name of names) {
+    const value = runtimeEnv(name)?.trim();
+    if (value) return value;
+  }
+  return void 0;
+}
+function supabaseProjectUrl() {
+  const url = configuredEnv(["SUPABASE_URL", "VITE_SUPABASE_URL"]);
+  if (!url) throw new Error("SUPABASE_URL (or VITE_SUPABASE_URL) is required");
+  return url;
+}
+function supabasePublishableKey() {
+  const direct = configuredEnv([
+    "SUPABASE_PUBLISHABLE_KEY",
+    "VITE_SUPABASE_PUBLISHABLE_KEY"
+  ]);
+  if (direct) return direct;
+  const keyset = runtimeEnv("SUPABASE_PUBLISHABLE_KEYS");
+  if (keyset) {
+    try {
+      const parsed = JSON.parse(keyset);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        const keys = parsed;
+        const key = [keys.default, ...Object.values(keys)].find((v) => typeof v === "string" && v.trim().startsWith("sb_publishable_"))?.trim();
+        if (key) return key;
+      }
+    } catch {
+    }
+  }
+  const legacy = configuredEnv(["SUPABASE_ANON_KEY", "VITE_SUPABASE_ANON_KEY"]);
+  if (legacy) return legacy;
+  throw new Error("SUPABASE_PUBLISHABLE_KEY, SUPABASE_PUBLISHABLE_KEYS, or SUPABASE_ANON_KEY is required");
+}
 function supabaseForUser(ctx) {
-  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_PUBLISHABLE_KEY, {
-    global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
+  const token = ctx.getToken();
+  if (!token) throw new Error("supabaseForUser requires a verified OAuth token");
+  return createClient(supabaseProjectUrl(), supabasePublishableKey(), {
+    global: { headers: { Authorization: `Bearer ${token}` } },
     auth: { persistSession: false, autoRefreshToken: false }
   });
 }
+
+// src/lib/mcp/tools/list-projects.ts
 var list_projects_default = defineTool2({
   name: "list_projects",
   title: "List projects",
@@ -65,15 +109,8 @@ var list_projects_default = defineTool2({
 });
 
 // src/lib/mcp/tools/list-employees.ts
-import { createClient as createClient2 } from "npm:@supabase/supabase-js@^2.101.1";
 import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.23.0";
 import { z as z2 } from "npm:zod@^4.4.3";
-function supabaseForUser2(ctx) {
-  return createClient2(process.env.SUPABASE_URL, process.env.SUPABASE_PUBLISHABLE_KEY, {
-    global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
-    auth: { persistSession: false, autoRefreshToken: false }
-  });
-}
 var list_employees_default = defineTool3({
   name: "list_employees",
   title: "List employees",
@@ -87,7 +124,7 @@ var list_employees_default = defineTool3({
     if (!ctx.isAuthenticated()) {
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
     }
-    const supabase = supabaseForUser2(ctx);
+    const supabase = supabaseForUser(ctx);
     let q = supabase.from("employees").select("id,name,employee_code,role,is_active,branch_id").order("name", { ascending: true }).limit(limit);
     if (search) q = q.or(`name.ilike.%${search}%,employee_code.ilike.%${search}%`);
     const { data, error } = await q;
@@ -100,15 +137,8 @@ var list_employees_default = defineTool3({
 });
 
 // src/lib/mcp/tools/attendance-summary.ts
-import { createClient as createClient3 } from "npm:@supabase/supabase-js@^2.101.1";
 import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.23.0";
 import { z as z3 } from "npm:zod@^4.4.3";
-function supabaseForUser3(ctx) {
-  return createClient3(process.env.SUPABASE_URL, process.env.SUPABASE_PUBLISHABLE_KEY, {
-    global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
-    auth: { persistSession: false, autoRefreshToken: false }
-  });
-}
 var attendance_summary_default = defineTool4({
   name: "attendance_summary",
   title: "Attendance summary",
@@ -127,7 +157,7 @@ var attendance_summary_default = defineTool4({
     const today = new Date(Date.now() + 4 * 60 * 60 * 1e3).toISOString().slice(0, 10);
     const from = date_from ?? today;
     const to = date_to ?? from;
-    const supabase = supabaseForUser3(ctx);
+    const supabase = supabaseForUser(ctx);
     let q = supabase.from("attendance_logs").select(
       "id,employee_id,date,office_punch_in,office_punch_out,total_work_minutes,total_travel_minutes,status"
     ).gte("date", from).lte("date", to).order("date", { ascending: false }).limit(limit);
