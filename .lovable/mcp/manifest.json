@@ -12,7 +12,7 @@
   "mcp": {
     "server": {
       "name": "bebright-planner-mcp",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "title": "BeBright Planner"
     },
     "tools": [
@@ -29,6 +29,168 @@
           "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
           "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_modules",
+        "title": "List modules",
+        "description": "List every data module that can be read with query_module, including its description and default sort column. Start here to discover the data surface.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "describe_module",
+        "title": "Describe module",
+        "description": "Return the available field names of a module by sampling one visible row. Use before query_module when you need exact column names for select/filters.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "module": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Module name. One of: employees, branches, offices, companies, company_settings, settings, custom_skills, role_permissions, skill_permissions, projects, project_assignments, project_work_sessions, project_daily_logs, project_expenses, project_templates, project_day_work_locations, attendance, travel_pings, driver_trip_legs, timesheet_approvals, employee_leave, public_holidays, daily_team_overrides, site_visits, site_visit_work_sessions, site_visit_photos, maintenance_calls, maintenance_assignments, maintenance_images, common_tasks, common_task_sessions, recurring_jobs, recurring_job_occurrences, recurring_job_employees, notifications, employee_notifications, assignment_audit_log, system_audit_log, error_logs, report_presets"
+            }
+          },
+          "required": [
+            "module"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "query_module",
+        "title": "Query module",
+        "description": "Read rows from any module (projects, attendance, employees, site visits, maintenance, timesheets, expenses, notifications, audit logs, and more) with filters, date range, sorting and pagination. Row-level security applies, so only data the signed-in user may see is returned.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "module": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Module name. One of: employees, branches, offices, companies, company_settings, settings, custom_skills, role_permissions, skill_permissions, projects, project_assignments, project_work_sessions, project_daily_logs, project_expenses, project_templates, project_day_work_locations, attendance, travel_pings, driver_trip_legs, timesheet_approvals, employee_leave, public_holidays, daily_team_overrides, site_visits, site_visit_work_sessions, site_visit_photos, maintenance_calls, maintenance_assignments, maintenance_images, common_tasks, common_task_sessions, recurring_jobs, recurring_job_occurrences, recurring_job_employees, notifications, employee_notifications, assignment_audit_log, system_audit_log, error_logs, report_presets"
+            },
+            "select": {
+              "description": "Comma-separated column list. Defaults to all columns.",
+              "type": "string"
+            },
+            "filters": {
+              "description": "Column filters, ANDed together.",
+              "maxItems": 10,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "field": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Column name (see describe_module)."
+                  },
+                  "op": {
+                    "default": "eq",
+                    "type": "string",
+                    "enum": [
+                      "eq",
+                      "neq",
+                      "gt",
+                      "gte",
+                      "lt",
+                      "lte",
+                      "like",
+                      "ilike",
+                      "is_null",
+                      "not_null",
+                      "in"
+                    ]
+                  },
+                  "value": {
+                    "description": "Value to compare. Omit for is_null / not_null. Array for `in`.",
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "field"
+                ]
+              }
+            },
+            "date_from": {
+              "description": "Inclusive start for the module's date column (YYYY-MM-DD).",
+              "type": "string"
+            },
+            "date_to": {
+              "description": "Inclusive end for the module's date column (YYYY-MM-DD).",
+              "type": "string"
+            },
+            "order_by": {
+              "description": "Column to sort by. Defaults to the module's natural order.",
+              "type": "string"
+            },
+            "ascending": {
+              "default": false,
+              "description": "Sort ascending instead of descending.",
+              "type": "boolean"
+            },
+            "limit": {
+              "default": 100,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            },
+            "offset": {
+              "default": 0,
+              "description": "Rows to skip, for pagination.",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "module"
+          ]
         },
         "outputSchema": null
       },

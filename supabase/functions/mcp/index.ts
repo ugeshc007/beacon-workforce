@@ -171,18 +171,228 @@ var attendance_summary_default = defineTool4({
   }
 });
 
+// src/lib/mcp/tools/list-modules.ts
+import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.23.0";
+
+// src/lib/mcp/modules.ts
+var MODULES = [
+  { name: "employees", table: "employees", description: "Employee master data (name, code, role, branch, skill).", orderBy: "name", dateColumn: "created_at" },
+  { name: "branches", table: "branches", description: "Company branches.", orderBy: "name" },
+  { name: "offices", table: "offices", description: "Office locations and geofences.", orderBy: "name" },
+  { name: "companies", table: "companies", description: "Tenant companies.", orderBy: "created_at" },
+  { name: "company_settings", table: "company_settings", description: "Per-company settings.", orderBy: "created_at" },
+  { name: "settings", table: "settings", description: "Global key/value app settings.", orderBy: "key" },
+  { name: "custom_skills", table: "custom_skills", description: "Custom skill roles.", orderBy: "name" },
+  { name: "role_permissions", table: "role_permissions", description: "Module permissions per role.", orderBy: "role" },
+  { name: "skill_permissions", table: "skill_permissions", description: "Module permissions per custom skill.", orderBy: "module" },
+  { name: "projects", table: "projects", description: "Projects with client, status, dates, budget.", orderBy: "created_at", dateColumn: "start_date" },
+  { name: "project_assignments", table: "project_assignments", description: "Daily employee-to-project schedule assignments.", orderBy: "date", dateColumn: "date" },
+  { name: "project_work_sessions", table: "project_work_sessions", description: "Per-project work sessions (travel, work, break, return stamps).", orderBy: "date", dateColumn: "date" },
+  { name: "project_daily_logs", table: "project_daily_logs", description: "Daily site progress logs per project.", orderBy: "date", dateColumn: "date" },
+  { name: "project_expenses", table: "project_expenses", description: "Project expenses and purchase invoices.", orderBy: "date", dateColumn: "date" },
+  { name: "project_templates", table: "project_templates", description: "Reusable project templates.", orderBy: "name" },
+  { name: "project_day_work_locations", table: "project_day_work_locations", description: "Per-day site/in-house work location override for a project.", orderBy: "date", dateColumn: "date" },
+  { name: "attendance", table: "attendance_logs", description: "Daily attendance logs with punch, travel, work, break stamps and derived minutes.", orderBy: "date", dateColumn: "date" },
+  { name: "travel_pings", table: "travel_pings", description: "GPS pings captured during travel by the mobile app.", orderBy: "created_at", dateColumn: "created_at" },
+  { name: "driver_trip_legs", table: "driver_trip_legs", description: "Driver trip legs (pickup, drop, distance).", orderBy: "created_at", dateColumn: "created_at" },
+  { name: "timesheet_approvals", table: "timesheet_approvals", description: "Timesheet approval records per employee and period.", orderBy: "created_at", dateColumn: "period_start" },
+  { name: "employee_leave", table: "employee_leave", description: "Leave records per employee.", orderBy: "date", dateColumn: "date" },
+  { name: "public_holidays", table: "public_holidays", description: "Public holiday calendar.", orderBy: "date", dateColumn: "date" },
+  { name: "daily_team_overrides", table: "daily_team_overrides", description: "Manual daily team composition overrides.", orderBy: "date", dateColumn: "date" },
+  { name: "site_visits", table: "site_visits", description: "Site visit records with client, status and report fields.", orderBy: "visit_date", dateColumn: "visit_date" },
+  { name: "site_visit_work_sessions", table: "site_visit_work_sessions", description: "Work sessions logged against site visits.", orderBy: "date", dateColumn: "date" },
+  { name: "site_visit_photos", table: "site_visit_photos", description: "Photos attached to site visits.", orderBy: "created_at", dateColumn: "created_at" },
+  { name: "maintenance_calls", table: "maintenance_calls", description: "Maintenance/service calls.", orderBy: "created_at", dateColumn: "scheduled_date" },
+  { name: "maintenance_assignments", table: "maintenance_assignments", description: "Employees assigned to maintenance calls.", orderBy: "created_at" },
+  { name: "maintenance_images", table: "maintenance_images", description: "Images attached to maintenance calls.", orderBy: "created_at", dateColumn: "created_at" },
+  { name: "common_tasks", table: "common_tasks", description: "Common (non-project) tasks employees can pick up.", orderBy: "created_at" },
+  { name: "common_task_sessions", table: "common_task_sessions", description: "Time logged by employees on common tasks.", orderBy: "date", dateColumn: "date" },
+  { name: "recurring_jobs", table: "recurring_jobs", description: "Recurring job definitions.", orderBy: "created_at" },
+  { name: "recurring_job_occurrences", table: "recurring_job_occurrences", description: "Generated occurrences of recurring jobs.", orderBy: "date", dateColumn: "date" },
+  { name: "recurring_job_employees", table: "recurring_job_employees", description: "Employees attached to recurring jobs.", orderBy: "created_at" },
+  { name: "notifications", table: "notifications", description: "Admin/system notifications.", orderBy: "created_at", dateColumn: "created_at" },
+  { name: "employee_notifications", table: "employee_notifications", description: "Notifications targeted at employees.", orderBy: "created_at", dateColumn: "created_at" },
+  { name: "assignment_audit_log", table: "assignment_audit_log", description: "Audit trail of schedule assignment changes.", orderBy: "created_at", dateColumn: "created_at" },
+  { name: "system_audit_log", table: "system_audit_log", description: "System-level audit trail.", orderBy: "created_at", dateColumn: "created_at" },
+  { name: "error_logs", table: "error_logs", description: "Mobile/web action audit log (successes and failures, 7-day rolling).", orderBy: "created_at", dateColumn: "created_at" },
+  { name: "report_presets", table: "report_presets", description: "Saved report filter presets.", orderBy: "created_at" }
+];
+function findModule(name) {
+  const key = name.trim().toLowerCase();
+  return MODULES.find((m) => m.name === key || m.table === key);
+}
+var MODULE_NAMES = MODULES.map((m) => m.name);
+
+// src/lib/mcp/tools/list-modules.ts
+var list_modules_default = defineTool5({
+  name: "list_modules",
+  title: "List modules",
+  description: "List every data module that can be read with query_module, including its description and default sort column. Start here to discover the data surface.",
+  inputSchema: {},
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: () => {
+    const modules = MODULES.map((m) => ({
+      module: m.name,
+      description: m.description,
+      order_by: m.orderBy,
+      date_filter_column: m.dateColumn ?? null
+    }));
+    return {
+      content: [{ type: "text", text: JSON.stringify(modules, null, 2) }],
+      structuredContent: { modules }
+    };
+  }
+});
+
+// src/lib/mcp/tools/describe-module.ts
+import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z4 } from "npm:zod@^4.4.3";
+var describe_module_default = defineTool6({
+  name: "describe_module",
+  title: "Describe module",
+  description: "Return the available field names of a module by sampling one visible row. Use before query_module when you need exact column names for select/filters.",
+  inputSchema: {
+    module: z4.string().min(1).describe(`Module name. One of: ${MODULE_NAMES.join(", ")}`)
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ module }, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    }
+    const def = findModule(module);
+    if (!def) {
+      return {
+        content: [{ type: "text", text: `Unknown module "${module}". Call list_modules first.` }],
+        isError: true
+      };
+    }
+    const supabase = supabaseForUser(ctx);
+    const { data, error } = await supabase.from(def.table).select("*").limit(1);
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    const row = (data ?? [])[0];
+    const info = {
+      module: def.name,
+      description: def.description,
+      order_by: def.orderBy,
+      date_filter_column: def.dateColumn ?? null,
+      fields: row ? Object.entries(row).map(([name, value]) => ({
+        name,
+        sample_type: value === null ? "null" : typeof value
+      })) : [],
+      note: row ? void 0 : "No rows visible to this user, so fields could not be sampled."
+    };
+    return {
+      content: [{ type: "text", text: JSON.stringify(info, null, 2) }],
+      structuredContent: info
+    };
+  }
+});
+
+// src/lib/mcp/tools/query-module.ts
+import { defineTool as defineTool7 } from "npm:@lovable.dev/mcp-js@0.23.0";
+import { z as z5 } from "npm:zod@^4.4.3";
+var filterSchema = z5.object({
+  field: z5.string().min(1).describe("Column name (see describe_module)."),
+  op: z5.enum(["eq", "neq", "gt", "gte", "lt", "lte", "like", "ilike", "is_null", "not_null", "in"]).default("eq"),
+  value: z5.union([z5.string(), z5.number(), z5.boolean(), z5.array(z5.union([z5.string(), z5.number()]))]).optional().describe("Value to compare. Omit for is_null / not_null. Array for `in`.")
+});
+var query_module_default = defineTool7({
+  name: "query_module",
+  title: "Query module",
+  description: "Read rows from any module (projects, attendance, employees, site visits, maintenance, timesheets, expenses, notifications, audit logs, and more) with filters, date range, sorting and pagination. Row-level security applies, so only data the signed-in user may see is returned.",
+  inputSchema: {
+    module: z5.string().min(1).describe(`Module name. One of: ${MODULE_NAMES.join(", ")}`),
+    select: z5.string().optional().describe("Comma-separated column list. Defaults to all columns."),
+    filters: z5.array(filterSchema).max(10).optional().describe("Column filters, ANDed together."),
+    date_from: z5.string().optional().describe("Inclusive start for the module's date column (YYYY-MM-DD)."),
+    date_to: z5.string().optional().describe("Inclusive end for the module's date column (YYYY-MM-DD)."),
+    order_by: z5.string().optional().describe("Column to sort by. Defaults to the module's natural order."),
+    ascending: z5.boolean().default(false).describe("Sort ascending instead of descending."),
+    limit: z5.number().int().min(1).max(500).default(100),
+    offset: z5.number().int().min(0).default(0).describe("Rows to skip, for pagination.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ module, select, filters, date_from, date_to, order_by, ascending, limit, offset }, ctx) => {
+    if (!ctx.isAuthenticated()) {
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    }
+    const def = findModule(module);
+    if (!def) {
+      return {
+        content: [{ type: "text", text: `Unknown module "${module}". Call list_modules first.` }],
+        isError: true
+      };
+    }
+    const supabase = supabaseForUser(ctx);
+    let q = supabase.from(def.table).select(select?.trim() || "*", { count: "exact" }).order(order_by?.trim() || def.orderBy, { ascending, nullsFirst: false }).range(offset, offset + limit - 1);
+    if (def.dateColumn) {
+      if (date_from) q = q.gte(def.dateColumn, date_from);
+      if (date_to) q = q.lte(def.dateColumn, date_to);
+    } else if (date_from || date_to) {
+      return {
+        content: [{ type: "text", text: `Module "${def.name}" has no date column to filter on.` }],
+        isError: true
+      };
+    }
+    for (const f of filters ?? []) {
+      switch (f.op) {
+        case "is_null":
+          q = q.is(f.field, null);
+          break;
+        case "not_null":
+          q = q.not(f.field, "is", null);
+          break;
+        case "in":
+          q = q.in(f.field, Array.isArray(f.value) ? f.value : [f.value]);
+          break;
+        default: {
+          if (f.value === void 0) {
+            return {
+              content: [{ type: "text", text: `Filter on "${f.field}" with op "${f.op}" needs a value.` }],
+              isError: true
+            };
+          }
+          q = q[f.op](f.field, f.value);
+        }
+      }
+    }
+    const { data, error, count } = await q;
+    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    const result = {
+      module: def.name,
+      total: count ?? null,
+      offset,
+      limit,
+      returned: data?.length ?? 0,
+      rows: data ?? []
+    };
+    return {
+      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      structuredContent: result
+    };
+  }
+});
+
 // src/lib/mcp/index.ts
 var projectRef = "dpnjkqwzsjydntwqxsbw";
 var mcp_default = defineMcp({
   name: "bebright-planner-mcp",
   title: "BeBright Planner",
-  version: "0.1.0",
-  instructions: "Tools for BeBright Planner \u2014 a workforce and project management app. Use `whoami` to verify connectivity, `list_projects` and `list_employees` to browse workspace data, and `attendance_summary` to review daily attendance. All tools run as the signed-in user with row-level security applied.",
+  version: "0.2.0",
+  instructions: "Read-only data access for BeBright Planner \u2014 a workforce, scheduling and project management app. Discover the data surface with `list_modules`, inspect a module's fields with `describe_module`, then pull rows with `query_module` (filters, date range, sorting, pagination). Convenience shortcuts: `list_projects`, `list_employees`, `attendance_summary`, and `whoami` for connectivity. All tools run as the signed-in user with row-level security applied.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated"
   }),
-  tools: [whoami_default, list_projects_default, list_employees_default, attendance_summary_default]
+  tools: [
+    whoami_default,
+    list_modules_default,
+    describe_module_default,
+    query_module_default,
+    list_projects_default,
+    list_employees_default,
+    attendance_summary_default
+  ]
 });
 
 // lovable-mcp-supabase-entry.ts
