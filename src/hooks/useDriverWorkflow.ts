@@ -5,6 +5,8 @@ import { toLocalDateStr } from "@/lib/utils";
 import { invokeEdge } from "@/lib/invoke-edge";
 import { enqueueAction } from "@/lib/offline-queue";
 import { syncPendingActions } from "@/lib/offline-sync";
+import { logMobileError } from "@/lib/error-logger";
+
 
 async function invokeOrQueue(action_type: string, fnName: string, body: Record<string, unknown>) {
   const clientTimestamp = new Date().toISOString();
