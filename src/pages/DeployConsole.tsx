@@ -75,7 +75,8 @@ export default function DeployConsole() {
   const [autoStandby, setAutoStandby] = useState(true);
 
   const { data: projects } = useProjects({ status: "in_progress" });
-  const { data: personnel, isLoading: personnelLoading } = useAvailableEmployees(date);
+  const { data: availability, isLoading: personnelLoading } = useAvailableEmployees(date);
+  const personnel = availability?.employees ?? [];
   const addAssignment = useAddAssignment();
   const removeAssignment = useRemoveAssignment();
 
@@ -89,7 +90,7 @@ export default function DeployConsole() {
   );
 
   const pulse = useMemo(() => {
-    const list = personnel ?? [];
+    const list = personnel;
     return {
       total: list.length,
       available: list.filter((e) => e.status === "available").length,
@@ -146,7 +147,7 @@ export default function DeployConsole() {
         role === "driver" ||
         dayRoster.some((a) => a.project_id === projectId && a.employee_skill === "driver");
       if (!alreadyDriver) {
-        const candidate = (personnel ?? []).find(
+        const candidate = personnel.find(
           (e) =>
             e.skill_type === "driver" &&
             e.status !== "booked" &&
@@ -328,10 +329,10 @@ export default function DeployConsole() {
               {personnelLoading && (
                 <p className="p-2 text-xs text-muted-foreground">Loading personnel…</p>
               )}
-              {!personnelLoading && (personnel ?? []).length === 0 && (
+              {!personnelLoading && personnel.length === 0 && (
                 <p className="p-2 text-xs text-muted-foreground">No active employees.</p>
               )}
-              {(personnel ?? []).map((e) => {
+              {personnel.map((e) => {
                 const isSelected = selected.includes(e.id);
                 const disabled = e.status === "on_leave";
                 return (
