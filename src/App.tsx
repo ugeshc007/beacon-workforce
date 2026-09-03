@@ -50,6 +50,7 @@ import SiteVisits from "./pages/SiteVisits";
 import SiteVisitDetail from "./pages/SiteVisitDetail";
 import RecurringJobs from "./pages/RecurringJobs";
 import CommonTasks from "./pages/CommonTasks";
+import DeployConsole from "./pages/DeployConsole";
 import ErrorAudit from "./pages/ErrorAudit";
 import OAuthConsent from "./pages/OAuthConsent";
 
@@ -152,6 +153,7 @@ const App = () => (
             <Route path="/projects/:id" element={<ModuleGuard module="projects"><ProjectDetail /></ModuleGuard>} />
             <Route path="/employees" element={<ModuleGuard module="employees"><Employees /></ModuleGuard>} />
             <Route path="/schedule" element={<ModuleGuard module="schedule"><Schedule /></ModuleGuard>} />
+            <Route path="/schedule/deploy" element={<ModuleGuard module="schedule"><DeployConsole /></ModuleGuard>} />
             <Route path="/schedule/common-tasks" element={<ModuleGuard module="schedule"><CommonTasks /></ModuleGuard>} />
             <Route path="/attendance" element={<ModuleGuard module="attendance"><Attendance /></ModuleGuard>} />
             <Route path="/attendance/daily" element={<ModuleGuard module="attendance"><DailyTeam /></ModuleGuard>} />

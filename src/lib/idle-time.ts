@@ -18,6 +18,7 @@ export type IdleReason =
   | "post_work_gap"
   | "return_gap"
   | "in_house_pre_work_gap"
+  | "driver_standby"
   | "in_progress";
 
 export type IdleGap = {
@@ -38,6 +39,13 @@ export type IdleSession = {
   return_travel_start_time?: string | null;
 };
 
+/** One driver trip leg (drop off / pick up / wait) for standby crediting. */
+export type IdleDriverLeg = {
+  travel_start_time: string | null;
+  site_arrival_time: string | null;
+  leg_end_time: string | null;
+};
+
 export type IdleLogInput = {
   office_punch_in: string | null;
   office_punch_out: string | null;
@@ -50,6 +58,10 @@ export type IdleLogInput = {
   break_minutes: number | null;
   sessions: IdleSession[];
   hasAssignment: boolean;
+  /** Driver trip legs for this employee/date (pure drivers rarely log work steps). */
+  driverLegs?: IdleDriverLeg[];
+  /** True when the employee only drives (no technician/helper secondary skill). */
+  isPureDriver?: boolean;
 };
 
 export type IdleResult = {
@@ -57,10 +69,13 @@ export type IdleResult = {
   productiveMin: number;
   breakMin: number;
   idleMin: number;
+  /** Paid waiting time for pure drivers — excluded from idleMin. */
+  standbyMin: number;
   reasons: IdleReason[];
   gaps: IdleGap[];
   inProgress: boolean;
 };
+
 
 const diffMin = (a: string | null | undefined, b: string | null | undefined): number => {
   if (!a || !b) return 0;
@@ -86,10 +101,11 @@ export function computeIdle(log: IdleLogInput): IdleResult {
 
   if (!log.office_punch_in) {
     return {
-      shiftMin: 0, productiveMin: 0, breakMin: 0, idleMin: 0,
+      shiftMin: 0, productiveMin: 0, breakMin: 0, idleMin: 0, standbyMin: 0,
       reasons: [], gaps: [], inProgress: false,
     };
   }
+
 
   const inProgress = !log.office_punch_out;
   const shiftEnd = log.office_punch_out ?? new Date().toISOString();
@@ -125,8 +141,20 @@ export function computeIdle(log: IdleLogInput): IdleResult {
     productiveMin += Math.max(0, diffMin(log.work_start_time, log.work_end_time) - breakMin);
   }
 
+  // Driver trip legs — a driver's productive time is travel plus time held on
+  // site (drop off / pick up / wait), not work_start..work_end steps.
+  const legs = log.driverLegs ?? [];
+  let legMin = 0;
+  for (const leg of legs) {
+    legMin += diffMin(leg.travel_start_time, leg.site_arrival_time);
+    legMin += diffMin(leg.site_arrival_time, leg.leg_end_time);
+  }
+  productiveMin += legMin;
+  if (legMin > 0) anyWorkStarted = true;
+
   // Cap productive so it can't exceed shift
   productiveMin = Math.min(productiveMin, shiftMin);
+
 
   // Whole-shift idle cases
   if (!log.hasAssignment && log.office_punch_out) {
@@ -186,9 +214,25 @@ export function computeIdle(log: IdleLogInput): IdleResult {
 
   if (inProgress) reasons.push("in_progress");
 
-  const idleMin = Math.max(0, shiftMin - productiveMin - breakMin);
+  const unaccountedMin = Math.max(0, shiftMin - productiveMin - breakMin);
 
-  return { shiftMin, productiveMin, breakMin, idleMin, reasons, gaps, inProgress };
+  // Pure drivers wait between legs by design — that time is paid standby,
+  // not idle. Keep it visible but out of the idle column.
+  const isDriverStandby = !!log.isPureDriver && legs.length > 0;
+  const standbyMin = isDriverStandby ? unaccountedMin : 0;
+  const idleMin = isDriverStandby ? 0 : unaccountedMin;
+  if (standbyMin > 0) {
+    reasons.push("driver_standby");
+    gaps.push({
+      reason: "driver_standby",
+      from: null,
+      to: null,
+      minutes: standbyMin,
+      label: fmtGap("Driver standby", standbyMin),
+    });
+  }
+
+  return { shiftMin, productiveMin, breakMin, idleMin, standbyMin, reasons, gaps, inProgress };
 }
 
 export const REASON_LABEL: Record<IdleReason, string> = {
@@ -199,5 +243,7 @@ export const REASON_LABEL: Record<IdleReason, string> = {
   post_work_gap: "Long post-work gap",
   return_gap: "Long at-office gap",
   in_house_pre_work_gap: "Late work start",
+  driver_standby: "Driver standby (paid waiting)",
   in_progress: "Shift in progress",
+
 };

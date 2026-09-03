@@ -15,6 +15,7 @@ import {
   Shield,
   Repeat,
   AlertTriangle,
+  Radio,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -43,6 +44,7 @@ const mainNav = [
   { title: "Site Visits", url: "/site-visits", icon: ClipboardList, module: "site_visits" },
   { title: "Employees", url: "/employees", icon: Users, module: "employees" },
   { title: "Schedule", url: "/schedule", icon: CalendarDays, module: "schedule" },
+  { title: "Deploy Console", url: "/schedule/deploy", icon: Radio, module: "schedule" },
   { title: "Common Tasks", url: "/schedule/common-tasks", icon: ListChecks, module: "schedule" },
   { title: "Attendance", url: "/attendance", icon: ClipboardCheck, module: "attendance" },
   { title: "Travel", url: "/travel", icon: Car, module: "attendance" },
