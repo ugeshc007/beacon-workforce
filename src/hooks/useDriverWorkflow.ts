@@ -75,6 +75,15 @@ export function useDriverLegs(employeeId?: string, date?: string) {
       // Never let a failed read look like "no trips today" — that made the app
       // ask for a new project while trips were already running on the server.
       if (error) {
+        // Surface it in the admin audit so this can never fail silently again.
+        void logMobileError({
+          category: "workflow",
+          action: "driver-legs-read",
+          severity: "warning",
+          message: `Driver trip legs read failed: ${error.message}`,
+          error_code: (error as any).code,
+          context: { employeeId, date },
+        });
         // Fallback: retry without the embedded project name.
         const { data: plain, error: plainErr } = await supabase
           .from("driver_trip_legs")
@@ -82,11 +91,19 @@ export function useDriverLegs(employeeId?: string, date?: string) {
           .eq("driver_id", employeeId!)
           .in("date", [date!, yesterday])
           .order("leg_number");
-        if (plainErr) throw plainErr;
+        if (plainErr) {
+          // Last resort: serve the cached legs rather than an empty list.
+          try {
+            const raw = localStorage.getItem(legsCacheKey(employeeId!, date!));
+            if (raw) return JSON.parse(raw) as DriverLeg[];
+          } catch { /* ignore */ }
+          throw plainErr;
+        }
         const fallback: DriverLeg[] = (plain ?? []).map((l: any) => ({ ...l, project_name: "Project" }));
         try { localStorage.setItem(legsCacheKey(employeeId!, date!), JSON.stringify(fallback)); } catch { /* ignore */ }
         return fallback;
       }
+
 
       const mapped: DriverLeg[] = (data ?? []).map((l: any) => ({
         ...l,
