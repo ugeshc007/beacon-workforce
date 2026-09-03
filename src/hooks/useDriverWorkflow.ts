@@ -65,18 +65,36 @@ export function useDriverLegs(employeeId?: string, date?: string) {
       const yesterday = date
         ? new Date(new Date(date + "T00:00:00").getTime() - 86_400_000).toISOString().split("T")[0]
         : "";
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("driver_trip_legs")
         .select("id, project_id, leg_number, travel_start_time, site_arrival_time, leg_type, leg_end_time, total_travel_minutes, total_onsite_minutes, status, projects(name)")
         .eq("driver_id", employeeId!)
         .in("date", [date!, yesterday])
         .order("leg_number");
+
+      // Never let a failed read look like "no trips today" — that made the app
+      // ask for a new project while trips were already running on the server.
+      if (error) {
+        // Fallback: retry without the embedded project name.
+        const { data: plain, error: plainErr } = await supabase
+          .from("driver_trip_legs")
+          .select("id, project_id, leg_number, travel_start_time, site_arrival_time, leg_type, leg_end_time, total_travel_minutes, total_onsite_minutes, status")
+          .eq("driver_id", employeeId!)
+          .in("date", [date!, yesterday])
+          .order("leg_number");
+        if (plainErr) throw plainErr;
+        const fallback: DriverLeg[] = (plain ?? []).map((l: any) => ({ ...l, project_name: "Project" }));
+        try { localStorage.setItem(legsCacheKey(employeeId!, date!), JSON.stringify(fallback)); } catch { /* ignore */ }
+        return fallback;
+      }
+
       const mapped: DriverLeg[] = (data ?? []).map((l: any) => ({
         ...l,
         project_name: l.projects?.name ?? "Unknown",
       }));
       try { localStorage.setItem(legsCacheKey(employeeId!, date!), JSON.stringify(mapped)); } catch { /* ignore */ }
       return mapped;
+
     },
   });
 }
