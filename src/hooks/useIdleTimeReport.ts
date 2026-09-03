@@ -25,6 +25,7 @@ export type IdleEmployeeRow = {
   productiveMin: number;
   breakMin: number;
   idleMin: number;
+  standbyMin: number;
   reasonCounts: Partial<Record<IdleReason, number>>;
   days: IdleDayRow[];
 };
@@ -53,7 +54,7 @@ export function useIdleTimeReport(startDate: string, endDate: string, opts?: {
       // 1. Attendance logs in range
       const { data: logsData, error } = await supabase
         .from("attendance_logs")
-        .select("id, employee_id, date, project_id, office_punch_in, office_punch_out, travel_start_time, site_arrival_time, return_travel_start_time, office_arrival_time, work_start_time, work_end_time, break_minutes, employees(name, employee_code, skill_type, branch_id), projects(name)")
+        .select("id, employee_id, date, project_id, office_punch_in, office_punch_out, travel_start_time, site_arrival_time, return_travel_start_time, office_arrival_time, work_start_time, work_end_time, break_minutes, employees(name, employee_code, skill_type, secondary_skills, branch_id), projects(name)")
         .gte("date", startDate)
         .lte("date", endDate)
         .not("office_punch_in", "is", null);
@@ -82,6 +83,24 @@ export function useIdleTimeReport(startDate: string, endDate: string, opts?: {
           const arr = sessionsByLog.get(s.attendance_log_id) ?? [];
           arr.push(s);
           sessionsByLog.set(s.attendance_log_id, arr);
+        }
+      }
+
+      // 2b. Driver trip legs in range — a pure driver's productive time is
+      // travel + on-site hold, and the waiting between legs is paid standby.
+      const legsByKey = new Map<string, any[]>(); // `${emp}:${date}`
+      if (employeeIds.length) {
+        const { data: legs } = await supabase
+          .from("driver_trip_legs")
+          .select("driver_id, date, travel_start_time, site_arrival_time, leg_end_time")
+          .gte("date", startDate)
+          .lte("date", endDate)
+          .in("driver_id", employeeIds);
+        for (const leg of (legs ?? []) as any[]) {
+          const k = `${leg.driver_id}:${leg.date}`;
+          const arr = legsByKey.get(k) ?? [];
+          arr.push(leg);
+          legsByKey.set(k, arr);
         }
       }
 
@@ -138,6 +157,16 @@ export function useIdleTimeReport(startDate: string, endDate: string, opts?: {
             return_travel_start_time: s.return_travel_start_time,
           })),
           hasAssignment,
+          driverLegs: (legsByKey.get(`${l.employee_id}:${l.date}`) ?? []).map((leg: any) => ({
+            travel_start_time: leg.travel_start_time,
+            site_arrival_time: leg.site_arrival_time,
+            leg_end_time: leg.leg_end_time,
+          })),
+          isPureDriver:
+            l.employees?.skill_type === "driver" &&
+            !((l.employees?.secondary_skills ?? []) as string[]).some(
+              (sk) => sk !== "driver"
+            ),
         });
 
         const day: IdleDayRow = {
@@ -166,6 +195,7 @@ export function useIdleTimeReport(startDate: string, endDate: string, opts?: {
             productiveMin: 0,
             breakMin: 0,
             idleMin: 0,
+            standbyMin: 0,
             reasonCounts: {},
             days: [],
           };
@@ -178,6 +208,7 @@ export function useIdleTimeReport(startDate: string, endDate: string, opts?: {
           emp.productiveMin += result.productiveMin;
           emp.breakMin += result.breakMin;
           emp.idleMin += result.idleMin;
+          emp.standbyMin += result.standbyMin;
           for (const r of result.reasons) {
             emp.reasonCounts[r] = (emp.reasonCounts[r] ?? 0) + 1;
           }
