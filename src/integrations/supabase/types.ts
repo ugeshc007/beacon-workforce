@@ -883,7 +883,29 @@ export type Database = {
           travel_start_time?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "driver_trip_legs_attendance_log_id_fkey"
+            columns: ["attendance_log_id"]
+            isOneToOne: false
+            referencedRelation: "attendance_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_trip_legs_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_trip_legs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       employee_leave: {
         Row: {
