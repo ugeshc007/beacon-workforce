@@ -18,6 +18,7 @@ export type IdleReason =
   | "post_work_gap"
   | "return_gap"
   | "in_house_pre_work_gap"
+  | "driver_standby"
   | "in_progress";
 
 export type IdleGap = {
@@ -38,6 +39,13 @@ export type IdleSession = {
   return_travel_start_time?: string | null;
 };
 
+/** One driver trip leg (drop off / pick up / wait) for standby crediting. */
+export type IdleDriverLeg = {
+  travel_start_time: string | null;
+  site_arrival_time: string | null;
+  leg_end_time: string | null;
+};
+
 export type IdleLogInput = {
   office_punch_in: string | null;
   office_punch_out: string | null;
@@ -50,6 +58,10 @@ export type IdleLogInput = {
   break_minutes: number | null;
   sessions: IdleSession[];
   hasAssignment: boolean;
+  /** Driver trip legs for this employee/date (pure drivers rarely log work steps). */
+  driverLegs?: IdleDriverLeg[];
+  /** True when the employee only drives (no technician/helper secondary skill). */
+  isPureDriver?: boolean;
 };
 
 export type IdleResult = {
@@ -57,10 +69,13 @@ export type IdleResult = {
   productiveMin: number;
   breakMin: number;
   idleMin: number;
+  /** Paid waiting time for pure drivers — excluded from idleMin. */
+  standbyMin: number;
   reasons: IdleReason[];
   gaps: IdleGap[];
   inProgress: boolean;
 };
+
 
 const diffMin = (a: string | null | undefined, b: string | null | undefined): number => {
   if (!a || !b) return 0;
