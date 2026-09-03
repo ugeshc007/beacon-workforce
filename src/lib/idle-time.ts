@@ -101,10 +101,11 @@ export function computeIdle(log: IdleLogInput): IdleResult {
 
   if (!log.office_punch_in) {
     return {
-      shiftMin: 0, productiveMin: 0, breakMin: 0, idleMin: 0,
+      shiftMin: 0, productiveMin: 0, breakMin: 0, idleMin: 0, standbyMin: 0,
       reasons: [], gaps: [], inProgress: false,
     };
   }
+
 
   const inProgress = !log.office_punch_out;
   const shiftEnd = log.office_punch_out ?? new Date().toISOString();
