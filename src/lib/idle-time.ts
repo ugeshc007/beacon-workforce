@@ -214,9 +214,25 @@ export function computeIdle(log: IdleLogInput): IdleResult {
 
   if (inProgress) reasons.push("in_progress");
 
-  const idleMin = Math.max(0, shiftMin - productiveMin - breakMin);
+  const unaccountedMin = Math.max(0, shiftMin - productiveMin - breakMin);
 
-  return { shiftMin, productiveMin, breakMin, idleMin, reasons, gaps, inProgress };
+  // Pure drivers wait between legs by design — that time is paid standby,
+  // not idle. Keep it visible but out of the idle column.
+  const isDriverStandby = !!log.isPureDriver && legs.length > 0;
+  const standbyMin = isDriverStandby ? unaccountedMin : 0;
+  const idleMin = isDriverStandby ? 0 : unaccountedMin;
+  if (standbyMin > 0) {
+    reasons.push("driver_standby");
+    gaps.push({
+      reason: "driver_standby",
+      from: null,
+      to: null,
+      minutes: standbyMin,
+      label: fmtGap("Driver standby", standbyMin),
+    });
+  }
+
+  return { shiftMin, productiveMin, breakMin, idleMin, standbyMin, reasons, gaps, inProgress };
 }
 
 export const REASON_LABEL: Record<IdleReason, string> = {
@@ -227,5 +243,7 @@ export const REASON_LABEL: Record<IdleReason, string> = {
   post_work_gap: "Long post-work gap",
   return_gap: "Long at-office gap",
   in_house_pre_work_gap: "Late work start",
+  driver_standby: "Driver standby (paid waiting)",
   in_progress: "Shift in progress",
+
 };
