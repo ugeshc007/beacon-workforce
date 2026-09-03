@@ -141,8 +141,20 @@ export function computeIdle(log: IdleLogInput): IdleResult {
     productiveMin += Math.max(0, diffMin(log.work_start_time, log.work_end_time) - breakMin);
   }
 
+  // Driver trip legs — a driver's productive time is travel plus time held on
+  // site (drop off / pick up / wait), not work_start..work_end steps.
+  const legs = log.driverLegs ?? [];
+  let legMin = 0;
+  for (const leg of legs) {
+    legMin += diffMin(leg.travel_start_time, leg.site_arrival_time);
+    legMin += diffMin(leg.site_arrival_time, leg.leg_end_time);
+  }
+  productiveMin += legMin;
+  if (legMin > 0) anyWorkStarted = true;
+
   // Cap productive so it can't exceed shift
   productiveMin = Math.min(productiveMin, shiftMin);
+
 
   // Whole-shift idle cases
   if (!log.hasAssignment && log.office_punch_out) {
